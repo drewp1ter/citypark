@@ -7,3 +7,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Menu
 - [x] 02 Dish description on the menu card [01]
+- [x] 03 Cart sheet on the mobile menu [01]

@@ -51,6 +51,7 @@
   /* Brand */
   --accent: #D6F24A;           /* lime: main CTAs, "+" buttons, badges, banquet card */
   --on-accent: #111111;        /* text/icons on lime */
+  --scrim: rgb(17 17 17 / 0.5);          /* backdrop behind modal sheets */
 
   /* Form errors (not in the design; added for validation messages) */
   --danger: #B42318;
@@ -125,6 +126,7 @@
 
   --accent: #D6F24A;
   --on-accent: #0F0F10;
+  --scrim: rgb(0 0 0 / 0.65);
   --danger: #FF8F85;
   --danger-on-inverse: #FF8F85;
 }
@@ -144,6 +146,7 @@
     --text-muted: #A3A39C;
     --inverse-bg: #2A2A2F;
     --on-accent: #0F0F10;
+    --scrim: rgb(0 0 0 / 0.65);
     --danger: #FF8F85;
     --danger-on-inverse: #FF8F85;
   }

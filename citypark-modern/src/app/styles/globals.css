@@ -24,6 +24,7 @@
   --color-inverse-border-strong: var(--inverse-border-strong);
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
+  --color-scrim: var(--scrim);
   --color-danger: var(--danger);
   --color-danger-on-inverse: var(--danger-on-inverse);
 

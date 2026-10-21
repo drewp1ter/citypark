@@ -118,11 +118,24 @@ out("page errors (desktop)", JSON.stringify(p.problems));
 
 // ---- mobile
 const m = await open("/menu", M, await seedCart([1, 2, 1]));
-out("mobile: cart bar", await txt(m.locator("a[href='/checkout']").last()));
+const bar = m.locator("nav[aria-label='Корзина'] button");
+out("mobile: cart bar", await txt(bar));
 out("mobile: aside hidden", String(await m.locator("aside#cart").isVisible()));
 out("mobile: card pills", (await m.locator("article").first().innerText()).replace(/\s+/g, " "));
 await m.getByRole("button", { name: /^Добавить в корзину: /, disabled: false }).first().click();
-out("mobile: add -> bar", await txt(m.locator("a[href='/checkout']").last()));
+out("mobile: add -> bar", await txt(bar));
+await bar.click();
+const sheet = m.locator("dialog[open]");
+out("mobile: sheet", (await txt(sheet)).replace(/\s+/g, " "));
+const sheetTotal = () => txt(sheet.locator("div", { hasText: /^Итого/ }).last());
+const before = await sheetTotal();
+await sheet.getByRole("button", { name: "Добавить порцию" }).first().click();
+out("mobile: sheet + -> total / bar", `${before} -> ${await sheetTotal()} / ${await txt(bar)}`);
+await m.keyboard.press("Escape");
+out(
+  "mobile: Esc -> sheet open / focus on bar",
+  `${await m.locator("dialog[open]").count()} / ${await bar.evaluate((e) => e === document.activeElement)}`,
+);
 out("mobile: overflow", String(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
 await m.evaluate(() => window.scrollTo(0, 600));
 await m.waitForTimeout(200);
@@ -151,6 +164,12 @@ if (!described) {
 const t = await open("/menu", { width: 900, height: 900 }, await seedCart([1]));
 out(
   "tablet 900: cart bar visible / aside hidden / cols",
-  `${await t.locator("a[href='/checkout']").last().isVisible()} / ${await t.locator("aside#cart").isVisible()} / ${await t.evaluate(() => getComputedStyle(document.querySelector("article").parentElement).gridTemplateColumns.split(" ").length)}`,
+  `${await t.locator("nav[aria-label='Корзина'] button").isVisible()} / ${await t.locator("aside#cart").isVisible()} / ${await t.evaluate(() => getComputedStyle(document.querySelector("article").parentElement).gridTemplateColumns.split(" ").length)}`,
 );
+// tapping «Оформить заказ» in the sheet goes to the checkout
+const c = await open("/menu", M, await seedCart([1, 2, 1]));
+await c.locator("nav[aria-label='Корзина'] button").click();
+await c.locator("dialog[open]").getByRole("link", { name: "Оформить заказ" }).click();
+await c.waitForURL("**/checkout");
+out("mobile: sheet -> checkout", new URL(c.url()).pathname);
 await browser.close();
