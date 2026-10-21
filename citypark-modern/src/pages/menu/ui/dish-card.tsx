@@ -62,7 +62,12 @@ export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean 
           </div>
         ) : (
           <p className="mt-0.5 mb-2 flex-1 text-[13px] text-text-muted md:mt-0 md:mb-0 md:text-sm">
-            {dish.composition && <span className="hidden md:inline">{dish.composition} · </span>}
+            {dish.composition && (
+              <span className="hidden md:inline">
+                {dish.composition}
+                {variant.weight && " · "}
+              </span>
+            )}
             {variant.weight}
           </p>
         )}

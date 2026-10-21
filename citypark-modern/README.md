@@ -7,7 +7,8 @@ Tailwind CSS v4, built from the designs in `design/`. The site is in Russian.
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
+cp .env.example .env.local   # MENU_API_URL: the citypark-go API (the menu is read from it)
+npm run dev          # http://localhost:3000 (the backend uses :3000 too: npm run dev -- -p 3001)
 npm run build && npm start
 npm run check        # typecheck + eslint + Steiger (FSD rules): must be clean
 ```
@@ -41,6 +42,5 @@ The Next.js router is the root `app/` folder (thin re-exports); the stub `pages/
 
 ## Still needs real data from the owner
 
-Booking engine and room availability · POS and live menu (prices, stop-list, the 1 кг price of the pie, the 16 more
-categories) · delivery tariffs below 500 ₽ and for СОТ/ДНТ · PDF documents and legal texts · text and photos of the
+Booking engine and room availability · Menu content in the backend (descriptions, weights and photos of the dishes) · delivery tariffs below 500 ₽ and for СОТ/ДНТ · PDF documents and legal texts · text and photos of the
 news and recipes · the Yandex Map · a 3D panorama link. The integration points are marked with `TODO` in the code.

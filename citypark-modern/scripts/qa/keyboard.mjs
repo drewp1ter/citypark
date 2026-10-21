@@ -1,12 +1,13 @@
 // Keyboard pass: skip link, a visible focus ring on every Tab stop, no lost focus, and the mobile menu focus trap.
 // Usage: node scripts/qa/keyboard.mjs [route ...]
 import { chromium } from "playwright";
+import { seedCart } from "./menu-cart.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3111";
 const routes = process.argv.slice(2).length
   ? process.argv.slice(2)
   : ["/", "/restaurant", "/rooms", "/hotel", "/menu", "/checkout", "/news", "/news/frittata", "/contacts"];
-const cart = [{ dishId: "beet-salad", variantId: "default", quantity: 1 }];
+const cart = await seedCart([1]);
 const problems = [];
 const report = [];
 

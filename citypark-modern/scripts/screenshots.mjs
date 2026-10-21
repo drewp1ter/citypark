@@ -1,9 +1,10 @@
 // Full-page screenshots of routes at 390 and 1440 px in light and dark, for comparing with design/screenshots/.
 // Usage: node scripts/screenshots.mjs <outDir> [route ...]   (server must run on BASE_URL, default http://localhost:3111)
-// SEED_CART=1 puts the cart from the design (1 beet salad, 2 pumpkin soups, 1 risotto) into localStorage first.
+// SEED_CART=1 puts a cart (1 + 2 + 1 portions of the first backend products) into localStorage first.
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { chromium } from "playwright";
+import { seedCart } from "./qa/menu-cart.mjs";
 
 const [outDir, ...routes] = process.argv.slice(2);
 if (!outDir) throw new Error("Usage: node scripts/screenshots.mjs <outDir> [route ...]");
@@ -20,11 +21,7 @@ for (const route of routes.length ? routes : ["/"]) {
       const context = await browser.newContext({ viewport, deviceScaleFactor: 1, colorScheme: theme });
       await context.addInitScript((t) => localStorage.setItem("theme", t), theme);
       if (process.env.SEED_CART) {
-        const cart = [
-          { dishId: "beet-salad", variantId: "default", quantity: 1 },
-          { dishId: "pumpkin-soup", variantId: "default", quantity: 2 },
-          { dishId: "mushroom-risotto", variantId: "default", quantity: 1 },
-        ];
+        const cart = await seedCart([1, 2, 1]);
         await context.addInitScript((c) => localStorage.setItem("citypark-cart", JSON.stringify(c)), cart);
       }
       const page = await context.newPage();

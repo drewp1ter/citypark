@@ -47,7 +47,14 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 
   if (!order.success || !lines.success || Object.keys(errors).length > 0) return { status: "error", errors, values };
 
-  const menu = await getMenu();
+  let menu;
+  try {
+    menu = await getMenu();
+  } catch (error) {
+    console.error(error);
+    errors.form = "Не удалось проверить меню. Попробуйте ещё раз через минуту.";
+    return { status: "error", errors, values };
+  }
   const priced = priceLines(lines.data, menu.dishes);
   if (priced.items.length !== lines.data.length) {
     // A dish was removed from the menu, is on the stop-list or has no price since it was put in the cart.

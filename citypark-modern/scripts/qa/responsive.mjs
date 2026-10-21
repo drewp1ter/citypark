@@ -1,6 +1,7 @@
 // Responsive sweep: every page at many widths. Reports horizontal overflow (and the element that causes it),
 // JavaScript errors and failed requests. Usage: node scripts/qa/responsive.mjs [route ...]
 import { chromium } from "playwright";
+import { seedCart } from "./menu-cart.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3111";
 const routes = process.argv.slice(2).length
@@ -19,7 +20,7 @@ const routes = process.argv.slice(2).length
       "/nope",
     ];
 const widths = [360, 390, 600, 768, 820, 1023, 1024, 1180, 1279, 1280, 1440, 1920];
-const cart = [{ dishId: "beet-salad", variantId: "default", quantity: 2 }];
+const cart = await seedCart([2]);
 
 const browser = await chromium.launch();
 const problems = [];

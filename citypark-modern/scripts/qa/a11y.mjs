@@ -2,6 +2,7 @@
 // Usage: node scripts/qa/a11y.mjs [route ...]   (server must run on BASE_URL, default http://localhost:3111)
 import AxeBuilder from "@axe-core/playwright";
 import { chromium } from "playwright";
+import { seedCart } from "./menu-cart.mjs";
 
 const base = process.env.BASE_URL ?? "http://localhost:3111";
 const routes = process.argv.slice(2).length
@@ -21,10 +22,7 @@ const routes = process.argv.slice(2).length
       "/nope",
     ];
 const sizes = { mobile: { width: 390, height: 844 }, desktop: { width: 1440, height: 900 } };
-const cart = [
-  { dishId: "beet-salad", variantId: "default", quantity: 1 },
-  { dishId: "pumpkin-soup", variantId: "default", quantity: 2 },
-];
+const cart = await seedCart([1, 2]);
 
 const browser = await chromium.launch();
 const found = new Map(); // rule id -> { impact, help, cases: Set, nodes: Map(html -> count) }

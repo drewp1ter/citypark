@@ -9,7 +9,11 @@ import { SiteHeader } from "@/widgets/site-header";
  * (below 1024 px; from 1024 px the cart is a column next to the dishes).
  */
 export async function MenuLayout({ children }: { children: ReactNode }) {
-  const { dishes } = await getMenu();
+  // A layout error would not reach the page's error.tsx, so the page throws into its own boundary instead.
+  const { dishes } = await getMenu().catch((error: unknown) => {
+    console.error(error);
+    return { dishes: [] };
+  });
 
   return (
     <div className="flex min-h-dvh flex-col">

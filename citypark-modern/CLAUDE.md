@@ -58,9 +58,10 @@ colours differ — so build each component once and let the tokens switch the th
   mobile nav. It is the only new UI element; style it like the header's existing 44 px icon buttons.
 - **Images:** `next/image` from `public/images`. Keep `alt` texts from the references.
 - **Content:** typed data files inside FSD slices: `shared/config/site.ts` and
-  `entities/{room,dish,article,hotel}/model/*.data.ts`, read only through async getters in each entity's `api/`
-  (so a CMS / booking engine / POS can replace them later). Copy the texts, prices, weights and phone numbers
-  **exactly** from the reference HTML. No CMS for now.
+  `entities/{room,article,hotel}/model/*.data.ts`, read only through async getters in each entity's `api/`
+  (so a CMS / booking engine can replace them later). Copy the texts, prices, weights and phone numbers
+  **exactly** from the reference HTML. No CMS for now. The **menu is the exception**: `entities/dish` reads
+  it from citypark-go (`GET /categories`, `GET /products`) on the server; set `MENU_API_URL` (see `.env.example`).
 - **Cart:** client state (React context or Zustand) persisted to `localStorage`. Used by DishCard,
   CartPanel (desktop `/menu`), CartBar (mobile), header cart button and `/checkout`.
 - **Forms** (table booking, checkout, contact form, room search): Server Actions with zod validation.

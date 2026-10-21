@@ -1,14 +1,11 @@
 // Flow check: checkout-and-contacts. Drives the real pages in a browser and prints what happened next to what is expected.
 // Usage: node scripts/qa/flows/checkout-and-contacts.mjs   (server must run on BASE_URL, default http://localhost:3111)
 import { chromium } from "playwright";
+import { seedCart } from "../menu-cart.mjs";
 const base = process.env.BASE_URL ?? "http://localhost:3111";
 const browser = await chromium.launch();
 const out = (k, v) => console.log(k.padEnd(58), v);
-const CART = [
-  { dishId: "beet-salad", variantId: "default", quantity: 1 },
-  { dishId: "pumpkin-soup", variantId: "default", quantity: 2 },
-  { dishId: "mushroom-risotto", variantId: "default", quantity: 1 },
-];
+const CART = await seedCart([1, 2, 1]);
 async function pageWithCart(cart = CART, viewport = { width: 1440, height: 1000 }) {
   const ctx = await browser.newContext({ viewport });
   if (cart) await ctx.addInitScript((c) => localStorage.setItem("citypark-cart", JSON.stringify(c)), cart);
@@ -63,11 +60,11 @@ const t = await pageWithCart([{ dishId: "ghost-dish", variantId: "x", quantity: 
 await t.goto(base + "/checkout");
 await t.waitForTimeout(500);
 out("unknown dish in cart -> priced out, empty state", await txt(t.getByText("В корзине пока пусто")));
-// pie 1 kg has no price: the client skips it, server too
-const t2 = await pageWithCart([{ dishId: "cabbage-pie", variantId: "1kg", quantity: 1 }]);
+// a size the dish does not have: the client skips it, server too
+const t2 = await pageWithCart([{ dishId: CART[0].dishId, variantId: "1kg", quantity: 1 }]);
 await t2.goto(base + "/checkout");
 await t2.waitForTimeout(500);
-out("unpriced 1 kg pie -> empty state", await txt(t2.getByText("В корзине пока пусто")));
+out("unknown size of a real dish -> empty state", await txt(t2.getByText("В корзине пока пусто")));
 // server-side check without the browser's own filtering
 const res = await fetch(base + "/checkout", { method: "GET" });
 out("GET /checkout", res.status);

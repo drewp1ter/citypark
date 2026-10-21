@@ -1,6 +1,7 @@
 // Flow check: menu. Drives the real pages in a browser and prints what happened next to what is expected.
 // Usage: node scripts/qa/flows/menu.mjs   (server must run on BASE_URL, default http://localhost:3111)
 import { chromium } from "playwright";
+import { seedCart } from "../menu-cart.mjs";
 const base = process.env.BASE_URL ?? "http://localhost:3111";
 const browser = await chromium.launch();
 const out = (k, v) => console.log(k.padEnd(56), v);
@@ -35,58 +36,50 @@ out("header: cart pill (empty cart)", await txt(p.getByRole("link", { name: /^К
 out("cart panel (empty)", await txt(p.locator("aside#cart")));
 out("CartBar hidden at 1440", String((await p.locator("a[href='/checkout']:visible").count()) === 0 || "panel only"));
 
-await p.getByRole("button", { name: "Добавить в корзину: салат свекольный" }).click();
-await p.getByRole("button", { name: "Добавить в корзину: крем-суп из тыквы" }).click();
+const addButton = p.getByRole("button", { name: /^Добавить в корзину: /, disabled: false });
+const [firstAdd, secondAdd] = await addButton.evaluateAll((els) => els.slice(0, 2).map((e) => e.getAttribute("aria-label")));
+await p.getByRole("button", { name: firstAdd, exact: true }).click();
+await p.getByRole("button", { name: secondAdd, exact: true }).click();
 await p.getByRole("button", { name: "Добавить порцию" }).last().click();
 await p.waitForTimeout(200);
-out("pill after 1 salad + 2 soups", await txt(p.getByRole("link", { name: /^Корзина/ }).first()));
+out("pill after 1 + 2 portions", await txt(p.getByRole("link", { name: /^Корзина/ }).first()));
 out("panel", await txt(p.locator("aside#cart")));
 
-// size switch on the pie
-const pie = p.locator("article", { hasText: "Пирог с капустой" });
-await pie.getByRole("button", { name: "1 кг" }).click();
-out(
-  "pie 1 kg: price + add disabled",
-  `${await txt(pie.locator("span.font-display"))} / disabled=${await pie
-    .getByRole("button", { name: /Добавить в корзину/ })
-    .first()
-    .isDisabled()}`,
-);
-await pie.getByRole("button", { name: "500 г" }).click();
-await pie
-  .getByRole("button", { name: /Добавить в корзину/ })
-  .first()
-  .click();
-out("pie 500 g added -> panel line", await txt(p.locator("aside#cart li", { hasText: "Пирог" })));
+// backend dishes have one size, so there is no size switch
+out("no size switch", String((await p.getByRole("group", { name: "Размер" }).count()) === 0));
 out("cart in localStorage", await p.evaluate(() => localStorage.getItem("citypark-cart")));
 
 // categories (links, server-side)
-await p.getByRole("link", { name: "Стейки", exact: true }).click();
-await p.waitForURL("**/menu?category=steaks");
+const chips = p.locator("nav[aria-label='Разделы меню'] a");
+const firstChip = (await chips.first().innerText()).trim();
+const secondHref = await chips.nth(1).getAttribute("href");
+await chips.nth(1).click();
+await p.waitForURL("**" + secondHref);
 await p.waitForTimeout(300);
 out(
-  "category Стейки: url / h2 / message",
+  "second category: url / h2 / message",
   `${p.url().replace(base, "")} / ${await txt(p.locator("main h2").first())} / ${await txt(p.getByRole("status"))}`,
 );
 out("selected chip", await txt(p.locator("nav[aria-label='Разделы меню'] a[aria-current=true]")));
-await p.getByRole("link", { name: "Постное", exact: true }).click();
+await p.getByRole("link", { name: firstChip, exact: true }).click();
 await p.waitForURL("**/menu");
 await p.waitForTimeout(300);
-out("back to Постное: dishes", String(await p.locator("article").count()));
+out("back to the first category: dishes", String(await p.locator("article").count()));
 out("cart survives navigation", await txt(p.getByRole("link", { name: /^Корзина/ }).first()));
 
 // search across the whole menu
 const search = p.getByRole("searchbox", { name: "Поиск по меню" });
-await search.fill("суп");
-out("search 'суп'", `${await txt(p.locator("main h2").first())} / ${await p.locator("article").count()} card`);
-await search.fill("ТОФУ");
+const word = firstAdd.replace(/^Добавить в корзину: /, "").split(/\s+/)[0];
+await search.fill(word);
+out(`search '${word}'`, `${await txt(p.locator("main h2").first())} / ${await p.locator("article").count()} card`);
+await search.fill(word.toUpperCase());
 out(
-  "search 'ТОФУ' (composition + case)",
+  `search '${word.toUpperCase()}' (case)`,
   `${await txt(p.locator("main h2").first())} / ${await p.locator("article h3").allInnerTexts()}`,
 );
 await search.fill("пицца-ролл");
 out("search no match", await txt(p.getByRole("status")));
-await p.getByRole("link", { name: "Роллы", exact: true }).click();
+await chips.nth(1).click();
 await p.waitForTimeout(500);
 out("search text kept when category changes", await search.inputValue());
 await search.fill("");
@@ -124,15 +117,11 @@ out("Оформить заказ -> checkout summary", (await txt(p.locator("asi
 out("page errors (desktop)", JSON.stringify(p.problems));
 
 // ---- mobile
-const m = await open("/menu", M, [
-  { dishId: "beet-salad", variantId: "default", quantity: 1 },
-  { dishId: "pumpkin-soup", variantId: "default", quantity: 2 },
-  { dishId: "mushroom-risotto", variantId: "default", quantity: 1 },
-]);
+const m = await open("/menu", M, await seedCart([1, 2, 1]));
 out("mobile: cart bar", await txt(m.locator("a[href='/checkout']").last()));
 out("mobile: aside hidden", String(await m.locator("aside#cart").isVisible()));
 out("mobile: card pills", (await m.locator("article").first().innerText()).replace(/\s+/g, " "));
-await m.getByRole("button", { name: "Добавить в корзину: салат овощной" }).click();
+await m.getByRole("button", { name: /^Добавить в корзину: /, disabled: false }).first().click();
 out("mobile: add -> bar", await txt(m.locator("a[href='/checkout']").last()));
 out("mobile: overflow", String(await m.evaluate(() => document.documentElement.scrollWidth > innerWidth)));
 await m.evaluate(() => window.scrollTo(0, 600));
@@ -142,9 +131,7 @@ out(
   String(Math.round(await m.locator("nav[aria-label='Разделы меню']").evaluate((e) => e.getBoundingClientRect().top))),
 );
 // tablet
-const t = await open("/menu", { width: 900, height: 900 }, [
-  { dishId: "beet-salad", variantId: "default", quantity: 1 },
-]);
+const t = await open("/menu", { width: 900, height: 900 }, await seedCart([1]));
 out(
   "tablet 900: cart bar visible / aside hidden / cols",
   `${await t.locator("a[href='/checkout']").last().isVisible()} / ${await t.locator("aside#cart").isVisible()} / ${await t.evaluate(() => getComputedStyle(document.querySelector("article").parentElement).gridTemplateColumns.split(" ").length)}`,

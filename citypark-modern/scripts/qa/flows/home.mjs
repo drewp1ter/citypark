@@ -39,7 +39,8 @@ out("search submits to", p.url().replace(base, ""));
 // ---- cart
 const c = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await c.goto(base + "/");
-const add = c.getByRole("button", { name: "Добавить в корзину: салат свекольный" });
+const add = c.getByRole("button", { name: /^Добавить в корзину: /, disabled: false }).first();
+const addName = await add.getAttribute("aria-label");
 await add.click();
 out("after + : stepper shows 1", await c.locator("[aria-live=polite]").first().innerText());
 out(
@@ -59,7 +60,7 @@ await c.getByRole("button", { name: "Убрать порцию" }).click();
 await c.getByRole("button", { name: "Убрать порцию" }).click();
 out(
   "removed to 0 -> '+' is back",
-  String(await c.getByRole("button", { name: "Добавить в корзину: салат свекольный" }).count()),
+  String(await c.getByRole("button", { name: addName, exact: true }).count()),
 );
 out("localStorage cleared", String(await c.evaluate(() => localStorage.getItem("citypark-cart"))));
 
