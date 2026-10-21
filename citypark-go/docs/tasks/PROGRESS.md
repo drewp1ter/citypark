@@ -56,4 +56,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 36 iiko v2 auth and config [33]
 - [x] 37 iiko menu/v3 client and menus table [36]
 - [x] 38 iiko sync from menu/v3 [37]
-- [ ] 39 Hidden categories [38]
+- [x] 39 Hidden categories [38]
+- [x] 40 Product descriptions from iiko [39]
+  - Not checked against real iiko: no credentials in this session. After `POST /iiko/update-products`, run `curl localhost:3000/api/v1/products?pageSize=500` and count non-empty `description`s.

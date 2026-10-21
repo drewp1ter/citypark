@@ -16,9 +16,10 @@ type ItemsGroup struct {
 }
 
 type MenuItem struct {
-	ProductID  string          `json:"productId"`
-	Name       string          `json:"name"`
-	SizePrices []ItemSizePrice `json:"sizePrices"`
+	ProductID   string          `json:"productId"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	SizePrices  []ItemSizePrice `json:"sizePrices"`
 }
 
 // ItemSizePrice: Price is nil when iiko sends no price; such an item is not for sale.

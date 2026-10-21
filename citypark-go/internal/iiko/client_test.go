@@ -325,10 +325,10 @@ func TestFetchContextCancelled(t *testing.T) {
 const menuJSON = `{"id":"94764","name":"test","overrideTaxCategories":[],
  "itemsGroups":[
   {"id":"g-1","name":"Шашлыки","isHidden":true,"items":[
-    {"productId":"p-1","name":"Шашлык из свинины","menuItemId":"m-1",
+    {"productId":"p-1","name":"Шашлык из свинины","description":null,"menuItemId":"m-1",
      "sizePrices":[{"sizeName":"","isDefault":true,"weight":1000.0,"sku":"01117"}]}]},
   {"id":"g-2","name":"Хинкали","items":[
-    {"productId":"p-2","name":"Хинкали","menuItemId":"m-2",
+    {"productId":"p-2","name":"Хинкали","description":"  Говядина, лук  ","menuItemId":"m-2",
      "sizePrices":[{"sizeName":"","isDefault":true,"price":600.0,"buttonImageUrl":"http://i/p-2.jpeg","weight":1000.0,
        "nutritions":{"fats":200.0,"proteins":100.0,"carbs":300.0,"energy":400.0},
        "sku":"00047","menuItemSizeId":"s-2"}]}]}],
@@ -374,6 +374,12 @@ func TestMenu(t *testing.T) {
 	}
 	if p := m.ItemsGroups[1].Items[0].SizePrices[0].Price; p == nil || *p != 600 {
 		t.Errorf("price = %v, want 600", p)
+	}
+	if d := m.ItemsGroups[1].Items[0].Description; d != "  Говядина, лук  " {
+		t.Errorf("description = %q, want the raw text with spaces", d)
+	}
+	if d := m.ItemsGroups[0].Items[0].Description; d != "" {
+		t.Errorf("null description = %q, want empty", d)
 	}
 	size := m.ItemsGroups[1].Items[0].SizePrices[0]
 	if size.ButtonImageURL != "http://i/p-2.jpeg" || size.MenuItemSizeID != "s-2" ||

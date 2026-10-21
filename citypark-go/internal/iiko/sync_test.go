@@ -372,6 +372,45 @@ func TestSyncProductImages(t *testing.T) {
 	}
 }
 
+func menuWithDescription(desc string) *Menu {
+	m := baseMenu()
+	for gi := range m.ItemsGroups {
+		for ii := range m.ItemsGroups[gi].Items {
+			if m.ItemsGroups[gi].Items[ii].ProductID == "p-shashlik" {
+				m.ItemsGroups[gi].Items[ii].Description = desc
+			}
+		}
+	}
+	return m
+}
+
+func TestSyncProductDescription(t *testing.T) {
+	tests := []struct{ name, in, want string }{
+		{"plain", "Свекла, чеснок", "Свекла, чеснок"},
+		{"trimmed", "  Свекла  \n", "Свекла"},
+		{"empty", "", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := testutil.NewDB(t)
+			runSync(t, db, menuWithDescription(tt.in))
+			if got := getProduct(t, db, "p-shashlik").Description; got != tt.want {
+				t.Errorf("description = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSyncProductDescriptionUpdated(t *testing.T) {
+	db := testutil.NewDB(t)
+	for _, want := range []string{"Старое", "Новое", ""} {
+		runSync(t, db, menuWithDescription(want))
+		if got := getProduct(t, db, "p-shashlik").Description; got != want {
+			t.Errorf("description = %q, want %q", got, want)
+		}
+	}
+}
+
 func TestSyncClearsOldData(t *testing.T) {
 	db := testutil.NewDB(t)
 	// An iiko category and product as the old nomenclature sync left them.
@@ -407,7 +446,7 @@ func TestSyncClearsOldData(t *testing.T) {
 	p := getProduct(t, db, "p-shashlik")
 	if p.Description != "" || p.Fats != 0 || p.Proteins != 0 || p.Carbs != 0 || p.Calories != 0 ||
 		p.SaleStart != nil || p.SaleEnd != nil || p.SaleDays != "" {
-		t.Errorf("product = %+v, want description, nutrition and sale window cleared", p)
+		t.Errorf("product = %+v, want description replaced from iiko (empty), nutrition and sale window cleared", p)
 	}
 	if n := testutil.Count(t, db, `SELECT count(*) FROM category_images WHERE type = 'from_iiko'`); n != 0 {
 		t.Errorf("from_iiko category images = %d, want 0", n)

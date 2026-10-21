@@ -170,7 +170,7 @@ RETURNING id`
 
 			var id int64
 			err := tx.GetContext(ctx, &id, upsert,
-				item.ProductID, categoryIDs[g.ID], item.Name, "", measureUnits[item.ProductID], size.Weight/1000, j, false,
+				item.ProductID, categoryIDs[g.ID], item.Name, strings.TrimSpace(item.Description), measureUnits[item.ProductID], size.Weight/1000, j, false,
 				size.Nutritions.Fats, size.Nutritions.Proteins, size.Nutritions.Carbs, size.Nutritions.Energy,
 				int64(price), w.Start, w.End, w.Days)
 			if err != nil {

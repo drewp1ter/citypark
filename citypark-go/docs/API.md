@@ -1000,7 +1000,7 @@ Downloads the external menu from iiko and applies it: categories and products. M
 
 The update runs in one transaction and can take a few seconds. The menu is the external menu `IIKO_EXTERNAL_MENU_ID`. Every menu group becomes a category, even a group with nothing for sale. Items without a price are skipped. `totalCategories` and `totalProducts` count the categories and products that are in the menu after the update. Items that disappeared from iiko are hidden, not removed. The `isHidden` flag of a menu group is stored; hidden groups are synced with their products but are not listed by `GET /categories`.
 
-The update no longer takes images, tags, descriptions, nutrition values or sale windows from iiko, and it clears the ones that came from iiko before: category and product descriptions, nutrition values and sale windows are reset, `from_iiko` images are deleted and all tags are removed. Images added by hand stay.
+Products take their `description` from the iiko menu item (trimmed; an empty string when iiko has none, and an empty iiko description clears the old one on the next update). The update no longer takes images, tags, nutrition values or sale windows from iiko, and it clears the ones that came from iiko before: nutrition values and sale windows are reset, `from_iiko` images are deleted and all tags are removed. Category descriptions are still reset to an empty string. Images added by hand stay.
 
 #### POST /webhooks/moneta
 
