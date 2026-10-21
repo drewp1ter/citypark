@@ -4,3 +4,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Backend integration
 - [x] 01 Menu from the backend API
+
+## Menu
+- [ ] 02 Dish description on the menu card [01]
