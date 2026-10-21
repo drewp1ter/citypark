@@ -1,0 +1,1131 @@
+openapi: 3.0.3
+info:
+  title: Citypark API
+  version: 1.0.0
+  description: Backend API of the Citypark restaurant ordering site. Money is in rubles. Timestamps are RFC 3339.
+servers:
+  - url: /api/v1
+tags:
+  - name: auth
+  - name: user
+  - name: addresses
+  - name: delivery-prices
+  - name: catalog
+  - name: orders
+  - name: integrations
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      description: From 1 to 500. The default is the server's page size.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+  responses:
+    BadRequest:
+      description: Malformed JSON, validation failure or another rejected input.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: No token or invalid token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: The token belongs to a user who is not an admin.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The value is already used.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: The order cannot be accepted now (working hours or sale window).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: Ошибка валидации, пожалуйста проверьте введенные вами данные
+        errors:
+          type: object
+          description: Present only for validation failures. Keys are JSON paths of the invalid fields.
+          additionalProperties:
+            type: string
+          example:
+            phone: телефон должен быть действительным номером телефона
+    User:
+      type: object
+      required: [id, name, email, phone, role]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Иван
+        email:
+          type: string
+          description: Empty string when the user has no email.
+          example: ivan@example.com
+        phone:
+          type: string
+          example: '+79991234567'
+        role:
+          type: string
+          enum: [user, admin]
+    SignInResponse:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          required: [token]
+          properties:
+            token:
+              type: string
+              description: JWT. Send it as `Authorization Bearer <token>`.
+    Address:
+      type: object
+      required: [id, city, address, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          example: 1
+        city:
+          type: string
+          example: Сочи
+        address:
+          type: string
+          example: ул. Ленина, 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    AddressInput:
+      type: object
+      required: [city, address]
+      properties:
+        city:
+          type: string
+          maxLength: 80
+          example: Сочи
+        address:
+          type: string
+          maxLength: 1000
+          example: ул. Ленина, 1
+    DeliveryPrice:
+      type: object
+      required: [id, name, value, price, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Сочи
+        value:
+          type: string
+          example: Россия, Краснодарский край, Сочи
+        price:
+          type: number
+          description: Rubles.
+          example: 150
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DeliveryPriceInput:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          description: Must be unique.
+          example: Сочи
+        value:
+          type: string
+          maxLength: 255
+          example: Россия, Краснодарский край, Сочи
+        price:
+          type: number
+          exclusiveMinimum: true
+          minimum: 0
+          description: Rubles.
+          example: 150
+    Image:
+      type: object
+      required: [id, url, type]
+      properties:
+        id:
+          type: integer
+          example: 1
+        url:
+          type: string
+          example: https://example.com/a.jpg
+        type:
+          type: string
+          example: from_iiko
+    Category:
+      type: object
+      required: [id, name, description, images, isAvailableForOrder, salesDays, startTime, endTime]
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Мангал
+        description:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+        isAvailableForOrder:
+          type: boolean
+          description: Computed for the current moment in the restaurant's time zone.
+        salesDays:
+          type: string
+          description: Empty string when there is no sale window.
+          example: Пн, Вт, Ср, Чт, Пт
+        startTime:
+          type: string
+          example: '9:00'
+        endTime:
+          type: string
+          example: '21:00'
+    Product:
+      type: object
+      required:
+        - id
+        - categoryId
+        - name
+        - description
+        - measureUnit
+        - weight
+        - proteins
+        - fats
+        - carbohydrates
+        - calories
+        - flags
+        - price
+        - images
+        - isAvailableForOrder
+        - salesDays
+        - startTime
+        - endTime
+      properties:
+        id:
+          type: integer
+          example: 1
+        categoryId:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Шашлык из баранины
+        description:
+          type: string
+        measureUnit:
+          type: string
+        weight:
+          type: number
+        proteins:
+          type: number
+        fats:
+          type: number
+        carbohydrates:
+          type: number
+        calories:
+          type: number
+        flags:
+          type: integer
+        price:
+          type: number
+          description: Rubles.
+          example: 320
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+        isAvailableForOrder:
+          type: boolean
+          description: True only when both the product's own window and its category's window are open now.
+        salesDays:
+          type: string
+          description: The product's own sale window. Empty string when it has none.
+        startTime:
+          type: string
+        endTime:
+          type: string
+    OrderItemInput:
+      type: object
+      required: [productId, amount]
+      properties:
+        productId:
+          type: integer
+          minimum: 1
+          example: 1
+        amount:
+          type: integer
+          minimum: 1
+          example: 2
+    CreateOrder:
+      type: object
+      required: [phone, name, paymentType, items]
+      properties:
+        phone:
+          type: string
+          description: A valid Russian phone number. It is stored as +7XXXXXXXXXX.
+          example: '+79991234567'
+        name:
+          type: string
+          maxLength: 80
+          example: Иван
+        comment:
+          type: string
+          maxLength: 8192
+          example: Без лука
+        paymentType:
+          type: string
+          enum: [cash, online]
+        address:
+          allOf:
+            - $ref: '#/components/schemas/AddressInput'
+          description: Delivery address. Leave it out for pickup. `city` must be the name of a delivery price.
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/OrderItemInput'
+    CreateOrderResult:
+      type: object
+      description: For a cash order `redirectUrl` is set. For an online order `amount` and `mntSignature` are set.
+      required: [orderId]
+      properties:
+        orderId:
+          type: integer
+          example: 1
+        redirectUrl:
+          type: string
+          example: http://localhost:3001/thankyou
+        amount:
+          type: string
+          description: Value of MNT_AMOUNT for the Moneta payment form.
+          example: '790.00'
+        mntSignature:
+          type: string
+          description: Value of MNT_SIGNATURE for the Moneta payment form.
+          example: 8c65fcd4afe3dc4cb915e04aaa273574
+    Order:
+      type: object
+      required: [id, createdAt, updatedAt, status, comment, paymentType, total, deliveryPrice, customer, address, items]
+      properties:
+        id:
+          type: integer
+          example: 2
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [new, paid, confirmed, canceled]
+        comment:
+          type: string
+        paymentType:
+          type: string
+          enum: [cash, online]
+        total:
+          type: number
+          description: Sum of the items without delivery, in rubles.
+          example: 599
+        deliveryPrice:
+          type: number
+          example: 150
+        customer:
+          type: object
+          required: [id, name, phone]
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            phone:
+              type: string
+        address:
+          type: object
+          nullable: true
+          description: Null for a pickup order.
+          required: [id, city, address]
+          properties:
+            id:
+              type: integer
+            city:
+              type: string
+            address:
+              type: string
+        items:
+          type: array
+          items:
+            type: object
+            required: [productId, name, categoryName, amount, offeredPrice]
+            properties:
+              productId:
+                type: integer
+              name:
+                type: string
+              categoryName:
+                type: string
+              amount:
+                type: integer
+              offeredPrice:
+                type: number
+                description: Rubles. The price the item was ordered at.
+    OrderList:
+      type: object
+      required: [orders, count]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        count:
+          type: integer
+          description: Total number of orders, not the size of the page.
+    SyncResult:
+      type: object
+      required: [totalCategories, totalProducts]
+      properties:
+        totalCategories:
+          type: integer
+          example: 2
+        totalProducts:
+          type: integer
+          example: 27
+paths:
+  /health:
+    get:
+      summary: Check that the server is up
+      description: 'Role: public.'
+      tags: [integrations]
+      responses:
+        '200':
+          description: The server is up.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /auth/sign-up:
+    post:
+      summary: Register a new customer account
+      description: >-
+        Role: public. The answer is always 201 with an empty object, also when the email or phone
+        is already registered. No token is returned: call sign-in afterwards.
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, phone, password]
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+                  description: A Russian phone number in any common format.
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 64
+            example:
+              name: Иван
+              email: ivan@example.com
+              phone: 8 (999) 123-45-67
+              password: secret-pass
+      responses:
+        '201':
+          description: Accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /auth/sign-in:
+    post:
+      summary: Sign in and get a token
+      description: 'Role: public. An unknown email and a wrong password give the same 401.'
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+            example:
+              email: ivan@example.com
+              password: secret-pass
+      responses:
+        '200':
+          description: The user and a token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /user:
+    get:
+      summary: Get the signed-in user's profile
+      description: 'Role: user.'
+      tags: [user]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      summary: Update the signed-in user's profile
+      description: >-
+        Role: user. The request replaces the profile: omitting `email` removes the stored email,
+        omitting `phone` keeps the current one.
+      tags: [user]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 80
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+            example:
+              name: Новое имя
+              email: New@Example.com
+              phone: 8 999 000 00 02
+      responses:
+        '200':
+          description: The updated profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /addresses:
+    get:
+      summary: List the signed-in user's delivery addresses
+      description: 'Role: user. Ordered by id.'
+      tags: [addresses]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The addresses.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      summary: Add a delivery address
+      description: >-
+        Role: user. Posting the same address twice returns the same id. Addresses are shared
+        between users.
+      tags: [addresses]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressInput'
+      responses:
+        '201':
+          description: The address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /addresses/{id}:
+    delete:
+      summary: Remove an address from the user's list
+      description: >-
+        Role: user. The answer is 204 also when the address does not exist. Only the user's link
+        is removed.
+      tags: [addresses]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /delivery-prices:
+    get:
+      summary: List the delivery price of every town
+      description: 'Role: public. Ordered by id.'
+      tags: [delivery-prices]
+      responses:
+        '200':
+          description: The delivery prices.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryPrice'
+    post:
+      summary: Create delivery prices
+      description: 'Role: admin. All items are created or none.'
+      tags: [delivery-prices]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deliveryPrices]
+              properties:
+                deliveryPrices:
+                  type: array
+                  minItems: 1
+                  items:
+                    $ref: '#/components/schemas/DeliveryPriceInput'
+            example:
+              deliveryPrices:
+                - name: Сочи
+                  value: Россия, Краснодарский край, Сочи
+                  price: 150
+                - name: Адлер
+                  price: 99.5
+      responses:
+        '201':
+          description: The created delivery prices.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DeliveryPrice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /delivery-prices/{id}:
+    patch:
+      summary: Replace the name, description and price of a delivery price
+      description: 'Role: admin. A full replacement: an omitted `value` becomes an empty string.'
+      tags: [delivery-prices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryPriceInput'
+      responses:
+        '200':
+          description: The updated delivery price.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryPrice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      summary: Delete a delivery price
+      description: 'Role: admin. The answer is 204 also when the delivery price does not exist.'
+      tags: [delivery-prices]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /categories:
+    get:
+      summary: List the categories
+      description: 'Role: public. Deleted categories are left out. Ordered by sort order, then id.'
+      tags: [catalog]
+      responses:
+        '200':
+          description: The categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  /categories/{id}:
+    get:
+      summary: Get one category
+      description: 'Role: public.'
+      tags: [catalog]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /categories/{id}/products:
+    get:
+      summary: List the products of one category
+      description: >-
+        Role: public. Ordered by sort order, then id. Deleted products are left out. An unknown
+        category gives 200 with an empty list.
+      tags: [catalog]
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /products:
+    get:
+      summary: Search products across all categories
+      description: >-
+        Role: public. A product matches when any word of `query` matches its name, its category
+        name or one of its tags. Without `query` every product is returned.
+      tags: [catalog]
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Words separated by spaces. Only the first 20 words are used.
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: The products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /orders:
+    post:
+      summary: Place an order
+      description: >-
+        Role: public. The customer is found by phone number or created. Orders are accepted only
+        during working hours. For a cash order send the customer to `redirectUrl`. For an online
+        order open the Moneta payment form with `orderId`, `amount` and `mntSignature`.
+      tags: [orders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrder'
+            example:
+              phone: '+79991234567'
+              name: Иван
+              comment: Без лука
+              paymentType: cash
+              address:
+                city: Сочи
+                address: ул. Ленина, 1
+              items:
+                - productId: 1
+                  amount: 2
+      responses:
+        '201':
+          description: The order is created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+    get:
+      summary: List all orders
+      description: 'Role: admin. Newest first.'
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A page of orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /orders/my:
+    get:
+      summary: List the signed-in user's orders
+      description: 'Role: user. Newest first.'
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A page of orders.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /orders/{id}:
+    get:
+      summary: Get one order
+      description: >-
+        Role: user. An admin can read any order. For a normal user someone else's order looks the
+        same as a missing one.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete an order together with its items
+      description: >-
+        Role: admin. The answer is 204 also when the order does not exist. The customer and the
+        address are not deleted.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /orders/{id}/items:
+    post:
+      summary: Add a product to an order or change its amount
+      description: >-
+        Role: admin. A new item is stored with the product's current price. For a product that is
+        already in the order only the amount is replaced. Sale windows are not checked.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderItemInput'
+      responses:
+        '200':
+          description: The updated order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /orders/{id}/items/{productId}:
+    delete:
+      summary: Remove one product from an order
+      description: >-
+        Role: admin. The answer is 204 also when the order or the item does not exist. The order
+        stays even when its last item is removed.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '204':
+          description: Removed.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /orders/{id}/confirm:
+    post:
+      summary: Confirm an order and notify the staff
+      description: >-
+        Role: admin. The status is set whatever it was before, and every call notifies the staff
+        again.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: The updated order with status `confirmed`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /iiko/update-products:
+    post:
+      summary: Download the menu from iiko and apply it
+      description: >-
+        Role: public, protected by a shared secret in the `X-Update-Token` header. Meant for a
+        scheduler or an admin tool, not for the site frontend. The endpoint answers 404 when the
+        server has no token configured.
+      tags: [integrations]
+      parameters:
+        - name: X-Update-Token
+          in: header
+          required: true
+          description: Must equal the server's IIKO_UPDATE_TOKEN.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The update is applied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /webhooks/moneta:
+    post:
+      summary: Moneta payment notification
+      description: >-
+        Role: public, trusted only when `MNT_SIGNATURE` is correct. Called by Moneta, not by the
+        site frontend. The body is form data and the answer is plain text `SUCCESS` or `FAIL`.
+      tags: [integrations]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [MNT_TRANSACTION_ID, MNT_OPERATION_ID, MNT_AMOUNT, MNT_SIGNATURE]
+              properties:
+                MNT_TRANSACTION_ID:
+                  type: string
+                  description: Our order id.
+                MNT_OPERATION_ID:
+                  type: string
+                  description: Moneta's id of the payment.
+                MNT_AMOUNT:
+                  type: string
+                  description: Rubles with two decimals. Must equal the order total plus delivery.
+                MNT_SIGNATURE:
+                  type: string
+      responses:
+        '200':
+          description: The payment is accepted, or was already accepted.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: SUCCESS
+        '400':
+          description: The order id or the amount is wrong. The body is `FAIL`.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: FAIL
+        '403':
+          description: The signature is wrong. The body is `FAIL`.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: FAIL
+        '404':
+          description: The order does not exist. The body is `FAIL`.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: FAIL

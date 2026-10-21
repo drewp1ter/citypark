@@ -1,0 +1,136 @@
+/*
+ * City Park — "Modern" style design tokens.
+ * Light theme is the default. Dark theme is enabled with <html data-theme="dark">.
+ * Values were extracted from the reference designs in design/reference/.
+ *
+ * Rule of thumb when reading the reference HTML (it uses raw hex values):
+ *   light hex  -> token            -> dark hex
+ *   #F4F4F1    -> --bg             -> #0B0B0C
+ *   #FFFFFF bg -> --surface        -> #161618
+ *   #ECECE6    -> --divider        -> #232327
+ *   #E6E6E0    -> --placeholder    -> #1E1E1C
+ *   #E2E2DC    -> --border         -> #26262A
+ *   #DADAD2    -> --placeholder-border -> #2E2E33
+ *   #D0D0C8    -> --border-strong  -> #36363B
+ *   #111111    -> --text           -> #F2F2EE
+ *   #5E5E5A    -> --text-muted     -> #A3A39C
+ *   #111111 bg -> --inverse-bg     -> #2A2A2F   (dark cards, footer block, primary buttons)
+ *   #D6F24A    -> --accent         -> #D6F24A   (same in both themes)
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --bg: #F4F4F1;               /* page background */
+  --surface: #FFFFFF;          /* cards, header pill, inputs */
+  --placeholder: #E6E6E0;      /* map / photo placeholders */
+  --placeholder-border: #DADAD2;
+
+  /* Lines */
+  --border: #E2E2DC;           /* card borders, input borders */
+  --border-strong: #D0D0C8;    /* outline buttons, chips */
+  --divider: #ECECE6;          /* row separators inside lists */
+
+  /* Text */
+  --text: #111111;
+  --text-muted: #5E5E5A;
+
+  /* Inverse block (dark card on light page: featured room, phone card, contacts block, footer) */
+  --inverse-bg: #111111;
+  --inverse-surface: #1E1E1C;  /* map placeholder inside the inverse block */
+  --inverse-text: #FFFFFF;
+  --inverse-muted: #BDBDB6;
+  --inverse-subtle: #8F8F88;   /* e.g. "Белореченск" under the address */
+  --inverse-border: #2E2E2B;
+  --inverse-border-strong: #45453F;
+
+  /* Brand */
+  --accent: #D6F24A;           /* lime: main CTAs, "+" buttons, badges, banquet card */
+  --on-accent: #111111;        /* text/icons on lime */
+
+  /* Typography */
+  --font-display: 'Unbounded', system-ui, sans-serif;  /* h1/h2, big numbers, wordmark; weight 500, letter-spacing -0.03em, line-height 1 */
+  --font-body: 'Onest', system-ui, sans-serif;         /* everything else; 400/500/600/700 */
+
+  /* Type scale (desktop / mobile) */
+  --text-hero: 68px;        /* mobile 40px */
+  --text-h1: 64px;          /* mobile 36–40px */
+  --text-h2: 56px;          /* mobile 30–32px */
+  --text-h3: 22px;          /* Onest 700 */
+  --text-wordmark: 150px;   /* footer "СИТИ ПАРК", letter-spacing -0.05em, line-height 0.9; mobile ~54px */
+  --text-body: 16px;
+  --text-small: 14px;
+  --text-xs: 13px;
+  --text-caption: 12px;
+
+  /* Radius */
+  --radius-pill: 999px;     /* buttons, chips, header bar */
+  --radius-xl: 32px;        /* large cards / sections */
+  --radius-lg: 28px;
+  --radius-md: 24px;
+  --radius-sm: 20px;
+  --radius-xs: 16px;        /* inputs, small cards */
+  --radius-2xs: 14px;
+
+  /* Layout */
+  --container: 1240px;      /* max content width on desktop (sections use max-width 1240px; margin 0 auto) */
+  --gutter-desktop: 24px;   /* section side padding on desktop */
+  --gutter-mobile: 12px;    /* section side padding on mobile */
+  --gap-1: 4px;
+  --gap-2: 8px;
+  --gap-3: 12px;
+  --gap-4: 16px;
+  --gap-5: 24px;
+  --gap-6: 32px;
+  --section-gap: 112px;     /* top padding of home page sections on desktop; 56px on mobile */
+
+  /* Interaction */
+  --hover-opacity: 0.75;    /* links: a:hover{opacity:.75} */
+  --tap-min: 44px;          /* minimum touch target */
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0B0B0C;
+  --surface: #161618;
+  --placeholder: #1E1E1C;
+  --placeholder-border: #2E2E33;
+
+  --border: #26262A;
+  --border-strong: #36363B;
+  --divider: #232327;
+
+  --text: #F2F2EE;
+  --text-muted: #A3A39C;
+
+  --inverse-bg: #2A2A2F;
+  --inverse-surface: #1E1E1C;
+  --inverse-text: #FFFFFF;
+  --inverse-muted: #BDBDB6;
+  --inverse-subtle: #8F8F88;
+  --inverse-border: #2E2E2B;
+  --inverse-border-strong: #45453F;
+
+  --accent: #D6F24A;
+  --on-accent: #0F0F10;
+}
+
+/* Optional: follow the OS setting when the user has not chosen a theme yet. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0B0B0C;
+    --surface: #161618;
+    --placeholder: #1E1E1C;
+    --placeholder-border: #2E2E33;
+    --border: #26262A;
+    --border-strong: #36363B;
+    --divider: #232327;
+    --text: #F2F2EE;
+    --text-muted: #A3A39C;
+    --inverse-bg: #2A2A2F;
+    --on-accent: #0F0F10;
+  }
+}

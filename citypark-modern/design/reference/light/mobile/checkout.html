@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сити Парк — Оформление (Модерн, мобильная)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;600&amp;family=Onest:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F4F4F1}
+a{color:#111111}a:hover{opacity:.75}
+</style>
+</head>
+<body>
+<div style="max-width: 390px; margin: 0 auto; font-family: 'Onest', system-ui, sans-serif; color: #111111; background: #F4F4F1; font-size: 16px; line-height: 1.5">
+
+<header style="position: sticky; top: 0; z-index: 10; background: #F4F4F1; padding: 10px 12px 6px; display: flex; align-items: center; gap: 10px">
+<a href="menu.html" aria-label="Назад в меню" style="width: 44px; height: 44px; border-radius: 50%; background: #FFFFFF; border: 1px solid #E2E2DC; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 18px">←</a>
+<h1 style="font-family: 'Unbounded', system-ui, sans-serif; font-weight: 500; font-size: 20px; margin: 0; flex: 1">Оформление</h1>
+<span style="background: #111111; color: #FFFFFF; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 10px">2 / 3</span>
+</header>
+
+<form style="padding: 8px 12px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 26px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div role="radiogroup" aria-label="Способ получения" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #F4F4F1; border-radius: 999px; padding: 4px">
+<label style="background: #111111; color: #FFFFFF; border-radius: 999px; min-height: 44px; display: flex; align-items: center; justify-content: center; font-weight: 600"><input type="radio" name="get" checked="checked" style="position: absolute; opacity: 0; width: 1px; height: 1px">Доставка</label>
+<label style="border-radius: 999px; min-height: 44px; display: flex; align-items: center; justify-content: center"><input type="radio" name="get" style="position: absolute; opacity: 0; width: 1px; height: 1px">Самовывоз</label>
+</div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Когда<select style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px"><option>В ближайшее время</option><option>Ко времени…</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Населённый пункт<select style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px"><option>Белореченск</option><option>СОТ / ДНТ (+200–350 ₽)</option></select></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Улица и дом<input type="text" placeholder="Начните вводить адрес" style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px; box-sizing: border-box"></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Кв.<input type="text" inputmode="numeric" style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px; box-sizing: border-box; width: 100%"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Подъезд<input type="text" inputmode="numeric" style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px; box-sizing: border-box; width: 100%"></label>
+</div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #E2E2DC; border-radius: 26px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Имя<input type="text" autocomplete="name" style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px; box-sizing: border-box"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Телефон<input type="tel" autocomplete="tel" value="+7 " style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; min-height: 48px; box-sizing: border-box"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600">Пожелания<textarea rows="2" style="font: inherit; font-size: 16px; padding: 10px 14px; border: 1px solid #E2E2DC; border-radius: 16px; background: #F4F4F1; resize: vertical"></textarea></label>
+<div role="radiogroup" aria-label="Оплата" style="display: flex; flex-wrap: wrap; gap: 6px">
+<label style="background: #111111; color: #FFFFFF; border-radius: 999px; padding: 0 14px; min-height: 42px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600"><input type="radio" name="pay" checked="checked" style="width: 16px; height: 16px">Картой</label>
+<label style="border: 1px solid #D0D0C8; border-radius: 999px; padding: 0 14px; min-height: 42px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px"><input type="radio" name="pay" style="width: 16px; height: 16px">Наличными</label>
+<label style="border: 1px solid #D0D0C8; border-radius: 999px; padding: 0 14px; min-height: 42px; display: inline-flex; align-items: center; gap: 6px; font-size: 14px"><input type="radio" name="pay" style="width: 16px; height: 16px">СБП</label>
+</div>
+</div>
+<details style="background: #111111; color: #FFFFFF; border-radius: 26px; padding: 4px 18px">
+<summary style="min-height: 52px; display: flex; align-items: center; justify-content: space-between; font-weight: 600; cursor: pointer">Заказ · 4 блюда <span style="color: #D6F24A">0 ₽ доставка</span></summary>
+<ul style="margin: 0 0 12px; padding: 0; list-style: none; font-size: 15px">
+<li style="display: flex; justify-content: space-between; padding: 6px 0">Салат свекольный × 1<span>250 ₽</span></li>
+<li style="display: flex; justify-content: space-between; padding: 6px 0">Крем-суп из тыквы × 2<span>600 ₽</span></li>
+<li style="display: flex; justify-content: space-between; padding: 6px 0">Ризотто с грибами × 1<span>400 ₽</span></li>
+</ul>
+</details>
+<label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; padding: 4px 6px"><input type="checkbox" checked="checked" style="width: 20px; height: 20px; margin-top: 1px"><span>Согласен с <a href="hotel.html">политикой конфиденциальности</a></span></label>
+</form>
+
+<div style="position: sticky; bottom: 0; padding: 10px 12px 12px; background: linear-gradient(rgba(244,244,241,0), #F4F4F1 30%)">
+<button type="button" style="width: 100%; font: inherit; font-weight: 600; font-size: 17px; background: #D6F24A; color: #111111; border: 0; border-radius: 999px; min-height: 58px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0 24px">Подтвердить <span style="font-family: 'Unbounded', system-ui, sans-serif; font-weight: 500">1 250 ₽</span></button>
+</div>
+
+</div>
+</body>
+</html>
