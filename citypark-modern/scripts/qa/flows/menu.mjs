@@ -130,6 +130,23 @@ out(
   "mobile: chips sticky top (px)",
   String(Math.round(await m.locator("nav[aria-label='Разделы меню']").evaluate((e) => e.getBoundingClientRect().top))),
 );
+// description on the card (needs a backend with synced descriptions)
+const apiBase = process.env.MENU_API_URL ?? "http://localhost:3000/api/v1";
+const products = await fetch(`${apiBase}/products?pageSize=500`)
+  .then((r) => r.json())
+  .catch(() => []);
+const described = products.find((x) => x.isAvailableForOrder && x.description?.trim());
+if (!described) {
+  out("description on card", "skipped: no product has a description");
+} else {
+  for (const [label, viewport] of [["desktop", D], ["mobile", M]]) {
+    const q = await open(`/menu?category=${described.categoryId}`, viewport);
+    const card = q.locator("article", { has: q.locator("h3", { hasText: described.name }) }).first();
+    const desc = card.locator("h3 + p");
+    const lines = await desc.evaluate((el) => el.clientHeight <= 2 * parseFloat(getComputedStyle(el).lineHeight) + 1).catch(() => "—");
+    out(`description on card ${label}`, `${(await txt(desc)).slice(0, 60)} / lines <= 2: ${lines}`);
+  }
+}
 // tablet
 const t = await open("/menu", { width: 900, height: 900 }, await seedCart([1]));
 out(

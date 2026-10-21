@@ -31,7 +31,7 @@ function SizeSwitch({ dish, value, onChange }: { dish: Dish; value: string; onCh
 
 /**
  * Menu card. Compact on mobile (2 columns, the price is inside the add button), roomier from 768 px
- * (photo, composition, price and a round "+").
+ * (photo, description, price and a round "+").
  */
 export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean }) {
   const [variantId, setVariantId] = useState(dish.variants[0].id);
@@ -56,20 +56,18 @@ export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean 
       <div className="flex flex-1 flex-col px-1.5 pt-2.5 pb-1 md:gap-1 md:px-2.5 md:pt-3 md:pb-1.5">
         <h3 className="text-[15px] leading-[1.3] font-bold md:text-[17px] md:leading-normal">{dish.name}</h3>
 
+        {dish.composition && (
+          <p className="mt-0.5 line-clamp-2 break-words text-[13px] text-text-muted md:mt-0 md:text-sm">
+            {dish.composition}
+          </p>
+        )}
+
         {hasSizes ? (
           <div className="mt-1.5 flex flex-1 flex-col gap-1.5">
             <SizeSwitch dish={dish} value={variant.id} onChange={setVariantId} />
           </div>
         ) : (
-          <p className="mt-0.5 mb-2 flex-1 text-[13px] text-text-muted md:mt-0 md:mb-0 md:text-sm">
-            {dish.composition && (
-              <span className="hidden md:inline">
-                {dish.composition}
-                {variant.weight && " · "}
-              </span>
-            )}
-            {variant.weight}
-          </p>
+          <p className="mt-0.5 mb-2 flex-1 text-[13px] text-text-muted md:mt-0 md:mb-0 md:text-sm">{variant.weight}</p>
         )}
 
         {/* Desktop: price on the left, round button on the right */}
