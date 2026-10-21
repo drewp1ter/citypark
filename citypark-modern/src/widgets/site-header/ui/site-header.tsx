@@ -27,7 +27,7 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 
   return (
     <header
-      className={`sticky top-0 z-10 px-3 pt-2.5 xl:px-6 xl:pt-4 ${menuPage ? "bg-bg pb-2 xl:bg-transparent xl:pb-0" : ""}`}
+      className={`sticky top-0 z-10 px-3 pt-2.5 xl:px-6 xl:pt-4 ${menuPage ? "bg-bg pb-2 md:pb-4 xl:pb-2" : ""}`}
     >
       {/* Mobile / tablet */}
       <div className={`${pill} py-1.5 pr-1.5 pl-[18px] xl:hidden`}>

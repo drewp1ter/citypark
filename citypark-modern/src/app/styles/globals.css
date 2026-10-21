@@ -57,6 +57,14 @@
   line-height: 1;
 }
 
+/* Hides the scrollbar of a scrolling row; swipe, trackpad and wheel scrolling still work. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* Makes a small text link reach the 44 px touch target without changing the layout around it. */
 @utility tap-area {
   position: relative;

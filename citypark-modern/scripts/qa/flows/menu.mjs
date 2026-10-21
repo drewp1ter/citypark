@@ -116,6 +116,28 @@ out(
   ),
 );
 out(
+  "toolbar: header bottom / chips top (px)",
+  JSON.stringify(
+    await p.evaluate(() => [
+      document.querySelector("header").getBoundingClientRect().bottom,
+      document.querySelector("nav[aria-label='Разделы меню']").getBoundingClientRect().top,
+    ].map(Math.round)),
+  ),
+);
+const scroller = p.locator("nav[aria-label='Разделы меню'] > div > div");
+const arrowLeft = p.getByRole("button", { name: "Прокрутить разделы влево", includeHidden: true });
+const arrowRight = p.getByRole("button", { name: "Прокрутить разделы вправо", includeHidden: true });
+out("chips: scrollbar-width", await scroller.evaluate((e) => getComputedStyle(e).scrollbarWidth));
+out(
+  "chips: arrows at start",
+  `${await arrowLeft.isVisible()} / ${await arrowRight.isVisible()} (scrollWidth > clientWidth: ${await scroller.evaluate((e) => e.scrollWidth > e.clientWidth)})`,
+);
+if (await arrowRight.isVisible()) {
+  await arrowRight.click();
+  await p.waitForTimeout(600);
+  out("chips: after ›", `${await scroller.evaluate((e) => e.scrollLeft > 0)} / ${await arrowLeft.isVisible()}`);
+}
+out(
   "sticky: cart panel top (px)",
   String(Math.round(await p.locator("aside#cart").evaluate((e) => e.getBoundingClientRect().top))),
 );
@@ -159,6 +181,10 @@ await m.waitForTimeout(200);
 out(
   "mobile: chips sticky top (px)",
   String(Math.round(await m.locator("nav[aria-label='Разделы меню']").evaluate((e) => e.getBoundingClientRect().top))),
+);
+out(
+  "mobile: chip arrows",
+  `${await m.getByRole("button", { name: "Прокрутить разделы влево", includeHidden: true }).isVisible()} / ${await m.getByRole("button", { name: "Прокрутить разделы вправо", includeHidden: true }).isVisible()}`,
 );
 // description on the card (needs a backend with synced descriptions)
 const apiBase = process.env.MENU_API_URL ?? "http://localhost:3000/api/v1";

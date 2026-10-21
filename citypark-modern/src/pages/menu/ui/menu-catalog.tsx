@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import type { Dish, MenuCategory } from "@/entities/dish";
-import { Chip, SearchIcon } from "@/shared/ui";
+import { SearchIcon } from "@/shared/ui";
+import { CategoryTabs } from "./category-tabs";
 import { DishCard } from "./dish-card";
 
 type MenuCatalogProps = {
@@ -45,22 +46,7 @@ export function MenuCatalog({ categories, dishes, categoryId, aside }: MenuCatal
         </label>
       </div>
 
-      <nav
-        aria-label="Разделы меню"
-        className="sticky top-[74px] z-[5] -mx-3 flex gap-1.5 overflow-x-auto bg-bg px-3 py-2 md:top-[84px] md:mx-0 md:px-0"
-      >
-        {categories.map((item, index) => (
-          <Chip
-            key={item.id}
-            href={index === 0 ? "/menu" : `/menu?category=${item.id}`}
-            scroll={false}
-            selected={item.id === category.id}
-            className="px-4"
-          >
-            {item.name}
-          </Chip>
-        ))}
-      </nav>
+      <CategoryTabs categories={categories} selectedId={category.id} />
 
       <div className="flex items-start gap-3 pt-3 md:col-span-2 md:pt-4">
         <div className="min-w-0 flex-1">
