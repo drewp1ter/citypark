@@ -81,8 +81,25 @@ out(
   `${(await form.getByRole("alert").allInnerTexts()).filter(Boolean)} / ${await form.getByLabel("Телефон").inputValue()}`,
 );
 await form.locator("input[name=date]").fill(iso(new Date()));
-await form.getByLabel("Гостей").selectOption("5–8");
-await form.getByLabel("Зал").selectOption("cafe");
+await form.getByRole("button", { name: /Гостей/ }).click();
+await p.getByRole("option", { name: "5–8" }).click();
+await form.getByRole("button", { name: /Зал/ }).click();
+await p.getByRole("option", { name: /Летнее кафе/ }).click();
+const guests = form.getByRole("button", { name: /Гостей/ });
+await guests.focus();
+await p.keyboard.press("Enter");
+await p.keyboard.press("ArrowDown");
+await p.keyboard.press("Enter");
+out("select: keyboard", await txt(guests));
+await p.waitForTimeout(300);
+await guests.press("Enter");
+await p.getByRole("listbox").waitFor();
+await p.keyboard.press("Escape");
+await p.waitForTimeout(300);
+out(
+  "select: Escape closes / focus back on trigger",
+  `${(await p.getByRole("listbox").count()) === 0} / ${await guests.evaluate((el) => el === document.activeElement)}`,
+);
 await form.getByRole("button", { name: "Отправить заявку" }).click();
 await p.waitForTimeout(900);
 out("valid -> success", await txt(form.getByRole("status")));
@@ -153,10 +170,10 @@ for (const [name, v] of [
         .join(""),
       imgNoAlt: [...document.images].filter((i) => !i.hasAttribute("alt")).length,
       unlabelled: [...document.querySelectorAll("input:not([type=hidden]),select")].filter(
-        (i) => vis(i) && !i.labels?.length,
+        (i) => vis(i) && !i.closest("[aria-hidden]") && !i.labels?.length,
       ).length,
       small: [...document.querySelectorAll("a,button,input:not([type=hidden]),select")]
-        .filter((e) => vis(e) && !e.classList.contains("tap-area") && size(e)[1] < 43.5)
+        .filter((e) => vis(e) && !e.closest("[aria-hidden]") && !e.classList.contains("tap-area") && size(e)[1] < 43.5)
         .map(
           (e) =>
             `${(e.getAttribute("aria-label") || e.textContent || e.name).trim().slice(0, 22)} ${size(e).join("x")}`,

@@ -10,7 +10,7 @@ import {
   CheckboxField,
   PhoneField,
   RadioPills,
-  SelectField,
+  Select,
   TextareaField,
   TextField,
   cardClass,
@@ -93,16 +93,17 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
                 ]}
               />
               <div className="grid gap-3 md:grid-cols-2">
-                <SelectField
+                <Select
                   label="Когда"
                   name="when"
+                  options={[
+                    { value: "asap", label: "В ближайшее время" },
+                    { value: "scheduled", label: "Ко времени…" },
+                  ]}
                   value={when}
-                  onChange={(event) => setWhen(event.target.value)}
+                  onValueChange={setWhen}
                   error={errors.when}
-                >
-                  <option value="asap">В ближайшее время</option>
-                  <option value="scheduled">Ко времени…</option>
-                </SelectField>
+                />
                 {when === "scheduled" && (
                   <TextField
                     label="Время"
@@ -116,16 +117,17 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
                 )}
                 {method === "delivery" && (
                   <>
-                    <SelectField
+                    <Select
                       label="Населённый пункт"
                       name="zone"
+                      options={[
+                        { value: "city", label: "Белореченск" },
+                        { value: "outskirts", label: typo("СОТ / ДНТ (+200–350 ₽)"), textValue: "СОТ / ДНТ" },
+                      ]}
                       value={zone}
-                      onChange={(event) => setZone(event.target.value as DeliveryZone)}
+                      onValueChange={(next) => setZone(next as DeliveryZone)}
                       error={errors.zone}
-                    >
-                      <option value="city">Белореченск</option>
-                      <option value="outskirts">{typo("СОТ / ДНТ (+200–350 ₽)")}</option>
-                    </SelectField>
+                    />
                     <TextField
                       label="Улица и дом"
                       name="street"

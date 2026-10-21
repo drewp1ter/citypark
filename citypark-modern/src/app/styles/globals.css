@@ -49,6 +49,14 @@
   --container-page: calc(var(--container) + 2 * var(--gutter-desktop));
 }
 
+/* Dropdown list of `Select` (used under motion-safe: only). */
+@keyframes select-in {
+  from { opacity: 0; transform: translateY(-4px); }
+}
+@keyframes select-out {
+  to { opacity: 0; transform: translateY(-4px); }
+}
+
 /* Display headings: Unbounded 500, tight tracking. Add the size with text-[…]. */
 @utility heading {
   font-family: var(--font-display);

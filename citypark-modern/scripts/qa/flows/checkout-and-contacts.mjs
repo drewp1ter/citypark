@@ -38,12 +38,14 @@ out(
 out("remaining alerts", JSON.stringify((await p.getByRole("alert").allInnerTexts()).filter(Boolean)));
 
 // variants: outskirts, pickup, scheduled
-await p.getByLabel("Населённый пункт").selectOption("outskirts");
+await p.getByRole("button", { name: /Населённый пункт/ }).click();
+await p.getByRole("option", { name: /СОТ/ }).click();
 out(
   "outskirts: delivery line + note",
   (await txt(p.locator("aside li", { hasText: "Доставка" }))) + " || " + (await txt(p.getByText("не входит в сумму"))),
 );
-await p.getByLabel("Когда").selectOption("scheduled");
+await p.getByRole("button", { name: /Когда/ }).click();
+await p.getByRole("option", { name: /Ко времени/ }).click();
 await p.getByLabel("Время", { exact: true }).fill("23:45");
 await p.getByRole("button", { name: "Подтвердить заказ" }).click();
 await p.waitForTimeout(700);
@@ -72,7 +74,8 @@ out("GET /checkout", res.status);
 // valid order
 await p.getByText("Доставка", { exact: true }).first().click();
 await p.getByLabel("Улица и дом").fill("Гоголя 10");
-await p.getByLabel("Когда").selectOption("asap");
+await p.getByRole("button", { name: /Когда/ }).click();
+await p.getByRole("option", { name: /В ближайшее/ }).click();
 await p.getByLabel("Телефон").fill("");
 await p.getByLabel("Телефон").pressSequentially("89183119791");
 await p.getByLabel(/Согласен/).check();

@@ -6,7 +6,7 @@ tokens in `design/tokens.css`, inventories in `pages.md` / `components.md`. Goal
 folder that matches the references and follows the stack and quality rules in `CLAUDE.md`.
 **The owner asked for Feature-Sliced Design.** This replaces the `src/components/…` + `src/content/…`
 layout from CLAUDE.md. Everything else in CLAUDE.md stays the same (Next App Router, TS, Tailwind v4,
-tokens, next-themes, Server Actions + zod, no UI kit).
+tokens, next-themes, Server Actions + zod, no styled UI kit (headless react-aria-components is allowed)).
 Environment: Node 24.22, npm 11.19; latest Next 16.4.x, Tailwind 4.3.x. No Playwright browser installed yet.
 
 ## FSD × Next.js App Router: folder layout

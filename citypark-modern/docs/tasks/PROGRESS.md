@@ -10,3 +10,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 03 Cart sheet on the mobile menu [01]
 - [x] 04 Quantity steppers in the desktop cart panel [03]
 - [x] 05 Solid menu toolbar and category arrows
+
+## Forms
+- [x] 06 Dropdown Select on React Aria
+- [ ] 07 Clear button for text inputs

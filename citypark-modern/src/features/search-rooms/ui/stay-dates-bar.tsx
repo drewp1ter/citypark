@@ -3,7 +3,7 @@
 import Form from "next/form";
 import { useState } from "react";
 import { addDays, cn, useToday } from "@/shared/lib";
-import { Button } from "@/shared/ui";
+import { Button, Select } from "@/shared/ui";
 
 type StayDatesBarProps = {
   /**
@@ -20,6 +20,12 @@ type StayDatesBarProps = {
   preserve?: Record<string, string>;
   className?: string;
 };
+
+const guestsOptions = [
+  { value: "1", label: "1" },
+  { value: "2", label: "2" },
+  { value: "3-4", label: "3–4" },
+];
 
 const guestsLabel: Record<string, string> = { "1": "1 гость", "2": "2 гостя", "3-4": "3–4 гостя" };
 
@@ -95,14 +101,17 @@ export function StayDatesBar({
       </label>
       {rooms && (
         // Hidden on mobile (the button says "2 гостя"), but still sent with the form.
-        <label className={cn(label, "max-md:hidden md:border-l md:border-border")}>
-          Гости
-          <select name="guests" defaultValue={defaultGuests} className={input}>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3-4">3–4</option>
-          </select>
-        </label>
+        <Select
+          label="Гости"
+          name="guests"
+          options={guestsOptions}
+          defaultValue={defaultGuests}
+          className={cn(
+            label,
+            "font-normal max-md:hidden md:flex-row md:border-l md:border-border",
+            "[&_button]:min-h-11 [&_button]:w-auto [&_button]:border-0 [&_button]:bg-transparent [&_button]:px-0 [&_button]:py-0 [&_button]:text-text",
+          )}
+        />
       )}
       <Button
         type="submit"

@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { cn, useToday } from "@/shared/lib";
-import { Button, PhoneField, SelectField, TextField, cardClass } from "@/shared/ui";
+import { Button, PhoneField, Select, TextField, cardClass } from "@/shared/ui";
 import { submitBooking } from "../api/submit-booking";
 import { guestOptions, halls, type BookingState } from "../model/schema";
 
@@ -76,31 +76,23 @@ export function TableBookingForm({ variant = "card", className }: TableBookingFo
               defaultValue={values?.time ?? "19:00"}
               error={errors.time}
             />
-            <SelectField
+            <Select
               tone={tone}
               label="Гостей"
               name="guests"
+              options={guestOptions.map((option) => ({ value: option, label: option }))}
               defaultValue={values?.guests ?? guestOptions[0]}
               error={errors.guests}
-            >
-              {guestOptions.map((option) => (
-                <option key={option}>{option}</option>
-              ))}
-            </SelectField>
+            />
             {dark && (
-              <SelectField
+              <Select
                 tone={tone}
                 label="Зал"
                 name="hall"
+                options={halls}
                 defaultValue={values?.hall || halls[0].value}
                 error={errors.hall}
-              >
-                {halls.map((hall) => (
-                  <option key={hall.value} value={hall.value}>
-                    {hall.label}
-                  </option>
-                ))}
-              </SelectField>
+              />
             )}
             <PhoneField
               tone={tone}

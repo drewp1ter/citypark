@@ -67,7 +67,9 @@ colours differ — so build each component once and let the tokens switch the th
 - **Forms** (table booking, checkout, contact form, room search): Server Actions with zod validation.
   There is no backend yet, so the actions validate, log the payload and return a success state.
   Leave a clear `TODO: send to …` where the real integration (e-mail / Telegram / CRM) goes.
-- No UI kit (no shadcn, MUI, etc.). Components are small and custom, built from the tokens.
+- No styled UI kit (no HeroUI, shadcn, MUI, etc.). Components are small and custom, built from the tokens.
+  Complex widgets (select, later combobox / date picker) may use headless `react-aria-components` for behaviour,
+  styled only with our tokens.
 
 ## Routes
 

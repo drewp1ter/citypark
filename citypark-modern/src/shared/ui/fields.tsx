@@ -8,8 +8,15 @@ export type FieldTone = "default" | "inverse";
 export const controlClass =
   "min-h-12 w-full rounded-xs border border-border bg-bg px-4 py-3 font-normal text-text placeholder:text-text-muted aria-[invalid=true]:border-danger";
 
-const inverseControlClass =
+export const inverseControlClass =
   "min-h-12 w-full rounded-xs border border-inverse-border-strong bg-inverse-surface px-4 py-3 font-normal text-inverse-text placeholder:text-inverse-subtle [color-scheme:dark] aria-[invalid=true]:border-danger-on-inverse";
+
+/** Label + spacing shared by every field, so `Select` (React Aria) matches `FieldShell`. */
+export const fieldLabelClass = (tone: FieldTone) =>
+  cn("flex flex-col gap-1.5 text-[13px] md:text-sm", tone === "inverse" ? "text-inverse-muted" : "font-semibold");
+
+export const fieldErrorClass = (tone: FieldTone) =>
+  cn("text-sm font-normal", tone === "inverse" ? "text-danger-on-inverse" : "text-danger");
 
 const control = (tone: FieldTone) => (tone === "inverse" ? inverseControlClass : controlClass);
 
@@ -24,21 +31,11 @@ type FieldShellProps = {
 
 function FieldShell({ label, error, errorId, tone, className, children }: FieldShellProps) {
   return (
-    <label
-      className={cn(
-        "flex flex-col gap-1.5 text-[13px] md:text-sm",
-        tone === "inverse" ? "text-inverse-muted" : "font-semibold",
-        className,
-      )}
-    >
+    <label className={cn(fieldLabelClass(tone), className)}>
       {label}
       {children}
       {error && (
-        <span
-          id={errorId}
-          role="alert"
-          className={cn("text-sm font-normal", tone === "inverse" ? "text-danger-on-inverse" : "text-danger")}
-        >
+        <span id={errorId} role="alert" className={fieldErrorClass(tone)}>
           {error}
         </span>
       )}
@@ -67,19 +64,6 @@ export function TextField({ label, error, tone = "default", className, ...props 
   return (
     <FieldShell label={label} error={error} errorId={errorId} tone={tone} className={className}>
       <input {...props} {...invalid(error, errorId)} className={control(tone)} />
-    </FieldShell>
-  );
-}
-
-type SelectFieldProps = Omit<ComponentPropsWithoutRef<"select">, "className"> & CommonProps;
-
-export function SelectField({ label, error, tone = "default", className, children, ...props }: SelectFieldProps) {
-  const errorId = useId();
-  return (
-    <FieldShell label={label} error={error} errorId={errorId} tone={tone} className={className}>
-      <select {...props} {...invalid(error, errorId)} className={control(tone)}>
-        {children}
-      </select>
     </FieldShell>
   );
 }
