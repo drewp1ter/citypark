@@ -1,5 +1,6 @@
 import { useId, type ComponentPropsWithoutRef, type ReactNode } from "react";
 import { cn } from "@/shared/lib";
+import { ClearableInput } from "./clearable-input";
 
 /** "default": light fields on a light card. "inverse": for a dark block (booking block of the restaurant page). */
 export type FieldTone = "default" | "inverse";
@@ -56,14 +57,23 @@ type CommonProps = {
   className?: string;
 };
 
-type TextFieldProps = Omit<ComponentPropsWithoutRef<"input">, "className"> & CommonProps;
+type TextFieldProps = Omit<ComponentPropsWithoutRef<"input">, "className"> &
+  CommonProps & {
+    /** Shows a «×» button while the input has text. */
+    clearable?: boolean;
+    onClear?: () => void;
+  };
 
 /** Label + input + error message. Works for text, tel, date, time, email … */
-export function TextField({ label, error, tone = "default", className, ...props }: TextFieldProps) {
+export function TextField({ label, error, tone = "default", className, clearable, onClear, ...props }: TextFieldProps) {
   const errorId = useId();
   return (
     <FieldShell label={label} error={error} errorId={errorId} tone={tone} className={className}>
-      <input {...props} {...invalid(error, errorId)} className={control(tone)} />
+      {clearable ? (
+        <ClearableInput {...props} {...invalid(error, errorId)} tone={tone} onClear={onClear} className={control(tone)} />
+      ) : (
+        <input {...props} {...invalid(error, errorId)} className={control(tone)} />
+      )}
     </FieldShell>
   );
 }

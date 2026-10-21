@@ -13,4 +13,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Forms
 - [x] 06 Dropdown Select on React Aria
-- [ ] 07 Clear button for text inputs
+- [x] 07 Clear button for text inputs

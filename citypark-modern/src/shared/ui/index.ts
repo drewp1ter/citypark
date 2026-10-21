@@ -4,6 +4,7 @@ export { Badge } from "./badge";
 export { Breadcrumbs } from "./breadcrumbs";
 export { Button } from "./button";
 export { Card, cardClass } from "./card";
+export { ClearButton } from "./clear-button";
 export { Chip } from "./chip";
 export { CheckboxField, TextareaField, TextField, controlClass } from "./fields";
 export { IconButton } from "./icon-button";

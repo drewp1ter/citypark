@@ -86,6 +86,7 @@ out("cart survives navigation", await txt(p.getByRole("link", { name: /^Корз
 
 // search across the whole menu
 const search = p.getByRole("searchbox", { name: "Поиск по меню" });
+const cardsBeforeSearch = await p.locator("article").count();
 const word = firstAdd.replace(/^Добавить в корзину: /, "").split(/\s+/)[0];
 await search.fill(word);
 out(`search '${word}'`, `${await txt(p.locator("main h2").first())} / ${await p.locator("article").count()} card`);
@@ -96,6 +97,14 @@ out(
 );
 await search.fill("пицца-ролл");
 out("search no match", await txt(p.getByRole("status")));
+out("search: clear button shown", String((await p.getByRole("button", { name: "Очистить поле" }).count()) === 1));
+await p.getByRole("button", { name: "Очистить поле" }).click();
+out(
+  `search: after clear (value / cards / focus), expected "" / ${cardsBeforeSearch} / true`,
+  `${await search.inputValue()} / ${await p.locator("article").count()} / ${await p.evaluate(() => document.activeElement.type === "search")}`,
+);
+out("search: clear button hidden when empty", String((await p.getByRole("button", { name: "Очистить поле" }).count()) > 0));
+await search.fill("пицца-ролл");
 await chips.nth(1).click();
 await p.waitForTimeout(500);
 out("search text kept when category changes", await search.inputValue());

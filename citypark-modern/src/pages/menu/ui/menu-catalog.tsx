@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import type { Dish, MenuCategory } from "@/entities/dish";
-import { SearchIcon } from "@/shared/ui";
+import { ClearButton, SearchIcon } from "@/shared/ui";
 import { CategoryTabs } from "./category-tabs";
 import { DishCard } from "./dish-card";
 
@@ -22,6 +22,7 @@ type MenuCatalogProps = {
  */
 export function MenuCatalog({ categories, dishes, categoryId, aside }: MenuCatalogProps) {
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const category = categories.find((c) => c.id === categoryId) ?? categories[0];
 
   const needle = query.trim().toLocaleLowerCase("ru");
@@ -33,9 +34,10 @@ export function MenuCatalog({ categories, dishes, categoryId, aside }: MenuCatal
   return (
     <div className="mt-1 grid md:mt-6 md:grid-cols-[240px_minmax(0,1fr)] md:gap-x-2">
       <div className="bg-bg py-2 md:sticky md:top-[84px] md:z-[5]">
-        <label className="flex min-h-12 items-center gap-2 rounded-pill border border-border bg-surface px-4">
+        <label className="flex min-h-12 items-center gap-2 rounded-pill border border-border bg-surface pl-4 pr-4 has-[button]:pr-1">
           <SearchIcon />
           <input
+            ref={searchRef}
             type="search"
             placeholder="Поиск блюда"
             aria-label="Поиск по меню"
@@ -43,6 +45,14 @@ export function MenuCatalog({ categories, dishes, categoryId, aside }: MenuCatal
             onChange={(event) => setQuery(event.target.value)}
             className="min-h-10 w-full border-0 bg-transparent"
           />
+          {query !== "" && (
+            <ClearButton
+              onClick={() => {
+                setQuery("");
+                searchRef.current?.focus();
+              }}
+            />
+          )}
         </label>
       </div>
 
