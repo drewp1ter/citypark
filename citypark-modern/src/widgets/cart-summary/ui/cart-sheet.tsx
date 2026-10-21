@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import type { MouseEvent, RefObject } from "react";
-import { AddToCartButton } from "@/features/add-to-cart";
 import { quoteDelivery, type Dish } from "@/entities/dish";
 import { site } from "@/shared/config";
 import { formatPrice, plural } from "@/shared/lib";
 import { AppLink, Button, CloseIcon, IconButton } from "@/shared/ui";
+import { CartLine } from "./cart-line";
 import { usePricedCart } from "./use-priced-cart";
 
 type CartSheetProps = {
@@ -50,25 +49,7 @@ export function CartSheet({ dishes, dialog, onClose }: CartSheetProps) {
 
       <ul className="mt-2">
         {items.map((item) => (
-          <li
-            key={`${item.dish.id}:${item.variant.id}`}
-            className="flex items-center gap-2.5 border-b border-inverse-border py-2.5"
-          >
-            <Image
-              src={item.dish.photo.src}
-              alt=""
-              width={48}
-              height={48}
-              className="size-12 shrink-0 rounded-2xs object-cover"
-            />
-            <span className="min-w-0 flex-1 text-[15px]">
-              {item.dish.name}
-              {item.dish.variants.length > 1 && <span className="text-inverse-muted"> · {item.variant.label}</span>}
-              <br />
-              <strong>{formatPrice(item.total)}</strong>
-            </span>
-            <AddToCartButton dish={item.dish} variantId={item.variant.id} />
-          </li>
+          <CartLine key={`${item.dish.id}:${item.variant.id}`} item={item} />
         ))}
       </ul>
 

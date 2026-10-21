@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { quoteDelivery, type Dish } from "@/entities/dish";
 import { site } from "@/shared/config";
 import { formatPrice, plural } from "@/shared/lib";
 import { AppLink, Button } from "@/shared/ui";
+import { CartLine } from "./cart-line";
 import { usePricedCart } from "./use-priced-cart";
 
 /** Dark cart column next to the menu (from 1024 px). Below that the CartBar is used instead. */
@@ -34,25 +34,7 @@ export function CartPanel({ dishes }: { dishes: readonly Dish[] }) {
         <>
           <ul>
             {items.map((item) => (
-              <li
-                key={`${item.dish.id}:${item.variant.id}`}
-                className="flex items-center gap-2.5 border-b border-inverse-border py-2.5"
-              >
-                <Image
-                  src={item.dish.photo.src}
-                  alt=""
-                  width={48}
-                  height={48}
-                  className="size-12 shrink-0 rounded-2xs object-cover"
-                />
-                <span className="flex-1 text-[15px]">
-                  {item.dish.name}
-                  {item.dish.variants.length > 1 && <span className="text-inverse-muted"> · {item.variant.label}</span>}
-                  <br />
-                  <span className="text-[13px] text-inverse-muted">× {item.quantity}</span>
-                </span>
-                <strong>{formatPrice(item.total)}</strong>
-              </li>
+              <CartLine key={`${item.dish.id}:${item.variant.id}`} item={item} />
             ))}
           </ul>
           <div className="flex justify-between text-[15px]">

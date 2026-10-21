@@ -40,10 +40,27 @@ const addButton = p.getByRole("button", { name: /^Добавить в корзи
 const [firstAdd, secondAdd] = await addButton.evaluateAll((els) => els.slice(0, 2).map((e) => e.getAttribute("aria-label")));
 await p.getByRole("button", { name: firstAdd, exact: true }).click();
 await p.getByRole("button", { name: secondAdd, exact: true }).click();
-await p.getByRole("button", { name: "Добавить порцию" }).last().click();
+await p.locator("article").getByRole("button", { name: "Добавить порцию" }).last().click();
 await p.waitForTimeout(200);
 out("pill after 1 + 2 portions", await txt(p.getByRole("link", { name: /^Корзина/ }).first()));
 out("panel", await txt(p.locator("aside#cart")));
+
+// steppers inside the panel
+const panel = p.locator("aside#cart");
+const pill = () => txt(p.getByRole("link", { name: /^Корзина/ }).first());
+const panelTotal = () => txt(panel.locator("div", { hasText: /^Итого/ }).last());
+const beforePlus = `${await panelTotal()} / ${await pill()}`;
+await panel.getByRole("button", { name: "Добавить порцию" }).first().click();
+await p.waitForTimeout(200);
+out("panel + -> total / header pill", `${beforePlus} -> ${await panelTotal()} / ${await pill()}`);
+const linesBefore = await panel.locator("li").count();
+const removeButton = panel.locator("li").first().getByRole("button", { name: "Убрать порцию" });
+while ((await panel.locator("li").count()) === linesBefore) {
+  await removeButton.click();
+  await p.waitForTimeout(100);
+}
+out("panel − -> lines", `${linesBefore} -> ${await panel.locator("li").count()}`);
+out("panel − -> dish card shows the round + again", String((await p.getByRole("button", { name: firstAdd, exact: true }).count()) === 1));
 
 // backend dishes have one size, so there is no size switch
 out("no size switch", String((await p.getByRole("group", { name: "Размер" }).count()) === 0));
