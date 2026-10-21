@@ -27,6 +27,7 @@ type Category struct {
 	SaleStart *int // minutes from midnight
 	SaleEnd   *int
 	SaleDays  string // "" or 7 chars of 0/1
+	IsHidden  bool
 }
 
 func InsertCategory(t *testing.T, db *sqlx.DB, c Category) int64 {
@@ -36,9 +37,9 @@ func InsertCategory(t *testing.T, db *sqlx.DB, c Category) int64 {
 	}
 	var id int64
 	err := db.GetContext(context.Background(), &id,
-		`INSERT INTO categories (name, sort_order, is_deleted, sale_start, sale_end, sale_days)
-		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		c.Name, c.SortOrder, c.IsDeleted, c.SaleStart, c.SaleEnd, c.SaleDays)
+		`INSERT INTO categories (name, sort_order, is_deleted, sale_start, sale_end, sale_days, is_hidden)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+		c.Name, c.SortOrder, c.IsDeleted, c.SaleStart, c.SaleEnd, c.SaleDays, c.IsHidden)
 	if err != nil {
 		t.Fatalf("insert category: %v", err)
 	}

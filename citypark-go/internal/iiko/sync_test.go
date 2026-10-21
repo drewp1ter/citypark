@@ -81,6 +81,7 @@ type categoryRow struct {
 	SaleStart   *int   `db:"sale_start"`
 	SaleEnd     *int   `db:"sale_end"`
 	SaleDays    string `db:"sale_days"`
+	IsHidden    bool   `db:"is_hidden"`
 }
 
 type productRow struct {
@@ -106,7 +107,7 @@ func getCategory(t *testing.T, db *sqlx.DB, iikoID string) categoryRow {
 	t.Helper()
 	var c categoryRow
 	err := db.GetContext(context.Background(), &c,
-		`SELECT id, menu_id, name, description, sort_order, is_deleted, sale_start, sale_end, sale_days
+		`SELECT id, menu_id, name, description, sort_order, is_deleted, sale_start, sale_end, sale_days, is_hidden
 		 FROM categories WHERE iiko_id = $1`, iikoID)
 	if err != nil {
 		t.Fatalf("select category %s: %v", iikoID, err)
@@ -201,6 +202,34 @@ func TestSyncCategories(t *testing.T) {
 		if c.SaleStart != nil || c.SaleEnd != nil || c.SaleDays != "" {
 			t.Errorf("%s: sale window = %v/%v/%q, want NULL/NULL/''", tt.iikoID, c.SaleStart, c.SaleEnd, c.SaleDays)
 		}
+	}
+}
+
+func TestSyncHiddenCategories(t *testing.T) {
+	db := testutil.NewDB(t)
+
+	m := baseMenu()
+	m.ItemsGroups[0].IsHidden = true
+	res := runSync(t, db, m)
+	if res.TotalCategories != 2 {
+		t.Errorf("TotalCategories = %d, want 2", res.TotalCategories)
+	}
+
+	a, b := getCategory(t, db, "g-mangal"), getCategory(t, db, "g-khinkali")
+	if !a.IsHidden || a.IsDeleted {
+		t.Errorf("hidden group: is_hidden = %v, is_deleted = %v, want true/false", a.IsHidden, a.IsDeleted)
+	}
+	if b.IsHidden {
+		t.Errorf("visible group: is_hidden = true, want false")
+	}
+	if p := getProduct(t, db, "p-shashlik"); p.IsDeleted {
+		t.Errorf("product of a hidden group is deleted: %+v", p)
+	}
+
+	m.ItemsGroups[0].IsHidden = false
+	runSync(t, db, m)
+	if getCategory(t, db, "g-mangal").IsHidden {
+		t.Errorf("group no longer hidden: is_hidden = true, want false")
 	}
 }
 

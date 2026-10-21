@@ -91,12 +91,12 @@ RETURNING id`
 // categories.id.
 func syncCategories(ctx context.Context, tx *sqlx.Tx, menuID int64, groups []ItemsGroup) (map[string]int64, error) {
 	const upsert = `
-INSERT INTO categories (iiko_id, menu_id, name, description, sort_order, is_deleted, sale_start, sale_end, sale_days)
-VALUES ($1, $2, $3, '', $4, false, $5, $6, $7)
+INSERT INTO categories (iiko_id, menu_id, name, description, sort_order, is_deleted, sale_start, sale_end, sale_days, is_hidden)
+VALUES ($1, $2, $3, '', $4, false, $5, $6, $7, $8)
 ON CONFLICT (iiko_id) DO UPDATE SET
     menu_id = EXCLUDED.menu_id, name = EXCLUDED.name, description = '', sort_order = EXCLUDED.sort_order,
     is_deleted = false, sale_start = EXCLUDED.sale_start, sale_end = EXCLUDED.sale_end,
-    sale_days = EXCLUDED.sale_days, updated_at = now()
+    sale_days = EXCLUDED.sale_days, is_hidden = EXCLUDED.is_hidden, updated_at = now()
 RETURNING id`
 
 	w := salewindow.Window{}
@@ -104,7 +104,7 @@ RETURNING id`
 	keptIikoIDs := make([]string, 0, len(groups))
 	for i, g := range groups {
 		var id int64
-		err := tx.GetContext(ctx, &id, upsert, g.ID, menuID, strings.TrimSpace(g.Name), i, w.Start, w.End, w.Days)
+		err := tx.GetContext(ctx, &id, upsert, g.ID, menuID, strings.TrimSpace(g.Name), i, w.Start, w.End, w.Days, g.IsHidden)
 		if err != nil {
 			return nil, fmt.Errorf("upsert category %q: %w", g.ID, err)
 		}

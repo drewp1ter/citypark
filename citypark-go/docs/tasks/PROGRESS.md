@@ -56,3 +56,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 36 iiko v2 auth and config [33]
 - [x] 37 iiko menu/v3 client and menus table [36]
 - [x] 38 iiko sync from menu/v3 [37]
+- [ ] 39 Hidden categories [38]

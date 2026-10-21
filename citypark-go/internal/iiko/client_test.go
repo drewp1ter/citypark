@@ -324,7 +324,7 @@ func TestFetchContextCancelled(t *testing.T) {
 
 const menuJSON = `{"id":"94764","name":"test","overrideTaxCategories":[],
  "itemsGroups":[
-  {"id":"g-1","name":"Шашлыки","items":[
+  {"id":"g-1","name":"Шашлыки","isHidden":true,"items":[
     {"productId":"p-1","name":"Шашлык из свинины","menuItemId":"m-1",
      "sizePrices":[{"sizeName":"","isDefault":true,"weight":1000.0,"sku":"01117"}]}]},
   {"id":"g-2","name":"Хинкали","items":[
@@ -365,6 +365,9 @@ func TestMenu(t *testing.T) {
 	}
 	if m.ID != "94764" || len(m.ItemsGroups) != 2 {
 		t.Fatalf("menu = %+v", m)
+	}
+	if !m.ItemsGroups[0].IsHidden || m.ItemsGroups[1].IsHidden {
+		t.Errorf("IsHidden = %v/%v, want true/false", m.ItemsGroups[0].IsHidden, m.ItemsGroups[1].IsHidden)
 	}
 	if p := m.ItemsGroups[0].Items[0].SizePrices[0].Price; p != nil {
 		t.Errorf("price without value = %v, want nil", *p)

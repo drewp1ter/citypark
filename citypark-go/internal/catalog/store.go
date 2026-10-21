@@ -6,7 +6,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
 
-const categoryColumns = `id, name, description, sale_start, sale_end, sale_days`
+const categoryColumns = `id, name, description, sale_start, sale_end, sale_days, is_hidden`
 
 // productSelect is the base query of every product read. Callers append conditions with AND.
 const productSelect = `
@@ -37,7 +37,7 @@ func NewStore(db store.DBTX) *Store {
 func (s *Store) ListCategories(ctx context.Context) ([]Category, error) {
 	list := []Category{}
 	err := s.db.SelectContext(ctx, &list,
-		`SELECT `+categoryColumns+` FROM categories WHERE NOT is_deleted ORDER BY sort_order, id`)
+		`SELECT `+categoryColumns+` FROM categories WHERE NOT is_deleted AND NOT is_hidden ORDER BY sort_order, id`)
 	if err != nil {
 		return nil, err
 	}

@@ -24,6 +24,7 @@ type Category struct {
 	SaleStart   *int    `db:"sale_start"`
 	SaleEnd     *int    `db:"sale_end"`
 	SaleDays    string  `db:"sale_days"`
+	IsHidden    bool    `db:"is_hidden"`
 	Images      []Image `db:"-"`
 }
 

@@ -449,7 +449,7 @@ The answer is 204 also when the delivery price does not exist.
 
 #### GET /categories
 
-Returns every category that is not deleted, ordered by sort order and then by `id`.
+Returns every category that is not deleted and not hidden in iiko, ordered by sort order and then by `id`.
 
 - **Role:** public
 
@@ -472,7 +472,7 @@ Returns every category that is not deleted, ordered by sort order and then by `i
 
 **Notes**
 
-The list is `[]` when there are no categories. `isAvailableForOrder` is computed on the server for the current moment in the restaurant's time zone: it is `true` when today is one of `salesDays` and the time is inside `startTime`–`endTime`. A category without a sale window is always available, and its `salesDays`, `startTime` and `endTime` are empty strings.
+The list is `[]` when there are no categories. `isAvailableForOrder` is computed on the server for the current moment in the restaurant's time zone: it is `true` when today is one of `salesDays` and the time is inside `startTime`–`endTime`. A category without a sale window is always available, and its `salesDays`, `startTime` and `endTime` are empty strings. A category hidden in iiko is not listed, but `GET /categories/{id}` and its products still work.
 
 #### GET /categories/{id}
 
@@ -998,7 +998,7 @@ Downloads the external menu from iiko and applies it: categories and products. M
 
 **Notes**
 
-The update runs in one transaction and can take a few seconds. The menu is the external menu `IIKO_EXTERNAL_MENU_ID`. Every menu group becomes a category, even a group with nothing for sale. Items without a price are skipped. `totalCategories` and `totalProducts` count the categories and products that are in the menu after the update. Items that disappeared from iiko are hidden, not removed.
+The update runs in one transaction and can take a few seconds. The menu is the external menu `IIKO_EXTERNAL_MENU_ID`. Every menu group becomes a category, even a group with nothing for sale. Items without a price are skipped. `totalCategories` and `totalProducts` count the categories and products that are in the menu after the update. Items that disappeared from iiko are hidden, not removed. The `isHidden` flag of a menu group is stored; hidden groups are synced with their products but are not listed by `GET /categories`.
 
 The update no longer takes images, tags, descriptions, nutrition values or sale windows from iiko, and it clears the ones that came from iiko before: category and product descriptions, nutrition values and sale windows are reset, `from_iiko` images are deleted and all tags are removed. Images added by hand stay.
 

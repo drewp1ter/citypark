@@ -155,6 +155,39 @@ func TestGetCategoryDeleted(t *testing.T) {
 	}
 }
 
+func TestListCategoriesHidden(t *testing.T) {
+	r, db := newCatalogEnv(t)
+
+	visible := testutil.InsertCategory(t, db, testutil.Category{Name: "Видимая", SortOrder: 1})
+	testutil.InsertCategory(t, db, testutil.Category{Name: "Скрытая", SortOrder: 0, IsHidden: true})
+
+	rec := testutil.DoJSON(t, r, http.MethodGet, "/categories", "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	var got []catalog.CategoryView
+	testutil.Decode(t, rec, &got)
+	if len(got) != 1 || got[0].ID != visible {
+		t.Fatalf("categories = %+v, want only id %d", got, visible)
+	}
+}
+
+func TestGetCategoryHidden(t *testing.T) {
+	r, db := newCatalogEnv(t)
+
+	id := testutil.InsertCategory(t, db, testutil.Category{Name: "Скрытая", IsHidden: true})
+
+	rec := testutil.DoJSON(t, r, http.MethodGet, "/categories/"+strconv.FormatInt(id, 10), "", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	var got catalog.CategoryView
+	testutil.Decode(t, rec, &got)
+	if got.ID != id {
+		t.Fatalf("id = %d, want %d", got.ID, id)
+	}
+}
+
 func TestGetCategoryBadID(t *testing.T) {
 	r, _ := newCatalogEnv(t)
 
