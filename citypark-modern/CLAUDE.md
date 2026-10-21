@@ -5,6 +5,20 @@ summer café, banquets, and food delivery. The site is in **Russian**. This repo
 design (light + dark themes, desktop + mobile). Your job is to build it as a Next.js app that matches the
 design closely.
 
+## How to work in this repository
+
+1. Read `docs/tasks/CONVENTIONS.md`.
+2. Open `docs/tasks/PROGRESS.md` and take the first unchecked task.
+3. Read that task file in `docs/tasks/` and the files it lists under "Read first". Do not read other task files unless the task says so.
+4. Do only that task. Run every command under "Done when".
+5. Tick the task in `PROGRESS.md` and make one commit: `task NN: <title>`.
+
+The backend API contract is `../citypark-go/docs/API.md`. Do not change files in `../citypark-go/`.
+
+New tasks follow the sections of `../citypark-go/docs/tasks/TASK_TEMPLATE.md` (with npm commands instead of Go ones).
+
+Do one task per session. If a task cannot be completed as written, stop and write the reason under the task's line in `PROGRESS.md` instead of improvising.
+
 ## What is in this folder
 
 ```
