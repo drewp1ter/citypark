@@ -1,10 +1,15 @@
 package iiko
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"strconv"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -588,3 +593,174 @@ type switchSource struct {
 }
 
 func (s *switchSource) Fetch(context.Context) (*Menu, error) { return s.n, s.err }
+
+// syncBuffer is a bytes.Buffer that the RunEvery goroutine and the test can use at the same time.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
+// waitLog waits until the log contains substr at least n times.
+func waitLog(t *testing.T, b *syncBuffer, substr string, n int) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for strings.Count(b.String(), substr) < n {
+		if time.Now().After(deadline) {
+			t.Fatalf("log has %d x %q, want %d; log:\n%s", strings.Count(b.String(), substr), substr, n, b.String())
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// startRunEvery runs RunEvery in a goroutine; done is closed when it returns.
+func startRunEvery(ctx context.Context, s *Syncer, tick <-chan time.Time, log *slog.Logger) <-chan struct{} {
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		s.RunEvery(ctx, tick, log)
+	}()
+	return done
+}
+
+func waitDone(t *testing.T, done <-chan struct{}) {
+	t.Helper()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("RunEvery did not return after ctx was cancelled")
+	}
+}
+
+// countingFetcher counts Fetch calls under a lock.
+type countingFetcher struct {
+	mu  sync.Mutex
+	n   int
+	src Source
+}
+
+func (c *countingFetcher) Fetch(ctx context.Context) (*Menu, error) {
+	c.mu.Lock()
+	c.n++
+	c.mu.Unlock()
+	return c.src.Fetch(ctx)
+}
+
+func (c *countingFetcher) calls() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.n
+}
+
+func TestRunEverySyncsAtStartAndOnTick(t *testing.T) {
+	db := testutil.NewDB(t)
+	src := &countingFetcher{src: &fakeSource{n: baseMenu()}}
+	logs := &syncBuffer{}
+	tick := make(chan time.Time)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := startRunEvery(ctx, NewSyncer(db, src), tick, slog.New(slog.NewTextHandler(logs, nil)))
+
+	waitLog(t, logs, "scheduled menu sync done", 1)
+	if got := src.calls(); got != 1 {
+		t.Fatalf("Fetch calls at start = %d, want 1", got)
+	}
+	if !strings.Contains(logs.String(), "categories=2") || !strings.Contains(logs.String(), "products=2") {
+		t.Errorf("log lacks the counts: %s", logs.String())
+	}
+	if n := testutil.Count(t, db, `SELECT count(*) FROM products WHERE NOT is_deleted`); n != 2 {
+		t.Errorf("products in the database = %d, want 2", n)
+	}
+
+	tick <- time.Now()
+	waitLog(t, logs, "scheduled menu sync done", 2)
+	if got := src.calls(); got != 2 {
+		t.Errorf("Fetch calls after one tick = %d, want 2", got)
+	}
+
+	cancel()
+	waitDone(t, done)
+}
+
+func TestRunEveryLogsError(t *testing.T) {
+	db := testutil.NewDB(t)
+	src := &countingFetcher{src: &fakeSource{err: errors.New("iiko is down")}}
+	logs := &syncBuffer{}
+	tick := make(chan time.Time)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := startRunEvery(ctx, NewSyncer(db, src), tick, slog.New(slog.NewTextHandler(logs, nil)))
+
+	waitLog(t, logs, "scheduled menu sync failed", 1)
+	if !strings.Contains(logs.String(), "iiko is down") {
+		t.Errorf("log lacks the error text: %s", logs.String())
+	}
+	tick <- time.Now()
+	waitLog(t, logs, "scheduled menu sync failed", 2)
+	if got := src.calls(); got != 2 {
+		t.Errorf("Fetch calls = %d, want 2: the loop must keep running after an error", got)
+	}
+	if strings.Contains(logs.String(), "scheduled menu sync done") {
+		t.Errorf("a failed sync must not log done: %s", logs.String())
+	}
+
+	cancel()
+	waitDone(t, done)
+}
+
+func TestRunEverySkipsWhenRunning(t *testing.T) {
+	db := testutil.NewDB(t)
+	blocking := newBlockingSource(&fakeSource{n: oneItemMenu()})
+	syncer := NewSyncer(db, blocking)
+	manual := make(chan error, 1)
+	go func() {
+		_, err := syncer.Sync(context.Background())
+		manual <- err
+	}()
+	<-blocking.entered
+
+	logs := &syncBuffer{}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := startRunEvery(ctx, syncer, make(chan time.Time), slog.New(slog.NewTextHandler(logs, nil)))
+
+	waitLog(t, logs, "scheduled menu sync skipped: another sync is running", 1)
+	if strings.Contains(logs.String(), "failed") {
+		t.Errorf("a skipped sync must not log an error: %s", logs.String())
+	}
+
+	cancel()
+	waitDone(t, done)
+	close(blocking.release)
+	if err := <-manual; err != nil {
+		t.Errorf("manual Sync error = %v, want nil", err)
+	}
+}
+
+func TestRunEveryStopsWhileWaitingForTick(t *testing.T) {
+	db := testutil.NewDB(t)
+	logs := &syncBuffer{}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := startRunEvery(ctx, NewSyncer(db, &fakeSource{n: oneItemMenu()}), make(chan time.Time), slog.New(slog.NewTextHandler(logs, nil)))
+	waitLog(t, logs, "scheduled menu sync done", 1)
+
+	cancel()
+
+	waitDone(t, done)
+	if n := strings.Count(logs.String(), "scheduled menu sync"); n != 1 {
+		t.Errorf("sync log lines = %d, want 1: cancel must not trigger another run", n)
+	}
+}

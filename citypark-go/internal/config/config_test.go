@@ -68,6 +68,7 @@ func TestLoadOverrides(t *testing.T) {
 		"IIKO_ORGANIZATION_ID":                 "org",
 		"IIKO_EXTERNAL_MENU_ID":                "menu",
 		"IIKO_UPDATE_TOKEN":                    "tok",
+		"IIKO_SYNC_INTERVAL":                   "30m",
 		"TELEGRAM_BASE_URL":                    "http://tg",
 		"TELEGRAM_TOKEN":                       "tgtok",
 		"TELEGRAM_CHAT_ID_FOR_ORDER_CREATED":   "1",
@@ -95,7 +96,7 @@ func TestLoadOverrides(t *testing.T) {
 		{"DatabaseURL", c.DatabaseURL, "postgres://x"},
 		{"JWT", c.JWT, JWT{"s3cret", 90 * time.Minute}},
 		{"Admin", c.Admin, Admin{"a@b.c", "pw", "+70000000000"}},
-		{"Iiko", c.Iiko, Iiko{"http://iiko", "key", "app", "secret", "org", "menu", "tok"}},
+		{"Iiko", c.Iiko, Iiko{"http://iiko", "key", "app", "secret", "org", "menu", "tok", 30 * time.Minute}},
 		{"Telegram", c.Telegram, Telegram{"http://tg", "tgtok", "1", "2"}},
 		{"Moneta", c.Moneta, Moneta{"100", "s", true}},
 		{"Hotel", c.Hotel, Hotel{"hotel"}},
@@ -191,6 +192,8 @@ func TestLoadErrors(t *testing.T) {
 		{"bad duration", map[string]string{"JWT_EXPIRES_IN": "tomorrow"}, "JWT_EXPIRES_IN"},
 		{"bad timezone", map[string]string{"APP_TIMEZONE": "Mars/Base"}, "APP_TIMEZONE"},
 		{"bad env", map[string]string{"APP_ENV": "staging"}, "APP_ENV"},
+		{"sync interval negative", map[string]string{"IIKO_SYNC_INTERVAL": "-1m"}, "IIKO_SYNC_INTERVAL is invalid"},
+		{"sync interval garbage", map[string]string{"IIKO_SYNC_INTERVAL": "abc"}, "IIKO_SYNC_INTERVAL is invalid"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

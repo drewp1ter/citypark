@@ -70,6 +70,16 @@ func run() error {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
+	if cfg.Iiko.SyncInterval > 0 {
+		if cfg.Iiko.APIKey == "" {
+			log.Warn("IIKO_SYNC_INTERVAL is set but iiko is not configured; the timer is off")
+		} else {
+			ticker := time.NewTicker(cfg.Iiko.SyncInterval)
+			defer ticker.Stop()
+			go a.Syncer.RunEvery(ctx, ticker.C, log)
+		}
+	}
+
 	serveErr := make(chan error, 1)
 	go func() {
 		log.Info("server listening", "addr", srv.Addr)

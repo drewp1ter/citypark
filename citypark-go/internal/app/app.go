@@ -28,6 +28,7 @@ import (
 type App struct {
 	Handler  http.Handler
 	Notifier *TelegramNotifier
+	Syncer   *iiko.Syncer
 }
 
 // New builds all stores, services and handlers and returns the router.
@@ -73,7 +74,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		}).Routes(r)
 	})
 
-	return &App{Handler: r, Notifier: notifier}
+	return &App{Handler: r, Notifier: notifier, Syncer: syncer}
 }
 
 // cors allows any origin and answers preflight requests itself.

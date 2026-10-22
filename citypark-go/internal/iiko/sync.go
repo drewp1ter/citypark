@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -83,6 +85,32 @@ func (s *Syncer) Sync(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	return res, nil
+}
+
+// RunEvery syncs once right away and then on every value from tick, until ctx is done.
+// Errors are logged, never returned: a failed sync waits for the next tick.
+func (s *Syncer) RunEvery(ctx context.Context, tick <-chan time.Time, log *slog.Logger) {
+	for {
+		s.runScheduled(ctx, log)
+		select {
+		case <-ctx.Done():
+			return
+		case <-tick:
+		}
+	}
+}
+
+// runScheduled performs one timer-driven sync and logs its outcome.
+func (s *Syncer) runScheduled(ctx context.Context, log *slog.Logger) {
+	res, err := s.Sync(ctx)
+	switch {
+	case err == nil:
+		log.Info("scheduled menu sync done", "categories", res.TotalCategories, "products", res.TotalProducts)
+	case errors.Is(err, ErrSyncRunning):
+		log.Info("scheduled menu sync skipped: another sync is running")
+	default:
+		log.Error("scheduled menu sync failed", "error", err)
+	}
 }
 
 // syncMenu upserts the menu row and returns its id.

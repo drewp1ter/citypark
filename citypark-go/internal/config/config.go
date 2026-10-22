@@ -30,7 +30,10 @@ type JWT struct {
 	ExpiresIn time.Duration
 }
 type Admin struct{ Email, Password, Phone string }
-type Iiko struct{ BaseURL, APIKey, AppID, ClientSecret, OrganizationID, ExternalMenuID, UpdateToken string }
+type Iiko struct {
+	BaseURL, APIKey, AppID, ClientSecret, OrganizationID, ExternalMenuID, UpdateToken string
+	SyncInterval                                                                      time.Duration // 0 = no scheduled sync
+}
 type Telegram struct{ BaseURL, Token, ChatIDOrderCreated, ChatIDOrderConfirmed string }
 type Moneta struct {
 	ID       string // shop id, sent to Moneta as MNT_ID
@@ -110,6 +113,13 @@ func Load(lookup LookupFunc) (Config, error) {
 		OrganizationID: str("IIKO_ORGANIZATION_ID", ""),
 		ExternalMenuID: str("IIKO_EXTERNAL_MENU_ID", ""),
 		UpdateToken:    str("IIKO_UPDATE_TOKEN", ""),
+	}
+	syncInterval := str("IIKO_SYNC_INTERVAL", "0")
+	if c.Iiko.SyncInterval, err = time.ParseDuration(syncInterval); err != nil {
+		return Config{}, fmt.Errorf("IIKO_SYNC_INTERVAL is invalid: %w", err)
+	}
+	if c.Iiko.SyncInterval < 0 {
+		return Config{}, fmt.Errorf("IIKO_SYNC_INTERVAL is invalid: must not be negative, got %q", syncInterval)
 	}
 
 	c.Telegram = Telegram{
