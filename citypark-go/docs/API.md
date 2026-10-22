@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Settings, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -1266,6 +1266,141 @@ Field errors (`errors`):
 **Notes**
 
 The value is replaced as a whole and nothing is saved when any field is invalid. Send the cleaned text back from the response into the editor. When an `image` block gets a different photo, the previously uploaded file is deleted from the server; sending the same photo again keeps it.
+
+### Settings
+
+The site's contact details are one object. Navigation, legal links, the site name, the chef's name and the copyright year stay in the site's code.
+
+#### GET /settings
+
+Returns the contact details.
+
+- **Role:** public
+
+**Response 200**
+
+```json
+{
+  "phones": {
+    "restaurant": { "label": "Ресторан и доставка", "shortLabel": "Ресторан", "display": "8 918 311-97-91", "number": "+79183119791", "altDisplay": "8 (86155) 3-30-03", "altNumber": "+78615533003" },
+    "hotel": { "label": "Отель", "shortLabel": "Отель", "display": "8 918 311-97-10", "number": "+79183119710", "altDisplay": "8 (86155) 3-30-02", "altNumber": "+78615533002" },
+    "free": { "label": "Бесплатно по России", "shortLabel": "По России", "display": "8 800 100-24-41", "number": "88001002441", "altDisplay": "", "altNumber": "" },
+    "landline": { "label": "Городской", "shortLabel": "Городской", "display": "(86155) 2-25-38", "number": "+78615522538", "altDisplay": "", "altNumber": "" }
+  },
+  "address": { "postcode": "352630", "city": "Белореченск", "street": "ул. Гоголя, 61" },
+  "email": "belcitypark@mail.ru",
+  "company": { "name": "ООО «Олимп»", "inn": "2309117400", "ogrn": "1092309002378" },
+  "social": [
+    { "name": "ВКонтакте", "label": "VK", "url": "https://vk.com/cityparkvip", "display": "vk.com/cityparkvip" },
+    { "name": "Одноклассники", "label": "OK", "url": "https://ok.ru/cityparkvip", "display": "ok.ru/cityparkvip" }
+  ],
+  "updatedAt": "2026-10-22T21:26:51.912273Z"
+}
+```
+
+| Field | Notes |
+|---|---|
+| `phones.restaurant`, `.hotel`, `.free`, `.landline` | `label` and `shortLabel` are titles; `display` is the text to show; `number` is for the `tel:` link |
+| `altDisplay`, `altNumber` | a second (landline) number; both are `""` when there is none |
+| `social[].url` | always starts with `https://` |
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 404 | the settings row is missing (it is created by a migration, so this should not happen) | `Не найдено` |
+
+**Notes**
+
+The site builds `tel:` links from `number`. The full address line is built by the site from `address`.
+
+#### PUT /settings
+
+Replaces the whole settings object.
+
+- **Role:** admin
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `phones.<name>.label` | string | yes | at most 60 characters (`<name>` is `restaurant`, `hotel`, `free` or `landline`) |
+| `phones.<name>.shortLabel` | string | yes | at most 30 characters |
+| `phones.<name>.display` | string | yes | at most 40 characters |
+| `phones.<name>.number` | string | yes | at most 20 characters; `+` and 10 to 15 digits |
+| `phones.<name>.altDisplay` | string | no | at most 40 characters; set together with `altNumber` |
+| `phones.<name>.altNumber` | string | no | at most 20 characters; `+` and 10 to 15 digits; set together with `altDisplay` |
+| `address.postcode` | string | yes | exactly 6 digits |
+| `address.city` | string | yes | at most 60 characters |
+| `address.street` | string | yes | at most 100 characters |
+| `email` | string | yes | an e-mail address, at most 100 characters |
+| `company.name` | string | yes | at most 100 characters |
+| `company.inn` | string | yes | 10 to 12 digits |
+| `company.ogrn` | string | yes | 13 to 15 digits |
+| `social` | array | yes | at most 10 items; `null` is stored as `[]` |
+| `social[].name` | string | yes | at most 40 characters |
+| `social[].label` | string | yes | at most 10 characters |
+| `social[].url` | string | yes | at most 200 characters; starts with `https://` |
+| `social[].display` | string | yes | at most 60 characters |
+
+Every string is trimmed before it is checked. An `updatedAt` in the body is ignored.
+
+```json
+{
+  "phones": {
+    "restaurant": { "label": "Ресторан и доставка", "shortLabel": "Ресторан", "display": "8 918 311-97-91", "number": "+79183119791", "altDisplay": "8 (86155) 3-30-03", "altNumber": "+78615533003" },
+    "hotel": { "label": "Отель", "shortLabel": "Отель", "display": "8 918 311-97-10", "number": "+79183119710", "altDisplay": "8 (86155) 3-30-02", "altNumber": "+78615533002" },
+    "free": { "label": "Бесплатно по России", "shortLabel": "По России", "display": "8 800 100-24-41", "number": "88001002441", "altDisplay": "", "altNumber": "" },
+    "landline": { "label": "Городской", "shortLabel": "Городской", "display": "(86155) 2-25-38", "number": "+78615522538", "altDisplay": "", "altNumber": "" }
+  },
+  "address": { "postcode": "352630", "city": "Белореченск", "street": "ул. Гоголя, 61" },
+  "email": "belcitypark@mail.ru",
+  "company": { "name": "ООО «Олимп»", "inn": "2309117400", "ogrn": "1092309002378" },
+  "social": [
+    { "name": "ВКонтакте", "label": "VK", "url": "https://vk.com/cityparkvip", "display": "vk.com/cityparkvip" },
+    { "name": "Одноклассники", "label": "OK", "url": "https://ok.ru/cityparkvip", "display": "ok.ru/cityparkvip" }
+  ]
+}
+```
+
+**Response 200**
+
+The stored object as in `GET /settings`, with the new `updatedAt`.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | any invalid field | `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with `errors` |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | the settings row is missing | `Не найдено` |
+
+Field errors (`errors`, besides the general ones in "Errors"):
+
+| Field | Message |
+|---|---|
+| `phones.<name>.number`, `phones.<name>.altNumber` | `номер: только цифры и «+»` |
+| `phones.<name>.altDisplay`, `phones.<name>.altNumber` | `заполните оба поля` (only one of the two is filled; the error is on the empty one) |
+| `social[i].url` | `ссылка должна начинаться с https://` |
+
+Example of a 400 response:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Ошибка валидации, пожалуйста проверьте введенные вами данные",
+  "errors": {
+    "email": "email должен быть электронной почтой",
+    "social[0].url": "ссылка должна начинаться с https://"
+  }
+}
+```
+
+**Notes**
+
+PUT replaces everything; send the object you got from GET with your changes. Nothing is saved when any field is invalid.
 
 ### Orders
 

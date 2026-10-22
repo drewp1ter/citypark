@@ -74,7 +74,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 48 Hotel rooms content [45, 47]
 - [x] 49 News [45, 47]
 - [x] 50 Content blocks [45, 47]
-- [ ] 51 Site settings [31]
+- [x] 51 Site settings [31]
 - [ ] 52 Hotel prices [41]
 - [ ] 53 Hotel reports from 1C [31]
 - [ ] 54 Content block rows for the home and hotel pages [50] (needs citypark-modern task 16)

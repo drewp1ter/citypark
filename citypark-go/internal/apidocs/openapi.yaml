@@ -15,6 +15,7 @@ tags:
   - name: rooms
   - name: news
   - name: content
+  - name: settings
   - name: orders
   - name: integrations
   - name: uploads
@@ -640,6 +641,62 @@ components:
           type: string
           description: Empty, or `X% Y%` with X and Y from 0 to 100.
           example: 50% 30%
+    SettingsPhone:
+      type: object
+      required: [label, shortLabel, display, number, altDisplay, altNumber]
+      properties:
+        label: {type: string, maxLength: 60, example: Ресторан и доставка}
+        shortLabel: {type: string, maxLength: 30, example: Ресторан}
+        display: {type: string, maxLength: 40, example: 8 918 311-97-91}
+        number: {type: string, maxLength: 20, example: '+79183119791'}
+        altDisplay: {type: string, maxLength: 40, example: 8 (86155) 3-30-03}
+        altNumber: {type: string, maxLength: 20, example: '+78615533003'}
+    SettingsSocial:
+      type: object
+      required: [name, label, url, display]
+      properties:
+        name: {type: string, maxLength: 40, example: ВКонтакте}
+        label: {type: string, maxLength: 10, example: VK}
+        url: {type: string, maxLength: 200, description: Starts with `https://`., example: 'https://vk.com/cityparkvip'}
+        display: {type: string, maxLength: 60, example: vk.com/cityparkvip}
+    Settings:
+      type: object
+      required: [phones, address, email, company, social]
+      properties:
+        phones:
+          type: object
+          required: [restaurant, hotel, free, landline]
+          properties:
+            restaurant: {$ref: '#/components/schemas/SettingsPhone'}
+            hotel: {$ref: '#/components/schemas/SettingsPhone'}
+            free: {$ref: '#/components/schemas/SettingsPhone'}
+            landline: {$ref: '#/components/schemas/SettingsPhone'}
+        address:
+          type: object
+          required: [postcode, city, street]
+          properties:
+            postcode: {type: string, description: Six digits., example: '352630'}
+            city: {type: string, maxLength: 60, example: Белореченск}
+            street: {type: string, maxLength: 100, example: 'ул. Гоголя, 61'}
+        email: {type: string, maxLength: 100, example: belcitypark@mail.ru}
+        company:
+          type: object
+          required: [name, inn, ogrn]
+          properties:
+            name: {type: string, maxLength: 100, example: ООО «Олимп»}
+            inn: {type: string, description: 10 to 12 digits., example: '2309117400'}
+            ogrn: {type: string, description: 13 to 15 digits., example: '1092309002378'}
+        social:
+          type: array
+          maxItems: 10
+          items: {$ref: '#/components/schemas/SettingsSocial'}
+    SettingsResponse:
+      allOf:
+        - $ref: '#/components/schemas/Settings'
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt: {type: string, format: date-time}
     ContentBlock:
       type: object
       required: [key, page, section, label, type, maxLength, value, image, updatedAt]
@@ -1470,6 +1527,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContentBlock'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /settings:
+    get:
+      summary: Get the site settings
+      description: >-
+        Role: public. Phones, address, e-mail, company details and social links. The site builds `tel:` links
+        from `number`.
+      tags: [settings]
+      responses:
+        '200':
+          description: The settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Replace the site settings
+      description: >-
+        Role: admin. Replaces the whole object: send what GET returned with your changes. Strings are trimmed.
+        `number` and `altNumber` are `+` and 10 to 15 digits (`номер: только цифры и «+»`); `altDisplay` and
+        `altNumber` are set together (`заполните оба поля`); `social[i].url` starts with `https://`
+        (`ссылка должна начинаться с https://`). An `updatedAt` in the body is ignored.
+      tags: [settings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: The stored settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
