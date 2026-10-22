@@ -15,6 +15,11 @@ design closely.
 
 The backend API contract is `../citypark-go/docs/API.md`. Do not change files in `../citypark-go/`.
 
+**The backend is already running; do not start it.** It is reachable at `MENU_API_URL` from `.env` (a separate host,
+not `localhost:3000`). QA scripts that read it (e.g. `qa:a11y`) need `MENU_API_URL` set to the same value. If it does
+not answer, stop and ask the user to start it; do not use Docker, a local copy or a mock. Do not send data to it
+(POST/PUT, webhook calls) without asking: ask the user to run the command, for example the `curl` in a QA script header.
+
 New tasks follow the sections of `../citypark-go/docs/tasks/TASK_TEMPLATE.md` (with npm commands instead of Go ones).
 
 Do one task per session. If a task cannot be completed as written, stop and write the reason under the task's line in `PROGRESS.md` instead of improvising.
