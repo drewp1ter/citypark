@@ -15,7 +15,7 @@ Module path: `github.com/drewp1ter/citypark-go`. A feature package has `store.go
 
 ## Allowed dependencies
 
-`github.com/go-chi/chi/v5`, `github.com/jmoiron/sqlx`, `github.com/jackc/pgx/v5`, `github.com/pressly/goose/v3`, `github.com/golang-jwt/jwt/v5`, `github.com/go-playground/validator/v10`, `golang.org/x/crypto/bcrypt`. Add nothing else unless the task says so. Use the standard library for HTTP clients, logging (`log/slog`) and tests (no testify).
+`github.com/go-chi/chi/v5`, `github.com/jmoiron/sqlx`, `github.com/jackc/pgx/v5`, `github.com/pressly/goose/v3`, `github.com/golang-jwt/jwt/v5`, `github.com/go-playground/validator/v10`, `golang.org/x/crypto/bcrypt`, `github.com/microcosm-cc/bluemonday`. Add nothing else unless the task says so. Use the standard library for HTTP clients, logging (`log/slog`) and tests (no testify).
 
 ## Code rules
 
