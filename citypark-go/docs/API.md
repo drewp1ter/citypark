@@ -1115,13 +1115,50 @@ Downloads the external menu from iiko and applies it: categories and products. M
 |---|---|---|
 | 401 | the header is missing or does not match the token | `Требуется авторизация` |
 | 404 | the server has no `IIKO_UPDATE_TOKEN` configured, so the endpoint is disabled | `Не найдено` |
+| 409 | another menu sync is running (also one started by the timer or by `POST /iiko/sync`) | `Обновление меню уже выполняется` |
 | 500 | iiko could not be reached or the update failed; nothing is changed | `Внутренняя ошибка сервера` |
 
 **Notes**
 
 The update runs in one transaction and can take a few seconds. The menu is the external menu `IIKO_EXTERNAL_MENU_ID`. Every menu group becomes a category, even a group with nothing for sale. Items without a price are skipped. `totalCategories` and `totalProducts` count the categories and products that are in the menu after the update. Items that disappeared from iiko are hidden, not removed. The `isHidden` flag of a menu group is stored; hidden groups are synced with their products but are not listed by `GET /categories`.
 
-Products take their `description` from the iiko menu item (trimmed; an empty string when iiko has none, and an empty iiko description clears the old one on the next update). The update no longer takes images, tags, nutrition values or sale windows from iiko, and it clears the ones that came from iiko before: nutrition values and sale windows are reset, `from_iiko` images are deleted and all tags are removed. Category descriptions are still reset to an empty string. Images added by hand stay.
+Products take their `description` from the iiko menu item (trimmed; an empty string when iiko has none, and an empty iiko description clears the old one on the next update). The update saves each product's iiko button image as a product image of type `from_iiko` (the first size with an image wins; an image url used twice keeps the last product), and deletes `from_iiko` images that are no longer in the menu. Categories get no images from iiko, so their `from_iiko` images are all deleted. The update does not take tags, nutrition values or sale windows from iiko: nutrition values and sale windows are reset and all tags are removed. Category descriptions are reset to an empty string. Images added by hand stay.
+
+#### POST /iiko/sync
+
+Starts the same menu sync as `POST /iiko/update-products`, for the admin panel's «Обновить меню из iiko» button.
+
+- **Role:** admin
+
+**Parameters**
+
+None. The request has no body.
+
+**Request**
+
+```
+POST /api/v1/iiko/sync
+Authorization: Bearer <token>
+```
+
+**Response 200**
+
+```json
+{ "totalCategories": 1, "totalProducts": 1 }
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | the token is missing or invalid | `Требуется авторизация` |
+| 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
+| 409 | another menu sync is running, also one started by the timer or by `POST /iiko/update-products` | `Обновление меню уже выполняется` |
+| 500 | iiko could not be reached or the sync failed; nothing is changed | `Внутренняя ошибка сервера` |
+
+**Notes**
+
+Takes a few seconds, so show a progress state on the button. Only one sync runs at a time: a second request fails at once with 409 instead of waiting, so show the message and let the user try again later. What the sync writes is described under `POST /iiko/update-products`.
 
 #### POST /webhooks/moneta
 

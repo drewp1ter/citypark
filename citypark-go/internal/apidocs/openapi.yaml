@@ -76,6 +76,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    SyncRunning:
+      description: Another menu sync is running (`Обновление меню уже выполняется`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     Unavailable:
       description: The order cannot be accepted now (working hours or sale window).
       content:
@@ -1210,6 +1216,31 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/SyncRunning'
+  /iiko/sync:
+    post:
+      summary: Start the menu sync from iiko (admin)
+      description: >-
+        Role: admin. The same sync as `/iiko/update-products`, for the admin panel button. Takes a
+        few seconds. Only one sync runs at a time, so it answers 409 while another one runs, also
+        one started by the timer or by `/iiko/update-products`.
+      tags: [integrations]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The sync is applied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/SyncRunning'
   /webhooks/moneta:
     post:
       summary: Moneta payment notification

@@ -64,7 +64,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		address.NewHandler(address.NewStore(db), tokens).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize).Routes(r)
-		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken).Routes(r)
+		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken, tokens).Routes(r)
 		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			WorkingHoursStart: cfg.WorkingHours.Start,

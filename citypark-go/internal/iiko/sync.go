@@ -2,8 +2,10 @@ package iiko
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/jmoiron/sqlx"
 
@@ -25,11 +27,15 @@ type Result struct {
 	TotalProducts   int `json:"totalProducts"`
 }
 
+// ErrSyncRunning is returned by Sync while another sync is in progress.
+var ErrSyncRunning = errors.New("iiko sync is already running")
+
 // Syncer copies the iiko external menu into the menus, categories and
 // products tables.
 type Syncer struct {
 	db  *sqlx.DB
 	src Source
+	mu  sync.Mutex // held for the whole Sync
 }
 
 // NewSyncer creates a Syncer.
@@ -37,8 +43,14 @@ func NewSyncer(db *sqlx.DB, src Source) *Syncer {
 	return &Syncer{db: db, src: src}
 }
 
-// Sync downloads the menu and applies it in one transaction.
+// Sync downloads the menu and applies it in one transaction. It returns
+// ErrSyncRunning at once when another Sync is in progress.
 func (s *Syncer) Sync(ctx context.Context) (Result, error) {
+	if !s.mu.TryLock() {
+		return Result{}, ErrSyncRunning
+	}
+	defer s.mu.Unlock()
+
 	menu, err := s.src.Fetch(ctx)
 	if err != nil {
 		return Result{}, fmt.Errorf("fetch iiko menu: %w", err)

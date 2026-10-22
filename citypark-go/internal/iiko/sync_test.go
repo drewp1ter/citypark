@@ -539,3 +539,52 @@ func TestSyncRollsBackOnError(t *testing.T) {
 		}
 	}
 }
+
+func TestSyncRunningReturnsErr(t *testing.T) {
+	db := testutil.NewDB(t)
+	src := newBlockingSource(&fakeSource{n: oneItemMenu()})
+	syncer := NewSyncer(db, src)
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := syncer.Sync(context.Background())
+		done <- err
+	}()
+	<-src.entered
+
+	if _, err := syncer.Sync(context.Background()); !errors.Is(err, ErrSyncRunning) {
+		t.Errorf("second Sync error = %v, want ErrSyncRunning", err)
+	}
+
+	close(src.release)
+	if err := <-done; err != nil {
+		t.Errorf("first Sync error = %v, want nil", err)
+	}
+}
+
+func TestSyncUnlocksAfterError(t *testing.T) {
+	db := testutil.NewDB(t)
+	src := &switchSource{err: errors.New("iiko is down")}
+	syncer := NewSyncer(db, src)
+
+	if _, err := syncer.Sync(context.Background()); err == nil {
+		t.Fatal("first Sync error = nil, want an error")
+	}
+
+	src.err, src.n = nil, oneItemMenu()
+	res, err := syncer.Sync(context.Background())
+	if err != nil {
+		t.Fatalf("second Sync error = %v, want nil", err)
+	}
+	if want := (Result{TotalCategories: 1, TotalProducts: 1}); res != want {
+		t.Errorf("result = %+v, want %+v", res, want)
+	}
+}
+
+// switchSource is a fakeSource whose answer a test can change between calls.
+type switchSource struct {
+	n   *Menu
+	err error
+}
+
+func (s *switchSource) Fetch(context.Context) (*Menu, error) { return s.n, s.err }
