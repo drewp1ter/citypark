@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Settings, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Settings, Orders, Reports, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -1897,6 +1897,91 @@ The updated order, in the same format as `GET /orders/{id}`, with `"status": "co
 **Notes**
 
 The status is set whatever it was before, and every call notifies the staff again.
+
+### Reports
+
+The data comes from 1C (the hotel database). The server holds the 1C credentials; the admin panel never calls 1C. 502 means 1C did not answer within 30 s or returned an error. Dates are local (`APP_TIMEZONE`), both inclusive.
+
+#### GET /reports/hotel/sales
+
+Hotel revenue by organization and room for a period.
+
+- **Role:** admin
+
+**Query parameters**
+
+| Parameter | Type | Required | Rules |
+|---|---|---|---|
+| `from` | date | yes | `YYYY-MM-DD` |
+| `to` | date | yes | `YYYY-MM-DD`, not before `from`; the period is at most 366 days |
+
+```
+GET /api/v1/reports/hotel/sales?from=2026-10-01&to=2026-10-21
+```
+
+**Response 200**
+
+```json
+{
+  "rows": [
+    { "organization": "ИП Иванов", "room": "Стандарт", "count": 2, "sum": 4000 },
+    { "organization": "ООО «Олимп»", "room": "VIP-номер", "count": 3, "sum": 12000.5 },
+    { "organization": "ООО «Олимп»", "room": "Люкс", "count": 1, "sum": 9000 }
+  ],
+  "total": { "count": 6, "sum": 25000.5 }
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | `from` or `to` is missing or not `YYYY-MM-DD` | `Некорректные параметры отчёта`, `errors.from` / `errors.to`: `дата в формате ГГГГ-ММ-ДД` |
+| 400 | `to` is before `from` | `Некорректные параметры отчёта`, `errors.to`: `не раньше даты from` |
+| 400 | the period is longer than 366 days | `Некорректные параметры отчёта`, `errors.to`: `период не больше 366 дней` |
+| 401 | no token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | 1C is not configured on the server (`ONEC_HOTEL_URL` is empty) | `Не найдено` |
+| 502 | 1C did not answer or returned an error | `Сервис отчётов недоступен` |
+
+**Notes**
+
+Rows are sorted by `organization`, then `room`. `count` is a number and may be fractional; `sum` and `total.sum` are rubles. With no data `rows` is `[]` and the total is `0`.
+
+#### GET /reports/hotel/daily
+
+Hotel revenue per day, for a chart.
+
+- **Role:** admin
+
+**Query parameters**
+
+Same as `GET /reports/hotel/sales`.
+
+```
+GET /api/v1/reports/hotel/daily?from=2026-10-20&to=2026-10-22
+```
+
+**Response 200**
+
+```json
+{
+  "days": [
+    { "date": "2026-10-20", "sum": 8000 },
+    { "date": "2026-10-21", "sum": 0 },
+    { "date": "2026-10-22", "sum": 100 }
+  ],
+  "total": 8100
+}
+```
+
+**Errors**
+
+Same as `GET /reports/hotel/sales`. A date from 1C that cannot be read also gives 502 `Сервис отчётов недоступен`.
+
+**Notes**
+
+`days` has one entry for every calendar day from `from` to `to`, in order, with `0` for days without revenue. `total` is the sum of `days`.
 
 ### Integrations
 

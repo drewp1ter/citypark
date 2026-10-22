@@ -21,6 +21,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/logging"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/news"
+	"github.com/drewp1ter/citypark-go/internal/onec"
 	"github.com/drewp1ter/citypark-go/internal/order"
 	"github.com/drewp1ter/citypark-go/internal/room"
 	"github.com/drewp1ter/citypark-go/internal/settings"
@@ -84,6 +85,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 			WorkingHoursEnd:   cfg.WorkingHours.End,
 			DefaultPageSize:   cfg.DefaultPageSize,
 		}).Routes(r)
+		onec.NewHandler(onec.NewClient(cfg.OneC.HotelURL, cfg.OneC.User, cfg.OneC.Password, nil), tokens, c).Routes(r)
 		upload.NewHandler(uploads, tokens).Routes(r)
 	})
 	// Static files live outside /api/v1.

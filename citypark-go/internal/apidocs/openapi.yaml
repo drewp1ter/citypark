@@ -17,6 +17,7 @@ tags:
   - name: content
   - name: settings
   - name: orders
+  - name: reports
   - name: integrations
   - name: uploads
 components:
@@ -93,6 +94,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+    BadGateway:
+      description: 1C did not answer or returned an error (`Сервис отчётов недоступен`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     Unavailable:
       description: The order cannot be accepted now (working hours or sale window).
       content:
@@ -100,6 +107,39 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    HotelSalesResponse:
+      type: object
+      required: [rows, total]
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            required: [organization, room, count, sum]
+            properties:
+              organization: {type: string, example: 'ООО «Олимп»'}
+              room: {type: string, example: VIP-номер}
+              count: {type: number, example: 3}
+              sum: {type: number, description: Rubles., example: 24000}
+        total:
+          type: object
+          required: [count, sum]
+          properties:
+            count: {type: number, example: 3}
+            sum: {type: number, description: Rubles., example: 24000}
+    HotelDailyResponse:
+      type: object
+      required: [days, total]
+      properties:
+        days:
+          type: array
+          items:
+            type: object
+            required: [date, sum]
+            properties:
+              date: {type: string, format: date, example: '2026-10-20'}
+              sum: {type: number, description: Rubles., example: 8000}
+        total: {type: number, description: Rubles., example: 8000}
     Error:
       type: object
       required: [statusCode, message]
@@ -1948,6 +1988,82 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /reports/hotel/sales:
+    get:
+      summary: Hotel revenue by room
+      description: >-
+        Role: admin. Revenue by organization and room, sorted by organization, then room. Data comes from 1C (the hotel database). `from` and `to` are local dates
+        (`APP_TIMEZONE`, both inclusive) in `YYYY-MM-DD`; `to` is not before `from`; the period is at most 366 days.
+        400 `Некорректные параметры отчёта` has `errors.from` / `errors.to` (`дата в формате ГГГГ-ММ-ДД`,
+        `не раньше даты from`, `период не больше 366 дней`). 404 when 1C is not configured. 502
+        `Сервис отчётов недоступен` when 1C did not answer within 30 s or returned an error.
+      tags: [reports]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: {type: string, format: date}
+        - name: to
+          in: query
+          required: true
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelSalesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+  /reports/hotel/daily:
+    get:
+      summary: Hotel revenue per day
+      description: >-
+        Role: admin. One entry for every day of the period; `0` for days without revenue. Data comes from 1C (the hotel database). `from` and `to` are local dates
+        (`APP_TIMEZONE`, both inclusive) in `YYYY-MM-DD`; `to` is not before `from`; the period is at most 366 days.
+        400 `Некорректные параметры отчёта` has `errors.from` / `errors.to` (`дата в формате ГГГГ-ММ-ДД`,
+        `не раньше даты from`, `период не больше 366 дней`). 404 when 1C is not configured. 502
+        `Сервис отчётов недоступен` when 1C did not answer within 30 s or returned an error.
+      tags: [reports]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: {type: string, format: date}
+        - name: to
+          in: query
+          required: true
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelDailyResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '502':
+          $ref: '#/components/responses/BadGateway'
   /iiko/update-products:
     post:
       summary: Download the menu from iiko and apply it

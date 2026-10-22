@@ -22,6 +22,7 @@ type Config struct {
 	Telegram         Telegram
 	Moneta           Moneta
 	Hotel            Hotel
+	OneC             OneC
 	Upload           Upload
 	WorkingHours     WorkingHours
 	ThankYouPageCash string
@@ -43,6 +44,7 @@ type Moneta struct {
 	TestMode bool
 }
 type Hotel struct{ WebhookSecret string }
+type OneC struct{ HotelURL, User, Password string }
 type Upload struct{ Dir, PublicBaseURL string }
 type WorkingHours struct{ Start, End string } // "9:00"; empty string means no restriction
 
@@ -137,6 +139,11 @@ func Load(lookup LookupFunc) (Config, error) {
 		TestMode: str("MONETA_TEST_MODE", "false") == "true",
 	}
 	c.Hotel = Hotel{WebhookSecret: str("HOTEL_WEBHOOK_SECRET", "")}
+	c.OneC = OneC{
+		HotelURL: str("ONEC_HOTEL_URL", ""),
+		User:     str("ONEC_USER", ""),
+		Password: str("ONEC_PASSWORD", ""),
+	}
 	c.Upload = Upload{
 		Dir:           str("UPLOAD_DIR", "./uploads"),
 		PublicBaseURL: strings.TrimRight(str("PUBLIC_BASE_URL", "http://localhost:3000"), "/"),
