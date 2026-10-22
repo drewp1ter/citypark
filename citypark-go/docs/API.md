@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Orders, Integrations. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Orders, Integrations. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -604,6 +604,94 @@ Searches products across all categories. Without `query` it returns every produc
 **Notes**
 
 A product matches when any of the words matches its name, its category name or one of its tags. `?query=хачапури+салат` and `?query=хачапури%20салат` both give two words. Results are ordered by sort order and then by `id`. The list is `[]` when nothing matches or the page is past the end.
+
+### Hotel
+
+#### GET /hotel/rooms
+
+Returns how many hotel rooms of each type are free right now.
+
+- **Role:** public
+
+**Response 200**
+
+```json
+{
+  "rooms": { "vip": 1, "singleBalcony": 0, "single": 2, "doubleTwin": 1, "doubleEuro": 0 },
+  "free": 4,
+  "updatedAt": "2026-10-22T12:00:00Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 404 | no data yet: the hotel's sender has not posted the counts since the table was created | `Не найдено` |
+
+**Notes**
+
+404 means no data yet; the site hides the counter. `free` is the sum of the five counts. The keys of `rooms`, the website room ids and the maximum number of free rooms are:
+
+| JSON key | Website room id | Rooms | Max |
+|---|---|---|---|
+| `vip` | `vip` | № 301 | 1 |
+| `singleBalcony` | `single-balcony` | № 201 | 1 |
+| `single` | `single` | № 204, 304 | 2 |
+| `doubleTwin` | `double-twin` | № 203, 206, 302, 303 | 4 |
+| `doubleEuro` | `double-euro` | № 202, 205, 305, 306 | 4 |
+
+#### POST /hotel/rooms
+
+Replaces the free-room counts of all five room types. Meant for the hotel's external sender, not the frontend.
+
+- **Role:** public, protected by a shared secret in the `X-Webhook-Secret` header
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `X-Webhook-Secret` | string (header) | yes | must equal the server's `HOTEL_WEBHOOK_SECRET` |
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `rooms` | object | yes | holds all five counts |
+| `rooms.vip` | integer | yes | 0–1 |
+| `rooms.singleBalcony` | integer | yes | 0–1 |
+| `rooms.single` | integer | yes | 0–2 |
+| `rooms.doubleTwin` | integer | yes | 0–4 |
+| `rooms.doubleEuro` | integer | yes | 0–4 |
+
+```json
+{ "rooms": { "vip": 1, "singleBalcony": 0, "single": 2, "doubleTwin": 1, "doubleEuro": 0 } }
+```
+
+**Response 200**
+
+The same body as `GET /hotel/rooms`.
+
+```json
+{
+  "rooms": { "vip": 1, "singleBalcony": 0, "single": 2, "doubleTwin": 1, "doubleEuro": 0 },
+  "free": 4,
+  "updatedAt": "2026-10-22T12:00:00Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | a count is missing or out of range | validation message, see `errors` (for example `rooms.vip`: `значение должно быть не больше 1`, `rooms.doubleEuro`: `поле не должно быть пустым` or `значение должно быть не меньше 0`) |
+| 401 | the header is missing or does not match the secret | `Требуется авторизация` |
+| 404 | the server has no `HOTEL_WEBHOOK_SECRET` configured, so the endpoint is disabled | `Не найдено` |
+
+**Notes**
+
+Meant for the hotel's external sender, not the frontend; send all five types every time. A missing type is an error, not "unchanged", and `0` is a valid count. The old three-counter body (`double_rooms`, `single_rooms`, `vip_room`) is not accepted.
 
 ### Orders
 

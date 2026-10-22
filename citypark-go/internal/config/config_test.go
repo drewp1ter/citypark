@@ -34,6 +34,7 @@ func TestLoadDefaults(t *testing.T) {
 		{"Iiko", c.Iiko, Iiko{BaseURL: "https://api-ru.iiko.services/api"}},
 		{"Telegram", c.Telegram, Telegram{BaseURL: "https://api.telegram.org"}},
 		{"Moneta", c.Moneta, Moneta{}},
+		{"Hotel", c.Hotel, Hotel{}},
 		{"WorkingHours", c.WorkingHours, WorkingHours{"9:00", "22:00"}},
 		{"ThankYouPageCash", c.ThankYouPageCash, "http://localhost:3001/thankyou"},
 	}
@@ -74,6 +75,7 @@ func TestLoadOverrides(t *testing.T) {
 		"MONETA_ID":                            "100",
 		"MONETA_SECRET":                        "s",
 		"MONETA_TEST_MODE":                     "true",
+		"HOTEL_WEBHOOK_SECRET":                 "hotel",
 		"WORKING_HOURS_START":                  "10:30",
 		"WORKING_HOURS_END":                    "23:00",
 		"THANK_YOU_PAGE_PAYMENT_CASH":          "http://cash",
@@ -96,6 +98,7 @@ func TestLoadOverrides(t *testing.T) {
 		{"Iiko", c.Iiko, Iiko{"http://iiko", "key", "app", "secret", "org", "menu", "tok"}},
 		{"Telegram", c.Telegram, Telegram{"http://tg", "tgtok", "1", "2"}},
 		{"Moneta", c.Moneta, Moneta{"100", "s", true}},
+		{"Hotel", c.Hotel, Hotel{"hotel"}},
 		{"WorkingHours", c.WorkingHours, WorkingHours{"10:30", "23:00"}},
 		{"ThankYouPageCash", c.ThankYouPageCash, "http://cash"},
 	}

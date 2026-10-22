@@ -15,6 +15,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/config"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
 	"github.com/drewp1ter/citypark-go/internal/health"
+	"github.com/drewp1ter/citypark-go/internal/hotel"
 	"github.com/drewp1ter/citypark-go/internal/iiko"
 	"github.com/drewp1ter/citypark-go/internal/logging"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
@@ -64,6 +65,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize).Routes(r)
 		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken).Routes(r)
+		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			WorkingHoursStart: cfg.WorkingHours.Start,
 			WorkingHoursEnd:   cfg.WorkingHours.End,
@@ -80,7 +82,7 @@ func cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		h := w.Header()
 		h.Set("Access-Control-Allow-Origin", "*")
-		h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Update-Token")
+		h.Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Update-Token, X-Webhook-Secret")
 		h.Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)

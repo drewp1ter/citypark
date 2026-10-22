@@ -20,6 +20,7 @@ type Config struct {
 	Iiko             Iiko
 	Telegram         Telegram
 	Moneta           Moneta
+	Hotel            Hotel
 	WorkingHours     WorkingHours
 	ThankYouPageCash string
 }
@@ -36,6 +37,7 @@ type Moneta struct {
 	Secret   string // integrity code from the Moneta cabinet
 	TestMode bool
 }
+type Hotel struct{ WebhookSecret string }
 type WorkingHours struct{ Start, End string } // "9:00"; empty string means no restriction
 
 // LookupFunc has the signature of os.LookupEnv.
@@ -121,6 +123,7 @@ func Load(lookup LookupFunc) (Config, error) {
 		Secret:   str("MONETA_SECRET", ""),
 		TestMode: str("MONETA_TEST_MODE", "false") == "true",
 	}
+	c.Hotel = Hotel{WebhookSecret: str("HOTEL_WEBHOOK_SECRET", "")}
 	c.WorkingHours = WorkingHours{
 		Start: str("WORKING_HOURS_START", "9:00"),
 		End:   str("WORKING_HOURS_END", "22:00"),

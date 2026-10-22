@@ -333,7 +333,7 @@ func TestAppSmoke(t *testing.T) {
 	}
 
 	rec := testutil.DoJSON(t, a.Handler, http.MethodOptions, "/api/v1/orders", "", nil)
-	if got := rec.Header().Get("Access-Control-Allow-Headers"); got != "Authorization, Content-Type, X-Update-Token" {
+	if got := rec.Header().Get("Access-Control-Allow-Headers"); got != "Authorization, Content-Type, X-Update-Token, X-Webhook-Secret" {
 		t.Errorf("Access-Control-Allow-Headers = %q", got)
 	}
 	if got := rec.Header().Get("Access-Control-Allow-Methods"); got != "GET, POST, PUT, PATCH, DELETE, OPTIONS" {

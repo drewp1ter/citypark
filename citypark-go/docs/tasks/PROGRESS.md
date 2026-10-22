@@ -59,3 +59,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 39 Hidden categories [38]
 - [x] 40 Product descriptions from iiko [39]
   - Not checked against real iiko: no credentials in this session. After `POST /iiko/update-products`, run `curl localhost:3000/api/v1/products?pageSize=500` and count non-empty `description`s.
+
+## Hotel
+- [x] 41 Hotel free rooms webhook [31]

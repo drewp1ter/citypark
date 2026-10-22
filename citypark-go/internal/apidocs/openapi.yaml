@@ -11,6 +11,7 @@ tags:
   - name: addresses
   - name: delivery-prices
   - name: catalog
+  - name: hotel
   - name: orders
   - name: integrations
 components:
@@ -454,6 +455,54 @@ components:
         totalProducts:
           type: integer
           example: 27
+    HotelRooms:
+      type: object
+      required: [vip, singleBalcony, single, doubleTwin, doubleEuro]
+      properties:
+        vip:
+          type: integer
+          minimum: 0
+          maximum: 1
+          description: Room 301.
+        singleBalcony:
+          type: integer
+          minimum: 0
+          maximum: 1
+          description: Room 201.
+        single:
+          type: integer
+          minimum: 0
+          maximum: 2
+          description: Rooms 204 and 304.
+        doubleTwin:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: Rooms 203, 206, 302 and 303.
+        doubleEuro:
+          type: integer
+          minimum: 0
+          maximum: 4
+          description: Rooms 202, 205, 305 and 306.
+    HotelState:
+      type: object
+      required: [rooms, free, updatedAt]
+      properties:
+        rooms:
+          $ref: '#/components/schemas/HotelRooms'
+        free:
+          type: integer
+          description: Total number of free rooms, the sum of the five counts.
+          example: 4
+        updatedAt:
+          type: string
+          format: date-time
+    HotelRoomsRequest:
+      type: object
+      required: [rooms]
+      properties:
+        rooms:
+          $ref: '#/components/schemas/HotelRooms'
 paths:
   /health:
     get:
@@ -846,6 +895,55 @@ paths:
                   $ref: '#/components/schemas/Product'
         '400':
           $ref: '#/components/responses/BadRequest'
+  /hotel/rooms:
+    get:
+      summary: Get the free hotel rooms
+      description: >-
+        Role: public. The answer is 404 while the hotel's sender has not posted the counts yet; the
+        site hides the counter then.
+      tags: [hotel]
+      responses:
+        '200':
+          description: The free rooms of each type.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelState'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      summary: Replace the free hotel rooms
+      description: >-
+        Role: public, protected by a shared secret in the `X-Webhook-Secret` header. Meant for the
+        hotel's external sender, not for the site frontend. All five counts are required every time.
+        The endpoint answers 404 when the server has no secret configured.
+      tags: [hotel]
+      parameters:
+        - name: X-Webhook-Secret
+          in: header
+          required: true
+          description: Must equal the server's HOTEL_WEBHOOK_SECRET.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotelRoomsRequest'
+      responses:
+        '200':
+          description: The counts are stored. The body is the same as for GET.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelState'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /orders:
     post:
       summary: Place an order
