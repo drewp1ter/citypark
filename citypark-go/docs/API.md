@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -843,6 +843,272 @@ Example of a 400 body:
 **Notes**
 
 This is a full replacement: an omitted optional field becomes an empty string. All invalid fields are reported together in `errors`. `description` is sanitized: tags other than `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li` are removed (their text stays), so the response shows what was really stored. When `photo.url` changes, the previous uploaded file is deleted from the server; sending the same photo again keeps it. The seeded `photo.position` values `right center` and `center 70%` do not match the `«X% Y%»` format, so an admin form must not send them back unchanged: send `""` or a value like `50% 30%`.
+
+### News
+
+#### GET /news
+
+Returns a page of news items, newest first (`date` descending, then `id` descending). The list has no `body`: open an item with `GET /news/{slug}` to get it.
+
+- **Role:** public
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `page` | integer (query) | no | from 1, the default is 1 |
+| `pageSize` | integer (query) | no | from 1 to 500, the default is the server's page size |
+
+**Response 200**
+
+```json
+{
+  "news": [
+    {
+      "id": 1,
+      "slug": "special-offer-september-2026",
+      "date": "2026-09-07",
+      "title": "Спецпредложение сентября",
+      "shortTitle": "",
+      "excerpt": "Что входит, цена и срок действия.",
+      "photo": { "url": "", "alt": "Спецпредложение сентября", "position": "" },
+      "updatedAt": "2026-10-22T21:20:07.42121Z"
+    },
+    {
+      "id": 2,
+      "slug": "special-offer-june-2026",
+      "date": "2026-06-24",
+      "title": "Спецпредложение июня",
+      "shortTitle": "",
+      "excerpt": "",
+      "photo": { "url": "", "alt": "", "position": "" },
+      "updatedAt": "2026-10-22T21:20:07.42121Z"
+    }
+  ],
+  "count": 7
+}
+```
+
+The example is `?pageSize=2`. `count` is the number of all items, not of this page.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | `page` or `pageSize` is not a number, is below 1, or `pageSize` is above 500 | `Некорректные параметры пагинации` |
+
+**Notes**
+
+The list has no `body`. A page past the end gives `"news": []` and the real `count`. Photo is optional: `photo.url` `""` means no photo. An uploaded photo comes back as a full URL (the server's public base URL plus `/uploads/...`); a photo shipped with the site comes back as `/images/...`.
+
+#### GET /news/{slug}
+
+Returns one news item with its `body`.
+
+- **Role:** public
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `slug` | string (path) | yes | the `slug` of an item |
+
+**Response 200**
+
+```json
+{
+  "id": 4,
+  "slug": "new-menu-2026",
+  "date": "2026-03-16",
+  "title": "Новое меню в Сити Парке 2026",
+  "shortTitle": "Новое меню 2026",
+  "excerpt": "",
+  "body": "",
+  "photo": { "url": "/images/news-menu.jpg", "alt": "", "position": "" },
+  "updatedAt": "2026-10-22T21:20:07.42121Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 404 | no item with this `slug` | `Не найдено` |
+
+**Notes**
+
+`body` is HTML (see the allowlist in `POST /news`). It is `""` for an item without a text, for example the seeded ones.
+
+#### POST /news
+
+Creates a news item. It is live at once: there are no drafts.
+
+- **Role:** admin
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `title` | string | yes | at most 200 characters |
+| `slug` | string | no | `""` makes it from the title; otherwise at most 100 characters, only `a-z`, `0-9` and single `-` between them (`только латиница, цифры и дефисы`) |
+| `date` | string | no | `""` is today; otherwise `ГГГГ-ММ-ДД`, a real date (`дата в формате ГГГГ-ММ-ДД`) |
+| `shortTitle` | string | no | at most 100 characters |
+| `excerpt` | string | no | at most 300 characters |
+| `body` | string | no | HTML, cleaned on save; at most 50 000 characters of visible text (tags do not count) |
+| `photo` | object | no | |
+| `photo.url` | string | no | `""` (no photo), a site path `/images/...`, or an uploaded image (`/uploads/...` or the full URL that `POST /uploads` returned) |
+| `photo.alt` | string | no | at most 200 characters |
+| `photo.position` | string | no | `""` or `«X% Y%»` with X and Y from 0 to 100, for example `50% 30%` |
+
+Surrounding spaces of the plain-text fields are removed before the checks.
+
+```json
+{
+  "slug": "",
+  "date": "2026-10-20",
+  "title": "Новые стейки",
+  "shortTitle": "Стейки",
+  "excerpt": "Три новых стейка.",
+  "body": "<p>Текст <strong>новости</strong></p><script>x</script>",
+  "photo": { "url": "/images/news-steaks.jpg", "alt": "Стейк", "position": "50% 30%" }
+}
+```
+
+**Response 201**
+
+The item as in `GET /news/{slug}`, with the stored values.
+
+```json
+{
+  "id": 8,
+  "slug": "novye-steyki",
+  "date": "2026-10-20",
+  "title": "Новые стейки",
+  "shortTitle": "Стейки",
+  "excerpt": "Три новых стейка.",
+  "body": "<p>Текст <strong>новости</strong></p>",
+  "photo": { "url": "/images/news-steaks.jpg", "alt": "Стейк", "position": "50% 30%" },
+  "updatedAt": "2026-10-22T21:20:16.206067Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | a field is missing, blank, too long or out of range | validation message, see `errors` (keys look like `title`, `excerpt`, `photo.alt`) |
+| 400 | `slug` has other characters | `errors.slug`: `только латиница, цифры и дефисы` |
+| 400 | `date` is not `ГГГГ-ММ-ДД` or is not a real date | `errors.date`: `дата в формате ГГГГ-ММ-ДД` |
+| 400 | `photo.url` is not a site path or an uploaded image | `errors.photo.url`: `недопустимый адрес фото` |
+| 400 | `photo.position` is not `""` or `«X% Y%»` | `errors.photo.position`: `формат «50% 30%»` |
+| 400 | `body` has more than 50 000 characters of visible text | `errors.body`: `не более 50000 символов` |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 409 | the `slug` sent by the admin is already used | `Новость с таким адресом уже есть` |
+
+Example of a 400 body:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Ошибка валидации, пожалуйста проверьте введенные вами данные",
+  "errors": {
+    "date": "дата в формате ГГГГ-ММ-ДД",
+    "photo.url": "недопустимый адрес фото",
+    "slug": "только латиница, цифры и дефисы",
+    "title": "поле не должно быть пустым"
+  }
+}
+```
+
+**Notes**
+
+Slug: an empty `slug` is made from the title (Russian letters are transliterated, `Новые стейки` → `novye-steyki`; at most 80 characters; `news` when nothing is left). If a generated slug is taken, `-2`, `-3`, … is added and the first free one is used, so a generated slug never gives 409. A slug typed by the admin that is already used gives 409. The slug is the page address (`/news/{slug}`), so changing it breaks old links. Body: `body` is sanitized, only `p`, `h2`, `h3`, `strong`, `em`, `a`, `ul`, `ol`, `li`, `blockquote`, `br` stay (other tags are removed, the text of `script`, `style` and `iframe` too), so the response shows what was really stored. Photo is optional: `url` `""` means no photo. All invalid fields are reported together in `errors`.
+
+#### PUT /news/{id}
+
+Replaces all the fields of one news item.
+
+- **Role:** admin
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `id` | integer (path) | yes | the `id` of an item |
+
+**Request body**
+
+The same fields and rules as `POST /news`.
+
+```json
+{
+  "slug": "novye-steyki",
+  "date": "2026-10-20",
+  "title": "Новые стейки",
+  "shortTitle": "Стейки",
+  "excerpt": "Три новых стейка.",
+  "body": "<p>Текст <strong>новости</strong></p>",
+  "photo": { "url": "/images/news-steaks.jpg", "alt": "Стейк", "position": "50% 30%" }
+}
+```
+
+**Response 200**
+
+The item as in `GET /news/{slug}`, with the stored values.
+
+```json
+{
+  "id": 8,
+  "slug": "novye-steyki",
+  "date": "2026-10-20",
+  "title": "Новые стейки",
+  "shortTitle": "Стейки",
+  "excerpt": "Три новых стейка.",
+  "body": "<p>Текст <strong>новости</strong></p>",
+  "photo": { "url": "/images/news-steaks.jpg", "alt": "Стейк", "position": "50% 30%" },
+  "updatedAt": "2026-10-22T21:20:20.100312Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON or an invalid field | the same as `POST /news` |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | no item with this `id` | `Не найдено` |
+| 409 | the `slug` belongs to another item | `Новость с таким адресом уже есть` |
+
+**Notes**
+
+This is a full replacement: an omitted optional field becomes an empty string (and an omitted `date` becomes today). Send the item's current `slug` to keep it: its own slug is not a conflict. An empty `slug` is made from the title again, which can change the page address. When `photo.url` changes or is cleared, the previous uploaded file is deleted from the server; sending the same photo again keeps it.
+
+#### DELETE /news/{id}
+
+Deletes a news item and its uploaded photo file (a photo shipped with the site, `/images/...`, is not touched).
+
+- **Role:** admin
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `id` | integer (path) | yes | the `id` of an item |
+
+**Response 204**
+
+No body.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | no item with this `id` (also when it was already deleted) | `Не найдено` |
 
 ### Orders
 

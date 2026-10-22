@@ -13,6 +13,7 @@ tags:
   - name: catalog
   - name: hotel
   - name: rooms
+  - name: news
   - name: orders
   - name: integrations
   - name: uploads
@@ -624,6 +625,107 @@ components:
         hotelNote:
           type: string
           maxLength: 100
+    NewsPhoto:
+      type: object
+      required: [url, alt, position]
+      properties:
+        url:
+          type: string
+          description: Empty (no photo), a site path (`/images/...`) or the full URL of an uploaded image.
+          example: /images/news-menu.jpg
+        alt:
+          type: string
+        position:
+          type: string
+          description: Empty, or a CSS object-position of the form `50% 30%`.
+    NewsSummary:
+      type: object
+      required: [id, slug, date, title, shortTitle, excerpt, photo, updatedAt]
+      properties:
+        id:
+          type: integer
+          example: 4
+        slug:
+          type: string
+          example: new-menu-2026
+        date:
+          type: string
+          format: date
+          example: '2026-03-16'
+        title:
+          type: string
+          example: Новое меню в Сити Парке 2026
+        shortTitle:
+          type: string
+          example: Новое меню 2026
+        excerpt:
+          type: string
+        photo:
+          $ref: '#/components/schemas/NewsPhoto'
+        updatedAt:
+          type: string
+          format: date-time
+    NewsItem:
+      allOf:
+        - $ref: '#/components/schemas/NewsSummary'
+        - type: object
+          required: [body]
+          properties:
+            body:
+              type: string
+              description: HTML with p, h2, h3, strong, em, a, ul, ol, li, blockquote and br only.
+              example: <p>Текст новости</p>
+    NewsList:
+      type: object
+      required: [news, count]
+      properties:
+        news:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsSummary'
+        count:
+          type: integer
+          description: The number of all items, not of this page.
+          example: 7
+    NewsInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 100
+          pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+          description: Empty makes it from the title (`-2`, `-3`, ... when taken).
+        date:
+          type: string
+          format: date
+          description: Empty is today.
+          example: '2026-10-20'
+        shortTitle:
+          type: string
+          maxLength: 100
+        excerpt:
+          type: string
+          maxLength: 300
+        body:
+          type: string
+          description: HTML, cleaned on save. At most 50000 characters of visible text.
+        photo:
+          type: object
+          properties:
+            url:
+              type: string
+              description: Empty (no photo), a site path (`/images/...`) or an uploaded image (`/uploads/...` or its full URL).
+            alt:
+              type: string
+              maxLength: 200
+            position:
+              type: string
+              description: Empty, or `X% Y%` with X and Y from 0 to 100.
+              example: 50% 30%
 paths:
   /health:
     get:
@@ -1112,6 +1214,124 @@ paths:
                 $ref: '#/components/schemas/Room'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /news:
+    get:
+      summary: List news
+      description: >-
+        Role: public. Newest first (`date` descending, then `id` descending). The items have no `body`.
+      tags: [news]
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: A page of news and the total count.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      summary: Create a news item
+      description: >-
+        Role: admin. Live at once. An empty `slug` is made from the title; a generated slug that is taken gets
+        `-2`, `-3`, ...; a slug typed by the admin that is taken gives 409.
+      tags: [news]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsInput'
+      responses:
+        '201':
+          description: The stored item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /news/{slug}:
+    get:
+      summary: Get one news item with its body
+      description: 'Role: public.'
+      tags: [news]
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /news/{id}:
+    put:
+      summary: Replace all fields of a news item
+      description: >-
+        Role: admin. A full replacement: an omitted optional field becomes an empty string. The item's own slug is
+        not a conflict. When `photo.url` changes, the replaced uploaded file is deleted.
+      tags: [news]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsInput'
+      responses:
+        '200':
+          description: The stored item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      summary: Delete a news item
+      description: 'Role: admin. The uploaded photo file of the item is deleted too.'
+      tags: [news]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Deleted.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

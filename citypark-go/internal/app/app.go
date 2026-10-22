@@ -19,6 +19,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/iiko"
 	"github.com/drewp1ter/citypark-go/internal/logging"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
+	"github.com/drewp1ter/citypark-go/internal/news"
 	"github.com/drewp1ter/citypark-go/internal/order"
 	"github.com/drewp1ter/citypark-go/internal/room"
 	"github.com/drewp1ter/citypark-go/internal/telegram"
@@ -73,6 +74,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken, tokens).Routes(r)
 		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret).Routes(r)
 		room.NewHandler(room.NewStore(db), uploads, tokens).Routes(r)
+		news.NewHandler(db, uploads, tokens, c, cfg.DefaultPageSize).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			WorkingHoursStart: cfg.WorkingHours.Start,
 			WorkingHoursEnd:   cfg.WorkingHours.End,
