@@ -37,14 +37,17 @@ await p.waitForURL("**/rooms?**");
 out("search submits to", p.url().replace(base, ""));
 
 // ---- free rooms count
+// Set known numbers on the backend first:
+// curl -s -X POST localhost:3000/api/v1/hotel/rooms -H "X-Webhook-Secret: $HOTEL_WEBHOOK_SECRET" \
+//   -H 'Content-Type: application/json' -d '{"rooms":{"vip":1,"singleBalcony":0,"single":2,"doubleTwin":1,"doubleEuro":0}}'
 const r = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await r.goto(base + "/");
 const fr = r.locator("p", { has: r.locator("span.sr-only", { hasText: "Сегодня свободно" }) });
 out(
   "rooms: free count tile / phrase",
-  `${await fr.locator("span[aria-hidden]").first().innerText()} / ${await fr.locator("span.text-lg").innerText()}  (want 5 / свободных номеров)`,
+  `${await fr.locator("span[aria-hidden]").first().innerText()} / ${await fr.locator("span.text-lg").innerText()}  (want 4 / свободных номера)`,
 );
-out("rooms: screen reader sentence", `${await fr.locator("span.sr-only").innerText()}  (want Сегодня свободно 5 номеров из 12)`);
+out("rooms: screen reader sentence", `${await fr.locator("span.sr-only").innerText()}  (want Сегодня свободно 4 номера из 12)`);
 
 // ---- cart
 const c = await browser.newPage({ viewport: { width: 1440, height: 900 } });

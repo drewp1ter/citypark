@@ -17,4 +17,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Home page
 - [x] 08 Free rooms count on the home page
-- [ ] 09 Free rooms from the backend [08] (needs citypark-go task 41)
+- [x] 09 Free rooms from the backend [08] (needs citypark-go task 41)

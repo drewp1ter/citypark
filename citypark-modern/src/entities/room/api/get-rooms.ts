@@ -1,4 +1,5 @@
 import { rooms } from "../model/rooms.data";
+import { fetchHotelRooms } from "./hotel-api";
 import type { Room, RoomAvailability, StayQuery } from "../model/types";
 
 // Reads go through these functions only. Today they return static data;
@@ -8,7 +9,10 @@ export async function getRooms(): Promise<readonly Room[]> {
   return rooms;
 }
 
-/** Availability by room id for the given stay. Sample numbers from the design until a booking engine is connected. */
+/**
+ * Availability by room id for the given stay. Sample numbers from the design until a booking engine is connected.
+ * Still sample data because the backend (`GET /hotel/rooms`) only knows today's counts, not counts for a date range.
+ */
 export async function getRoomAvailability(query?: StayQuery): Promise<Record<string, RoomAvailability>> {
   void query; // TODO: ask the booking engine for these dates
   return {
@@ -20,11 +24,7 @@ export async function getRoomAvailability(query?: StayQuery): Promise<Record<str
   };
 }
 
-/** Rooms free tonight, summed over room types. `null` when availability is unknown. */
+/** Rooms free today, from the backend. `null` when it has no data yet; errors are left to the caller. */
 export async function getFreeRoomsCount(): Promise<number | null> {
-  const availability = await getRoomAvailability();
-  return Object.values(availability).reduce(
-    (sum, room) => sum + (room.state === "available" ? (room.left ?? 1) : 0),
-    0,
-  );
+  return (await fetchHotelRooms())?.free ?? null;
 }
