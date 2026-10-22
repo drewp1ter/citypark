@@ -34,7 +34,7 @@ export async function HomePage() {
 
 	return (
 		<main>
-			<Hero />
+			<Hero rooms={rooms} />
 			<RoomsSection rooms={rooms} free={freeRooms} />
 			<RestaurantSection />
 			{menu && <DeliverySection categories={menu.categories.slice(0, HOME_CATEGORIES)} dishes={dishes} />}

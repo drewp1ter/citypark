@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import { delivery } from '@/entities/dish'
+import { minPricePerNight, type Room } from '@/entities/room'
 import { site } from '@/shared/config'
 import { formatPrice } from '@/shared/lib'
 import { AppLink, Badge, StatTile } from '@/shared/ui'
@@ -57,7 +58,13 @@ const { phones, address } = site
 const [phoneHead, phoneTail] = ['8 918', '311-97-91']
 
 /** Bento grid: intro card, three photo tiles, phone card, then the facts. */
-export function Hero() {
+export function Hero({ rooms }: { rooms: readonly Room[] }) {
+	const min = minPricePerNight(rooms)
+	const hotelCaption =
+		min === null
+			? { mobile: 'Номера', desktop: '12 номеров «Люкс»' }
+			: { mobile: `от ${formatPrice(min)}`, desktop: `от ${formatPrice(min)} / ночь` }
+
 	return (
 		<section className='max-w-page mx-auto w-full px-3 pt-4 md:px-6 md:pt-8'>
 			<div className='grid grid-cols-2 gap-2 md:gap-3 lg:grid-cols-3'>
@@ -86,7 +93,7 @@ export function Hero() {
 					image='/images/hotel-building.jpg'
 					alt='Здание отеля'
 					title={{ mobile: 'Отель ↗', desktop: 'Отель-люкс' }}
-					caption={{ mobile: 'от 4 000 ₽', desktop: 'от 4 000 ₽ / ночь' }}
+					caption={hotelCaption}
 					className='lg:min-h-[380px]'
 					priority
 				/>

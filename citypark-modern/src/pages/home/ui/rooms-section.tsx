@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { Room } from '@/entities/room'
+import { hasPriceRange, minPricePerNight, type Room } from '@/entities/room'
 import { StayDatesBar } from '@/features/search-rooms'
 import { formatPrice, typo } from '@/shared/lib'
 import { AppLink, Button, Card, Section } from '@/shared/ui'
@@ -7,31 +7,28 @@ import { FreeRooms } from './free-rooms'
 
 // The home page shows three short cards, with their own wording (not the same as the rooms page).
 type Teaser = {
-	roomId: string
+	roomIds: readonly string[]
 	name: string
 	details: { desktop: string; mobile: string }
-	/** "от 4 000 ₽" */
-	from?: boolean
 	photo: { src: string; alt: string }
 	featured?: boolean
 }
 
 const teasers: Teaser[] = [
 	{
-		roomId: 'single',
+		roomIds: ['single', 'single-balcony'],
 		name: 'Одноместный',
 		details: { desktop: typo('19 м² · № 201 — с балконом'), mobile: typo('19 м²') },
-		from: true,
 		photo: { src: '/images/room-single.jpg', alt: 'Одноместный номер' },
 	},
 	{
-		roomId: 'double-twin',
+		roomIds: ['double-twin', 'double-euro'],
 		name: 'Двухместный',
 		details: { desktop: typo('23–25 м² · 2 кровати или «евро»'), mobile: typo('23–25 м²') },
 		photo: { src: '/images/room-double.jpg', alt: 'Двухместный номер' },
 	},
 	{
-		roomId: 'vip',
+		roomIds: ['vip'],
 		name: 'VIP-номер',
 		details: { desktop: typo('45 м² · 2 комнаты · балкон · до 4 гостей'), mobile: typo('45 м² · до 4 гостей') },
 		photo: { src: '/images/room-vip.jpg', alt: 'VIP-номер' },
@@ -40,8 +37,6 @@ const teasers: Teaser[] = [
 ]
 
 export function RoomsSection({ rooms, free }: { rooms: readonly Room[]; free: number | null }) {
-	const price = (roomId: string) => rooms.find((room) => room.id === roomId)?.pricePerNight ?? 0
-
 	return (
 		<Section
 			title='Номера'
@@ -59,7 +54,7 @@ export function RoomsSection({ rooms, free }: { rooms: readonly Room[]; free: nu
 				{teasers.map((teaser) => (
 					<Card
 						as='article'
-						key={teaser.roomId}
+						key={teaser.roomIds.join()}
 						variant={teaser.featured ? 'inverse' : 'surface'}
 						className='w-[270px] shrink-0 rounded-lg p-2 md:w-auto md:rounded-xl md:p-2.5'
 					>
@@ -88,8 +83,8 @@ export function RoomsSection({ rooms, free }: { rooms: readonly Room[]; free: nu
 							</p>
 							<div className='mt-0.5 flex items-center justify-between gap-3 md:mt-3.5'>
 								<span className='font-display text-lg font-medium md:text-[22px] md:tracking-[-0.02em]'>
-									{teaser.from && 'от '}
-									{formatPrice(price(teaser.roomId))}
+									{hasPriceRange(rooms, teaser.roomIds) && 'от '}
+									{formatPrice(minPricePerNight(rooms, teaser.roomIds) ?? 0)}
 								</span>
 								<Button
 									href='/rooms'
