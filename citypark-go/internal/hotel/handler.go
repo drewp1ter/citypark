@@ -9,21 +9,24 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/validate"
 )
 
-// Handler serves the free-room counts.
+// Handler serves the free-room counts and the hotel prices.
 type Handler struct {
 	store  *Store
 	secret string
+	tokens *auth.Tokens
 }
 
 // NewHandler creates a Handler. secret is the value of HOTEL_WEBHOOK_SECRET; ""
-// disables POST /hotel/rooms.
-func NewHandler(s *Store, secret string) *Handler {
-	return &Handler{store: s, secret: secret}
+// disables POST /hotel/rooms. tokens guards PUT /hotel/prices. The store must be built on a *sqlx.DB
+// because PUT /hotel/prices needs a transaction.
+func NewHandler(s *Store, secret string, tokens *auth.Tokens) *Handler {
+	return &Handler{store: s, secret: secret, tokens: tokens}
 }
 
 type updateRequest struct {
@@ -49,10 +52,16 @@ func newResponse(st State) response {
 	return response{Rooms: st.Rooms, Free: st.Free(), UpdatedAt: st.UpdatedAt}
 }
 
-// Routes registers GET /hotel/rooms (public) and POST /hotel/rooms (shared secret).
+// Routes registers GET /hotel/rooms (public), POST /hotel/rooms (shared secret), GET /hotel/prices (public)
+// and PUT /hotel/prices (admin).
 func (h *Handler) Routes(r chi.Router) {
 	r.Get("/hotel/rooms", httpx.Handle(h.get))
 	r.Post("/hotel/rooms", httpx.Handle(h.update))
+	r.Get("/hotel/prices", httpx.Handle(h.getPrices))
+	r.Group(func(r chi.Router) {
+		r.Use(h.tokens.RequireRole(auth.RoleAdmin))
+		r.Put("/hotel/prices", httpx.Handle(h.putPrices))
+	})
 }
 
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) error {

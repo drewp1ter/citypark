@@ -693,6 +693,106 @@ The same body as `GET /hotel/rooms`.
 
 Meant for the hotel's external sender, not the frontend; send all five types every time. A missing type is an error, not "unchanged", and `0` is a valid count. The old three-counter body (`double_rooms`, `single_rooms`, `vip_room`) is not accepted.
 
+#### GET /hotel/prices
+
+Returns the hotel fees and the breakfast menu.
+
+- **Role:** public
+
+**Response 200**
+
+Money is in rubles. `breakfast` is in the order the admin saved it and is `[]` when the menu is empty.
+
+```json
+{
+  "breakfastDelivery": 100,
+  "lateCheckoutPerHour": 500,
+  "smokingFine": 2000,
+  "breakfast": [
+    { "name": "Омлет, 130 г", "shortName": "Омлет", "price": 250, "desktopOnly": false },
+    { "name": "Сырники", "shortName": "", "price": 300, "desktopOnly": false },
+    { "name": "Блины с творогом", "shortName": "", "price": 200, "desktopOnly": true },
+    { "name": "Круассан с сёмгой", "shortName": "", "price": 350, "desktopOnly": false },
+    { "name": "Каша с фруктами", "shortName": "", "price": 80, "desktopOnly": true }
+  ],
+  "updatedAt": "2026-10-22T21:30:03.595242Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 404 | the prices row was deleted from the database (does not happen normally: the migration creates it) | `Не найдено` |
+
+**Notes**
+
+These numbers fill the placeholders `{{breakfastDelivery}}`, `{{lateCheckoutPerHour}}` and `{{smokingFine}}` of the content blocks. `desktopOnly` items are hidden on the mobile version of the site. `shortName` is `""` when the item has no short form.
+
+#### PUT /hotel/prices
+
+Replaces the three fees and the whole breakfast menu.
+
+- **Role:** admin (`Authorization: Bearer <token>`)
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `breakfastDelivery` | number | yes | rubles, 0–100000, at most 2 decimals; `0` is valid |
+| `lateCheckoutPerHour` | number | yes | rubles, 0–100000, at most 2 decimals |
+| `smokingFine` | number | yes | rubles, 0–100000, at most 2 decimals |
+| `breakfast` | array | no | 0–30 items; a missing field means an empty menu |
+| `breakfast[].name` | string | yes | at most 80 characters, surrounding spaces are removed |
+| `breakfast[].shortName` | string | no | at most 40 characters, surrounding spaces are removed |
+| `breakfast[].price` | number | yes | rubles, 0–100000, at most 2 decimals |
+| `breakfast[].desktopOnly` | boolean | no | default `false` |
+
+`updatedAt` is not accepted.
+
+```json
+{
+  "breakfastDelivery": 150,
+  "lateCheckoutPerHour": 600.5,
+  "smokingFine": 3000,
+  "breakfast": [
+    { "name": "Яичница", "shortName": "Яйца", "price": 199.99, "desktopOnly": true },
+    { "name": "Омлет", "price": 0 }
+  ]
+}
+```
+
+**Response 200**
+
+The stored state, the same as `GET /hotel/prices`.
+
+```json
+{
+  "breakfastDelivery": 150,
+  "lateCheckoutPerHour": 600.5,
+  "smokingFine": 3000,
+  "breakfast": [
+    { "name": "Яичница", "shortName": "Яйца", "price": 199.99, "desktopOnly": true },
+    { "name": "Омлет", "shortName": "", "price": 0, "desktopOnly": false }
+  ],
+  "updatedAt": "2026-10-22T21:30:03.644761Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | a field is missing, blank, too long or out of range | validation message, see `errors` (keys look like `smokingFine`, `breakfast[0].name`, `breakfast[1].price`, `breakfast`; for example `поле не должно быть пустым`, `значение должно быть не меньше 0`, `значение должно быть не больше 80`, `значение должно быть не больше 30` for more than 30 items) |
+| 400 | a price has more than 2 decimals | `errors` key of the field: `не более 2 знаков после запятой` |
+| 401 | no token or a bad token | `Требуется авторизация` |
+| 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
+
+**Notes**
+
+This is a full replacement in one transaction: send the whole breakfast list every time. The items are stored in the order sent, so the order of the array is the order on the site. On any error nothing changes. These numbers fill the placeholders `{{breakfastDelivery}}`, `{{lateCheckoutPerHour}}` and `{{smokingFine}}` of the content blocks.
+
 ### Rooms
 
 #### GET /rooms

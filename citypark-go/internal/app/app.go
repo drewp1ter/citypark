@@ -74,7 +74,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize).Routes(r)
 		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken, tokens).Routes(r)
-		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret).Routes(r)
+		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret, tokens).Routes(r)
 		room.NewHandler(room.NewStore(db), uploads, tokens).Routes(r)
 		news.NewHandler(db, uploads, tokens, c, cfg.DefaultPageSize).Routes(r)
 		content.NewHandler(db, uploads, tokens).Routes(r)

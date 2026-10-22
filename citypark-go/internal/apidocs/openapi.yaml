@@ -520,6 +520,89 @@ components:
       properties:
         rooms:
           $ref: '#/components/schemas/HotelRooms'
+    BreakfastItem:
+      type: object
+      required: [name, shortName, price, desktopOnly]
+      properties:
+        name:
+          type: string
+          example: Омлет, 130 г
+        shortName:
+          type: string
+          example: Омлет
+        price:
+          type: number
+          description: Rubles.
+          example: 250
+        desktopOnly:
+          type: boolean
+          description: The item is hidden on the mobile version of the site.
+    HotelPrices:
+      type: object
+      required: [breakfastDelivery, lateCheckoutPerHour, smokingFine, breakfast, updatedAt]
+      properties:
+        breakfastDelivery:
+          type: number
+          description: Rubles. Fills `{{breakfastDelivery}}` in the content blocks.
+          example: 100
+        lateCheckoutPerHour:
+          type: number
+          description: Rubles. Fills `{{lateCheckoutPerHour}}`.
+          example: 500
+        smokingFine:
+          type: number
+          description: Rubles. Fills `{{smokingFine}}`.
+          example: 2000
+        breakfast:
+          type: array
+          items:
+            $ref: '#/components/schemas/BreakfastItem'
+        updatedAt:
+          type: string
+          format: date-time
+    BreakfastItemInput:
+      type: object
+      required: [name, price]
+      properties:
+        name:
+          type: string
+          maxLength: 80
+        shortName:
+          type: string
+          maxLength: 40
+        price:
+          type: number
+          minimum: 0
+          maximum: 100000
+          description: Rubles, at most 2 decimals.
+        desktopOnly:
+          type: boolean
+          default: false
+    HotelPricesInput:
+      type: object
+      required: [breakfastDelivery, lateCheckoutPerHour, smokingFine]
+      properties:
+        breakfastDelivery:
+          type: number
+          minimum: 0
+          maximum: 100000
+          description: Rubles, at most 2 decimals.
+        lateCheckoutPerHour:
+          type: number
+          minimum: 0
+          maximum: 100000
+          description: Rubles, at most 2 decimals.
+        smokingFine:
+          type: number
+          minimum: 0
+          maximum: 100000
+          description: Rubles, at most 2 decimals.
+        breakfast:
+          type: array
+          maxItems: 30
+          description: The whole menu in display order. A missing field means an empty menu.
+          items:
+            $ref: '#/components/schemas/BreakfastItemInput'
     RoomPhoto:
       type: object
       required: [url, alt, position]
@@ -1303,6 +1386,49 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /hotel/prices:
+    get:
+      summary: Get the hotel fees and the breakfast menu
+      description: >-
+        Role: public. These numbers fill the placeholders `{{breakfastDelivery}}`, `{{lateCheckoutPerHour}}`
+        and `{{smokingFine}}` of the content blocks.
+      tags: [hotel]
+      responses:
+        '200':
+          description: The fees and the breakfast items in display order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelPrices'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Replace the hotel fees and the breakfast menu
+      description: >-
+        Role: admin. A full replacement in one transaction: the three fees and the whole breakfast list. The
+        items are stored in the order sent. On an error nothing changes.
+      tags: [hotel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HotelPricesInput'
+      responses:
+        '200':
+          description: The stored state, the same as for GET.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HotelPrices'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /rooms:
     get:
       summary: Get the five hotel room types

@@ -7,10 +7,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 
+	"github.com/drewp1ter/citypark-go/internal/auth"
+	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/testutil"
 )
@@ -92,7 +95,7 @@ const validBody = `{"rooms": {"vip": 1, "singleBalcony": 0, "single": 2, "double
 
 func newRouter(db *sqlx.DB, secret string) http.Handler {
 	r := chi.NewRouter()
-	NewHandler(NewStore(db), secret).Routes(r)
+	NewHandler(NewStore(db), secret, auth.NewTokens("test-secret", time.Hour, clock.Fixed(time.Now()))).Routes(r)
 	return r
 }
 
