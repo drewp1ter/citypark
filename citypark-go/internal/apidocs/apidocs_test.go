@@ -35,7 +35,7 @@ func routerRoutes(t *testing.T) map[string]bool {
 	routes := map[string]bool{}
 	walk := func(method, route string, _ http.Handler, _ ...func(http.Handler) http.Handler) error {
 		path := strings.TrimPrefix(route, "/api/v1")
-		if method == http.MethodOptions || path == "/openapi.yaml" || path == "/docs" {
+		if method == http.MethodOptions || path == "/openapi.yaml" || path == "/docs" || strings.HasPrefix(path, "/uploads/") {
 			return nil
 		}
 		routes[method+" "+path] = true

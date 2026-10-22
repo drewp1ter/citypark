@@ -31,10 +31,14 @@ services:
     env_file: .env
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/citypark_dev?sslmode=disable
+      UPLOAD_DIR: /data/uploads
     ports:
       - "3000:3000"
+    volumes:
+      - uploads:/data/uploads
     depends_on:
       - postgres
 
 volumes:
   pgdata:
+  uploads:

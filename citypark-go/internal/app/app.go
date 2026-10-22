@@ -21,6 +21,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/order"
 	"github.com/drewp1ter/citypark-go/internal/telegram"
+	"github.com/drewp1ter/citypark-go/internal/upload"
 	"github.com/drewp1ter/citypark-go/internal/user"
 )
 
@@ -29,6 +30,7 @@ type App struct {
 	Handler  http.Handler
 	Notifier *TelegramNotifier
 	Syncer   *iiko.Syncer
+	Uploads  *upload.Storage
 }
 
 // New builds all stores, services and handlers and returns the router.
@@ -53,6 +55,8 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	)
 	syncer := iiko.NewSyncer(db, iikoClient)
 
+	uploads := upload.NewStorage(cfg.Upload.Dir, cfg.Upload.PublicBaseURL)
+
 	orders := order.NewService(db, c, notifier, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
 
 	r := chi.NewRouter()
@@ -72,9 +76,13 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 			WorkingHoursEnd:   cfg.WorkingHours.End,
 			DefaultPageSize:   cfg.DefaultPageSize,
 		}).Routes(r)
+		upload.NewHandler(uploads, tokens).Routes(r)
 	})
+	// Static files live outside /api/v1.
+	r.Get("/uploads/*", uploads.Serve().ServeHTTP)
+	r.Head("/uploads/*", uploads.Serve().ServeHTTP)
 
-	return &App{Handler: r, Notifier: notifier, Syncer: syncer}
+	return &App{Handler: r, Notifier: notifier, Syncer: syncer, Uploads: uploads}
 }
 
 // cors allows any origin and answers preflight requests itself.

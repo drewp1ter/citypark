@@ -67,7 +67,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 42 Order search filters [29]
 - [x] 43 Menu sync for admins, one sync at a time [38]
 - [x] 44 Scheduled menu sync [43]
-- [ ] 45 Image uploads [31]
+- [x] 45 Image uploads [31]
 - [-] 46 Dish photos from the admin REMOVED: dish photos come from iiko (`syncImages`)
 - [ ] 47 Rich text sanitizer
 - [ ] 48 Hotel rooms content [45, 47]

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -21,6 +22,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/drewp1ter/citypark-go/internal/app"
+	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/config"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
@@ -435,5 +437,57 @@ func TestAppOnlineFlow(t *testing.T) {
 	rec = callback(strings.Repeat("0", 32))
 	if rec.Code != http.StatusForbidden || rec.Body.String() != "FAIL" {
 		t.Errorf("wrong signature = %d %q, want 403 FAIL", rec.Code, rec.Body)
+	}
+}
+
+func TestAppUploads(t *testing.T) {
+	db := testutil.NewDB(t)
+	a := newApp(t, db, newFakeTelegram(t), map[string]string{
+		"UPLOAD_DIR":      t.TempDir(),
+		"PUBLIC_BASE_URL": "https://api.example.com/",
+	})
+	adminID := testutil.InsertUser(t, db, "Admin", "+79000000001", auth.RoleAdmin)
+	tokens := auth.NewTokens("changeme", time.Hour, clock.Fixed(time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)))
+	token, err := tokens.Issue(adminID, auth.RoleAdmin)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// A PNG signature is enough for http.DetectContentType.
+	png := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	part, err := mw.CreateFormFile("file", "a.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	part.Write(png)
+	mw.Close()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/uploads", &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer "+token)
+	rec := httptest.NewRecorder()
+	a.Handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("POST /api/v1/uploads = %d, body %s", rec.Code, rec.Body)
+	}
+	var resp struct{ URL string }
+	testutil.Decode(t, rec, &resp)
+	path, ok := strings.CutPrefix(resp.URL, "https://api.example.com")
+	if !ok {
+		t.Fatalf("url = %q, want it to start with PUBLIC_BASE_URL", resp.URL)
+	}
+	if stored, err := a.Uploads.Stored(resp.URL); err != nil || stored != path {
+		t.Errorf("Uploads.Stored(%q) = %q, %v; want %q", resp.URL, stored, err, path)
+	}
+
+	// The file is served outside /api/v1, for GET and HEAD.
+	got := testutil.DoJSON(t, a.Handler, http.MethodGet, path, "", nil)
+	if got.Code != http.StatusOK || !bytes.Equal(got.Body.Bytes(), png) {
+		t.Errorf("GET %s = %d, body %q", path, got.Code, got.Body)
+	}
+	head := testutil.DoJSON(t, a.Handler, http.MethodHead, path, "", nil)
+	if head.Code != http.StatusOK {
+		t.Errorf("HEAD %s = %d, want 200", path, head.Code)
 	}
 }

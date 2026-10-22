@@ -14,6 +14,7 @@ tags:
   - name: hotel
   - name: orders
   - name: integrations
+  - name: uploads
 components:
   securitySchemes:
     bearerAuth:
@@ -72,6 +73,12 @@ components:
             $ref: '#/components/schemas/Error'
     Conflict:
       description: The value is already used.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PayloadTooLarge:
+      description: The file is larger than 10 MiB (`Файл больше 10 МБ`).
       content:
         application/json:
           schema:
@@ -1296,3 +1303,50 @@ paths:
               schema:
                 type: string
                 example: FAIL
+  /uploads:
+    post:
+      summary: Upload an image (admin)
+      description: >-
+        Role: admin. Send a JPEG, PNG or WebP image of at most 10 MiB as the multipart field `file`.
+        The type is detected from the content; the file name and part Content-Type are ignored. The
+        returned `url` is what content endpoints accept as a photo URL. Files that are never used are
+        not cleaned up. Uploaded files are served as static files at `GET /uploads/...`, outside
+        `/api/v1`.
+      tags: [uploads]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: The image is stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    example: http://localhost:3000/uploads/2026/10/c19b550d7d3fc582866bd4e85f9301b7.png
+        '400':
+          description: No `file` field (`Выберите файл`) or not a JPEG, PNG or WebP image (`Допустимы только JPEG, PNG и WebP`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'

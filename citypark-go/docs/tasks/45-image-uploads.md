@@ -44,6 +44,7 @@ func NewStorage(dir, publicBaseURL string) *Storage
 
 // Save writes data under dir/YYYY/MM/<32 hex>.<ext> (time from now, random name from crypto/rand)
 // and returns the stored path "/uploads/YYYY/MM/<name>.<ext>".
+// allow `time.Now()` here
 func (s *Storage) Save(now time.Time, data []byte, ext string) (string, error)
 
 // Public turns a stored path into the URL sent to clients: "/uploads/..." → base + path; anything else unchanged.

@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Orders, Integrations. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -1205,3 +1205,52 @@ The body is always the plain text `FAIL`. Moneta repeats the call later after an
 **Notes**
 
 A valid callback sets the order to `paid` and notifies the staff once. Repeated callbacks, and callbacks for an order that is already `paid`, `confirmed` or `canceled`, answer `SUCCESS` and change nothing. The signature is checked before the order is looked up, so an unsigned request gets 403 even for an unknown order. The route has no working-hours limit.
+
+### Uploads
+
+#### POST /uploads
+
+Uploads an image and returns its URL. The admin panel uses it for photos of rooms, news and content blocks.
+
+- **Role:** admin
+
+**Request body**
+
+`Content-Type: multipart/form-data`, not JSON.
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `file` | file | yes | a JPEG, PNG or WebP image, at most 10 MiB; the type is detected from the content, the file name and the part's `Content-Type` are ignored |
+
+```
+POST /api/v1/uploads
+Authorization: Bearer <token>
+Content-Type: multipart/form-data; boundary=...
+
+--...
+Content-Disposition: form-data; name="file"; filename="room.png"
+Content-Type: image/png
+
+<bytes>
+--...--
+```
+
+**Response 201**
+
+```json
+{ "url": "http://localhost:3000/uploads/2026/10/c19b550d7d3fc582866bd4e85f9301b7.png" }
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | the request has no `file` field, or is not a multipart form | `Выберите файл` |
+| 400 | the file is not a JPEG, PNG or WebP image | `Допустимы только JPEG, PNG и WebP` |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
+| 413 | the file is larger than 10 MiB | `Файл больше 10 МБ` |
+
+**Notes**
+
+The `url` is what you send as a photo URL to the content endpoints. The server also accepts it back without the origin (`/uploads/2026/10/...`), and accepts photos that ship with the site (`/images/room-vip.jpg`) and an empty string for "no photo"; any other address is rejected by the content endpoints. Files that are never used are not cleaned up. Uploaded files are static files served at `GET /uploads/...`, outside `/api/v1`; they are immutable and cached for a year, so a replaced photo is a new upload with a new URL.

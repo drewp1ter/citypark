@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,6 +22,7 @@ type Config struct {
 	Telegram         Telegram
 	Moneta           Moneta
 	Hotel            Hotel
+	Upload           Upload
 	WorkingHours     WorkingHours
 	ThankYouPageCash string
 }
@@ -41,6 +43,7 @@ type Moneta struct {
 	TestMode bool
 }
 type Hotel struct{ WebhookSecret string }
+type Upload struct{ Dir, PublicBaseURL string }
 type WorkingHours struct{ Start, End string } // "9:00"; empty string means no restriction
 
 // LookupFunc has the signature of os.LookupEnv.
@@ -134,6 +137,10 @@ func Load(lookup LookupFunc) (Config, error) {
 		TestMode: str("MONETA_TEST_MODE", "false") == "true",
 	}
 	c.Hotel = Hotel{WebhookSecret: str("HOTEL_WEBHOOK_SECRET", "")}
+	c.Upload = Upload{
+		Dir:           str("UPLOAD_DIR", "./uploads"),
+		PublicBaseURL: strings.TrimRight(str("PUBLIC_BASE_URL", "http://localhost:3000"), "/"),
+	}
 	c.WorkingHours = WorkingHours{
 		Start: str("WORKING_HOURS_START", "9:00"),
 		End:   str("WORKING_HOURS_END", "22:00"),

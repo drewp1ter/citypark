@@ -8,7 +8,9 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/serve
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
 COPY --from=build /out/server /app/server
-ENV APP_ENV=production
+ENV APP_ENV=production UPLOAD_DIR=/data/uploads
+RUN mkdir -p /data/uploads && chown nobody /data/uploads
+VOLUME /data/uploads
 EXPOSE 3000
 USER nobody
 ENTRYPOINT ["/app/server"]
