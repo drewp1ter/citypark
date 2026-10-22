@@ -21,3 +21,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Brand
 - [x] 10 Brand logo in the header and footer
+
+## Rooms page
+- [x] 11 Room availability from the backend [09] (needs citypark-go task 41)

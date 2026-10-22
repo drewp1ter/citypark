@@ -1,3 +1,4 @@
+import { todayInMoscow } from '@/shared/lib'
 import { rooms } from '../model/rooms.data'
 import { fetchHotelRooms } from './hotel-api'
 import type { Room, RoomAvailability, StayQuery } from '../model/types'
@@ -9,19 +10,35 @@ export async function getRooms(): Promise<readonly Room[]> {
 	return rooms
 }
 
+// Website room id → key in `GET /hotel/rooms` → how many rooms of that type the hotel has.
+const roomTypes = [
+	{ id: 'vip', key: 'vip', total: 1 },
+	{ id: 'single-balcony', key: 'singleBalcony', total: 1 },
+	{ id: 'single', key: 'single', total: 2 },
+	{ id: 'double-twin', key: 'doubleTwin', total: 4 },
+	{ id: 'double-euro', key: 'doubleEuro', total: 4 },
+] as const
+
 /**
- * Availability by room id for the given stay. Sample numbers from the design until a booking engine is connected.
- * Still sample data because the backend (`GET /hotel/rooms`) only knows today's counts, not counts for a date range.
+ * Availability by room id for the given stay, or `null` when it is not known.
+ * The backend only knows today's counts, so any check-in other than today is `null`. Errors are left to the caller.
  */
-export async function getRoomAvailability(query?: StayQuery): Promise<Record<string, RoomAvailability>> {
-	void query // TODO: ask the booking engine for these dates
-	return {
-		vip: { state: 'available' },
-		'single-balcony': { state: 'available' },
-		single: { state: 'available', left: 2 },
-		'double-twin': { state: 'available', left: 1 },
-		'double-euro': { state: 'unavailable' },
+export async function getRoomAvailability(query: StayQuery): Promise<Record<string, RoomAvailability> | null> {
+	if (query.checkIn !== todayInMoscow()) return null
+	const hotel = await fetchHotelRooms()
+	if (!hotel) return null
+
+	const availability: Record<string, RoomAvailability> = {}
+	for (const { id, key, total } of roomTypes) {
+		const count = hotel.rooms[key]
+		availability[id] =
+			count === 0
+				? { state: 'unavailable' }
+				: total === 1
+					? { state: 'available' }
+					: { state: 'available', left: count }
 	}
+	return availability
 }
 
 /** Rooms free today, from the backend. `null` when it has no data yet; errors are left to the caller. */

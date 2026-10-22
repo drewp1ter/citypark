@@ -6,7 +6,7 @@ import { Button, Card } from '@/shared/ui'
 // TODO: "Выбрать" scrolls to the search bar, as in the design. When a booking engine is connected it opens the booking.
 const BOOK_HREF = '#search'
 
-function statusLabel(availability: RoomAvailability | undefined): string {
+function statusLabel(availability: RoomAvailability | null | undefined): string {
 	if (!availability || availability.state === 'unavailable') return 'Нет на эти даты'
 	return availability.left ? `Свободно ${availability.left}` : 'Свободен'
 }
@@ -29,7 +29,8 @@ type RoomCardProps = {
 	/** The first card of the page: its photo is the LCP element on mobile, so it loads eagerly. */
 	first?: boolean
 	room: Room
-	availability: RoomAvailability | undefined
+	/** `null` = not known for these dates (no badge); `undefined` = known, but this room is missing (unavailable). */
+	availability: RoomAvailability | null | undefined
 	nights: number
 }
 
@@ -62,7 +63,8 @@ function RoomPhoto({
 
 /** The VIP room: a dark card, two columns wide on desktop with a photo on the left and the details on the right. */
 function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) {
-	const available = availability?.state === 'available'
+	const known = availability !== null
+	const available = !known || availability?.state === 'available'
 	const status = statusLabel(availability)
 
 	return (
@@ -78,14 +80,18 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 					eager={first}
 					className='h-[210px] rounded-sm md:h-[360px] md:rounded-md'
 				/>
-				<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:hidden'>
-					{status}
-				</StatusBadge>
+				{known && (
+					<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:hidden'>
+						{status}
+					</StatusBadge>
+				)}
 			</div>
 			<div className='flex min-w-0 flex-col gap-1 px-2.5 pt-3.5 pb-2 md:flex-[1_1_280px] md:gap-2.5 md:px-5 md:py-[22px]'>
-				<StatusBadge available={available} className='hidden self-start md:inline-block'>
-					{status}
-				</StatusBadge>
+				{known && (
+					<StatusBadge available={available} className='hidden self-start md:inline-block'>
+						{status}
+					</StatusBadge>
+				)}
 				<h2 className='font-display text-[22px] font-medium md:text-[32px] md:tracking-[-0.02em]'>{room.name}</h2>
 				<p className='text-inverse-muted text-sm md:text-base'>
 					{room.numbers} · <span className='md:hidden'>{room.area}</span>
@@ -116,7 +122,8 @@ export function RoomCard(props: RoomCardProps) {
 	const { room, availability, first } = props
 	if (room.kind === 'vip') return <FeaturedRoomCard {...props} />
 
-	const available = availability?.state === 'available'
+	const known = availability !== null
+	const available = !known || availability?.state === 'available'
 
 	return (
 		<Card as='article' className='rounded-lg p-2 md:rounded-xl md:p-2.5'>
@@ -127,9 +134,11 @@ export function RoomCard(props: RoomCardProps) {
 					eager={first}
 					className='h-[190px] rounded-sm md:h-[220px] md:rounded-md'
 				/>
-				<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:top-3 md:left-3'>
-					{statusLabel(availability)}
-				</StatusBadge>
+				{known && (
+					<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:top-3 md:left-3'>
+						{statusLabel(availability)}
+					</StatusBadge>
+				)}
 			</div>
 			<div className='flex flex-1 flex-col gap-1 px-2.5 pt-3.5 pb-2 md:gap-1.5 md:px-3 md:pt-4 md:pb-2.5'>
 				<h2 className='text-[19px] font-bold md:text-[21px]'>{room.name}</h2>

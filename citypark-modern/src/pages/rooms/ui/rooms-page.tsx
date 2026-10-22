@@ -33,13 +33,18 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 			checkIn: query.checkIn,
 			checkOut: query.checkOut,
 			guests: query.guests === '3-4' ? 3 : Number(query.guests),
+		}).catch((error: unknown) => {
+			console.error(error)
+			return null
 		}),
 		getRoomAmenities(),
 		getQuickFacts(),
 	])
 
 	const visible = rooms.filter(
-		(room) => matchesType(room, query.type) && (!query.freeOnly || availability[room.id]?.state === 'available')
+		(room) =>
+			matchesType(room, query.type) &&
+			(!query.freeOnly || availability === null || availability[room.id]?.state === 'available')
 	)
 
 	return (
@@ -115,7 +120,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 							first={index === 0}
 							key={room.id}
 							room={room}
-							availability={availability[room.id]}
+							availability={availability ? availability[room.id] : null}
 							nights={query.nights}
 						/>
 					))
