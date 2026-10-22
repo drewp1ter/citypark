@@ -3,6 +3,7 @@ import type { Room } from "@/entities/room";
 import { StayDatesBar } from "@/features/search-rooms";
 import { formatPrice, typo } from "@/shared/lib";
 import { AppLink, Button, Card, Section } from "@/shared/ui";
+import { FreeRooms } from "./free-rooms";
 
 // The home page shows three short cards, with their own wording (not the same as the rooms page).
 type Teaser = {
@@ -38,7 +39,7 @@ const teasers: Teaser[] = [
   },
 ];
 
-export function RoomsSection({ rooms }: { rooms: readonly Room[] }) {
+export function RoomsSection({ rooms, free }: { rooms: readonly Room[]; free: number | null }) {
   const price = (roomId: string) => rooms.find((room) => room.id === roomId)?.pricePerNight ?? 0;
 
   return (
@@ -102,6 +103,7 @@ export function RoomsSection({ rooms }: { rooms: readonly Room[] }) {
           </Card>
         ))}
       </div>
+      {free !== null && <FreeRooms count={free} />}
     </Section>
   );
 }

@@ -14,3 +14,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Forms
 - [x] 06 Dropdown Select on React Aria
 - [x] 07 Clear button for text inputs
+
+## Home page
+- [x] 08 Free rooms count on the home page
+- [ ] 09 Free rooms from the backend [08] (needs citypark-go task 41)

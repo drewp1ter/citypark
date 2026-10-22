@@ -19,3 +19,12 @@ export async function getRoomAvailability(query?: StayQuery): Promise<Record<str
     "double-euro": { state: "unavailable" },
   };
 }
+
+/** Rooms free tonight, summed over room types. `null` when availability is unknown. */
+export async function getFreeRoomsCount(): Promise<number | null> {
+  const availability = await getRoomAvailability();
+  return Object.values(availability).reduce(
+    (sum, room) => sum + (room.state === "available" ? (room.left ?? 1) : 0),
+    0,
+  );
+}

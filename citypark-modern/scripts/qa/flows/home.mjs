@@ -36,6 +36,16 @@ await p.getByRole("button", { name: "Проверить" }).click();
 await p.waitForURL("**/rooms?**");
 out("search submits to", p.url().replace(base, ""));
 
+// ---- free rooms count
+const r = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+await r.goto(base + "/");
+const fr = r.locator("p", { has: r.locator("span.sr-only", { hasText: "Сегодня свободно" }) });
+out(
+  "rooms: free count tile / phrase",
+  `${await fr.locator("span[aria-hidden]").first().innerText()} / ${await fr.locator("span.text-lg").innerText()}  (want 5 / свободных номеров)`,
+);
+out("rooms: screen reader sentence", `${await fr.locator("span.sr-only").innerText()}  (want Сегодня свободно 5 номеров из 12)`);
+
 // ---- cart
 const c = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await c.goto(base + "/");

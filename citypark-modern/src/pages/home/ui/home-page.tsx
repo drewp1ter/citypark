@@ -1,6 +1,6 @@
 import { getBlogAuthor, getBlogPosts, getNews } from "@/entities/article";
 import { getMenu } from "@/entities/dish";
-import { getRooms } from "@/entities/room";
+import { getFreeRoomsCount, getRooms } from "@/entities/room";
 import { PLACEHOLDER_PHOTO } from "@/shared/lib";
 import { ContactsBlock } from "./contacts-block";
 import { DeliverySection } from "./delivery-section";
@@ -13,8 +13,12 @@ const HOME_CATEGORIES = 4;
 const HOME_DISHES = 3;
 
 export async function HomePage() {
-  const [rooms, menu, news, posts, author] = await Promise.all([
+  const [rooms, freeRooms, menu, news, posts, author] = await Promise.all([
     getRooms(),
+    getFreeRoomsCount().catch((error: unknown) => {
+      console.error(error);
+      return null;
+    }),
     getMenu().catch((error: unknown) => {
       console.error(error);
       return null;
@@ -32,7 +36,7 @@ export async function HomePage() {
   return (
     <main>
       <Hero />
-      <RoomsSection rooms={rooms} />
+      <RoomsSection rooms={rooms} free={freeRooms} />
       <RestaurantSection />
       {menu && <DeliverySection categories={menu.categories.slice(0, HOME_CATEGORIES)} dishes={dishes} />}
       <NewsSection items={[latest, second]} post={posts[0]} author={author} />
