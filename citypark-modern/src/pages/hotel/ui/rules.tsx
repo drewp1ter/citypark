@@ -1,17 +1,19 @@
 import type { GuestDocument, GuestInfoSection, HotelRule } from '@/entities/hotel'
 import { AccordionItem, cardClass } from '@/shared/ui'
-import { emptySectionText, mobileCheckInRule } from '../model/content'
+import { emptySectionText } from '../model/content'
 
 const item = 'border-b border-divider last:border-b-0'
 
 /** Rules: six cards on desktop, an accordion on mobile. */
 type RulesProps = {
 	rules: readonly HotelRule[]
+	/** The mobile wording of the check-in rule, placeholders already filled. */
+	mobileCheckInRule: string
 	/** On mobile the guest information and the documents are two more rows of the same accordion. */
 	guestInfo: { intro: string; sections: readonly GuestInfoSection[]; documents: readonly GuestDocument[] }
 }
 
-export function Rules({ rules, guestInfo }: RulesProps) {
+export function Rules({ rules, mobileCheckInRule, guestInfo }: RulesProps) {
 	const byTitle = (title: string) => rules.find((rule) => rule.title === title)?.text ?? ''
 
 	return (

@@ -23,7 +23,7 @@ export const roomAmenities: readonly string[] = [
 export const quickFacts: readonly string[] = [
 	'Заезд 24/7, выезд до 12:00',
 	'Наличные или карта, без предоплаты',
-	typo('Без животных · не курить (штраф 2 000 ₽)'),
+	'Без животных · не курить (штраф {{smokingFine}})',
 ]
 
 /** "Правила" on the hotel page. */
@@ -34,7 +34,7 @@ export const rules: readonly HotelRule[] = [
 	},
 	{
 		title: 'Поздний выезд',
-		text: typo('До 6 ч — 500 ₽/час · 6–12 ч — половина суток · 12–24 ч — сутки.'),
+		text: 'До 6 ч — {{lateCheckoutPerHour}}/час · 6–12 ч — половина суток · 12–24 ч — сутки.',
 	},
 	{
 		title: 'Оплата',
@@ -45,7 +45,7 @@ export const rules: readonly HotelRule[] = [
 		title: 'Дети до 14 лет',
 		text: 'С родителями или законными представителями и свидетельством о рождении.',
 	},
-	{ title: 'Нельзя', text: typo('С животными. Курить в помещениях — штраф 2 000 ₽.') },
+	{ title: 'Нельзя', text: 'С животными. Курить в помещениях — штраф {{smokingFine}}.' },
 ]
 
 /** "Информация для гостей" on the hotel page. */

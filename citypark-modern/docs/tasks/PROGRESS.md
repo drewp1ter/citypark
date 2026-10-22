@@ -28,7 +28,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Admin panel support (see ../docs/adr/0001-admin-panel.md)
 - [x] 12 Remove the chef's blog
 - [x] 13 Room prices from one place
-- [ ] 14 Hotel prices as numbers
+- [x] 14 Hotel prices as numbers
 - [ ] 15 Content blocks, part 1: the entity and the home page [13, 14]
 - [ ] 16 Content blocks, part 2: the hotel and rooms pages [15]
 - [ ] 17 Rooms from the backend [13, 15] (needs citypark-go tasks 45, 48)

@@ -1,8 +1,8 @@
-import { getQuickFacts, getRoomAmenities } from '@/entities/hotel'
+import { getHotelPrices, getQuickFacts, getRoomAmenities } from '@/entities/hotel'
 import { getRoomAvailability, getRooms, type Room } from '@/entities/room'
 import { StayDatesBar } from '@/features/search-rooms'
 import { site } from '@/shared/config'
-import { cn, plural } from '@/shared/lib'
+import { cn, fillPlaceholders, plural } from '@/shared/lib'
 import { AppLink, Breadcrumbs, Button, Chip, cardClass, Section } from '@/shared/ui'
 import { roomsHref, type RoomsQuery, type RoomType } from '../model/query'
 import { RoomCard } from './room-card'
@@ -27,7 +27,7 @@ const chipLi = 'rounded-pill bg-bg px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-b
 
 /** The rooms page: search bar, filters, the room cards, what every room has, and the phone numbers. */
 export async function RoomsPage({ query }: { query: RoomsQuery }) {
-	const [rooms, availability, amenities, quickFacts] = await Promise.all([
+	const [rooms, availability, amenities, quickFacts, prices] = await Promise.all([
 		getRooms(),
 		getRoomAvailability({
 			checkIn: query.checkIn,
@@ -39,6 +39,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 		}),
 		getRoomAmenities(),
 		getQuickFacts(),
+		getHotelPrices(),
 	])
 
 	const visible = rooms.filter(
@@ -166,7 +167,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 					<h2 className='heading mb-1.5 text-[26px]'>Коротко</h2>
 					{quickFacts.map((fact, index) => (
 						<p key={fact} className={index === quickFacts.length - 1 ? 'text-inverse-muted' : undefined}>
-							{fact}
+							{fillPlaceholders(fact, prices)}
 						</p>
 					))}
 					<AppLink href='/hotel' className='tap-area text-accent mt-auto font-semibold underline'>

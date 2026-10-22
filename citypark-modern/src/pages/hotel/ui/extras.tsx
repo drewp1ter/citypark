@@ -1,10 +1,11 @@
 import Image from 'next/image'
-import { formatPrice } from '@/shared/lib'
+import type { HotelPrices } from '@/entities/hotel'
+import { fillPlaceholders, formatPrice } from '@/shared/lib'
 import { cardClass } from '@/shared/ui'
 import { breakfast, extras } from '../model/content'
 
 /** The park photo, balconies, free extras and the breakfast menu. On mobile only the breakfast card is shown. */
-export function Extras() {
+export function Extras({ prices }: { prices: HotelPrices }) {
 	return (
 		<section className='max-w-page mx-auto grid w-full gap-3 px-3 pt-11 md:grid-cols-2 md:px-6 md:pt-[104px] lg:grid-cols-3'>
 			<div className='relative hidden min-h-[320px] overflow-hidden rounded-xl md:block'>
@@ -31,17 +32,19 @@ export function Extras() {
 				)}
 			>
 				<h3 className='font-display mb-1 text-[22px] font-medium md:mb-0 md:text-2xl'>Завтрак в номер</h3>
-				<p className='text-inverse-muted mb-2.5 text-sm md:mb-0 md:text-[15px]'>{breakfast.note}</p>
+				<p className='text-inverse-muted mb-2.5 text-sm md:mb-0 md:text-[15px]'>
+					{fillPlaceholders(breakfast.note, prices)}
+				</p>
 				<ul className='md:mt-1.5'>
-					{breakfast.items.map((item) => (
+					{prices.breakfast.map((item) => (
 						<li
 							key={item.name}
 							className={`border-inverse-border justify-between gap-3 border-b py-[9px] last:border-b-0 ${
-								'desktopOnly' in item ? 'hidden md:flex' : 'flex'
+								item.desktopOnly ? 'hidden md:flex' : 'flex'
 							}`}
 						>
 							<span>
-								{'shortName' in item ? (
+								{item.shortName ? (
 									<>
 										<span className='md:hidden'>{item.shortName}</span>
 										<span className='max-md:hidden'>{item.name}</span>
