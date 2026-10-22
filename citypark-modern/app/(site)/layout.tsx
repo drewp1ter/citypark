@@ -1,1 +1,1 @@
-export { SiteLayout as default } from "@/app/layouts";
+export { SiteLayout as default } from '@/app/layouts'

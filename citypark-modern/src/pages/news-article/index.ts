@@ -1,1 +1,1 @@
-export { ArticlePage, generateArticleMetadata, generateArticleParams } from "./ui/article-page";
+export { ArticlePage, generateArticleMetadata, generateArticleParams } from './ui/article-page'

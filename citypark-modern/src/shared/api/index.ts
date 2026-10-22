@@ -1,1 +1,1 @@
-export { submitLead, type LeadKind } from "./leads";
+export { submitLead, type LeadKind } from './leads'

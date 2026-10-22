@@ -1,1 +1,1 @@
-export { MenuLayout as default } from "@/app/layouts";
+export { MenuLayout as default } from '@/app/layouts'

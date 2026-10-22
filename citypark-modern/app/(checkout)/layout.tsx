@@ -1,1 +1,1 @@
-export { CheckoutLayout as default } from "@/app/layouts";
+export { CheckoutLayout as default } from '@/app/layouts'

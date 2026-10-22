@@ -1,138 +1,144 @@
-@import "tailwindcss";
-@import "./tokens.css";
+@import 'tailwindcss';
+@import './tokens.css';
 
 /* Theme is switched by next-themes via <html data-theme="dark">. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 /* Tokens (tokens.css) -> Tailwind utilities: bg-bg, text-text-muted, border-border, rounded-xl, … */
 @theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-placeholder: var(--placeholder);
-  --color-placeholder-border: var(--placeholder-border);
-  --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
-  --color-divider: var(--divider);
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-inverse-bg: var(--inverse-bg);
-  --color-inverse-surface: var(--inverse-surface);
-  --color-inverse-text: var(--inverse-text);
-  --color-inverse-muted: var(--inverse-muted);
-  --color-inverse-subtle: var(--inverse-subtle);
-  --color-inverse-border: var(--inverse-border);
-  --color-inverse-border-strong: var(--inverse-border-strong);
-  --color-accent: var(--accent);
-  --color-on-accent: var(--on-accent);
-  --color-scrim: var(--scrim);
-  --color-danger: var(--danger);
-  --color-danger-on-inverse: var(--danger-on-inverse);
+	--color-bg: var(--bg);
+	--color-surface: var(--surface);
+	--color-placeholder: var(--placeholder);
+	--color-placeholder-border: var(--placeholder-border);
+	--color-border: var(--border);
+	--color-border-strong: var(--border-strong);
+	--color-divider: var(--divider);
+	--color-text: var(--text);
+	--color-text-muted: var(--text-muted);
+	--color-inverse-bg: var(--inverse-bg);
+	--color-inverse-surface: var(--inverse-surface);
+	--color-inverse-text: var(--inverse-text);
+	--color-inverse-muted: var(--inverse-muted);
+	--color-inverse-subtle: var(--inverse-subtle);
+	--color-inverse-border: var(--inverse-border);
+	--color-inverse-border-strong: var(--inverse-border-strong);
+	--color-accent: var(--accent);
+	--color-on-accent: var(--on-accent);
+	--color-scrim: var(--scrim);
+	--color-danger: var(--danger);
+	--color-danger-on-inverse: var(--danger-on-inverse);
 
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
+	--font-display: var(--font-display);
+	--font-body: var(--font-body);
 
-  --radius-pill: var(--radius-pill);
-  --radius-2xl: var(--radius-2xl);
-  --radius-xl: var(--radius-xl);
-  --radius-lg: var(--radius-lg);
-  --radius-md: var(--radius-md);
-  --radius-sm: var(--radius-sm);
-  --radius-xs: var(--radius-xs);
-  --radius-2xs: var(--radius-2xs);
+	--radius-pill: var(--radius-pill);
+	--radius-2xl: var(--radius-2xl);
+	--radius-xl: var(--radius-xl);
+	--radius-lg: var(--radius-lg);
+	--radius-md: var(--radius-md);
+	--radius-sm: var(--radius-sm);
+	--radius-xs: var(--radius-xs);
+	--radius-2xs: var(--radius-2xs);
 
-  --container-site: var(--container);
-  /* Section width including the side gutters: the reference sections are 1240 px of content + 24 px padding each side. */
-  --container-narrow: var(--container-narrow);
-  --container-wide: var(--container-wide);
-  --container-wide-page: calc(var(--container-wide) + 2 * var(--gutter-desktop));
-  --container-narrow-page: calc(var(--container-narrow) + 2 * var(--gutter-desktop));
-  --container-page: calc(var(--container) + 2 * var(--gutter-desktop));
+	--container-site: var(--container);
+	/* Section width including the side gutters: the reference sections are 1240 px of content + 24 px padding each side. */
+	--container-narrow: var(--container-narrow);
+	--container-wide: var(--container-wide);
+	--container-wide-page: calc(var(--container-wide) + 2 * var(--gutter-desktop));
+	--container-narrow-page: calc(var(--container-narrow) + 2 * var(--gutter-desktop));
+	--container-page: calc(var(--container) + 2 * var(--gutter-desktop));
 }
 
 /* Dropdown list of `Select` (used under motion-safe: only). */
 @keyframes select-in {
-  from { opacity: 0; transform: translateY(-4px); }
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
 }
 @keyframes select-out {
-  to { opacity: 0; transform: translateY(-4px); }
+	to {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
 }
 
 /* Display headings: Unbounded 500, tight tracking. Add the size with text-[…]. */
 @utility heading {
-  font-family: var(--font-display);
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1;
+	font-family: var(--font-display);
+	font-weight: 500;
+	letter-spacing: -0.03em;
+	line-height: 1;
 }
 
 /* Hides the scrollbar of a scrolling row; swipe, trackpad and wheel scrolling still work. */
 @utility no-scrollbar {
-  scrollbar-width: none;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
+	}
 }
 
 /* Makes a small text link reach the 44 px touch target without changing the layout around it. */
 @utility tap-area {
-  position: relative;
-  &::after {
-    content: "";
-    position: absolute;
-    inset-block: -0.875rem;
-    inset-inline: 0;
-  }
+	position: relative;
+	&::after {
+		content: '';
+		position: absolute;
+		inset-block: -0.875rem;
+		inset-inline: 0;
+	}
 }
 
 @layer base {
-  html {
-    -webkit-text-size-adjust: 100%;
-  }
+	html {
+		-webkit-text-size-adjust: 100%;
+	}
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    font-size: var(--text-body);
-    line-height: 1.5;
-  }
+	body {
+		background: var(--bg);
+		color: var(--text);
+		font-family: var(--font-body);
+		font-size: var(--text-body);
+		line-height: 1.5;
+	}
 
-  /* The mobile menu is a modal <dialog>; keep the page behind it from scrolling. */
-  @media (max-width: 1279px) {
-    body:has(dialog[open]) {
-      overflow: hidden;
-    }
-  }
+	/* The mobile menu is a modal <dialog>; keep the page behind it from scrolling. */
+	@media (max-width: 1279px) {
+		body:has(dialog[open]) {
+			overflow: hidden;
+		}
+	}
 
-  a:hover {
-    opacity: var(--hover-opacity);
-  }
+	a:hover {
+		opacity: var(--hover-opacity);
+	}
 
-  :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
+	:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
 
-  /* The calendar / clock button inside date and time inputs is a separate Tab stop with its own focus state. */
-  input::-webkit-calendar-picker-indicator:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
+	/* The calendar / clock button inside date and time inputs is a separate Tab stop with its own focus state. */
+	input::-webkit-calendar-picker-indicator:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+		border-radius: 4px;
+	}
 
-  /* Search fields use our own «×» button (ClearButton). */
-  input[type="search"]::-webkit-search-cancel-button {
-    appearance: none;
-  }
+	/* Search fields use our own «×» button (ClearButton). */
+	input[type='search']::-webkit-search-cancel-button {
+		appearance: none;
+	}
 
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
-  }
+	@media (prefers-reduced-motion: reduce) {
+		*,
+		*::before,
+		*::after {
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
+			scroll-behavior: auto !important;
+		}
+	}
 }

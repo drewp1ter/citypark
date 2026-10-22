@@ -1,19 +1,19 @@
-import { guestInfo, quickFacts, roomAmenities, rules } from "../model/hotel.data";
+import { guestInfo, quickFacts, roomAmenities, rules } from '../model/hotel.data'
 
 // Reads go through these functions only; swap the bodies when a CMS appears.
 
 export async function getRoomAmenities() {
-  return roomAmenities;
+	return roomAmenities
 }
 
 export async function getQuickFacts() {
-  return quickFacts;
+	return quickFacts
 }
 
 export async function getHotelRules() {
-  return rules;
+	return rules
 }
 
 export async function getGuestInfo() {
-  return guestInfo;
+	return guestInfo
 }

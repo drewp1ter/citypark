@@ -1,1 +1,1 @@
-export { PlainLayout as default } from "@/app/layouts";
+export { PlainLayout as default } from '@/app/layouts'

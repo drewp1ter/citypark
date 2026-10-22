@@ -1,2 +1,2 @@
-export { CartBar } from "./ui/cart-bar";
-export { CartPanel } from "./ui/cart-panel";
+export { CartBar } from './ui/cart-bar'
+export { CartPanel } from './ui/cart-panel'

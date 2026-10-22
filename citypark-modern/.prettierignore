@@ -1,0 +1,10 @@
+.next
+node_modules
+public
+design
+docs
+*.md
+package-lock.json
+tsconfig.tsbuildinfo
+next-env.d.ts
+.claude

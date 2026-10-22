@@ -1,1 +1,1 @@
-export { ContactsPage } from "./ui/contacts-page";
+export { ContactsPage } from './ui/contacts-page'

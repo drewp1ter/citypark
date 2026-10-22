@@ -1,2 +1,2 @@
-export { parseRoomsQuery } from "./model/query";
-export { RoomsPage } from "./ui/rooms-page";
+export { parseRoomsQuery } from './model/query'
+export { RoomsPage } from './ui/rooms-page'

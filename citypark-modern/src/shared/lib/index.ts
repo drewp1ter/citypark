@@ -1,7 +1,7 @@
-export { cn } from "./cn";
-export { addDays, diffDays, todayInMoscow, toIsoDate } from "./dates";
-export { NBSP, formatDate, formatPrice, nb, typo } from "./format";
-export { formatPhoneInput, isValidRuPhone, phoneDigits } from "./phone";
-export { plural } from "./plural";
-export { PLACEHOLDER_PHOTO, type Photo } from "./photo";
-export { useToday } from "./use-today";
+export { cn } from './cn'
+export { addDays, diffDays, todayInMoscow, toIsoDate } from './dates'
+export { NBSP, formatDate, formatPrice, nb, typo } from './format'
+export { formatPhoneInput, isValidRuPhone, phoneDigits } from './phone'
+export { plural } from './plural'
+export { PLACEHOLDER_PHOTO, type Photo } from './photo'
+export { useToday } from './use-today'

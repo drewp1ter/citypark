@@ -1,3 +1,3 @@
-"use client";
+'use client'
 
-export { MenuError as default } from "@/pages/menu";
+export { MenuError as default } from '@/pages/menu'

@@ -1,1 +1,1 @@
-export { MobileQuickActions } from "./ui/mobile-quick-actions";
+export { MobileQuickActions } from './ui/mobile-quick-actions'

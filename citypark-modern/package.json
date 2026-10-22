@@ -1,42 +1,46 @@
 {
-  "name": "citypark-modern",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "lint:fsd": "steiger ./src",
-    "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run lint:fsd",
-    "qa:a11y": "node scripts/qa/a11y.mjs",
-    "qa:responsive": "node scripts/qa/responsive.mjs",
-    "qa:keyboard": "node scripts/qa/keyboard.mjs",
-    "qa:flows": "for f in scripts/qa/flows/*.mjs; do echo \"== $f\"; node \"$f\" || exit 1; done"
-  },
-  "dependencies": {
-    "next": "16.4.2",
-    "next-themes": "^0.4.6",
-    "react": "19.3.0",
-    "react-aria-components": "1.22.1",
-    "react-dom": "19.3.0",
-    "tailwind-merge": "^3.7.0",
-    "zod": "^4.6.7"
-  },
-  "devDependencies": {
-    "@axe-core/playwright": "^4.14.0",
-    "@feature-sliced/steiger-plugin": "^0.8.0",
-    "@tailwindcss/turbopack": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.4.2",
-    "playwright": "^1.64.1",
-    "steiger": "^0.7.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
-  }
+	"name": "citypark-modern",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "next dev",
+		"build": "next build",
+		"start": "next start",
+		"lint": "eslint",
+		"lint:fsd": "steiger ./src",
+		"typecheck": "tsc --noEmit",
+		"check": "npm run typecheck && npm run lint && npm run lint:fsd",
+		"qa:a11y": "node scripts/qa/a11y.mjs",
+		"qa:responsive": "node scripts/qa/responsive.mjs",
+		"qa:keyboard": "node scripts/qa/keyboard.mjs",
+		"qa:flows": "for f in scripts/qa/flows/*.mjs; do echo \"== $f\"; node \"$f\" || exit 1; done",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"dependencies": {
+		"next": "16.4.2",
+		"next-themes": "^0.4.6",
+		"react": "19.3.0",
+		"react-aria-components": "1.22.1",
+		"react-dom": "19.3.0",
+		"tailwind-merge": "^3.7.0",
+		"zod": "^4.6.7"
+	},
+	"devDependencies": {
+		"@axe-core/playwright": "^4.14.0",
+		"@feature-sliced/steiger-plugin": "^0.8.0",
+		"@tailwindcss/turbopack": "^4",
+		"@types/node": "^20",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"eslint": "^9",
+		"eslint-config-next": "16.4.2",
+		"playwright": "^1.64.1",
+		"prettier": "^3.9.10",
+		"prettier-plugin-tailwindcss": "^0.8.1",
+		"steiger": "^0.7.0",
+		"tailwindcss": "^4",
+		"typescript": "^5"
+	}
 }

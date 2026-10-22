@@ -11,5 +11,5 @@
  * The placeholder below only rounds down and turns NaN / Infinity into 0, with no maximum.
  */
 export function normalizeQuantity(quantity: number): number {
-  return Number.isFinite(quantity) ? Math.trunc(quantity) : 0;
+	return Number.isFinite(quantity) ? Math.trunc(quantity) : 0
 }

@@ -22,132 +22,133 @@
  */
 
 :root {
-  color-scheme: light;
+	color-scheme: light;
 
-  /* Surfaces */
-  --bg: #F4F4F1;               /* page background */
-  --surface: #FFFFFF;          /* cards, header pill, inputs */
-  --placeholder: #E6E6E0;      /* map / photo placeholders */
-  --placeholder-border: #DADAD2;
+	/* Surfaces */
+	--bg: #f4f4f1; /* page background */
+	--surface: #ffffff; /* cards, header pill, inputs */
+	--placeholder: #e6e6e0; /* map / photo placeholders */
+	--placeholder-border: #dadad2;
 
-  /* Lines */
-  --border: #E2E2DC;           /* card borders, input borders */
-  --border-strong: #D0D0C8;    /* outline buttons, chips */
-  --divider: #ECECE6;          /* row separators inside lists */
+	/* Lines */
+	--border: #e2e2dc; /* card borders, input borders */
+	--border-strong: #d0d0c8; /* outline buttons, chips */
+	--divider: #ecece6; /* row separators inside lists */
 
-  /* Text */
-  --text: #111111;
-  --text-muted: #5E5E5A;
+	/* Text */
+	--text: #111111;
+	--text-muted: #5e5e5a;
 
-  /* Inverse block (dark card on light page: featured room, phone card, contacts block, footer) */
-  --inverse-bg: #111111;
-  --inverse-surface: #1E1E1C;  /* map placeholder inside the inverse block */
-  --inverse-text: #FFFFFF;
-  --inverse-muted: #BDBDB6;
-  --inverse-subtle: #8F8F88;   /* e.g. "Белореченск" under the address */
-  --inverse-border: #2E2E2B;
-  --inverse-border-strong: #45453F;
+	/* Inverse block (dark card on light page: featured room, phone card, contacts block, footer) */
+	--inverse-bg: #111111;
+	--inverse-surface: #1e1e1c; /* map placeholder inside the inverse block */
+	--inverse-text: #ffffff;
+	--inverse-muted: #bdbdb6;
+	--inverse-subtle: #8f8f88; /* e.g. "Белореченск" under the address */
+	--inverse-border: #2e2e2b;
+	--inverse-border-strong: #45453f;
 
-  /* Brand */
-  --accent: #D6F24A;           /* lime: main CTAs, "+" buttons, badges, banquet card */
-  --on-accent: #111111;        /* text/icons on lime */
-  --scrim: rgb(17 17 17 / 0.5);          /* backdrop behind modal sheets */
+	/* Brand */
+	--accent: #d6f24a; /* lime: main CTAs, "+" buttons, badges, banquet card */
+	--on-accent: #111111; /* text/icons on lime */
+	--scrim: rgb(17 17 17 / 0.5); /* backdrop behind modal sheets */
 
-  /* Form errors (not in the design; added for validation messages) */
-  --danger: #B42318;
-  --danger-on-inverse: #FF8F85; /* errors inside a dark block */
+	/* Form errors (not in the design; added for validation messages) */
+	--danger: #b42318;
+	--danger-on-inverse: #ff8f85; /* errors inside a dark block */
 
-  /* Typography */
-  --font-display: var(--font-unbounded), 'Unbounded', system-ui, sans-serif;  /* h1/h2, big numbers, wordmark; weight 500, letter-spacing -0.03em, line-height 1 */
-  --font-body: var(--font-onest), 'Onest', system-ui, sans-serif;         /* everything else; 400/500/600/700 */
+	/* Typography */
+	--font-display:
+		var(--font-unbounded), 'Unbounded', system-ui, sans-serif; /* h1/h2, big numbers, wordmark; weight 500, letter-spacing -0.03em, line-height 1 */
+	--font-body: var(--font-onest), 'Onest', system-ui, sans-serif; /* everything else; 400/500/600/700 */
 
-  /* Type scale (desktop / mobile) */
-  --text-hero: 68px;        /* mobile 40px */
-  --text-h1: 64px;          /* mobile 36–40px */
-  --text-h2: 56px;          /* mobile 30–32px */
-  --text-h3: 22px;          /* Onest 700 */
-  --text-wordmark: 150px;   /* footer "СИТИ ПАРК", letter-spacing -0.05em, line-height 0.9; mobile ~54px */
-  --text-body: 16px;
-  --text-small: 14px;
-  --text-xs: 13px;
-  --text-caption: 12px;
+	/* Type scale (desktop / mobile) */
+	--text-hero: 68px; /* mobile 40px */
+	--text-h1: 64px; /* mobile 36–40px */
+	--text-h2: 56px; /* mobile 30–32px */
+	--text-h3: 22px; /* Onest 700 */
+	--text-wordmark: 150px; /* footer "СИТИ ПАРК", letter-spacing -0.05em, line-height 0.9; mobile ~54px */
+	--text-body: 16px;
+	--text-small: 14px;
+	--text-xs: 13px;
+	--text-caption: 12px;
 
-  /* Radius */
-  --radius-pill: 999px;     /* buttons, chips, header bar */
-  --radius-2xl: 40px;       /* contacts block on desktop */
-  --radius-xl: 32px;        /* large cards / sections */
-  --radius-lg: 28px;
-  --radius-md: 24px;
-  --radius-sm: 20px;
-  --radius-xs: 16px;        /* inputs, small cards */
-  --radius-2xs: 14px;
+	/* Radius */
+	--radius-pill: 999px; /* buttons, chips, header bar */
+	--radius-2xl: 40px; /* contacts block on desktop */
+	--radius-xl: 32px; /* large cards / sections */
+	--radius-lg: 28px;
+	--radius-md: 24px;
+	--radius-sm: 20px;
+	--radius-xs: 16px; /* inputs, small cards */
+	--radius-2xs: 14px;
 
-  /* Layout */
-  --container-narrow: 1160px; /* checkout */
-  --container-wide: 1320px;   /* menu */
-  --container: 1240px;      /* max content width on desktop (sections use max-width 1240px; margin 0 auto) */
-  --gutter-desktop: 24px;   /* section side padding on desktop */
-  --gutter-mobile: 12px;    /* section side padding on mobile */
-  --gap-1: 4px;
-  --gap-2: 8px;
-  --gap-3: 12px;
-  --gap-4: 16px;
-  --gap-5: 24px;
-  --gap-6: 32px;
-  --section-gap: 112px;     /* top padding of home page sections on desktop; 56px on mobile */
+	/* Layout */
+	--container-narrow: 1160px; /* checkout */
+	--container-wide: 1320px; /* menu */
+	--container: 1240px; /* max content width on desktop (sections use max-width 1240px; margin 0 auto) */
+	--gutter-desktop: 24px; /* section side padding on desktop */
+	--gutter-mobile: 12px; /* section side padding on mobile */
+	--gap-1: 4px;
+	--gap-2: 8px;
+	--gap-3: 12px;
+	--gap-4: 16px;
+	--gap-5: 24px;
+	--gap-6: 32px;
+	--section-gap: 112px; /* top padding of home page sections on desktop; 56px on mobile */
 
-  /* Interaction */
-  --hover-opacity: 0.75;    /* links: a:hover{opacity:.75} */
-  --tap-min: 44px;          /* minimum touch target */
+	/* Interaction */
+	--hover-opacity: 0.75; /* links: a:hover{opacity:.75} */
+	--tap-min: 44px; /* minimum touch target */
 }
 
-[data-theme="dark"] {
-  color-scheme: dark;
+[data-theme='dark'] {
+	color-scheme: dark;
 
-  --bg: #0B0B0C;
-  --surface: #161618;
-  --placeholder: #1E1E1C;
-  --placeholder-border: #2E2E33;
+	--bg: #0b0b0c;
+	--surface: #161618;
+	--placeholder: #1e1e1c;
+	--placeholder-border: #2e2e33;
 
-  --border: #26262A;
-  --border-strong: #36363B;
-  --divider: #232327;
+	--border: #26262a;
+	--border-strong: #36363b;
+	--divider: #232327;
 
-  --text: #F2F2EE;
-  --text-muted: #A3A39C;
+	--text: #f2f2ee;
+	--text-muted: #a3a39c;
 
-  --inverse-bg: #2A2A2F;
-  --inverse-surface: #1E1E1C;
-  --inverse-text: #FFFFFF;
-  --inverse-muted: #BDBDB6;
-  --inverse-subtle: #8F8F88;
-  --inverse-border: #2E2E2B;
-  --inverse-border-strong: #45453F;
+	--inverse-bg: #2a2a2f;
+	--inverse-surface: #1e1e1c;
+	--inverse-text: #ffffff;
+	--inverse-muted: #bdbdb6;
+	--inverse-subtle: #8f8f88;
+	--inverse-border: #2e2e2b;
+	--inverse-border-strong: #45453f;
 
-  --accent: #D6F24A;
-  --on-accent: #0F0F10;
-  --scrim: rgb(0 0 0 / 0.65);
-  --danger: #FF8F85;
-  --danger-on-inverse: #FF8F85;
+	--accent: #d6f24a;
+	--on-accent: #0f0f10;
+	--scrim: rgb(0 0 0 / 0.65);
+	--danger: #ff8f85;
+	--danger-on-inverse: #ff8f85;
 }
 
 /* Optional: follow the OS setting when the user has not chosen a theme yet. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    color-scheme: dark;
-    --bg: #0B0B0C;
-    --surface: #161618;
-    --placeholder: #1E1E1C;
-    --placeholder-border: #2E2E33;
-    --border: #26262A;
-    --border-strong: #36363B;
-    --divider: #232327;
-    --text: #F2F2EE;
-    --text-muted: #A3A39C;
-    --inverse-bg: #2A2A2F;
-    --on-accent: #0F0F10;
-    --scrim: rgb(0 0 0 / 0.65);
-    --danger: #FF8F85;
-    --danger-on-inverse: #FF8F85;
-  }
+	:root:not([data-theme='light']) {
+		color-scheme: dark;
+		--bg: #0b0b0c;
+		--surface: #161618;
+		--placeholder: #1e1e1c;
+		--placeholder-border: #2e2e33;
+		--border: #26262a;
+		--border-strong: #36363b;
+		--divider: #232327;
+		--text: #f2f2ee;
+		--text-muted: #a3a39c;
+		--inverse-bg: #2a2a2f;
+		--on-accent: #0f0f10;
+		--scrim: rgb(0 0 0 / 0.65);
+		--danger: #ff8f85;
+		--danger-on-inverse: #ff8f85;
+	}
 }

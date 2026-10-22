@@ -1,12 +1,12 @@
-import { rooms } from "../model/rooms.data";
-import { fetchHotelRooms } from "./hotel-api";
-import type { Room, RoomAvailability, StayQuery } from "../model/types";
+import { rooms } from '../model/rooms.data'
+import { fetchHotelRooms } from './hotel-api'
+import type { Room, RoomAvailability, StayQuery } from '../model/types'
 
 // Reads go through these functions only. Today they return static data;
 // later they call the booking engine / CMS and nothing else has to change.
 
 export async function getRooms(): Promise<readonly Room[]> {
-  return rooms;
+	return rooms
 }
 
 /**
@@ -14,17 +14,17 @@ export async function getRooms(): Promise<readonly Room[]> {
  * Still sample data because the backend (`GET /hotel/rooms`) only knows today's counts, not counts for a date range.
  */
 export async function getRoomAvailability(query?: StayQuery): Promise<Record<string, RoomAvailability>> {
-  void query; // TODO: ask the booking engine for these dates
-  return {
-    vip: { state: "available" },
-    "single-balcony": { state: "available" },
-    single: { state: "available", left: 2 },
-    "double-twin": { state: "available", left: 1 },
-    "double-euro": { state: "unavailable" },
-  };
+	void query // TODO: ask the booking engine for these dates
+	return {
+		vip: { state: 'available' },
+		'single-balcony': { state: 'available' },
+		single: { state: 'available', left: 2 },
+		'double-twin': { state: 'available', left: 1 },
+		'double-euro': { state: 'unavailable' },
+	}
 }
 
 /** Rooms free today, from the backend. `null` when it has no data yet; errors are left to the caller. */
 export async function getFreeRoomsCount(): Promise<number | null> {
-  return (await fetchHotelRooms())?.free ?? null;
+	return (await fetchHotelRooms())?.free ?? null
 }
