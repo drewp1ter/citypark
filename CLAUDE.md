@@ -59,3 +59,17 @@ The QA scripts use `BASE_URL` (default `http://localhost:3111`) and need `npx pl
 - `citypark-modern` uses a Next.js version newer than your training data: read the guide in
   `node_modules/next/dist/docs/` before writing Next.js code. Colours come only from tokens
   (`design/tokens.css` is the source of truth); copy texts and prices exactly from `design/reference/`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `drewp1ter/citypark` (via the `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
