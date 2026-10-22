@@ -5,6 +5,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
 
@@ -105,12 +109,73 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	orders, count, err := NewStore(h.svc.db).List(r.Context(), limit, offset)
+	f, err := h.parseFilter(r)
+	if err != nil {
+		return err
+	}
+	orders, count, err := NewStore(h.svc.db).List(r.Context(), f, limit, offset)
 	if err != nil {
 		return err
 	}
 	httpx.JSON(w, http.StatusOK, listResponse{Orders: orders, Count: count})
 	return nil
+}
+
+// parseFilter reads the search parameters of GET /orders. An empty parameter counts as missing.
+func (h *Handler) parseFilter(r *http.Request) (ListFilter, error) {
+	var f ListFilter
+	fields := map[string]string{}
+	qs := r.URL.Query()
+
+	f.Query = strings.TrimSpace(qs.Get("q"))
+	if utf8.RuneCountInString(f.Query) > 100 {
+		fields["q"] = "не более 100 символов"
+	}
+
+	loc := h.svc.clock.Now().Location()
+	const dateErr = "дата в формате ГГГГ-ММ-ДД"
+	var from time.Time
+	if v := qs.Get("from"); v != "" {
+		d, err := time.ParseInLocation("2006-01-02", v, loc)
+		if err != nil {
+			fields["from"] = dateErr
+		} else {
+			from = d
+			f.From = &d
+		}
+	}
+	if v := qs.Get("to"); v != "" {
+		d, err := time.ParseInLocation("2006-01-02", v, loc)
+		switch {
+		case err != nil:
+			fields["to"] = dateErr
+		case f.From != nil && d.Before(from):
+			fields["to"] = "не раньше даты from"
+		default:
+			before := d.AddDate(0, 0, 1)
+			f.Before = &before
+		}
+	}
+
+	if v := qs.Get("status"); v != "" {
+		if !slices.Contains([]string{StatusNew, StatusPending, StatusPaid, StatusCanceled, StatusConfirmed}, v) {
+			fields["status"] = "недопустимое значение"
+		}
+		f.Status = v
+	}
+	if v := qs.Get("paymentType"); v != "" {
+		if v != PaymentCash && v != PaymentOnline {
+			fields["paymentType"] = "недопустимое значение"
+		}
+		f.PaymentType = v
+	}
+
+	if len(fields) > 0 {
+		e := httpx.BadRequest("Некорректные параметры поиска")
+		e.Fields = fields
+		return ListFilter{}, e
+	}
+	return f, nil
 }
 
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) error {

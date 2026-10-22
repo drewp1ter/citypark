@@ -4,6 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/drewp1ter/citypark-go/internal/money"
@@ -120,15 +124,69 @@ func (s *Store) ByID(ctx context.Context, id int64) (Order, error) {
 	return orders[0], nil
 }
 
-// List returns all orders, newest first, and the total count.
-func (s *Store) List(ctx context.Context, limit, offset int) ([]Order, int, error) {
+// ListFilter narrows List. Zero values mean "no condition".
+type ListFilter struct {
+	Query       string     // trimmed; matched against id, customer phone and customer name
+	From        *time.Time // inclusive: o.created_at >= From
+	Before      *time.Time // exclusive: o.created_at < Before
+	Status      string     // one of the Status* constants
+	PaymentType string     // "cash" or "online"
+}
+
+var digitsOnly = regexp.MustCompile(`^\d+$`)
+
+// likeEscaper escapes the LIKE wildcards so that user text is matched literally.
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+// where builds the WHERE clause (with a trailing space, or empty) and its arguments.
+func (f ListFilter) where() (string, []any) {
+	var conds []string
+	var args []any
+	add := func(cond string, arg any) {
+		args = append(args, arg)
+		conds = append(conds, fmt.Sprintf(cond, len(args)))
+	}
+
+	if q := strings.TrimSpace(f.Query); q != "" {
+		if digitsOnly.MatchString(q) && len(q) <= 18 {
+			id, _ := strconv.ParseInt(q, 10, 64) // 18 digits always fit in int64
+			args = append(args, id, "%"+q+"%")
+			conds = append(conds, fmt.Sprintf("(o.id = $%d OR u.phone LIKE $%d)", len(args)-1, len(args)))
+		} else {
+			add("(u.name ILIKE $%[1]d OR u.phone LIKE $%[1]d)", "%"+likeEscaper.Replace(q)+"%")
+		}
+	}
+	if f.From != nil {
+		add("o.created_at >= $%d", *f.From)
+	}
+	if f.Before != nil {
+		add("o.created_at < $%d", *f.Before)
+	}
+	if f.Status != "" {
+		add("o.status = $%d", f.Status)
+	}
+	if f.PaymentType != "" {
+		add("o.payment_type = $%d", f.PaymentType)
+	}
+	if len(conds) == 0 {
+		return "", args
+	}
+	return "WHERE " + strings.Join(conds, " AND ") + " ", args
+}
+
+// List returns the orders that match f, newest first, and how many match in total.
+func (s *Store) List(ctx context.Context, f ListFilter, limit, offset int) ([]Order, int, error) {
+	where, args := f.where()
 	var total int
-	if err := s.db.GetContext(ctx, &total, `SELECT count(*) FROM orders`); err != nil {
+	err := s.db.GetContext(ctx, &total,
+		`SELECT count(*) FROM orders o JOIN users u ON u.id = o.customer_id `+where, args...)
+	if err != nil {
 		return nil, 0, err
 	}
 	var rows []orderRow
-	err := s.db.SelectContext(ctx, &rows,
-		selectOrders+`ORDER BY o.created_at DESC, o.id DESC LIMIT $1 OFFSET $2`, limit, offset)
+	err = s.db.SelectContext(ctx, &rows,
+		selectOrders+where+fmt.Sprintf(`ORDER BY o.created_at DESC, o.id DESC LIMIT $%d OFFSET $%d`, len(args)+1, len(args)+2),
+		append(args, limit, offset)...)
 	if err != nil {
 		return nil, 0, err
 	}

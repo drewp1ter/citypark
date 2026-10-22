@@ -846,7 +846,7 @@ An admin can read any order. For a normal user someone else's order looks the sa
 
 #### GET /orders
 
-Lists all orders, newest first.
+Lists orders, newest first. The filters are optional and combine with AND.
 
 - **Role:** admin
 
@@ -856,6 +856,13 @@ Lists all orders, newest first.
 |---|---|---|---|
 | `page` | integer | no | from 1, default 1 |
 | `pageSize` | integer | no | 1–500, default is the server's page size |
+| `q` | string | no | at most 100 characters after trimming. Digits only: the order number or any part of the phone. Otherwise: the customer's name or any part of the phone |
+| `from` | string | no | `YYYY-MM-DD`, the first day, inclusive |
+| `to` | string | no | `YYYY-MM-DD`, the last day, inclusive, not before `from` |
+| `status` | string | no | `new`, `pending`, `paid`, `canceled` or `confirmed` |
+| `paymentType` | string | no | `cash` or `online` |
+
+Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&status=paid&paymentType=online`.
 
 **Response 200**
 
@@ -885,12 +892,38 @@ Lists all orders, newest first.
 | Status | When | Message |
 |---|---|---|
 | 400 | `page` or `pageSize` is not an integer of at least 1, or `pageSize` is above 500 | `Некорректные параметры пагинации` |
+| 400 | a search parameter is invalid (see below) | `Некорректные параметры поиска` |
 | 401 | no token or invalid token | `Требуется авторизация` |
 | 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
 
+The `errors` object of a search 400 lists every invalid field:
+
+| Field | Message |
+|---|---|
+| `q` | `не более 100 символов` |
+| `from`, `to` | `дата в формате ГГГГ-ММ-ДД` |
+| `to` | `не раньше даты from` |
+| `status`, `paymentType` | `недопустимое значение` |
+
+```json
+{
+  "statusCode": 400,
+  "message": "Некорректные параметры поиска",
+  "errors": {
+    "from": "дата в формате ГГГГ-ММ-ДД",
+    "paymentType": "недопустимое значение",
+    "status": "недопустимое значение"
+  }
+}
+```
+
 **Notes**
 
-`count` is the total number of orders, not the size of the page. `customer` shows who placed each order.
+`count` counts the matching orders, not the size of the page. `customer` shows who placed each order.
+
+`q` matches the order number, any part of the customer's phone and the customer's name (case-insensitive). `%` and `_` in `q` are matched literally.
+
+`from` and `to` are local dates (`APP_TIMEZONE`), both inclusive. `from` or `to` alone is allowed. An empty parameter (`?status=`) is the same as a missing one.
 
 #### POST /orders/{id}/items
 

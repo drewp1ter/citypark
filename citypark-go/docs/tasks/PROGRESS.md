@@ -64,7 +64,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 41 Hotel free rooms webhook [31]
 
 ## Admin panel support (see ../docs/adr/0001-admin-panel.md)
-- [ ] 42 Order search filters [29]
+- [x] 42 Order search filters [29]
 - [ ] 43 Menu sync for admins, one sync at a time [38]
 - [ ] 44 Scheduled menu sync [43]
 - [ ] 45 Image uploads [31]

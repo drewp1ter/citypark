@@ -982,13 +982,51 @@ paths:
           $ref: '#/components/responses/Unavailable'
     get:
       summary: List all orders
-      description: 'Role: admin. Newest first.'
+      description: >-
+        Role: admin. Newest first. All filters are optional and combine with AND; an empty
+        parameter is the same as a missing one. `count` is the number of matching orders.
       tags: [orders]
       security:
         - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
+        - name: q
+          in: query
+          required: false
+          description: >-
+            Free text, at most 100 characters after trimming. Digits only: matches the order number
+            or any part of the customer's phone. Otherwise: matches the customer's name
+            (case-insensitive) or any part of the phone.
+          schema:
+            type: string
+            maxLength: 100
+        - name: from
+          in: query
+          required: false
+          description: First day, inclusive, in the restaurant's time zone (`APP_TIMEZONE`).
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          description: Last day, inclusive, in the restaurant's time zone. Not before `from`.
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [new, pending, paid, canceled, confirmed]
+        - name: paymentType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [cash, online]
       responses:
         '200':
           description: A page of orders.
