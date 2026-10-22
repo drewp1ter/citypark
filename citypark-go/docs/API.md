@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -692,6 +692,157 @@ The same body as `GET /hotel/rooms`.
 **Notes**
 
 Meant for the hotel's external sender, not the frontend; send all five types every time. A missing type is an error, not "unchanged", and `0` is a valid count. The old three-counter body (`double_rooms`, `single_rooms`, `vip_room`) is not accepted.
+
+### Rooms
+
+#### GET /rooms
+
+Returns the five hotel room types with their texts, price per night and photo, ordered as on the site (`vip`, `single-balcony`, `single`, `double-twin`, `double-euro`).
+
+- **Role:** public
+
+**Response 200**
+
+```json
+[
+  {
+    "id": "vip",
+    "kind": "vip",
+    "balcony": true,
+    "name": "VIP-номер",
+    "hotelName": "VIP, 2 комнаты",
+    "numbers": "№ 301",
+    "area": "45 + 7 м²",
+    "areaDetailed": "45 м² + балкон 7 м²",
+    "capacity": "до 4 гостей",
+    "description": "<p>Гостиная и спальня, расширенная комплектация, балкон над кронами парка.</p>",
+    "pricePerNight": 8000,
+    "photo": { "url": "/images/room-vip.jpg", "alt": "VIP-номер", "position": "" },
+    "hotelNote": "№ 301 · до 4 гостей",
+    "updatedAt": "2026-10-22T21:15:35.527937Z"
+  },
+  {
+    "id": "single",
+    "kind": "single",
+    "balcony": false,
+    "name": "Одноместный",
+    "hotelName": "",
+    "numbers": "№ 204, 304",
+    "area": "19 м²",
+    "areaDetailed": "",
+    "capacity": "",
+    "description": "",
+    "pricePerNight": 4000,
+    "photo": { "url": "/images/room-single.jpg", "alt": "Одноместный номер", "position": "right center" },
+    "hotelNote": "№ 204, 304 · двуспальная",
+    "updatedAt": "2026-10-22T21:15:35.527937Z"
+  }
+]
+```
+
+The example shows two of the five items.
+
+**Notes**
+
+The five room ids are fixed (the same as in `GET /hotel/rooms`): there is no way to add or remove a room type. `pricePerNight` is rubles for one night, the same all year. Optional texts that were never filled in are empty strings, not `null`. `description` is HTML with `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li`; anything else is removed on save. Plain texts use normal spaces; the site adds non-breaking spaces itself. `photo.url` is either a site path (`/images/...`) or an uploaded image: an uploaded image comes back as a full URL (the server's public base URL plus `/uploads/...`).
+
+#### PUT /rooms/{id}
+
+Replaces all the editable fields of one room type. The room price is edited only here.
+
+- **Role:** admin
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `id` | string (path) | yes | one of `vip`, `single-balcony`, `single`, `double-twin`, `double-euro` |
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `name` | string | yes | at most 100 characters |
+| `hotelName` | string | no | at most 100 characters |
+| `numbers` | string | yes | at most 100 characters |
+| `area` | string | yes | at most 100 characters |
+| `areaDetailed` | string | no | at most 100 characters |
+| `capacity` | string | no | at most 100 characters |
+| `description` | string | no | HTML, cleaned on save; at most 1000 characters of visible text (tags do not count) |
+| `pricePerNight` | number | yes | rubles, greater than 0, at most 1000000, at most 2 decimals |
+| `photo` | object | yes | |
+| `photo.url` | string | yes | a site path `/images/...`, an uploaded image (`/uploads/...` or the full URL that `POST /uploads` returned) |
+| `photo.alt` | string | no | at most 200 characters |
+| `photo.position` | string | no | `""` or `«X% Y%»` with X and Y from 0 to 100, for example `50% 30%` |
+| `hotelNote` | string | no | at most 100 characters |
+
+Surrounding spaces of the plain-text fields are removed before the checks. `id`, `kind`, `balcony` and `updatedAt` are not accepted: they cannot be changed.
+
+```json
+{
+  "name": "Новое имя",
+  "hotelName": "Для отеля",
+  "numbers": "№ 1, 2",
+  "area": "30 м²",
+  "areaDetailed": "30 м² + балкон",
+  "capacity": "до 3 гостей",
+  "description": "<p>Описание</p>",
+  "pricePerNight": 5200,
+  "photo": { "url": "/images/room-single.jpg", "alt": "Номер", "position": "50% 30%" },
+  "hotelNote": "№ 1, 2 · кровать"
+}
+```
+
+**Response 200**
+
+The room as in `GET /rooms`, with the stored values.
+
+```json
+{
+  "id": "vip",
+  "kind": "vip",
+  "balcony": true,
+  "name": "Новое имя",
+  "hotelName": "Для отеля",
+  "numbers": "№ 1, 2",
+  "area": "30 м²",
+  "areaDetailed": "30 м² + балкон",
+  "capacity": "до 3 гостей",
+  "description": "<p>Описание</p>",
+  "pricePerNight": 5200,
+  "photo": { "url": "/images/room-single.jpg", "alt": "Номер", "position": "50% 30%" },
+  "hotelNote": "№ 1, 2 · кровать",
+  "updatedAt": "2026-10-22T21:15:51.390535Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | a field is missing, blank, too long or out of range | validation message, see `errors` (keys look like `name`, `pricePerNight`, `photo.url`) |
+| 400 | `pricePerNight` has more than 2 decimals | `errors.pricePerNight`: `не более 2 знаков после запятой` |
+| 400 | `photo.url` is not a site path or an uploaded image | `errors.photo.url`: `недопустимый адрес фото` |
+| 400 | `photo.position` is not `""` or `«X% Y%»` | `errors.photo.position`: `формат «50% 30%»` |
+| 400 | `description` has more than 1000 characters of visible text | `errors.description`: `не более 1000 символов` |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | no room with this `id` | `Не найдено` |
+
+Example of a 400 body:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Ошибка валидации, пожалуйста проверьте введенные вами данные",
+  "errors": { "name": "поле не должно быть пустым", "photo.position": "формат «50% 30%»" }
+}
+```
+
+**Notes**
+
+This is a full replacement: an omitted optional field becomes an empty string. All invalid fields are reported together in `errors`. `description` is sanitized: tags other than `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li` are removed (their text stays), so the response shows what was really stored. When `photo.url` changes, the previous uploaded file is deleted from the server; sending the same photo again keeps it. The seeded `photo.position` values `right center` and `center 70%` do not match the `«X% Y%»` format, so an admin form must not send them back unchanged: send `""` or a value like `50% 30%`.
 
 ### Orders
 

@@ -71,7 +71,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [-] 46 Dish photos from the admin REMOVED: dish photos come from iiko (`syncImages`)
 - [x] 47 Rich text sanitizer
   - Relative links get `rel="noreferrer"` only and external ones `rel="noreferrer noopener" target="_blank"`: bluemonday adds `noopener` only together with `target=_blank`. Tests pin this output.
-- [ ] 48 Hotel rooms content [45, 47]
+- [x] 48 Hotel rooms content [45, 47]
 - [ ] 49 News [45, 47]
 - [ ] 50 Content blocks [45, 47]
 - [ ] 51 Site settings [31]

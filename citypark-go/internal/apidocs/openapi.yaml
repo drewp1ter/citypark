@@ -12,6 +12,7 @@ tags:
   - name: delivery-prices
   - name: catalog
   - name: hotel
+  - name: rooms
   - name: orders
   - name: integrations
   - name: uploads
@@ -516,6 +517,113 @@ components:
       properties:
         rooms:
           $ref: '#/components/schemas/HotelRooms'
+    RoomPhoto:
+      type: object
+      required: [url, alt, position]
+      properties:
+        url:
+          type: string
+          description: A site path (`/images/...`) or the full URL of an uploaded image.
+          example: /images/room-vip.jpg
+        alt:
+          type: string
+          example: VIP-номер
+        position:
+          type: string
+          description: Empty, or a CSS object-position of the form `50% 30%`.
+          example: ''
+    Room:
+      type: object
+      required: [id, kind, balcony, name, hotelName, numbers, area, areaDetailed, capacity, description, pricePerNight, photo, hotelNote, updatedAt]
+      properties:
+        id:
+          type: string
+          enum: [vip, single-balcony, single, double-twin, double-euro]
+        kind:
+          type: string
+          enum: [single, double, vip]
+        balcony:
+          type: boolean
+        name:
+          type: string
+          example: VIP-номер
+        hotelName:
+          type: string
+          example: VIP, 2 комнаты
+        numbers:
+          type: string
+          example: '№ 301'
+        area:
+          type: string
+          example: 45 + 7 м²
+        areaDetailed:
+          type: string
+          example: 45 м² + балкон 7 м²
+        capacity:
+          type: string
+          example: до 4 гостей
+        description:
+          type: string
+          description: HTML with p, br, strong, em, a, ul, ol and li only.
+          example: <p>Гостиная и спальня, балкон над кронами парка.</p>
+        pricePerNight:
+          type: number
+          description: Rubles per night.
+          example: 8000
+        photo:
+          $ref: '#/components/schemas/RoomPhoto'
+        hotelNote:
+          type: string
+          example: '№ 301 · до 4 гостей'
+        updatedAt:
+          type: string
+          format: date-time
+    RoomInput:
+      type: object
+      required: [name, numbers, area, pricePerNight, photo]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        hotelName:
+          type: string
+          maxLength: 100
+        numbers:
+          type: string
+          maxLength: 100
+        area:
+          type: string
+          maxLength: 100
+        areaDetailed:
+          type: string
+          maxLength: 100
+        capacity:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          description: HTML, cleaned on save. At most 1000 characters of visible text.
+        pricePerNight:
+          type: number
+          description: Rubles per night, greater than 0, at most 1000000, at most 2 decimals.
+          example: 5200
+        photo:
+          type: object
+          required: [url]
+          properties:
+            url:
+              type: string
+              description: A site path (`/images/...`) or an uploaded image (`/uploads/...` or its full URL).
+            alt:
+              type: string
+              maxLength: 200
+            position:
+              type: string
+              description: Empty, or `X% Y%` with X and Y from 0 to 100.
+              example: 50% 30%
+        hotelNote:
+          type: string
+          maxLength: 100
 paths:
   /health:
     get:
@@ -955,6 +1063,59 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /rooms:
+    get:
+      summary: Get the five hotel room types
+      description: >-
+        Role: public. Ordered as on the site. The room ids are fixed, the same as in `/hotel/rooms`.
+        An uploaded photo comes back as a full URL.
+      tags: [rooms]
+      responses:
+        '200':
+          description: The rooms.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Room'
+  /rooms/{id}:
+    put:
+      summary: Replace the editable fields of a room type
+      description: >-
+        Role: admin. A full replacement: an omitted optional field becomes an empty string. The room price is
+        edited only here. When `photo.url` changes, the replaced uploaded file is deleted.
+      tags: [rooms]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [vip, single-balcony, single, double-twin, double-euro]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomInput'
+      responses:
+        '200':
+          description: The stored room.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
   /orders:
