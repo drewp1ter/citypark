@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Orders, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -1109,6 +1109,163 @@ No body.
 | 401 | no token or invalid token | `Требуется авторизация` |
 | 403 | the user is not an admin | `Недостаточно прав` |
 | 404 | no item with this `id` (also when it was already deleted) | `Не найдено` |
+
+### Content
+
+Editable page copy is stored as **content blocks**: rows addressed by a block key such as `home.hero.title`. The site reads the blocks of a page; an admin changes the value of a block. Keys are created by the backend; there is no endpoint to add or delete one.
+
+| `type` | `value` in responses | What an admin sends | Rules |
+|---|---|---|---|
+| `text` | string | `{"value": "строка"}` | trimmed; no line breaks; at most `maxLength` characters (300 unless the block says otherwise) |
+| `lines` | array of strings | `{"value": ["a", "b"]}` | each line trimmed, empty ones dropped; 1 to 50 lines; each at most 200 characters |
+| `richtext` | string (HTML) | `{"value": "<p>…</p>"}` | cleaned with the *short* profile (`p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li`); visible text at most `maxLength` characters (2000 unless the block says otherwise) |
+| `image` | `null` (use `image`) | `{"image": {"url", "alt", "position"}}` | `url` required (a site path `/images/...` or an uploaded image from `POST /uploads`); `alt` at most 200 characters; `position` empty or `X% Y%` with X and Y from 0 to 100 |
+
+**Price placeholders.** Never type a price into a text. Write `{{name}}` (spaces inside the braces are allowed) and the site puts the formatted price there. Allowed names (any other name is rejected):
+
+| Placeholder | The site puts there |
+|---|---|
+| `{{minRoomPrice}}` | the lowest `pricePerNight` of the rooms |
+| `{{lateCheckoutPerHour}}` | the late check-out fee per hour (hotel prices, task 52) |
+| `{{smokingFine}}` | the smoking fine (hotel prices, task 52) |
+| `{{breakfastDelivery}}` | the breakfast delivery fee (hotel prices, task 52) |
+
+Placeholders are stored exactly as typed. They are allowed in `text`, `lines` and `richtext`.
+
+#### GET /content/blocks
+
+Returns the content blocks, ordered by page, then by the block's position, then by key.
+
+- **Role:** public
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `page` | string (query) | no | only the blocks of this page (`home`, `hotel`); all blocks when omitted; an unknown page gives `[]` |
+
+**Response 200**
+
+A JSON array (not wrapped in an object). `value` has the type from the table above; `image` is `null` except for `image` blocks, where `value` is `null`. `maxLength` is the effective limit: the default when the block has none; `0` for `lines` and `image`. `image.url` is a full URL for uploaded images. `section` is the Russian heading the admin groups blocks under.
+
+```json
+[
+  {
+    "key": "hotel.amenities",
+    "page": "hotel",
+    "section": "Номера",
+    "label": "Удобства",
+    "type": "lines",
+    "maxLength": 0,
+    "value": ["Сплит-система", "Smart TV"],
+    "image": null,
+    "updatedAt": "2026-10-01T10:00:00Z"
+  },
+  {
+    "key": "hotel.intro",
+    "page": "hotel",
+    "section": "Номера",
+    "label": "Вступление",
+    "type": "richtext",
+    "maxLength": 2000,
+    "value": "<p>Привет</p>",
+    "image": null,
+    "updatedAt": "2026-10-01T10:00:00Z"
+  }
+]
+```
+
+An image block:
+
+```json
+{
+  "key": "home.photo",
+  "page": "home",
+  "section": "Первый экран",
+  "label": "Фото",
+  "type": "image",
+  "maxLength": 0,
+  "value": null,
+  "image": { "url": "http://localhost:3000/uploads/2026/10/fca6521dda98349157f986db0e9751fa.jpg", "alt": "Здание отеля", "position": "50% 30%" },
+  "updatedAt": "2026-10-22T21:24:15.872738Z"
+}
+```
+
+**Notes**
+
+The response is not paged. Replace the placeholders in `text`, `lines` and `richtext` values before showing them.
+
+#### PUT /content/blocks/{key}
+
+Sets the value of an existing block.
+
+- **Role:** admin
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `key` | string (path) | yes | the `key` of a block |
+| `value` | string or array of strings | for `text`, `lines`, `richtext` | as in the type table; its JSON type must match the block's type |
+| `image` | object | for `image` | as in the type table; `value` must be absent or `null` |
+
+**Request body**
+
+```json
+{ "value": ["Сплит-система", "Smart TV"] }
+```
+
+```json
+{ "image": { "url": "/uploads/2026/10/fca6521dda98349157f986db0e9751fa.jpg", "alt": "Здание отеля", "position": "50% 30%" } }
+```
+
+**Response 200**
+
+The block as in `GET /content/blocks`, with the stored (cleaned) value.
+
+```json
+{
+  "key": "hotel.amenities",
+  "page": "hotel",
+  "section": "Номера",
+  "label": "Удобства",
+  "type": "lines",
+  "maxLength": 0,
+  "value": ["Сплит-система", "Smart TV"],
+  "image": null,
+  "updatedAt": "2026-10-22T21:24:15.87172Z"
+}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | any invalid value | `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with `errors` (see below) |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | no block with this key | `Не найдено` |
+
+Field errors (`errors`):
+
+| Field | Message |
+|---|---|
+| `value` | `неверный тип значения` (wrong JSON type for the block, a missing value, or `value` sent to an `image` block) |
+| `value` | `не более N символов` (`text` and `richtext`; N is the block's `maxLength`) |
+| `value` | `не должно содержать переносов строк` (`text`) |
+| `value` | `от 1 до 50 строк` (`lines`) |
+| `value` | `каждая строка не более 200 символов` (`lines`) |
+| `value` | `строки не должны содержать переносов` (`lines`: one array item contains a line break) |
+| `value` | `неизвестная подстановка {{name}}` (a placeholder that is not in the list above) |
+| `image` | `неверный тип значения` (an `image` block without the `image` object) |
+| `image.url` | `поле не должно быть пустым`; `недопустимый адрес фото` (not `/images/...` or an uploaded image of this server) |
+| `image.alt` | `не более 200 символов` |
+| `image.position` | `формат «50% 30%»` |
+
+**Notes**
+
+The value is replaced as a whole and nothing is saved when any field is invalid. Send the cleaned text back from the response into the editor. When an `image` block gets a different photo, the previously uploaded file is deleted from the server; sending the same photo again keeps it.
 
 ### Orders
 

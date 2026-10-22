@@ -14,6 +14,7 @@ tags:
   - name: hotel
   - name: rooms
   - name: news
+  - name: content
   - name: orders
   - name: integrations
   - name: uploads
@@ -625,6 +626,84 @@ components:
         hotelNote:
           type: string
           maxLength: 100
+    ContentImage:
+      type: object
+      required: [url, alt, position]
+      properties:
+        url:
+          type: string
+          example: /images/hotel-building.jpg
+        alt:
+          type: string
+          maxLength: 200
+        position:
+          type: string
+          description: Empty, or `X% Y%` with X and Y from 0 to 100.
+          example: 50% 30%
+    ContentBlock:
+      type: object
+      required: [key, page, section, label, type, maxLength, value, image, updatedAt]
+      properties:
+        key:
+          type: string
+          example: home.hero.title
+        page:
+          type: string
+          example: home
+        section:
+          type: string
+          example: Первый экран
+        label:
+          type: string
+          example: Заголовок
+        type:
+          type: string
+          enum: [text, lines, richtext, image]
+        maxLength:
+          type: integer
+          description: The effective character limit; 0 for `lines` and `image`.
+          example: 300
+        value:
+          nullable: true
+          description: >-
+            A string for `text` and `richtext` (HTML), an array of strings for `lines`, `null` for `image`.
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        image:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/ContentImage'
+          description: Set only for `image` blocks.
+        updatedAt:
+          type: string
+          format: date-time
+    ContentBlockInput:
+      type: object
+      properties:
+        value:
+          description: For `text` and `richtext` a string, for `lines` an array of strings.
+          oneOf:
+            - type: string
+            - type: array
+              items:
+                type: string
+        image:
+          type: object
+          description: For `image` blocks.
+          required: [url]
+          properties:
+            url:
+              type: string
+              description: A site path (`/images/...`) or an uploaded image (`/uploads/...` or its full URL).
+            alt:
+              type: string
+              maxLength: 200
+            position:
+              type: string
+              example: 50% 30%
     NewsPhoto:
       type: object
       required: [url, alt, position]
@@ -1332,6 +1411,67 @@ paths:
       responses:
         '204':
           description: Deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /content/blocks:
+    get:
+      summary: List content blocks
+      description: >-
+        Role: public. Ordered by page, sort and key. `?page=home` keeps one page; an unknown page gives `[]`. Replace
+        the price placeholders (`{{smokingFine}}`, ...) in `text`, `lines` and `richtext` values before showing them.
+      tags: [content]
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: string
+          example: home
+      responses:
+        '200':
+          description: The blocks (not paged).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ContentBlock'
+  /content/blocks/{key}:
+    put:
+      summary: Set the value of a content block
+      description: >-
+        Role: admin. Keys are created by migrations; there is no endpoint to add or delete one. Send `value` for
+        `text`, `lines` and `richtext` blocks, `image` for `image` blocks. A value of the wrong JSON type gives 400
+        `неверный тип значения`. When an `image` block gets a different photo, the replaced uploaded file is deleted.
+      tags: [content]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+          example: home.hero.title
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContentBlockInput'
+      responses:
+        '200':
+          description: The block with the stored value.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentBlock'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

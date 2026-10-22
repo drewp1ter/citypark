@@ -13,6 +13,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/catalog"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/config"
+	"github.com/drewp1ter/citypark-go/internal/content"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
 	"github.com/drewp1ter/citypark-go/internal/health"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
@@ -75,6 +76,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret).Routes(r)
 		room.NewHandler(room.NewStore(db), uploads, tokens).Routes(r)
 		news.NewHandler(db, uploads, tokens, c, cfg.DefaultPageSize).Routes(r)
+		content.NewHandler(db, uploads, tokens).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			WorkingHoursStart: cfg.WorkingHours.Start,
 			WorkingHoursEnd:   cfg.WorkingHours.End,
