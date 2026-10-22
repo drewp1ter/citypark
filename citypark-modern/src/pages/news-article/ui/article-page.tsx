@@ -1,33 +1,21 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getBlogAuthor, getBlogPost, getBlogPosts, getNews, getNewsItem } from '@/entities/article'
+import { getNews, getNewsItem } from '@/entities/article'
 import { formatDate, type Photo } from '@/shared/lib'
 import { AppLink, Button } from '@/shared/ui'
 
-/** News items and chef's blog posts share one URL space: /news/<slug>. */
 type Article = { title: string; meta: string; photo: Photo; body?: readonly string[] }
 
 async function findArticle(slug: string): Promise<Article | undefined> {
 	const item = await getNewsItem(slug)
-	if (item) return { title: item.title, meta: formatDate(item.date), photo: item.photo, body: item.body }
-
-	const post = await getBlogPost(slug)
-	if (post) {
-		const author = await getBlogAuthor()
-		return {
-			title: `${post.title}: ${post.subtitle.toLocaleLowerCase('ru')}`,
-			meta: `Блог шефа · ${author.name}`,
-			photo: post.photo,
-			body: post.body,
-		}
-	}
-	return undefined
+	if (!item) return undefined
+	return { title: item.title, meta: formatDate(item.date), photo: item.photo, body: item.body }
 }
 
 export async function generateArticleParams() {
-	const [news, posts] = await Promise.all([getNews(), getBlogPosts()])
-	return [...news, ...posts].map((entry) => ({ slug: entry.slug }))
+	const news = await getNews()
+	return news.map((item) => ({ slug: item.slug }))
 }
 
 export async function generateArticleMetadata(slug: string): Promise<Metadata> {

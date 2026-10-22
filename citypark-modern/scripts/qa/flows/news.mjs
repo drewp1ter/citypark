@@ -38,10 +38,6 @@ out(
 	)
 )
 out(
-	'blog: cards + intro',
-	`${await p.locator('#blog a:visible').count()} / ${await txt(p.locator('#blog h2:visible'))}`
-)
-out(
 	'social buttons (new tab, real hrefs)',
 	JSON.stringify(
 		await p
@@ -54,36 +50,17 @@ out(
 out(
 	'link targets: all news links -> articles',
 	JSON.stringify(
-		[...new Set(await p.locator('#news a, #blog a').evaluateAll((a) => a.map((x) => x.getAttribute('href'))))].length
+		[...new Set(await p.locator('#news a').evaluateAll((a) => a.map((x) => x.getAttribute('href'))))].length
 	) + ' unique'
 )
 
-// tabs follow the hash and scroll to the sections
-const tabs = p.locator("nav[aria-label='Раздел'] a")
-out('tabs: initial selected', await txt(tabs.locator('xpath=self::*[@aria-current]')))
-await tabs.nth(1).click()
-await p.waitForTimeout(500)
-out(
-	'click blog tab -> hash / selected / scrolled',
-	`${new URL(p.url()).hash} / ${await txt(tabs.locator('xpath=self::*[@aria-current]'))} / ${await p.evaluate(() => {
-		const r = document.querySelector('#blog').getBoundingClientRect()
-		return r.top >= 0 && r.top < 200
-	})}`
-)
-await tabs.nth(0).click()
-await p.waitForTimeout(500)
-out('click news tab -> selected', await txt(tabs.locator('xpath=self::*[@aria-current]')))
-const direct = await open('/news#blog', D)
-out('open /news#blog -> blog tab selected', await txt(direct.locator("nav[aria-label='Раздел'] a[aria-current]")))
+out('tabs: none', String(await p.locator("nav[aria-label='Раздел']").count()))
+out('blog: no #blog section', String(await p.locator('#blog').count()))
 
 // article page from a card
 await p.locator("#news a[href^='/news/']").first().click()
 await p.waitForURL('**/news/**')
 out('latest card opens article', `${p.url().replace(base, '')} / ${await txt(p.locator('h1'))}`)
-await p.goto(base + '/news')
-await p.locator('#blog a:visible').first().click()
-await p.waitForURL('**/news/**')
-out('blog card opens article', `${p.url().replace(base, '')} / ${await txt(p.locator('h1'))}`)
 out(
 	'desktop: overflow / errors',
 	`${await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)} / ${JSON.stringify(p.problems)}`
@@ -92,14 +69,9 @@ out(
 // mobile
 const m = await open('/news', M)
 out(
-	'mobile: tabs width / labels',
-	`${Math.round((await m.locator("nav[aria-label='Раздел']").boundingBox()).width)}px / ${await txt(m.locator("nav[aria-label='Раздел']"))}`
-)
-out(
 	'mobile: rows (5, short titles)',
 	(await m.locator('#news ul:visible li').allInnerTexts()).map((t) => t.replace(/\s+/g, ' ')).join(' | ')
 )
-out('mobile: blog rail cards', (await m.locator('#blog a:visible').allInnerTexts()).join(' | ').replace(/\n/g, ' '))
 out('mobile: social CTA hidden', String(await m.getByText('Акции — первыми в соцсетях').isVisible()))
 out(
 	'mobile: quick bar',
@@ -109,8 +81,11 @@ out(
 	'mobile: overflow / errors',
 	`${await m.evaluate(() => document.documentElement.scrollWidth > innerWidth)} / ${JSON.stringify(m.problems)}`
 )
-await m.goto(base + '/news/frittata')
+await m.goto(base + '/news/special-offer-september-2026')
 out('mobile: article page bar (also /news/…)', await txt(m.locator("nav[aria-label='Быстрые действия']")))
+
+const gone = await open('/news/frittata', D)
+out('/news/frittata (former blog slug) -> 404', `${gone.status}  (want 404)`)
 
 for (const [name, v] of [
 	['mobile', M],

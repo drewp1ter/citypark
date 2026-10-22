@@ -1,13 +1,11 @@
 import Image from 'next/image'
-import type { BlogAuthor, BlogPost, NewsItem } from '@/entities/article'
+import type { NewsItem } from '@/entities/article'
 import { formatDate } from '@/shared/lib'
 import { AppLink, cardClass, Section } from '@/shared/ui'
 
 type NewsSectionProps = {
-	/** The latest news and one more, shown first. */
-	items: readonly [NewsItem, NewsItem]
-	post: BlogPost
-	author: BlogAuthor
+	/** The latest news and two more, shown first. */
+	items: readonly [NewsItem, NewsItem, NewsItem]
 }
 
 function NewsCard({ item }: { item: NewsItem }) {
@@ -30,9 +28,8 @@ function NewsCard({ item }: { item: NewsItem }) {
 	)
 }
 
-export function NewsSection({ items, post, author }: NewsSectionProps) {
-	const [latest, second] = items
-	const postTitle = `${post.title}: ${post.subtitle.toLocaleLowerCase('ru')}`
+export function NewsSection({ items }: NewsSectionProps) {
+	const [latest, , third] = items
 
 	return (
 		<Section
@@ -43,41 +40,27 @@ export function NewsSection({ items, post, author }: NewsSectionProps) {
 				</AppLink>
 			}
 		>
-			{/* Mobile: two cards in a rail (the latest news and the chef's blog) */}
+			{/* Mobile: two cards in a rail, as in the design; the second slot shows news */}
 			<div className='-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 md:hidden'>
-				<AppLink href={`/news/${latest.slug}`} className={cardClass('surface', 'w-60 shrink-0 rounded-md p-2')}>
-					<div className='relative h-[130px] overflow-hidden rounded-sm'>
-						<Image src={latest.photo.src} alt='' fill sizes='240px' className='object-cover' />
-					</div>
-					<span className='px-1.5 pt-2.5 pb-1 font-bold'>{latest.title}</span>
-				</AppLink>
-				<AppLink href={`/news/${post.slug}`} className={cardClass('surface', 'w-60 shrink-0 rounded-md p-2')}>
-					<div className='relative h-[130px] overflow-hidden rounded-sm'>
-						<Image src={post.photo.src} alt='' fill sizes='240px' className='object-cover' />
-					</div>
-					<span className='px-1.5 pt-2.5 pb-1 font-bold'>Блог шефа: {post.title.toLocaleLowerCase('ru')}</span>
-				</AppLink>
+				{[latest, third].map((item) => (
+					<AppLink
+						key={item.slug}
+						href={`/news/${item.slug}`}
+						className={cardClass('surface', 'w-60 shrink-0 rounded-md p-2')}
+					>
+						<div className='relative h-[130px] overflow-hidden rounded-sm'>
+							<Image src={item.photo.src} alt='' fill sizes='240px' className='object-cover' />
+						</div>
+						<span className='px-1.5 pt-2.5 pb-1 font-bold'>{item.title}</span>
+					</AppLink>
+				))}
 			</div>
 
-			{/* From 768 px: two news cards and the chef card */}
+			{/* From 768 px: three news cards */}
 			<div className='hidden gap-3 md:grid md:grid-cols-2 lg:grid-cols-3'>
-				<NewsCard item={latest} />
-				<NewsCard item={second} />
-				<AppLink
-					href={`/news/${post.slug}`}
-					className={cardClass('surface', 'gap-3 rounded-lg p-6 md:col-span-2 lg:col-span-1')}
-				>
-					<Image
-						src={author.photo.src}
-						alt={author.photo.alt}
-						width={72}
-						height={72}
-						className='size-[72px] rounded-full object-cover object-top'
-					/>
-					<span className='text-text-muted text-sm'>Блог шефа · {author.name}</span>
-					<span className='flex-1 text-[22px] leading-tight font-bold'>{postTitle}</span>
-					<span className='font-semibold'>Читать ↗</span>
-				</AppLink>
+				{items.map((item) => (
+					<NewsCard key={item.slug} item={item} />
+				))}
 			</div>
 		</Section>
 	)

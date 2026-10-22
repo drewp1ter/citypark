@@ -52,6 +52,13 @@ out(
 	`${await fr.locator('span.sr-only').innerText()}  (want Сегодня свободно 4 номера из 12)`
 )
 
+// ---- news cards (the blog is removed: three news cards on desktop, two in the mobile rail)
+const n = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+await n.goto(base + '/')
+const newsCards = n.locator("section:has(h2:text-is('Новости')) a[href^='/news/']:visible")
+out('home news cards: 3', `${await newsCards.count()}  (want 3)`)
+out('home news: no blog text', String(!(await n.locator('main').innerText()).includes('Блог')))
+
 // ---- cart
 const c = await browser.newPage({ viewport: { width: 1440, height: 900 } })
 await c.goto(base + '/')

@@ -2,7 +2,6 @@ import Image from 'next/image'
 import type { NewsItem } from '@/entities/article'
 import { formatDate } from '@/shared/lib'
 import { AppLink, cardClass } from '@/shared/ui'
-import { SectionTabs } from './section-tabs'
 
 const href = (item: NewsItem) => `/news/${item.slug}`
 
@@ -72,7 +71,6 @@ export function NewsFeed({ items }: { items: readonly NewsItem[] }) {
 				<h1 className='heading mx-1.5 mt-2 mb-3.5 text-4xl max-md:w-full md:mx-0 md:mt-0 md:mb-0 md:text-[length:var(--text-h1)]'>
 					Новости
 				</h1>
-				<SectionTabs />
 			</div>
 
 			<div className='mt-3 grid gap-3 md:mt-0 md:grid-cols-2 lg:grid-cols-3'>

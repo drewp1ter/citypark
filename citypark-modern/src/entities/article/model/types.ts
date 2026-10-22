@@ -14,16 +14,3 @@ export type NewsItem = {
 	/** Article text, one string per paragraph. Not written yet. */
 	body?: readonly string[]
 }
-
-export type BlogPost = {
-	slug: string
-	title: string
-	/** "Итальянский омлет" */
-	subtitle: string
-	/** Shorter title for the mobile news page. */
-	shortTitle?: string
-	photo: Photo
-	body?: readonly string[]
-}
-
-export type BlogAuthor = { name: string; photo: Photo }

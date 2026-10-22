@@ -1,5 +1,5 @@
 import { PLACEHOLDER_PHOTO } from '@/shared/lib'
-import type { BlogAuthor, BlogPost, NewsItem } from './types'
+import type { NewsItem } from './types'
 
 // Copied from design/reference/*/news.html and home.html. Newest first.
 // Three photos are missing (the owner will send them): those items use the placeholder image.
@@ -47,33 +47,5 @@ export const news: readonly NewsItem[] = [
 		date: '2025-03-02',
 		title: 'Постное меню 2025',
 		photo: { src: PLACEHOLDER_PHOTO, alt: '' },
-	},
-]
-
-export const blogAuthor: BlogAuthor = {
-	name: 'Денис Троицкий',
-	photo: { src: '/images/chef.jpg', alt: 'Шеф-повар Денис Троицкий' },
-}
-
-export const blogPosts: readonly BlogPost[] = [
-	{
-		slug: 'frittata',
-		title: 'Фриттата',
-		subtitle: 'Итальянский омлет',
-		photo: { src: '/images/blog-frittata.jpg', alt: 'Фриттата' },
-	},
-	{
-		slug: 'pasta-chicken-spinach',
-		title: 'Паста с курицей и шпинатом',
-		subtitle: 'Просто и полезно',
-		shortTitle: 'Паста с курицей',
-		photo: { src: '/images/blog-pasta.jpg', alt: 'Паста с курицей и шпинатом' },
-	},
-	{
-		slug: 'lunch-set-fish',
-		title: 'Обеденный сет с рыбой',
-		subtitle: 'Свежесть и сытность',
-		shortTitle: 'Сет с рыбой',
-		photo: { src: '/images/blog-lunch-set-fish.jpg', alt: 'Обеденный сет с рыбой' },
 	},
 ]
