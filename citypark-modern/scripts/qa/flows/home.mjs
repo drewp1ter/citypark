@@ -134,4 +134,29 @@ const vis = await m.evaluate(() => ({
 		.length,
 }))
 out("mobile overflow / visible 'Выбрать' / visible e-mail", JSON.stringify(vis))
+// ---- logo
+const lg = await browser.newPage({ viewport: { width: 1440, height: 900 } })
+await lg.goto(base + '/')
+out(
+	'logo: header link name',
+	await lg
+		.locator('header a[href="/"]')
+		.first()
+		.evaluate((a) => a.getAttribute('aria-label') ?? a.querySelector('[role=img]')?.getAttribute('aria-label'))
+)
+out(
+	'logo: header / footer height',
+	await lg.evaluate(() => {
+		const h = (el) => (el ? Math.round(el.getBoundingClientRect().height) : 'none')
+		const visible = [...document.querySelectorAll('header [role=img]')].find((el) => el.offsetParent)
+		return `${h(visible)} / ${h(document.querySelector('footer [role=img]'))}`
+	})
+)
+out(
+	'logo: mask loaded',
+	await lg.evaluate(async () => {
+		const r = await fetch('/brand/logo.svg')
+		return `${r.status} / ${r.headers.get('content-type')}`
+	})
+)
 await browser.close()

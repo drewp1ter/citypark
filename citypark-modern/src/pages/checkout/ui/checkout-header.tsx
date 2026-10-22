@@ -1,5 +1,5 @@
 import { site } from '@/shared/config'
-import { AppLink, IconButton } from '@/shared/ui'
+import { AppLink, IconButton, Logo } from '@/shared/ui'
 
 /**
  * Header of the checkout steps. It has no site navigation, to keep the focus on the order:
@@ -28,8 +28,8 @@ export function CheckoutHeader({ step }: { step: 2 | 3 }) {
 				<AppLink href='/menu' className='rounded-pill bg-bg inline-flex min-h-11 items-center gap-2 px-3 font-semibold'>
 					<span aria-hidden='true'>←</span> В меню
 				</AppLink>
-				<AppLink href='/' className='font-display inline-flex min-h-11 items-center text-lg font-semibold'>
-					{site.wordmark}
+				<AppLink href='/' className='inline-flex min-h-11 items-center'>
+					<Logo className='h-11' />
 				</AppLink>
 				<AppLink href={phone.href} className='inline-flex min-h-11 items-center px-3 font-semibold'>
 					{phone.display}

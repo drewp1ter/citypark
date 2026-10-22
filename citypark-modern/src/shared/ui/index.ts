@@ -19,6 +19,7 @@ export {
 	PlusIcon,
 	SearchIcon,
 } from './icons'
+export { Logo } from './logo'
 export { PhoneField } from './phone-field'
 export { RadioPills } from './radio-pills'
 export { Select, type SelectOption } from './select'

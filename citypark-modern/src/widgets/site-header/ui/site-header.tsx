@@ -1,7 +1,6 @@
 import type { Dish } from '@/entities/dish'
 import { ThemeToggle } from './theme-toggle'
-import { site } from '@/shared/config'
-import { AppLink, Button } from '@/shared/ui'
+import { AppLink, Button, Logo } from '@/shared/ui'
 import { CartButton } from './cart-button'
 import { CartPill } from './cart-pill'
 import { MobileMenu } from './mobile-menu'
@@ -9,7 +8,7 @@ import { NavLinks } from './nav-links'
 import { PhoneButton } from './phone-button'
 
 const pill = 'flex items-center justify-between rounded-pill border border-border bg-surface'
-const logo = 'inline-flex min-h-11 items-center font-display font-semibold'
+const logo = 'inline-flex min-h-11 items-center'
 
 type SiteHeaderProps = {
 	/**
@@ -28,9 +27,9 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 	return (
 		<header className={`sticky top-0 z-10 px-3 pt-2.5 xl:px-6 xl:pt-4 ${menuPage ? 'bg-bg pb-2 md:pb-4 xl:pb-2' : ''}`}>
 			{/* Mobile / tablet */}
-			<div className={`${pill} py-1.5 pr-1.5 pl-[18px] xl:hidden`}>
-				<AppLink href='/' className={`${logo} text-base`}>
-					{site.wordmark}
+			<div className={`${pill} py-1.5 pr-1.5 pl-3 xl:hidden`}>
+				<AppLink href='/' className={logo}>
+					<Logo className='h-10' />
 				</AppLink>
 				<div className='flex gap-1.5'>
 					<ThemeToggle />
@@ -41,12 +40,12 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 
 			{/* Desktop */}
 			<div
-				className={`${pill} mx-auto hidden gap-6 py-2 pr-2 pl-6 xl:flex ${
+				className={`${pill} mx-auto hidden gap-6 py-2 pr-2 pl-4 xl:flex ${
 					menuPage ? 'max-w-[calc(var(--container-wide)+34px)]' : 'max-w-[calc(var(--container)+34px)]'
 				}`}
 			>
-				<AppLink href='/' className={`${logo} text-lg`}>
-					{site.wordmark}
+				<AppLink href='/' className={logo}>
+					<Logo className='h-11' />
 				</AppLink>
 				<NavLinks />
 				<div className='flex gap-2'>

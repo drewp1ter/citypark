@@ -3,7 +3,7 @@
 import { useRef, type MouseEvent } from 'react'
 import { ThemeToggle } from './theme-toggle'
 import { site } from '@/shared/config'
-import { AppLink, Button, CloseIcon, IconButton, MenuIcon } from '@/shared/ui'
+import { AppLink, Button, CloseIcon, IconButton, Logo, MenuIcon } from '@/shared/ui'
 
 /**
  * Menu button + full-screen sheet (not in the design; built from the existing tokens).
@@ -29,9 +29,9 @@ export function MobileMenu() {
 				className='bg-bg text-text fixed inset-0 m-0 size-full max-h-none max-w-none overflow-y-auto p-0 backdrop:bg-transparent open:flex open:flex-col'
 			>
 				<div className='flex items-center justify-between px-3 pt-2.5'>
-					<div className='rounded-pill border-border bg-surface flex w-full items-center justify-between border py-1.5 pr-1.5 pl-[18px]'>
-						<AppLink href='/' className='font-display inline-flex min-h-11 items-center text-base font-semibold'>
-							{site.wordmark}
+					<div className='rounded-pill border-border bg-surface flex w-full items-center justify-between border py-1.5 pr-1.5 pl-3'>
+						<AppLink href='/' className='inline-flex min-h-11 items-center'>
+							<Logo className='h-10' />
 						</AppLink>
 						<IconButton variant='inverse' aria-label='Закрыть меню' onClick={() => dialog.current?.close()}>
 							<CloseIcon />

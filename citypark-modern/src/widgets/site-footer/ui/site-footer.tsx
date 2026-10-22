@@ -1,16 +1,13 @@
 import { site } from '@/shared/config'
 import { cn } from '@/shared/lib'
-import { AppLink } from '@/shared/ui'
+import { AppLink, Logo } from '@/shared/ui'
 
 const { company, legal, social, year } = site
 
 export function SiteFooter({ wide = false }: { wide?: boolean }) {
 	return (
 		<footer className={cn('mx-auto w-full px-3 pt-7 pb-8 md:px-6 md:pt-10', wide ? 'max-w-wide-page' : 'max-w-page')}>
-			<p className='font-display mb-3 text-[54px] leading-[0.9] font-semibold tracking-[-0.05em] md:mb-6 md:text-[clamp(88px,12vw,var(--text-wordmark))]'>
-				СИТИ
-				<br className='md:hidden' /> ПАРК
-			</p>
+			<Logo className='mb-4 h-[120px] md:mb-8 md:h-[clamp(180px,18vw,240px)]' />
 
 			{/* Mobile: short line, as in the design */}
 			<p className='text-text-muted text-[13px] md:hidden'>

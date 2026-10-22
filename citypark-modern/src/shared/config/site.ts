@@ -42,7 +42,7 @@ const phones = {
 
 export const site = {
 	name: 'Сити Парк',
-	wordmark: 'СИТИ ПАРК',
+	wordmark: 'Сити Парк',
 	address: {
 		postcode: '352630',
 		city: 'Белореченск',
