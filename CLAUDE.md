@@ -12,6 +12,9 @@ Read the project's `CLAUDE.md` before you change anything in it, and run git com
 |---|---|---|---|
 | `citypark-go/` | Backend for food ordering: menu synced from the iiko POS, payments through MONETA.RU, staff notifications through Telegram | Go, PostgreSQL 17 (Docker), embedded migrations | `citypark-go/CLAUDE.md`, `docs/tasks/CONVENTIONS.md` |
 | `citypark-modern/` | Public website (in Russian), built from a finished design | Next.js 16 App Router, React 19, TypeScript, Tailwind v4, Feature-Sliced Design | `citypark-modern/CLAUDE.md`, `AGENTS.md`, `docs/PLAN.md` |
+| `citypark-admin/` | Admin panel (in Russian): delivery prices, orders, menu photos and sync, site content, hotel reports | Vite SPA, React 19, HeroUI v3, TanStack Router + Query, types from the backend's OpenAPI | `citypark-admin/CLAUDE.md`, `docs/tasks/CONVENTIONS.md` |
+
+Cross-project decisions are in `docs/adr/` (start with `0001-admin-panel.md`) and terms in `GLOSSARY.md`.
 
 ## Commands
 
@@ -59,6 +62,9 @@ The QA scripts use `BASE_URL` (default `http://localhost:3111`) and need `npx pl
 - `citypark-modern` uses a Next.js version newer than your training data: read the guide in
   `node_modules/next/dist/docs/` before writing Next.js code. Colours come only from tokens
   (`design/tokens.css` is the source of truth); copy texts and prices exactly from `design/reference/`.
+- `citypark-admin` uses the same numbered-task workflow. It uses HeroUI **v3**, which differs a lot from v2: read its
+  docs before using a component. Many of its tasks need a citypark-go task first (noted in its `PROGRESS.md`). The admin's
+  dev server runs on `:5173` (Vite default) and expects the backend at `VITE_API_URL`.
 
 ## Agent skills
 

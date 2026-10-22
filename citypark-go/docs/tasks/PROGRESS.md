@@ -62,3 +62,18 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Hotel
 - [x] 41 Hotel free rooms webhook [31]
+
+## Admin panel support (see ../docs/adr/0001-admin-panel.md)
+- [ ] 42 Order search filters [29]
+- [ ] 43 Menu sync for admins, one sync at a time [38]
+- [ ] 44 Scheduled menu sync [43]
+- [ ] 45 Image uploads [31]
+- [-] 46 Dish photos from the admin REMOVED: dish photos come from iiko (`syncImages`)
+- [ ] 47 Rich text sanitizer
+- [ ] 48 Hotel rooms content [45, 47]
+- [ ] 49 News [45, 47]
+- [ ] 50 Content blocks [45, 47]
+- [ ] 51 Site settings [31]
+- [ ] 52 Hotel prices [41]
+- [ ] 53 Hotel reports from 1C [31]
+- [ ] 54 Content block rows for the home and hotel pages [50] (needs citypark-modern task 16)
