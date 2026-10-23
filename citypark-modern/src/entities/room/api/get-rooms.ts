@@ -1,13 +1,27 @@
-import { todayInMoscow } from '@/shared/lib'
-import { rooms } from '../model/rooms.data'
+import { todayInMoscow, typo } from '@/shared/lib'
 import { fetchHotelRooms } from './hotel-api'
+import { fetchRooms } from './rooms-api'
 import type { Room, RoomAvailability, StayQuery } from '../model/types'
 
-// Reads go through these functions only. Today they return static data;
-// later they call the booking engine / CMS and nothing else has to change.
+// Reads go through these functions only. Rooms come from the backend; availability will later come from a booking engine.
 
+/** The room types in the backend's order. Errors are left to the caller. */
 export async function getRooms(): Promise<readonly Room[]> {
-	return rooms
+	return (await fetchRooms()).map((room) => ({
+		id: room.id,
+		name: room.name,
+		hotelName: room.hotelName || undefined,
+		kind: room.kind,
+		balcony: room.balcony,
+		numbers: typo(room.numbers),
+		area: typo(room.area),
+		areaDetailed: typo(room.areaDetailed) || undefined,
+		capacity: room.capacity || undefined,
+		descriptionHtml: room.description,
+		pricePerNight: room.pricePerNight,
+		photo: { src: room.photo.url, alt: room.photo.alt, position: room.photo.position || undefined },
+		hotelNote: typo(room.hotelNote),
+	}))
 }
 
 // Website room id → key in `GET /hotel/rooms` → how many rooms of that type the hotel has.

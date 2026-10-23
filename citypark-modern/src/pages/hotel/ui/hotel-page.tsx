@@ -14,7 +14,10 @@ const GUEST_INFO_SECTIONS = 6
 export async function HotelPage() {
 	const [content, rooms, documents, prices] = await Promise.all([
 		getPageContent('hotel'),
-		getRooms(),
+		getRooms().catch((error: unknown) => {
+			console.error(error)
+			return null
+		}),
 		getGuestDocuments(),
 		getHotelPrices(),
 	])
@@ -37,7 +40,7 @@ export async function HotelPage() {
 	return (
 		<main>
 			<Hero content={content} />
-			<RoomFund heading={content.text('hotel.fund.heading')} rooms={rooms} />
+			{rooms && <RoomFund heading={content.text('hotel.fund.heading')} rooms={rooms} />}
 			<Extras content={content} prices={prices} />
 			<Rules
 				heading={content.text('hotel.rules.heading')}

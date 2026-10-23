@@ -26,7 +26,10 @@ const chipLi = 'rounded-pill bg-bg px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-b
 /** The rooms page: search bar, filters, the room cards, what every room has, and the phone numbers. */
 export async function RoomsPage({ query }: { query: RoomsQuery }) {
 	const [rooms, availability, content, prices] = await Promise.all([
-		getRooms(),
+		getRooms().catch((error: unknown) => {
+			console.error(error)
+			return null
+		}),
 		getRoomAvailability({
 			checkIn: query.checkIn,
 			checkOut: query.checkOut,
@@ -38,6 +41,18 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 		getPageContent('hotel'),
 		getHotelPrices(),
 	])
+
+	if (!rooms) {
+		return (
+			<main className='max-w-page mx-auto flex w-full flex-col items-start gap-4 px-3 pt-4 pb-16 md:px-6 md:pt-8 md:pb-28'>
+				<h1 className='heading mx-1.5 mt-2 text-[38px] md:mx-0 md:mt-0 md:text-[length:var(--text-h1)]'>Номера</h1>
+				<p className='text-text-muted mx-1.5 md:mx-0 md:text-lg'>Не удалось загрузить номера. Позвоните нам:</p>
+				<Button href={site.phones.hotel.href} size='xl' variant='outline'>
+					{site.phones.hotel.display}
+				</Button>
+			</main>
+		)
+	}
 
 	const amenities = content.lines('hotel.amenities')
 	const mobileAmenities = content.lines('hotel.amenities-mobile')

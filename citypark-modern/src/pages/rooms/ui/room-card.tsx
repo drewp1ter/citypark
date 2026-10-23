@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { Room, RoomAvailability } from '@/entities/room'
 import { cn, formatPrice } from '@/shared/lib'
-import { Button, Card } from '@/shared/ui'
+import { Button, Card, RichText } from '@/shared/ui'
 
 // TODO: "Выбрать" scrolls to the search bar, as in the design. When a booking engine is connected it opens the booking.
 const BOOK_HREF = '#search'
@@ -98,7 +98,9 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 					<span className='hidden md:inline'>{room.areaDetailed ?? room.area}</span>
 					{room.capacity && ` · ${room.capacity}`}
 				</p>
-				{room.description && <p className='hidden flex-1 md:block'>{room.description}</p>}
+				{room.descriptionHtml && (
+					<RichText html={room.descriptionHtml} variant='short' className='hidden flex-1 md:block' />
+				)}
 
 				<div className='mt-2 flex items-center justify-between md:hidden'>
 					<span className='font-display text-xl font-medium'>{formatPrice(room.pricePerNight)}</span>

@@ -16,7 +16,10 @@ const HOME_DISHES = 3
 export async function HomePage() {
 	const [content, rooms, freeRooms, menu, news] = await Promise.all([
 		getPageContent('home'),
-		getRooms(),
+		getRooms().catch((error: unknown) => {
+			console.error(error)
+			return null
+		}),
 		getFreeRoomsCount().catch((error: unknown) => {
 			console.error(error)
 			return null
@@ -36,7 +39,7 @@ export async function HomePage() {
 
 	return (
 		<main>
-			<Hero content={content} rooms={rooms} />
+			<Hero content={content} rooms={rooms ?? []} />
 			<RoomsSection content={content} rooms={rooms} free={freeRooms} />
 			<RestaurantSection content={content} />
 			{menu && (

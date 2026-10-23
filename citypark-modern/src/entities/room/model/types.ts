@@ -18,7 +18,8 @@ export type Room = {
 	areaDetailed?: string
 	/** "до 4 гостей" */
 	capacity?: string
-	description?: string
+	/** Sanitized HTML from the backend (`<p>…</p>`); `''` when there is none. */
+	descriptionHtml: string
 	/** Rubles per night. */
 	pricePerNight: number
 	photo: Photo
