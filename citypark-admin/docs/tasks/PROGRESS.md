@@ -16,7 +16,7 @@ stop if that task is not ticked.
 - [x] 07 Menu (read only) and the sync button [03] (needs citypark-go task 43)
 
 ## Shared editors
-- [ ] 08 Image field (upload, alt text, focal point) [02] (needs citypark-go task 45)
+- [x] 08 Image field (upload, alt text, focal point) [02] (needs citypark-go task 45)
 - [-] 09 Dish photos REMOVED: dish photos come from iiko
 - [ ] 10 Rich text editor [01]
 
