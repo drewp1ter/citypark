@@ -11,7 +11,7 @@ stop if that task is not ticked.
 
 ## Operations
 - [x] 04 Delivery prices [03]
-- [ ] 05 Order history [03] (needs citypark-go task 42)
+- [x] 05 Order history [03] (needs citypark-go task 42)
 - [ ] 06 Free rooms (read only) [03]
 - [ ] 07 Menu (read only) and the sync button [03] (needs citypark-go task 43)
 

@@ -23,6 +23,7 @@ import { Route as AppContentHotelPricesRouteImport } from './routes/_app/content
 import { Route as AppContentNewsRouteImport } from './routes/_app/content/news'
 import { Route as AppContentRoomsRouteImport } from './routes/_app/content/rooms'
 import { Route as AppContentSettingsRouteImport } from './routes/_app/content/settings'
+import { Route as AppOrdersOrderIdRouteImport } from './routes/_app/orders.$orderId'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -93,6 +94,11 @@ const AppContentSettingsRoute = AppContentSettingsRouteImport.update({
   path: '/content/settings',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrdersOrderIdRoute = AppOrdersOrderIdRouteImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => AppOrdersRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -100,7 +106,7 @@ export interface FileRoutesByFullPath {
   '/delivery': typeof AppDeliveryRoute
   '/free-rooms': typeof AppFreeRoomsRoute
   '/menu': typeof AppMenuRoute
-  '/orders': typeof AppOrdersRoute
+  '/orders': typeof AppOrdersRouteWithChildren
   '/reports': typeof AppReportsRoute
   '/content/home': typeof AppContentHomeRoute
   '/content/hotel': typeof AppContentHotelRoute
@@ -108,13 +114,14 @@ export interface FileRoutesByFullPath {
   '/content/news': typeof AppContentNewsRoute
   '/content/rooms': typeof AppContentRoomsRoute
   '/content/settings': typeof AppContentSettingsRoute
+  '/orders/$orderId': typeof AppOrdersOrderIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/delivery': typeof AppDeliveryRoute
   '/free-rooms': typeof AppFreeRoomsRoute
   '/menu': typeof AppMenuRoute
-  '/orders': typeof AppOrdersRoute
+  '/orders': typeof AppOrdersRouteWithChildren
   '/reports': typeof AppReportsRoute
   '/': typeof AppIndexRoute
   '/content/home': typeof AppContentHomeRoute
@@ -123,6 +130,7 @@ export interface FileRoutesByTo {
   '/content/news': typeof AppContentNewsRoute
   '/content/rooms': typeof AppContentRoomsRoute
   '/content/settings': typeof AppContentSettingsRoute
+  '/orders/$orderId': typeof AppOrdersOrderIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -131,7 +139,7 @@ export interface FileRoutesById {
   '/_app/delivery': typeof AppDeliveryRoute
   '/_app/free-rooms': typeof AppFreeRoomsRoute
   '/_app/menu': typeof AppMenuRoute
-  '/_app/orders': typeof AppOrdersRoute
+  '/_app/orders': typeof AppOrdersRouteWithChildren
   '/_app/reports': typeof AppReportsRoute
   '/_app/': typeof AppIndexRoute
   '/_app/content/home': typeof AppContentHomeRoute
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   '/_app/content/news': typeof AppContentNewsRoute
   '/_app/content/rooms': typeof AppContentRoomsRoute
   '/_app/content/settings': typeof AppContentSettingsRoute
+  '/_app/orders/$orderId': typeof AppOrdersOrderIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/content/news'
     | '/content/rooms'
     | '/content/settings'
+    | '/orders/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/content/news'
     | '/content/rooms'
     | '/content/settings'
+    | '/orders/$orderId'
   id:
     | '__root__'
     | '/_app'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/_app/content/news'
     | '/_app/content/rooms'
     | '/_app/content/settings'
+    | '/_app/orders/$orderId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -295,14 +307,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppContentSettingsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/orders/$orderId': {
+      id: '/_app/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/orders/$orderId'
+      preLoaderRoute: typeof AppOrdersOrderIdRouteImport
+      parentRoute: typeof AppOrdersRoute
+    }
   }
 }
+
+interface AppOrdersRouteChildren {
+  AppOrdersOrderIdRoute: typeof AppOrdersOrderIdRoute
+}
+
+const AppOrdersRouteChildren: AppOrdersRouteChildren = {
+  AppOrdersOrderIdRoute: AppOrdersOrderIdRoute,
+}
+
+const AppOrdersRouteWithChildren = AppOrdersRoute._addFileChildren(
+  AppOrdersRouteChildren,
+)
 
 interface AppRouteChildren {
   AppDeliveryRoute: typeof AppDeliveryRoute
   AppFreeRoomsRoute: typeof AppFreeRoomsRoute
   AppMenuRoute: typeof AppMenuRoute
-  AppOrdersRoute: typeof AppOrdersRoute
+  AppOrdersRoute: typeof AppOrdersRouteWithChildren
   AppReportsRoute: typeof AppReportsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppContentHomeRoute: typeof AppContentHomeRoute
@@ -317,7 +348,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDeliveryRoute: AppDeliveryRoute,
   AppFreeRoomsRoute: AppFreeRoomsRoute,
   AppMenuRoute: AppMenuRoute,
-  AppOrdersRoute: AppOrdersRoute,
+  AppOrdersRoute: AppOrdersRouteWithChildren,
   AppReportsRoute: AppReportsRoute,
   AppIndexRoute: AppIndexRoute,
   AppContentHomeRoute: AppContentHomeRoute,

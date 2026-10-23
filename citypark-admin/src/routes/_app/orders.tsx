@@ -1,11 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageHeader } from '../../shared/ui/page-header'
+import { parseOrderSearch } from '../../features/orders/model/search'
+import { OrdersPage } from '../../features/orders/ui/orders-page'
 
 export const Route = createFileRoute('/_app/orders')({
-	component: () => (
-		<>
-			<PageHeader title='Заказы' />
-			<p className='text-muted'>Раздел в разработке</p>
-		</>
-	),
+	validateSearch: parseOrderSearch,
+	component: OrdersPage,
 })
