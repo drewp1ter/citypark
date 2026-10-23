@@ -21,7 +21,7 @@ stop if that task is not ticked.
 - [x] 10 Rich text editor [01]
 
 ## Content
-- [ ] 11 Rooms [08, 10] (needs citypark-go task 48)
+- [x] 11 Rooms [08, 10] (needs citypark-go task 48)
 - [ ] 12 News [11] (needs citypark-go task 49)
 - [ ] 13 Page content (home and hotel) [08, 10] (needs citypark-go tasks 50, 54)
 - [ ] 14 Site settings (contacts) [11] (needs citypark-go task 51)
