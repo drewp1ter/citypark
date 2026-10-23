@@ -22,6 +22,7 @@ export {
 export { Logo } from './logo'
 export { PhoneField } from './phone-field'
 export { RadioPills } from './radio-pills'
+export { RichText } from './rich-text'
 export { Select, type SelectOption } from './select'
 export { Section } from './section'
 export { StatTile } from './stat-tile'

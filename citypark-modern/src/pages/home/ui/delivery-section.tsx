@@ -1,10 +1,12 @@
 import Image from 'next/image'
+import type { PageContent } from '../model/types'
 import { delivery, type Dish, type MenuCategory } from '@/entities/dish'
 import { AddToCartButton } from '@/features/add-to-cart'
 import { formatPrice } from '@/shared/lib'
 import { AppLink, cardClass, Chip, Section } from '@/shared/ui'
 
 type DeliverySectionProps = {
+	content: PageContent
 	/** Category tabs shown on desktop (the first one is selected). */
 	categories: readonly MenuCategory[]
 	/** The three dishes to show. */
@@ -44,10 +46,10 @@ function DishTeaser({ dish }: { dish: Dish }) {
 	)
 }
 
-export function DeliverySection({ categories, dishes }: DeliverySectionProps) {
+export function DeliverySection({ content, categories, dishes }: DeliverySectionProps) {
 	return (
 		<Section
-			title='Доставка'
+			title={content.text('home.delivery.heading')}
 			action={
 				<>
 					<AppLink href='/menu' className='tap-area text-[15px] font-semibold md:hidden'>
@@ -77,10 +79,11 @@ export function DeliverySection({ categories, dishes }: DeliverySectionProps) {
 					className={cardClass('inverse', 'hidden min-h-[270px] justify-between gap-4 rounded-lg p-7 md:flex')}
 				>
 					<span className='font-display text-[22px] leading-[1.15] font-medium tracking-[-0.02em]'>
-						Всё меню доставки
+						{content.text('home.delivery.all-menu-title')}
 					</span>
 					<span className='text-inverse-muted text-[15px]'>
-						Бесплатно от {formatPrice(delivery.freeFrom)} · {delivery.hours} · {delivery.outskirtsFee}
+						{content.text('home.delivery.all-menu-note')} {formatPrice(delivery.freeFrom)} · {delivery.hours} ·{' '}
+						{delivery.outskirtsFee}
 					</span>
 					<span
 						aria-hidden='true'

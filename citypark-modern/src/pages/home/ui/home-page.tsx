@@ -2,6 +2,7 @@ import { getNews } from '@/entities/article'
 import { getMenu } from '@/entities/dish'
 import { getFreeRoomsCount, getRooms } from '@/entities/room'
 import { PLACEHOLDER_PHOTO } from '@/shared/lib'
+import { getPageContent } from '../api/get-page-content'
 import { ContactsBlock } from './contacts-block'
 import { DeliverySection } from './delivery-section'
 import { Hero } from './hero'
@@ -13,7 +14,8 @@ const HOME_CATEGORIES = 4
 const HOME_DISHES = 3
 
 export async function HomePage() {
-	const [rooms, freeRooms, menu, news] = await Promise.all([
+	const [content, rooms, freeRooms, menu, news] = await Promise.all([
+		getPageContent('home'),
 		getRooms(),
 		getFreeRoomsCount().catch((error: unknown) => {
 			console.error(error)
@@ -34,11 +36,13 @@ export async function HomePage() {
 
 	return (
 		<main>
-			<Hero rooms={rooms} />
-			<RoomsSection rooms={rooms} free={freeRooms} />
-			<RestaurantSection />
-			{menu && <DeliverySection categories={menu.categories.slice(0, HOME_CATEGORIES)} dishes={dishes} />}
-			<NewsSection items={[latest, second, third]} />
+			<Hero content={content} rooms={rooms} />
+			<RoomsSection content={content} rooms={rooms} free={freeRooms} />
+			<RestaurantSection content={content} />
+			{menu && (
+				<DeliverySection content={content} categories={menu.categories.slice(0, HOME_CATEGORIES)} dishes={dishes} />
+			)}
+			<NewsSection title={content.text('home.news.heading')} items={[latest, second, third]} />
 			<div className='max-w-page mx-auto w-full px-3 pt-14 pb-0 md:px-6 md:pt-28 md:pb-6'>
 				<ContactsBlock />
 			</div>

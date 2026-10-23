@@ -4,6 +4,7 @@ import { formatDate } from '@/shared/lib'
 import { AppLink, cardClass, Section } from '@/shared/ui'
 
 type NewsSectionProps = {
+	title: string
 	/** The latest news and two more, shown first. */
 	items: readonly [NewsItem, NewsItem, NewsItem]
 }
@@ -28,12 +29,12 @@ function NewsCard({ item }: { item: NewsItem }) {
 	)
 }
 
-export function NewsSection({ items }: NewsSectionProps) {
+export function NewsSection({ title, items }: NewsSectionProps) {
 	const [latest, , third] = items
 
 	return (
 		<Section
-			title='Новости'
+			title={title}
 			action={
 				<AppLink href='/news' className='tap-area hidden font-semibold md:inline'>
 					Все новости ↗
