@@ -25,7 +25,7 @@ stop if that task is not ticked.
 - [x] 12 News [11] (needs citypark-go task 49)
 - [x] 13 Page content (home and hotel) [08, 10] (needs citypark-go tasks 50, 54)
 - [x] 14 Site settings (contacts) [11] (needs citypark-go task 51)
-- [ ] 15 Hotel prices [14] (needs citypark-go task 52)
+- [x] 15 Hotel prices [14] (needs citypark-go task 52)
 
 ## Reports and shipping
 - [ ] 16 Hotel reports [03] (needs citypark-go task 53)
