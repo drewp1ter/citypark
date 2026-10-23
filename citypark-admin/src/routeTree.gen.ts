@@ -24,6 +24,7 @@ import { Route as AppContentNewsRouteImport } from './routes/_app/content/news'
 import { Route as AppContentRoomsRouteImport } from './routes/_app/content/rooms'
 import { Route as AppContentSettingsRouteImport } from './routes/_app/content/settings'
 import { Route as AppDevImageFieldRouteImport } from './routes/_app/dev.image-field'
+import { Route as AppDevRichTextRouteImport } from './routes/_app/dev.rich-text'
 import { Route as AppOrdersOrderIdRouteImport } from './routes/_app/orders.$orderId'
 
 const AppRoute = AppRouteImport.update({
@@ -100,6 +101,11 @@ const AppDevImageFieldRoute = AppDevImageFieldRouteImport.update({
   path: '/dev/image-field',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDevRichTextRoute = AppDevRichTextRouteImport.update({
+  id: '/dev/rich-text',
+  path: '/dev/rich-text',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppOrdersOrderIdRoute = AppOrdersOrderIdRouteImport.update({
   id: '/$orderId',
   path: '/$orderId',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/content/rooms': typeof AppContentRoomsRoute
   '/content/settings': typeof AppContentSettingsRoute
   '/dev/image-field': typeof AppDevImageFieldRoute
+  '/dev/rich-text': typeof AppDevRichTextRoute
   '/orders/$orderId': typeof AppOrdersOrderIdRoute
 }
 export interface FileRoutesByTo {
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/content/rooms': typeof AppContentRoomsRoute
   '/content/settings': typeof AppContentSettingsRoute
   '/dev/image-field': typeof AppDevImageFieldRoute
+  '/dev/rich-text': typeof AppDevRichTextRoute
   '/orders/$orderId': typeof AppOrdersOrderIdRoute
 }
 export interface FileRoutesById {
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/_app/content/rooms': typeof AppContentRoomsRoute
   '/_app/content/settings': typeof AppContentSettingsRoute
   '/_app/dev/image-field': typeof AppDevImageFieldRoute
+  '/_app/dev/rich-text': typeof AppDevRichTextRoute
   '/_app/orders/$orderId': typeof AppOrdersOrderIdRoute
 }
 export interface FileRouteTypes {
@@ -176,6 +185,7 @@ export interface FileRouteTypes {
     | '/content/rooms'
     | '/content/settings'
     | '/dev/image-field'
+    | '/dev/rich-text'
     | '/orders/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/content/rooms'
     | '/content/settings'
     | '/dev/image-field'
+    | '/dev/rich-text'
     | '/orders/$orderId'
   id:
     | '__root__'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/_app/content/rooms'
     | '/_app/content/settings'
     | '/_app/dev/image-field'
+    | '/_app/dev/rich-text'
     | '/_app/orders/$orderId'
   fileRoutesById: FileRoutesById
 }
@@ -326,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDevImageFieldRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/dev/rich-text': {
+      id: '/_app/dev/rich-text'
+      path: '/dev/rich-text'
+      fullPath: '/dev/rich-text'
+      preLoaderRoute: typeof AppDevRichTextRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/orders/$orderId': {
       id: '/_app/orders/$orderId'
       path: '/$orderId'
@@ -362,6 +381,7 @@ interface AppRouteChildren {
   AppContentRoomsRoute: typeof AppContentRoomsRoute
   AppContentSettingsRoute: typeof AppContentSettingsRoute
   AppDevImageFieldRoute: typeof AppDevImageFieldRoute
+  AppDevRichTextRoute: typeof AppDevRichTextRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -378,6 +398,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppContentRoomsRoute: AppContentRoomsRoute,
   AppContentSettingsRoute: AppContentSettingsRoute,
   AppDevImageFieldRoute: AppDevImageFieldRoute,
+  AppDevRichTextRoute: AppDevRichTextRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

@@ -18,7 +18,7 @@ stop if that task is not ticked.
 ## Shared editors
 - [x] 08 Image field (upload, alt text, focal point) [02] (needs citypark-go task 45)
 - [-] 09 Dish photos REMOVED: dish photos come from iiko
-- [ ] 10 Rich text editor [01]
+- [x] 10 Rich text editor [01]
 
 ## Content
 - [ ] 11 Rooms [08, 10] (needs citypark-go task 48)
