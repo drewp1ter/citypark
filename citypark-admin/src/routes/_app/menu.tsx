@@ -1,11 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageHeader } from '../../shared/ui/page-header'
+import { parseMenuSearch } from '../../features/menu/model/search'
+import { MenuPage } from '../../features/menu/ui/menu-page'
 
 export const Route = createFileRoute('/_app/menu')({
-	component: () => (
-		<>
-			<PageHeader title='Меню' />
-			<p className='text-muted'>Раздел в разработке</p>
-		</>
-	),
+	validateSearch: parseMenuSearch,
+	component: MenuPage,
 })

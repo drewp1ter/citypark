@@ -13,7 +13,7 @@ stop if that task is not ticked.
 - [x] 04 Delivery prices [03]
 - [x] 05 Order history [03] (needs citypark-go task 42)
 - [x] 06 Free rooms (read only) [03]
-- [ ] 07 Menu (read only) and the sync button [03] (needs citypark-go task 43)
+- [x] 07 Menu (read only) and the sync button [03] (needs citypark-go task 43)
 
 ## Shared editors
 - [ ] 08 Image field (upload, alt text, focal point) [02] (needs citypark-go task 45)
