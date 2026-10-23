@@ -9,50 +9,330 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as AppDeliveryRouteImport } from './routes/_app/delivery'
+import { Route as AppFreeRoomsRouteImport } from './routes/_app/free-rooms'
+import { Route as AppMenuRouteImport } from './routes/_app/menu'
+import { Route as AppOrdersRouteImport } from './routes/_app/orders'
+import { Route as AppReportsRouteImport } from './routes/_app/reports'
+import { Route as AppContentHomeRouteImport } from './routes/_app/content/home'
+import { Route as AppContentHotelRouteImport } from './routes/_app/content/hotel'
+import { Route as AppContentHotelPricesRouteImport } from './routes/_app/content/hotel-prices'
+import { Route as AppContentNewsRouteImport } from './routes/_app/content/news'
+import { Route as AppContentRoomsRouteImport } from './routes/_app/content/rooms'
+import { Route as AppContentSettingsRouteImport } from './routes/_app/content/settings'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDeliveryRoute = AppDeliveryRouteImport.update({
+  id: '/delivery',
+  path: '/delivery',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFreeRoomsRoute = AppFreeRoomsRouteImport.update({
+  id: '/free-rooms',
+  path: '/free-rooms',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMenuRoute = AppMenuRouteImport.update({
+  id: '/menu',
+  path: '/menu',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppOrdersRoute = AppOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentHomeRoute = AppContentHomeRouteImport.update({
+  id: '/content/home',
+  path: '/content/home',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentHotelRoute = AppContentHotelRouteImport.update({
+  id: '/content/hotel',
+  path: '/content/hotel',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentHotelPricesRoute = AppContentHotelPricesRouteImport.update({
+  id: '/content/hotel-prices',
+  path: '/content/hotel-prices',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentNewsRoute = AppContentNewsRouteImport.update({
+  id: '/content/news',
+  path: '/content/news',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentRoomsRoute = AppContentRoomsRouteImport.update({
+  id: '/content/rooms',
+  path: '/content/rooms',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentSettingsRoute = AppContentSettingsRouteImport.update({
+  id: '/content/settings',
+  path: '/content/settings',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/login': typeof LoginRoute
+  '/delivery': typeof AppDeliveryRoute
+  '/free-rooms': typeof AppFreeRoomsRoute
+  '/menu': typeof AppMenuRoute
+  '/orders': typeof AppOrdersRoute
+  '/reports': typeof AppReportsRoute
+  '/content/home': typeof AppContentHomeRoute
+  '/content/hotel': typeof AppContentHotelRoute
+  '/content/hotel-prices': typeof AppContentHotelPricesRoute
+  '/content/news': typeof AppContentNewsRoute
+  '/content/rooms': typeof AppContentRoomsRoute
+  '/content/settings': typeof AppContentSettingsRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/delivery': typeof AppDeliveryRoute
+  '/free-rooms': typeof AppFreeRoomsRoute
+  '/menu': typeof AppMenuRoute
+  '/orders': typeof AppOrdersRoute
+  '/reports': typeof AppReportsRoute
+  '/': typeof AppIndexRoute
+  '/content/home': typeof AppContentHomeRoute
+  '/content/hotel': typeof AppContentHotelRoute
+  '/content/hotel-prices': typeof AppContentHotelPricesRoute
+  '/content/news': typeof AppContentNewsRoute
+  '/content/rooms': typeof AppContentRoomsRoute
+  '/content/settings': typeof AppContentSettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_app/delivery': typeof AppDeliveryRoute
+  '/_app/free-rooms': typeof AppFreeRoomsRoute
+  '/_app/menu': typeof AppMenuRoute
+  '/_app/orders': typeof AppOrdersRoute
+  '/_app/reports': typeof AppReportsRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/content/home': typeof AppContentHomeRoute
+  '/_app/content/hotel': typeof AppContentHotelRoute
+  '/_app/content/hotel-prices': typeof AppContentHotelPricesRoute
+  '/_app/content/news': typeof AppContentNewsRoute
+  '/_app/content/rooms': typeof AppContentRoomsRoute
+  '/_app/content/settings': typeof AppContentSettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/delivery'
+    | '/free-rooms'
+    | '/menu'
+    | '/orders'
+    | '/reports'
+    | '/content/home'
+    | '/content/hotel'
+    | '/content/hotel-prices'
+    | '/content/news'
+    | '/content/rooms'
+    | '/content/settings'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/login'
+    | '/delivery'
+    | '/free-rooms'
+    | '/menu'
+    | '/orders'
+    | '/reports'
+    | '/'
+    | '/content/home'
+    | '/content/hotel'
+    | '/content/hotel-prices'
+    | '/content/news'
+    | '/content/rooms'
+    | '/content/settings'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/login'
+    | '/_app/delivery'
+    | '/_app/free-rooms'
+    | '/_app/menu'
+    | '/_app/orders'
+    | '/_app/reports'
+    | '/_app/'
+    | '/_app/content/home'
+    | '/_app/content/hotel'
+    | '/_app/content/hotel-prices'
+    | '/_app/content/news'
+    | '/_app/content/rooms'
+    | '/_app/content/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/delivery': {
+      id: '/_app/delivery'
+      path: '/delivery'
+      fullPath: '/delivery'
+      preLoaderRoute: typeof AppDeliveryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/free-rooms': {
+      id: '/_app/free-rooms'
+      path: '/free-rooms'
+      fullPath: '/free-rooms'
+      preLoaderRoute: typeof AppFreeRoomsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/menu': {
+      id: '/_app/menu'
+      path: '/menu'
+      fullPath: '/menu'
+      preLoaderRoute: typeof AppMenuRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/orders': {
+      id: '/_app/orders'
+      path: '/orders'
+      fullPath: '/orders'
+      preLoaderRoute: typeof AppOrdersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/home': {
+      id: '/_app/content/home'
+      path: '/content/home'
+      fullPath: '/content/home'
+      preLoaderRoute: typeof AppContentHomeRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/hotel': {
+      id: '/_app/content/hotel'
+      path: '/content/hotel'
+      fullPath: '/content/hotel'
+      preLoaderRoute: typeof AppContentHotelRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/hotel-prices': {
+      id: '/_app/content/hotel-prices'
+      path: '/content/hotel-prices'
+      fullPath: '/content/hotel-prices'
+      preLoaderRoute: typeof AppContentHotelPricesRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/news': {
+      id: '/_app/content/news'
+      path: '/content/news'
+      fullPath: '/content/news'
+      preLoaderRoute: typeof AppContentNewsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/rooms': {
+      id: '/_app/content/rooms'
+      path: '/content/rooms'
+      fullPath: '/content/rooms'
+      preLoaderRoute: typeof AppContentRoomsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/settings': {
+      id: '/_app/content/settings'
+      path: '/content/settings'
+      fullPath: '/content/settings'
+      preLoaderRoute: typeof AppContentSettingsRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppDeliveryRoute: typeof AppDeliveryRoute
+  AppFreeRoomsRoute: typeof AppFreeRoomsRoute
+  AppMenuRoute: typeof AppMenuRoute
+  AppOrdersRoute: typeof AppOrdersRoute
+  AppReportsRoute: typeof AppReportsRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppContentHomeRoute: typeof AppContentHomeRoute
+  AppContentHotelRoute: typeof AppContentHotelRoute
+  AppContentHotelPricesRoute: typeof AppContentHotelPricesRoute
+  AppContentNewsRoute: typeof AppContentNewsRoute
+  AppContentRoomsRoute: typeof AppContentRoomsRoute
+  AppContentSettingsRoute: typeof AppContentSettingsRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppDeliveryRoute: AppDeliveryRoute,
+  AppFreeRoomsRoute: AppFreeRoomsRoute,
+  AppMenuRoute: AppMenuRoute,
+  AppOrdersRoute: AppOrdersRoute,
+  AppReportsRoute: AppReportsRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppContentHomeRoute: AppContentHomeRoute,
+  AppContentHotelRoute: AppContentHotelRoute,
+  AppContentHotelPricesRoute: AppContentHotelPricesRoute,
+  AppContentNewsRoute: AppContentNewsRoute,
+  AppContentRoomsRoute: AppContentRoomsRoute,
+  AppContentSettingsRoute: AppContentSettingsRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

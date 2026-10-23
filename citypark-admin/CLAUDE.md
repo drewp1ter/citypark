@@ -65,6 +65,9 @@ npm run dev          # http://localhost:5173, backend expected at VITE_API_URL (
 npm run check        # typecheck + eslint + prettier --check + vitest run; must be clean
 npm run api:gen      # regenerate src/shared/api/schema.d.ts from ../citypark-go/internal/apidocs/openapi.yaml
 npm run build        # static files in dist/
-npm run e2e          # Playwright flows; needs the backend running (cd ../citypark-go && make db-up && make run)
+npm run e2e          # Playwright flows; needs the backend running at VITE_API_URL
 ```
+Do not start the backend or its database yourself (no `make db-up`, `make run`, `docker`). If the backend does not
+answer at `VITE_API_URL`, stop and ask the user to start it.
+
 The dev admin account comes from the backend's `.env`: `ADMIN_EMAIL=dev@dev.io`, `ADMIN_PASSWORD=devdevdev`.

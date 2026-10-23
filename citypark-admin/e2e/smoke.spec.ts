@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
+import { signIn } from './helpers'
 
-test('shows the heading and the theme survives a reload', async ({ page }) => {
+test('opens on orders after sign-in and the theme survives a reload', async ({ page }) => {
 	await page.emulateMedia({ colorScheme: 'light' })
-	await page.goto('/')
-	await expect(page.getByRole('heading', { name: 'Сити Парк — админка' })).toBeVisible()
+	await signIn(page)
+	await expect(page.getByRole('heading', { name: 'Заказы' })).toBeVisible()
 
 	const html = page.locator('html')
 	await expect(html).not.toHaveClass(/dark/)
