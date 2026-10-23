@@ -26,6 +26,8 @@ import { Route as AppContentSettingsRouteImport } from './routes/_app/content/se
 import { Route as AppDevImageFieldRouteImport } from './routes/_app/dev.image-field'
 import { Route as AppDevRichTextRouteImport } from './routes/_app/dev.rich-text'
 import { Route as AppOrdersOrderIdRouteImport } from './routes/_app/orders.$orderId'
+import { Route as AppContentNewsSlugRouteImport } from './routes/_app/content/news_.$slug'
+import { Route as AppContentNewsNewRouteImport } from './routes/_app/content/news_.new'
 import { Route as AppContentRoomsRoomIdRouteImport } from './routes/_app/content/rooms_.$roomId'
 
 const AppRoute = AppRouteImport.update({
@@ -112,6 +114,16 @@ const AppOrdersOrderIdRoute = AppOrdersOrderIdRouteImport.update({
   path: '/$orderId',
   getParentRoute: () => AppOrdersRoute,
 } as any)
+const AppContentNewsSlugRoute = AppContentNewsSlugRouteImport.update({
+  id: '/content/news_/$slug',
+  path: '/content/news/$slug',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppContentNewsNewRoute = AppContentNewsNewRouteImport.update({
+  id: '/content/news_/new',
+  path: '/content/news/new',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppContentRoomsRoomIdRoute = AppContentRoomsRoomIdRouteImport.update({
   id: '/content/rooms_/$roomId',
   path: '/content/rooms/$roomId',
@@ -135,6 +147,8 @@ export interface FileRoutesByFullPath {
   '/dev/image-field': typeof AppDevImageFieldRoute
   '/dev/rich-text': typeof AppDevRichTextRoute
   '/orders/$orderId': typeof AppOrdersOrderIdRoute
+  '/content/news/$slug': typeof AppContentNewsSlugRoute
+  '/content/news/new': typeof AppContentNewsNewRoute
   '/content/rooms/$roomId': typeof AppContentRoomsRoomIdRoute
 }
 export interface FileRoutesByTo {
@@ -154,6 +168,8 @@ export interface FileRoutesByTo {
   '/dev/image-field': typeof AppDevImageFieldRoute
   '/dev/rich-text': typeof AppDevRichTextRoute
   '/orders/$orderId': typeof AppOrdersOrderIdRoute
+  '/content/news/$slug': typeof AppContentNewsSlugRoute
+  '/content/news/new': typeof AppContentNewsNewRoute
   '/content/rooms/$roomId': typeof AppContentRoomsRoomIdRoute
 }
 export interface FileRoutesById {
@@ -175,6 +191,8 @@ export interface FileRoutesById {
   '/_app/dev/image-field': typeof AppDevImageFieldRoute
   '/_app/dev/rich-text': typeof AppDevRichTextRoute
   '/_app/orders/$orderId': typeof AppOrdersOrderIdRoute
+  '/_app/content/news_/$slug': typeof AppContentNewsSlugRoute
+  '/_app/content/news_/new': typeof AppContentNewsNewRoute
   '/_app/content/rooms_/$roomId': typeof AppContentRoomsRoomIdRoute
 }
 export interface FileRouteTypes {
@@ -196,6 +214,8 @@ export interface FileRouteTypes {
     | '/dev/image-field'
     | '/dev/rich-text'
     | '/orders/$orderId'
+    | '/content/news/$slug'
+    | '/content/news/new'
     | '/content/rooms/$roomId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -215,6 +235,8 @@ export interface FileRouteTypes {
     | '/dev/image-field'
     | '/dev/rich-text'
     | '/orders/$orderId'
+    | '/content/news/$slug'
+    | '/content/news/new'
     | '/content/rooms/$roomId'
   id:
     | '__root__'
@@ -235,6 +257,8 @@ export interface FileRouteTypes {
     | '/_app/dev/image-field'
     | '/_app/dev/rich-text'
     | '/_app/orders/$orderId'
+    | '/_app/content/news_/$slug'
+    | '/_app/content/news_/new'
     | '/_app/content/rooms_/$roomId'
   fileRoutesById: FileRoutesById
 }
@@ -364,6 +388,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdersOrderIdRouteImport
       parentRoute: typeof AppOrdersRoute
     }
+    '/_app/content/news_/$slug': {
+      id: '/_app/content/news_/$slug'
+      path: '/content/news/$slug'
+      fullPath: '/content/news/$slug'
+      preLoaderRoute: typeof AppContentNewsSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/content/news_/new': {
+      id: '/_app/content/news_/new'
+      path: '/content/news/new'
+      fullPath: '/content/news/new'
+      preLoaderRoute: typeof AppContentNewsNewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/content/rooms_/$roomId': {
       id: '/_app/content/rooms_/$roomId'
       path: '/content/rooms/$roomId'
@@ -401,6 +439,8 @@ interface AppRouteChildren {
   AppContentSettingsRoute: typeof AppContentSettingsRoute
   AppDevImageFieldRoute: typeof AppDevImageFieldRoute
   AppDevRichTextRoute: typeof AppDevRichTextRoute
+  AppContentNewsSlugRoute: typeof AppContentNewsSlugRoute
+  AppContentNewsNewRoute: typeof AppContentNewsNewRoute
   AppContentRoomsRoomIdRoute: typeof AppContentRoomsRoomIdRoute
 }
 
@@ -419,6 +459,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppContentSettingsRoute: AppContentSettingsRoute,
   AppDevImageFieldRoute: AppDevImageFieldRoute,
   AppDevRichTextRoute: AppDevRichTextRoute,
+  AppContentNewsSlugRoute: AppContentNewsSlugRoute,
+  AppContentNewsNewRoute: AppContentNewsNewRoute,
   AppContentRoomsRoomIdRoute: AppContentRoomsRoomIdRoute,
 }
 

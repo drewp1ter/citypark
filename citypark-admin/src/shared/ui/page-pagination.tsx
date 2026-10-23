@@ -2,7 +2,7 @@ import { Pagination } from '@heroui/react'
 
 const NEIGHBOURS = 2
 
-export function OrdersPagination({
+export function PagePagination({
 	page,
 	pageCount,
 	onChange,

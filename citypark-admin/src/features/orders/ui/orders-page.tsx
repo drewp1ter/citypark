@@ -5,7 +5,7 @@ import { PageHeader } from '../../../shared/ui/page-header'
 import { ordersQuery } from '../api'
 import { PAGE_SIZE, hasFilters, type OrderSearch } from '../model/search'
 import { OrderFilters } from './order-filters'
-import { OrdersPagination } from './orders-pagination'
+import { PagePagination } from '../../../shared/ui/page-pagination'
 import { OrdersTable } from './orders-table'
 
 const route = getRouteApi('/_app/orders')
@@ -67,7 +67,7 @@ export function OrdersPage() {
 			{count !== undefined && count > 0 && (
 				<div className='mt-4 flex flex-wrap items-center justify-between gap-3'>
 					<p className='text-sm text-muted'>Найдено: {count}</p>
-					<OrdersPagination
+					<PagePagination
 						page={search.page ?? 1}
 						pageCount={Math.ceil(count / PAGE_SIZE)}
 						onChange={(page) => setSearch({ page: page === 1 ? undefined : page })}

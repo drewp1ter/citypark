@@ -1,11 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageHeader } from '../../../shared/ui/page-header'
+import { parsePage } from '../../../features/news/model/search'
+import { NewsPage } from '../../../features/news/ui/news-page'
 
 export const Route = createFileRoute('/_app/content/news')({
-	component: () => (
-		<>
-			<PageHeader title='Новости' />
-			<p className='text-muted'>Раздел в разработке</p>
-		</>
-	),
+	validateSearch: (raw): { page?: number } => {
+		const page = parsePage(raw.page)
+		return page === undefined ? {} : { page }
+	},
+	component: NewsPage,
 })
