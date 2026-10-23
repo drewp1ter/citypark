@@ -1,11 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageHeader } from '../../shared/ui/page-header'
+import { ReportsHome } from '../../features/reports/ui/reports-home'
+import { parseReportSearch } from '../../features/reports/model/periods'
 
 export const Route = createFileRoute('/_app/reports')({
-	component: () => (
-		<>
-			<PageHeader title='Отчёты' />
-			<p className='text-muted'>Раздел в разработке</p>
-		</>
-	),
+	validateSearch: parseReportSearch,
+	component: ReportsHome,
 })

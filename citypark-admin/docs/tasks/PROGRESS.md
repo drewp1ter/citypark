@@ -28,5 +28,5 @@ stop if that task is not ticked.
 - [x] 15 Hotel prices [14] (needs citypark-go task 52)
 
 ## Reports and shipping
-- [ ] 16 Hotel reports [03] (needs citypark-go task 53)
+- [x] 16 Hotel reports [03] (needs citypark-go task 53)
 - [ ] 17 Docker image and deployment notes [16]
