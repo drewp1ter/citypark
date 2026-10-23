@@ -21,8 +21,14 @@ export async function getRooms(): Promise<readonly Room[]> {
 		summary: typo(room.summary) || undefined,
 		pricePerNight: room.pricePerNight,
 		photo: { src: room.photo.url, alt: room.photo.alt, position: room.photo.position || undefined },
+		gallery: (room.gallery ?? []).map((photo) => ({ src: photo.url, alt: photo.alt })),
 		hotelNote: typo(room.hotelNote),
 	}))
+}
+
+/** One room type by id, or `undefined` when there is none. Errors are left to the caller. */
+export async function getRoom(id: string): Promise<Room | undefined> {
+	return (await getRooms()).find((room) => room.id === id)
 }
 
 // Website room id → key in `GET /hotel/rooms` → how many rooms of that type the hotel has.

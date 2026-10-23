@@ -139,5 +139,51 @@ out(
 	'tablet 900: grid cols / overflow',
 	`${await t.evaluate(() => getComputedStyle(document.querySelector('article').parentElement).gridTemplateColumns.split(' ').length)} / ${await t.evaluate(() => document.documentElement.scrollWidth > innerWidth)}`
 )
+// room pages
+const link = await open('/rooms')
+await link.getByRole('link', { name: 'VIP-номер', exact: true }).first().click()
+await link.waitForURL('**/rooms/vip')
+out('VIP name opens (want /rooms/vip)', link.url().replace(base, ''))
+
+const vip = await open('/rooms/vip')
+out('vip: status / h1 (want 200 / VIP-номер)', `${vip.status} / ${await txt(vip.locator('h1'))}`)
+const thumbs = vip.locator('main section ul button')
+out('vip: thumbnails (want 3)', String(await thumbs.count()))
+out(
+	'vip: description has «Камин электрический» (want true)',
+	String((await vip.locator('main').innerText()).includes('Камин электрический'))
+)
+await thumbs.first().click()
+const dialog = vip.locator('dialog[aria-label="Фотографии номера"]')
+out('vip: dialog counter (want 2 из 4)', await txt(dialog.locator('p')))
+await vip.keyboard.press('ArrowRight')
+out('vip: after → (want 3 из 4)', await txt(dialog.locator('p')))
+await vip.keyboard.press('Escape')
+out('vip: dialog open after Esc (want false)', String(await dialog.evaluate((d) => d.open)))
+out(
+	'vip: focus back on the thumbnail (want true)',
+	String(await thumbs.first().evaluate((b) => b === document.activeElement))
+)
+out('vip: page errors', JSON.stringify(vip.problems))
+
+const single = await open('/rooms/single')
+out('single: «Фото» section (want 0)', String(await single.getByRole('heading', { name: 'Фото' }).count()))
+out(
+	'single: description has «Сплит-система» (want true)',
+	String((await single.locator('main').innerText()).includes('Сплит-система'))
+)
+out(
+	'single: 3D-тур href (want /tour/room_1.html)',
+	await single.getByRole('link', { name: /3D-тур/ }).getAttribute('href')
+)
+const twin = await open('/rooms/double-twin')
+out('double-twin: description length (want > 0)', String((await twin.locator('main').innerText()).length > 200))
+out(
+	'double-twin: 3D-тур href (want /tour/room_2.html)',
+	await twin.getByRole('link', { name: /3D-тур/ }).getAttribute('href')
+)
+const nope = await open('/rooms/nope')
+out('nope: status (want 404)', String(nope.status))
+
 out('page errors', JSON.stringify([...p.problems, ...m.problems, ...t.problems]))
 await browser.close()

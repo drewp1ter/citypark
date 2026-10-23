@@ -45,3 +45,5 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 23 Full-size room photos and hotel texts from the old site [20] (needs citypark-go task 55)
 - [x] 24 Short room text on the rooms page [17, 23] (needs citypark-go task 56)
   - No other place rendered `descriptionHtml` on a card. Checked on a build at 1440 px (light, dark) and 390 px; first row is about 455 px tall. In `qa:responsive` the 400s on `/` and `/news` come from Next's private-IP image guard for backend uploads (`192.168.4.15`), not from this task.
+- [x] 25 Room pages with a gallery [17, 22, 24] (needs citypark-go task 57)
+  - `qa:a11y` still reports `target-size` on the `/hotel` list link (obscured by the mobile quick bar, same as a `/news` item) and landmark warnings on `/news/frittata`; none on `/rooms/vip`. The 400s in `qa:responsive` are the private-IP image guard on `/` and `/news`.

@@ -10,6 +10,7 @@ const routes = process.argv.slice(2).length
 			'/',
 			'/restaurant',
 			'/rooms',
+			'/rooms/vip',
 			'/hotel',
 			'/menu',
 			'/checkout',

@@ -17,6 +17,8 @@ export type ApiRoom = {
 	pricePerNight: number
 	/** `url` is a site path (`/images/…`) or a full URL of an uploaded image. */
 	photo: { url: string; alt: string; position: string }
+	/** Extra photos for the room page, in display order; `[]` when none. */
+	gallery: { url: string; alt: string }[]
 	hotelNote: string
 	updatedAt: string
 }

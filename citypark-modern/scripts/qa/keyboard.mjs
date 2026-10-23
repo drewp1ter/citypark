@@ -6,7 +6,7 @@ import { seedCart } from './menu-cart.mjs'
 const base = process.env.BASE_URL ?? 'http://localhost:3111'
 const routes = process.argv.slice(2).length
 	? process.argv.slice(2)
-	: ['/', '/restaurant', '/rooms', '/hotel', '/menu', '/checkout', '/news', '/news/frittata', '/contacts']
+	: ['/', '/restaurant', '/rooms', '/rooms/vip', '/hotel', '/menu', '/checkout', '/news', '/news/frittata', '/contacts']
 const cart = await seedCart([1])
 const problems = []
 const report = []

@@ -23,7 +23,7 @@ export function RoomFund({ heading, rooms }: { heading: string; rooms: readonly 
 				{sorted.map((room) => (
 					<li key={room.id} className='border-divider border-b last:border-b-0'>
 						<AppLink
-							href='/rooms'
+							href={`/rooms/${room.id}`}
 							className='flex items-center justify-between gap-2.5 py-3.5 md:grid md:grid-cols-[2fr_2fr_1.4fr_1fr] md:gap-4 md:py-[18px]'
 						>
 							<span className='flex flex-col md:contents'>

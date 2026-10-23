@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { roomTourHref, type Room, type RoomAvailability } from '@/entities/room'
 import { cn, formatPrice } from '@/shared/lib'
-import { Button, Card } from '@/shared/ui'
+import { AppLink, Button, Card } from '@/shared/ui'
 
 // TODO: "Выбрать" scrolls to the search bar, as in the design. When a booking engine is connected it opens the booking.
 const BOOK_HREF = '#search'
@@ -87,12 +87,15 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 			className='rounded-lg p-2 md:col-span-2 md:flex-row md:flex-wrap md:gap-2.5 md:rounded-xl md:p-2.5'
 		>
 			<div className='relative md:min-w-0 md:flex-[1_1_380px]'>
-				<RoomPhoto
-					room={room}
-					available={available}
-					eager={first}
-					className='h-[210px] rounded-sm md:h-[360px] md:rounded-md'
-				/>
+				{/* Same target as the name below, so keyboard and screen reader users get one link. */}
+				<AppLink href={`/rooms/${room.id}`} tabIndex={-1} aria-hidden='true' className='block'>
+					<RoomPhoto
+						room={room}
+						available={available}
+						eager={first}
+						className='h-[210px] rounded-sm md:h-[360px] md:rounded-md'
+					/>
+				</AppLink>
 				{known && (
 					<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:hidden'>
 						{status}
@@ -105,7 +108,11 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 						{status}
 					</StatusBadge>
 				)}
-				<h2 className='font-display text-[22px] font-medium md:text-[32px] md:tracking-[-0.02em]'>{room.name}</h2>
+				<h2 className='font-display text-[22px] font-medium md:text-[32px] md:tracking-[-0.02em]'>
+					<AppLink href={`/rooms/${room.id}`} className='hover:underline'>
+						{room.name}
+					</AppLink>
+				</h2>
 				<p className='text-inverse-muted text-sm md:text-base'>
 					{room.numbers} · <span className='md:hidden'>{room.area}</span>
 					<span className='hidden md:inline'>{room.areaDetailed ?? room.area}</span>
@@ -155,7 +162,11 @@ export function RoomCard(props: RoomCardProps) {
 				)}
 			</div>
 			<div className='flex flex-1 flex-col gap-1 px-2.5 pt-3.5 pb-2 md:gap-1.5 md:px-3 md:pt-4 md:pb-2.5'>
-				<h2 className='text-[19px] font-bold md:text-[21px]'>{room.name}</h2>
+				<h2 className='text-[19px] font-bold md:text-[21px]'>
+					<AppLink href={`/rooms/${room.id}`} className='hover:underline'>
+						{room.name}
+					</AppLink>
+				</h2>
 				<p className='text-text-muted text-sm md:text-base'>
 					{room.numbers} · {room.area}
 				</p>

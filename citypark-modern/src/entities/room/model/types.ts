@@ -25,6 +25,8 @@ export type Room = {
 	/** Rubles per night. */
 	pricePerNight: number
 	photo: Photo
+	/** Дополнительные фото для страницы номера */
+	gallery: Photo[]
 	/** Second line of the room in the hotel page list ("№ 201 · двуспальная кровать"). */
 	hotelNote: string
 }
