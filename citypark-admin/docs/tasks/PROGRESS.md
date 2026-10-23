@@ -6,7 +6,7 @@ stop if that task is not ticked.
 
 ## Foundation
 - [x] 01 Project scaffold
-- [ ] 02 Typed API client and token storage [01]
+- [x] 02 Typed API client and token storage [01]
 - [ ] 03 Sign-in, access guard and app shell [02]
 
 ## Operations
