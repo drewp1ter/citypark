@@ -12,6 +12,7 @@ const room: RoomData = {
 	pricePerNight: 4000,
 	photo: { url: '/images/room-single.jpg', alt: 'Одноместный номер', position: '50% 30%' },
 	hotelNote: '№ 204, 304 · двуспальная',
+	summary: 'Уютный номер для одного гостя.',
 }
 
 describe('toRequest(toForm(room))', () => {
@@ -27,6 +28,10 @@ describe('toRequest(toForm(room))', () => {
 	it('trims the texts', () => {
 		const form = { ...toForm(room), name: '  Новый  ', numbers: ' № 1 ' }
 		expect(toRequest(form)).toMatchObject({ name: 'Новый', numbers: '№ 1' })
+	})
+
+	it('trims the summary', () => {
+		expect(toRequest({ ...toForm(room), summary: '  Кратко  ' }).summary).toBe('Кратко')
 	})
 
 	it.each([
@@ -53,6 +58,12 @@ describe('validateRoom', () => {
 	it('limits plain texts to 100 characters', () => {
 		expect(validateRoom({ ...toForm(room), hotelName: 'а'.repeat(101) }).hotelName).toBeDefined()
 		expect(validateRoom({ ...toForm(room), hotelName: 'а'.repeat(100) }).hotelName).toBeUndefined()
+	})
+
+	it('limits the summary to 200 characters', () => {
+		const tooLong = validateRoom({ ...toForm(room), summary: 'а'.repeat(201) })
+		expect(tooLong.summary).toBe('Не больше 200 символов')
+		expect(validateRoom({ ...toForm(room), summary: 'а'.repeat(200) }).summary).toBeUndefined()
 	})
 
 	it.each(['', '0', '-5', 'abc', '10.123', '1000001'])('rejects the price "%s"', (price) => {
@@ -92,6 +103,10 @@ describe('mapServerFields', () => {
 			description: 'не более 1000 символов',
 			photo: { url: 'недопустимый адрес фото', position: 'формат «50% 30%»' },
 		})
+	})
+
+	it('maps the summary key', () => {
+		expect(mapServerFields({ summary: 'x' })).toEqual({ summary: 'x' })
 	})
 
 	it('drops unknown keys', () => {

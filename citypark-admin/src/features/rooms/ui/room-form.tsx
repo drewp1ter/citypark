@@ -1,4 +1,4 @@
-import { Button, Description, FieldError, Form, Input, Label, Spinner, TextField } from '@heroui/react'
+import { Button, Description, FieldError, Form, Input, Label, Spinner, TextArea, TextField } from '@heroui/react'
 import { useBlocker } from '@tanstack/react-router'
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { ApiError } from '../../../shared/api'
@@ -122,6 +122,20 @@ export function RoomForm({ room }: { room: Room }) {
 			</Section>
 
 			<Section title='Описание'>
+				<TextField
+					name='summary'
+					maxLength={200}
+					value={form.summary}
+					onChange={set('summary')}
+					isInvalid={errors.summary !== undefined}
+				>
+					<Label>Кратко</Label>
+					<TextArea rows={2} />
+					<Description>
+						Одна-две фразы для карточки на странице «Номера». Если пусто — на карточке нет текста.
+					</Description>
+					<FieldError>{errors.summary}</FieldError>
+				</TextField>
 				<RichTextEditor
 					label='Описание'
 					profile='short'

@@ -70,3 +70,37 @@ test('edits a room price and description, and asks before leaving with changes',
 		expect(res.ok(), await res.text()).toBe(true)
 	}
 })
+
+test('edits the short text of the VIP room and keeps it after a reload', async ({ page }) => {
+	await signIn(page)
+	await page.goto('/content/rooms')
+	const open = () =>
+		page
+			.getByRole('listitem')
+			.filter({ has: page.getByRole('heading', { name: 'VIP-номер', exact: true }) })
+			.getByRole('link', { name: /Изменить/ })
+			.click()
+	await open()
+	const summary = page.getByLabel('Кратко', { exact: true })
+	const original = await summary.inputValue()
+	const text = `Тест ${Date.now()}`
+
+	async function save() {
+		const saved = page.waitForResponse((r) => r.request().method() === 'PUT' && r.url().includes('/rooms/'))
+		await page.getByRole('button', { name: 'Сохранить' }).click()
+		const res = await saved
+		expect(res.ok(), await res.text()).toBe(true)
+	}
+
+	try {
+		await summary.fill(text)
+		await save()
+		await page.reload()
+		await expect(page.getByLabel('Кратко', { exact: true })).toHaveValue(text)
+	} finally {
+		await page.goto('/content/rooms')
+		await open()
+		await page.getByLabel('Кратко', { exact: true }).fill(original)
+		await save()
+	}
+})

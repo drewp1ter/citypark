@@ -2324,6 +2324,11 @@ export interface components {
             /** @example до 4 гостей */
             capacity: string;
             /**
+             * @description Plain text, one or two sentences for the room card on the site. May be empty.
+             * @example Гостиная и спальня, расширенная комплектация, балкон над кронами парка.
+             */
+            summary: string;
+            /**
              * @description HTML with p, br, strong, em, a, ul, ol and li only.
              * @example <p>Гостиная и спальня, балкон над кронами парка.</p>
              */
@@ -2346,6 +2351,8 @@ export interface components {
             area: string;
             areaDetailed?: string;
             capacity?: string;
+            /** @description Plain text, stored as sent. A missing field is stored as an empty string. */
+            summary?: string;
             /** @description HTML, cleaned on save. At most 1000 characters of visible text. */
             description?: string;
             /**

@@ -9,12 +9,13 @@ export type RoomForm = {
 	areaDetailed: string
 	capacity: string
 	hotelNote: string
+	summary: string
 	price: string
 	description: string // HTML
 	photo: PhotoValue
 }
 
-type TextField = 'name' | 'hotelName' | 'numbers' | 'area' | 'areaDetailed' | 'capacity' | 'hotelNote'
+type TextField = 'name' | 'hotelName' | 'numbers' | 'area' | 'areaDetailed' | 'capacity' | 'hotelNote' | 'summary'
 export type RoomErrors = Partial<Record<TextField | 'price' | 'description', string>> & {
 	photo?: Partial<Record<keyof PhotoValue, string>>
 }
@@ -31,10 +32,12 @@ export type RoomData = {
 	pricePerNight: number
 	photo: PhotoValue
 	hotelNote: string
+	summary: string
 }
 
 const MAX_TEXT = 100
 const MAX_ALT = 200
+const MAX_SUMMARY = 200
 const MAX_DESCRIPTION = 1000
 const MAX_PRICE = 1_000_000
 const MAX_TEXT_MESSAGE = `Не больше ${MAX_TEXT} символов`
@@ -62,6 +65,7 @@ export function toForm(room: RoomData): RoomForm {
 		areaDetailed: room.areaDetailed,
 		capacity: room.capacity,
 		hotelNote: room.hotelNote,
+		summary: room.summary,
 		price: String(room.pricePerNight),
 		description: room.description,
 		photo: {
@@ -85,6 +89,7 @@ export function toRequest(f: RoomForm): RoomData {
 		pricePerNight: Number(normalizePrice(f.price)),
 		photo: { url: f.photo.url, alt: f.photo.alt.trim(), position: f.photo.position },
 		hotelNote: f.hotelNote.trim(),
+		summary: f.summary.trim(),
 	}
 }
 
@@ -103,6 +108,8 @@ export function validateRoom(f: RoomForm): RoomErrors {
 	for (const field of [...required.map(([name]) => name), ...optional]) {
 		if (errors[field] === undefined && length(f[field].trim()) > MAX_TEXT) errors[field] = MAX_TEXT_MESSAGE
 	}
+
+	if (length(f.summary.trim()) > MAX_SUMMARY) errors.summary = `Не больше ${MAX_SUMMARY} символов`
 
 	const price = normalizePrice(f.price)
 	if (price === '') errors.price = 'Укажите цену'
@@ -128,6 +135,7 @@ const TEXT_FIELDS: readonly string[] = [
 	'areaDetailed',
 	'capacity',
 	'hotelNote',
+	'summary',
 	'description',
 ]
 const PHOTO_FIELD = /^photo\.(url|alt|position)$/
