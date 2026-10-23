@@ -20,6 +20,8 @@ export type Room = {
 	capacity?: string
 	/** Sanitized HTML from the backend (`<p>…</p>`); `''` when there is none. */
 	descriptionHtml: string
+	/** Одна-две фразы для карточки */
+	summary?: string
 	/** Rubles per night. */
 	pricePerNight: number
 	photo: Photo

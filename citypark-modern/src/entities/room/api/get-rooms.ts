@@ -18,6 +18,7 @@ export async function getRooms(): Promise<readonly Room[]> {
 		areaDetailed: typo(room.areaDetailed) || undefined,
 		capacity: room.capacity || undefined,
 		descriptionHtml: room.description,
+		summary: typo(room.summary) || undefined,
 		pricePerNight: room.pricePerNight,
 		photo: { src: room.photo.url, alt: room.photo.alt, position: room.photo.position || undefined },
 		hotelNote: typo(room.hotelNote),

@@ -12,6 +12,8 @@ export type ApiRoom = {
 	capacity: string
 	/** HTML. */
 	description: string
+	/** Plain text, one or two phrases for the card; may be empty. */
+	summary: string
 	pricePerNight: number
 	/** `url` is a site path (`/images/…`) or a full URL of an uploaded image. */
 	photo: { url: string; alt: string; position: string }

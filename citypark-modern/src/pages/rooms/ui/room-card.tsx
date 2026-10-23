@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import { roomTourHref, type Room, type RoomAvailability } from '@/entities/room'
 import { cn, formatPrice } from '@/shared/lib'
-import { Button, Card, RichText } from '@/shared/ui'
+import { Button, Card } from '@/shared/ui'
 
 // TODO: "Выбрать" scrolls to the search bar, as in the design. When a booking engine is connected it opens the booking.
 const BOOK_HREF = '#search'
@@ -112,9 +112,7 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 					{room.capacity && ` · ${room.capacity}`}
 				</p>
 				<TourLink room={room} className='text-inverse-muted' />
-				{room.descriptionHtml && (
-					<RichText html={room.descriptionHtml} variant='short' className='hidden flex-1 md:block' />
-				)}
+				{room.summary && <p className='hidden flex-1 md:block'>{room.summary}</p>}
 
 				<div className='mt-2 flex items-center justify-between md:hidden'>
 					<span className='font-display text-xl font-medium'>{formatPrice(room.pricePerNight)}</span>
