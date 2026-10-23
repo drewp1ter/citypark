@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import type { PageContent } from '@/entities/content'
 import { TableBookingForm } from '@/features/book-table'
-import { AppLink, Button, Card, cardClass, Section } from '@/shared/ui'
+import { Button, Card, cardClass, Section } from '@/shared/ui'
 
 const promoTitle = 'font-display text-xl leading-[1.15] font-medium tracking-[-0.02em] md:text-2xl'
 
@@ -38,13 +38,19 @@ export function RestaurantSection({ content }: { content: PageContent }) {
 					</span>
 				</Card>
 
-				<AppLink
-					href='/restaurant'
+				{/* The tour is a static Pano2VR page in public/tour, so a plain <a>, not next/link. */}
+				<a
+					href='/tour/restaurant.html'
+					target='_blank'
+					rel='noopener'
 					className={cardClass('surface', 'hidden min-h-[220px] justify-between gap-4 rounded-xl p-7 md:flex')}
 				>
 					<span className={promoTitle}>{content.text('home.restaurant.panorama-title')}</span>
-					<span className='text-text-muted text-[15px]'>{content.text('home.restaurant.panorama-text')}</span>
-				</AppLink>
+					<span className='text-text-muted text-[15px]'>
+						{content.text('home.restaurant.panorama-text')}
+						<span className='sr-only'> (откроется в новой вкладке)</span>
+					</span>
+				</a>
 
 				<Button href='/restaurant' variant='inverse' size='xl' className='md:hidden'>
 					Забронировать столик

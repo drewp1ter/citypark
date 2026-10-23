@@ -1,6 +1,9 @@
 import Image from 'next/image'
-import { Breadcrumbs, Button, Card, cardClass, AppLink, StatTile } from '@/shared/ui'
+import { Breadcrumbs, Button, Card, cardClass, StatTile } from '@/shared/ui'
 import { facts } from '../model/content'
+
+/** Pano2VR tour of the hall, served from public/tour (not a Next page, so a plain <a>). */
+const TOUR_HREF = '/tour/restaurant.html'
 
 const panorama = (
 	<svg
@@ -104,13 +107,17 @@ export function Hero() {
 						className='object-cover'
 					/>
 				</div>
-				<AppLink
-					href='#tour'
+				<a
+					href={TOUR_HREF}
+					target='_blank'
+					rel='noopener'
 					className={cardClass('inverse', 'h-[220px] justify-between rounded-xl p-6 max-md:hidden')}
 				>
 					<span className='text-accent'>{panorama}</span>
-					<span className='font-display text-xl leading-[1.15] font-medium'>3D-панорама ↗</span>
-				</AppLink>
+					<span className='font-display text-xl leading-[1.15] font-medium'>
+						3D-панорама ↗<span className='sr-only'> (откроется в новой вкладке)</span>
+					</span>
+				</a>
 
 				{/* Mobile: two tiles */}
 				<div className='grid grid-cols-2 gap-2 md:hidden'>
@@ -118,10 +125,12 @@ export function Hero() {
 						<span className='font-display text-xl font-medium'>50–60</span>
 						<span className='text-text-muted text-sm'>гостей</span>
 					</Card>
-					<AppLink href='#tour' className={cardClass('inverse', 'rounded-sm px-4 py-3.5')}>
+					<a href={TOUR_HREF} target='_blank' rel='noopener' className={cardClass('inverse', 'rounded-sm px-4 py-3.5')}>
 						<span className='font-display text-xl font-medium'>3D ↗</span>
-						<span className='text-inverse-muted text-sm'>панорама зала</span>
-					</AppLink>
+						<span className='text-inverse-muted text-sm'>
+							панорама зала<span className='sr-only'> (откроется в новой вкладке)</span>
+						</span>
+					</a>
 				</div>
 			</div>
 

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
 		'out/**',
 		'build/**',
 		'next-env.d.ts',
+		// Third-party Pano2VR player copied from the old site.
+		'public/tour/**',
 	]),
 ])
 

@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { Room, RoomAvailability } from '@/entities/room'
+import { roomTourHref, type Room, type RoomAvailability } from '@/entities/room'
 import { cn, formatPrice } from '@/shared/lib'
 import { Button, Card, RichText } from '@/shared/ui'
 
@@ -22,6 +22,19 @@ function StatusBadge({ available, children, className }: { available: boolean; c
 		>
 			{children}
 		</span>
+	)
+}
+
+function TourLink({ room, className }: { room: Room; className?: string }) {
+	return (
+		<a
+			href={roomTourHref(room.kind)}
+			target='_blank'
+			rel='noopener'
+			className={cn('text-text-muted inline-flex min-h-11 items-center self-start text-sm hover:underline', className)}
+		>
+			3D-тур ↗<span className='sr-only'> (откроется в новой вкладке)</span>
+		</a>
 	)
 }
 
@@ -98,6 +111,7 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 					<span className='hidden md:inline'>{room.areaDetailed ?? room.area}</span>
 					{room.capacity && ` · ${room.capacity}`}
 				</p>
+				<TourLink room={room} className='text-inverse-muted' />
 				{room.descriptionHtml && (
 					<RichText html={room.descriptionHtml} variant='short' className='hidden flex-1 md:block' />
 				)}
@@ -144,9 +158,10 @@ export function RoomCard(props: RoomCardProps) {
 			</div>
 			<div className='flex flex-1 flex-col gap-1 px-2.5 pt-3.5 pb-2 md:gap-1.5 md:px-3 md:pt-4 md:pb-2.5'>
 				<h2 className='text-[19px] font-bold md:text-[21px]'>{room.name}</h2>
-				<p className='text-text-muted flex-1 text-sm md:text-base'>
+				<p className='text-text-muted text-sm md:text-base'>
 					{room.numbers} · {room.area}
 				</p>
+				<TourLink room={room} className='mb-auto' />
 				<div className='mt-2 flex items-center justify-between gap-3 md:mt-2.5'>
 					<span className={cn('font-display text-xl font-medium md:text-[22px]', !available && 'text-text-muted')}>
 						{formatPrice(room.pricePerNight)}
