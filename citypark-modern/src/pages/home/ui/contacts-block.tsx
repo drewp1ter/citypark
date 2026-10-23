@@ -1,11 +1,11 @@
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { AppLink, Button, PinIcon } from '@/shared/ui'
 
-const { address, phones, email } = site
-const phoneRows = [phones.restaurant, phones.hotel, phones.free]
-
 /** Inverse block with address, phones and the map. Shorter on mobile: no e-mail, no map. */
-export function ContactsBlock() {
+export async function ContactsBlock() {
+	const { address, phones, email } = await getSiteSettings()
+	const phoneRows = [phones.restaurant, phones.hotel, phones.free]
+
 	return (
 		<div className='bg-inverse-bg text-inverse-text flex flex-col gap-4 rounded-xl p-6 md:flex-row md:flex-wrap md:gap-10 md:rounded-2xl md:p-12'>
 			<div className='flex min-w-0 flex-col gap-4 md:flex-[1_1_420px] md:gap-6'>

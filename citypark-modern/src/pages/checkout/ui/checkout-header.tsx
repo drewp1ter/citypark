@@ -1,12 +1,12 @@
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { AppLink, IconButton, Logo } from '@/shared/ui'
 
 /**
  * Header of the checkout steps. It has no site navigation, to keep the focus on the order:
  * a back link, the logo and the phone. On mobile it is a sticky bar with the step counter.
  */
-export function CheckoutHeader({ step }: { step: 2 | 3 }) {
-	const phone = site.phones.restaurant
+export async function CheckoutHeader({ step }: { step: 2 | 3 }) {
+	const phone = (await getSiteSettings()).phones.restaurant
 
 	return (
 		<header className='bg-bg sticky top-0 z-10 px-3 pt-2.5 pb-1.5 md:static md:bg-transparent md:px-6 md:pt-4 md:pb-0'>

@@ -1,7 +1,7 @@
 'use client'
 
 import { quoteDelivery, type Dish } from '@/entities/dish'
-import { site } from '@/shared/config'
+import { useSiteSettings } from '@/shared/config'
 import { formatPrice, plural } from '@/shared/lib'
 import { AppLink, Button } from '@/shared/ui'
 import { CartLine } from './cart-line'
@@ -10,6 +10,7 @@ import { usePricedCart } from './use-priced-cart'
 /** Dark cart column next to the menu (from 1024 px). Below that the CartBar is used instead. */
 export function CartPanel({ dishes }: { dishes: readonly Dish[] }) {
 	const { items, count, subtotal, ready } = usePricedCart(dishes)
+	const { restaurant } = useSiteSettings().phones
 	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal })
 	const empty = ready && items.length === 0
 
@@ -53,8 +54,8 @@ export function CartPanel({ dishes }: { dishes: readonly Dish[] }) {
 
 			<p className='text-inverse-muted text-center text-[13px]'>
 				{empty ? 'Заказ по телефону: ' : 'или '}
-				<AppLink href={site.phones.restaurant.href} className='tap-area text-inverse-text'>
-					{site.phones.restaurant.display}
+				<AppLink href={restaurant.href} className='tap-area text-inverse-text'>
+					{restaurant.display}
 				</AppLink>
 			</p>
 		</aside>

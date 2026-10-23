@@ -2,7 +2,7 @@
 
 import type { MouseEvent, RefObject } from 'react'
 import { quoteDelivery, type Dish } from '@/entities/dish'
-import { site } from '@/shared/config'
+import { useSiteSettings } from '@/shared/config'
 import { formatPrice, plural } from '@/shared/lib'
 import { AppLink, Button, CloseIcon, IconButton } from '@/shared/ui'
 import { CartLine } from './cart-line'
@@ -20,6 +20,7 @@ type CartSheetProps = {
  */
 export function CartSheet({ dishes, dialog, onClose }: CartSheetProps) {
 	const { items, count, subtotal } = usePricedCart(dishes)
+	const { restaurant } = useSiteSettings().phones
 	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal })
 
 	const closeOnBackdropOrLink = (event: MouseEvent<HTMLDialogElement>) => {
@@ -66,8 +67,8 @@ export function CartSheet({ dishes, dialog, onClose }: CartSheetProps) {
 			</Button>
 			<p className='text-inverse-muted mt-3.5 text-center text-[13px]'>
 				или{' '}
-				<AppLink href={site.phones.restaurant.href} className='tap-area text-inverse-text'>
-					{site.phones.restaurant.display}
+				<AppLink href={restaurant.href} className='tap-area text-inverse-text'>
+					{restaurant.display}
 				</AppLink>
 			</p>
 		</dialog>

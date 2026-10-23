@@ -3,8 +3,8 @@ import Image from 'next/image'
 import type { PageContent } from '@/entities/content'
 import { delivery } from '@/entities/dish'
 import { minPricePerNight, type Room } from '@/entities/room'
-import { site } from '@/shared/config'
-import { formatPrice, type Photo } from '@/shared/lib'
+import { getSiteSettings } from '@/shared/api'
+import { NBSP, formatPrice, type Photo } from '@/shared/lib'
 import { AppLink, Badge, StatTile } from '@/shared/ui'
 
 type TileProps = {
@@ -58,8 +58,11 @@ function PhotoTile({ href, photo, title, caption, className, priority }: TilePro
 	)
 }
 
-const { phones, address } = site
-const [phoneHead, phoneTail] = ['8 918', '311-97-91']
+/** "8 918 311-97-91" -> ["8 918", "311-97-91"] (the number is set on two lines in the big cards). */
+const splitPhone = (display: string): [string, string] => {
+	const [a, b, ...rest] = display.split(NBSP)
+	return [`${a} ${b}`, rest.join(NBSP)]
+}
 
 /** Two versions of one block: desktop `key` and `key-mobile`. */
 function both(content: PageContent, key: string, values?: Readonly<Record<string, number>>) {
@@ -77,7 +80,9 @@ function Responsive({ text }: { text: { desktop: string; mobile: string } }) {
 }
 
 /** Bento grid: intro card, three photo tiles, phone card, then the facts. */
-export function Hero({ content, rooms }: { content: PageContent; rooms: readonly Room[] }) {
+export async function Hero({ content, rooms }: { content: PageContent; rooms: readonly Room[] }) {
+	const { phones, address } = await getSiteSettings()
+	const [phoneHead, phoneTail] = splitPhone(phones.restaurant.display)
 	const min = minPricePerNight(rooms)
 	const price = min === null ? undefined : { minRoomPrice: min }
 	const freeFrom = formatPrice(delivery.freeFrom)

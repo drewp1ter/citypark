@@ -1,10 +1,13 @@
+import { getSiteSettings } from '@/shared/api'
 import { site } from '@/shared/config'
 import { cn } from '@/shared/lib'
 import { AppLink, Logo } from '@/shared/ui'
 
-const { company, legal, social, year } = site
+const { legal, year } = site
 
-export function SiteFooter({ wide = false }: { wide?: boolean }) {
+export async function SiteFooter({ wide = false }: { wide?: boolean }) {
+	const { company, social } = await getSiteSettings()
+
 	return (
 		<footer className={cn('mx-auto w-full px-3 pt-7 pb-8 md:px-6 md:pt-10', wide ? 'max-w-wide-page' : 'max-w-page')}>
 			<Logo className='mb-4 h-[120px] md:mb-8 md:h-[clamp(180px,18vw,240px)]' />

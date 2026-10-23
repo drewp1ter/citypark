@@ -2,7 +2,7 @@
 
 import { useRef, type MouseEvent } from 'react'
 import { ThemeToggle } from './theme-toggle'
-import { site } from '@/shared/config'
+import { site, useSiteSettings } from '@/shared/config'
 import { AppLink, Button, CloseIcon, IconButton, Logo, MenuIcon } from '@/shared/ui'
 
 /**
@@ -10,6 +10,7 @@ import { AppLink, Button, CloseIcon, IconButton, Logo, MenuIcon } from '@/shared
  * It is a native modal <dialog>, so the browser gives us the focus trap, Esc to close and an inert page behind it.
  */
 export function MobileMenu() {
+	const { phones } = useSiteSettings()
 	const dialog = useRef<HTMLDialogElement>(null)
 
 	const closeOnLinkClick = (event: MouseEvent) => {
@@ -53,7 +54,7 @@ export function MobileMenu() {
 
 				<div className='mt-auto flex flex-col gap-4 px-6 pt-8 pb-6'>
 					<ul className='flex flex-col'>
-						{[site.phones.restaurant, site.phones.hotel, site.phones.free].map((phone) => (
+						{[phones.restaurant, phones.hotel, phones.free].map((phone) => (
 							<li key={phone.href}>
 								<AppLink href={phone.href} className='border-divider flex justify-between gap-3 border-b py-3.5'>
 									<span className='text-text-muted'>{phone.shortLabel}</span>

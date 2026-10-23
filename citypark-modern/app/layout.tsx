@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Onest, Unbounded } from 'next/font/google'
 import { ThemeProvider } from '@/app/theme'
+import { getSiteSettings } from '@/shared/api'
+import { SiteSettingsProvider } from '@/shared/config'
 import '@/app/styles/globals.css'
 
 const unbounded = Unbounded({
@@ -22,7 +24,9 @@ export const metadata: Metadata = {
 	description: 'Отель-люкс на 12 номеров, ресторан и летнее кафе, банкеты и доставка еды. Белореченск, ул. Гоголя, 61.',
 }
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+export default async function RootLayout({ children }: LayoutProps<'/'>) {
+	const settings = await getSiteSettings()
+
 	return (
 		<html lang='ru' className={`${unbounded.variable} ${onest.variable}`} suppressHydrationWarning>
 			<body>
@@ -32,7 +36,9 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
 				>
 					Перейти к содержимому
 				</a>
-				<ThemeProvider>{children}</ThemeProvider>
+				<ThemeProvider>
+					<SiteSettingsProvider value={settings}>{children}</SiteSettingsProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	)

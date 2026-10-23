@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import Image from 'next/image'
 import type { PageContent } from '@/entities/content'
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { Breadcrumbs, Button, StatTile } from '@/shared/ui'
 
 /** Desktop `key` and mobile `key-mobile` of one block, for text that is shorter on mobile. */
@@ -15,7 +15,8 @@ function Responsive({ content, name }: { content: PageContent; name: string }) {
 }
 
 /** Intro card, the façade photo and the facts. Shorter on mobile (two facts, no buttons). */
-export function Hero({ content }: { content: PageContent }) {
+export async function Hero({ content }: { content: PageContent }) {
+	const { phones } = await getSiteSettings()
 	const photo = content.image('hotel.hero.photo')
 	return (
 		<section className='max-w-page mx-auto w-full px-3 pt-4 md:px-6 md:pt-8'>
@@ -39,8 +40,8 @@ export function Hero({ content }: { content: PageContent }) {
 						<Button href='/rooms' size='lg'>
 							Выбрать номер
 						</Button>
-						<Button href={site.phones.free.href} variant='outline' size='lg'>
-							{site.phones.free.display}
+						<Button href={phones.free.href} variant='outline' size='lg'>
+							{phones.free.display}
 						</Button>
 					</div>
 				</div>

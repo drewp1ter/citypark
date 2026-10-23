@@ -1,11 +1,12 @@
 'use client'
 
 import { useEffect } from 'react'
-import { site } from '@/shared/config'
+import { useSiteSettings } from '@/shared/config'
 import { Button } from '@/shared/ui'
 
 /** Shown by the `error.tsx` of /menu and /checkout when the menu cannot be read from the backend. */
 export function MenuError({ error, retry }: { error: unknown; retry: () => void }) {
+	const { phones } = useSiteSettings()
 	useEffect(() => {
 		console.error(error)
 	}, [error])
@@ -20,8 +21,8 @@ export function MenuError({ error, retry }: { error: unknown; retry: () => void 
 				<Button size='xl' onClick={() => retry()}>
 					Обновить
 				</Button>
-				<Button href={site.phones.restaurant.href} size='xl' variant='outline'>
-					{site.phones.restaurant.display}
+				<Button href={phones.restaurant.href} size='xl' variant='outline'>
+					{phones.restaurant.display}
 				</Button>
 			</div>
 		</main>

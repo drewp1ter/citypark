@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { site } from '@/shared/config'
+import { useSiteSettings } from '@/shared/config'
 import { Button } from '@/shared/ui'
 
 /**
@@ -10,6 +10,7 @@ import { Button } from '@/shared/ui'
  * rooms; elsewhere it calls the restaurant and leads to the rooms.
  */
 export function MobileQuickActions() {
+	const { phones } = useSiteSettings()
 	const pathname = usePathname() ?? ''
 	const rooms = pathname.startsWith('/rooms')
 	const hotel = rooms || pathname.startsWith('/hotel')
@@ -26,12 +27,12 @@ export function MobileQuickActions() {
 					Меню
 				</Button>
 			) : (
-				<Button href={(hotel ? site.phones.hotel : site.phones.restaurant).href} variant='surface' size='xl'>
+				<Button href={(hotel ? phones.hotel : phones.restaurant).href} variant='surface' size='xl'>
 					Позвонить
 				</Button>
 			)}
 			{rooms ? (
-				<Button href={site.phones.free.href} variant='inverse' size='xl' className='px-3 whitespace-nowrap'>
+				<Button href={phones.free.href} variant='inverse' size='xl' className='px-3 whitespace-nowrap'>
 					8 800 · бесплатно
 				</Button>
 			) : restaurant ? (

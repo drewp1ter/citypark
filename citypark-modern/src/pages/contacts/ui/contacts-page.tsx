@@ -1,10 +1,8 @@
 import type { ReactNode } from 'react'
 import { ContactForm } from './contact-form'
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { NBSP } from '@/shared/lib'
 import { AppLink, Button, PinIcon, cardClass } from '@/shared/ui'
-
-const { phones, address, company, email, social } = site
 
 /** Opening hours stay on one line. */
 const hours = <span className='whitespace-nowrap'>10:00–23:00</span>
@@ -57,7 +55,9 @@ function PhoneCard({ href, label, number, alt, variant = 'surface' }: PhoneCardP
 	)
 }
 
-export function ContactsPage() {
+export async function ContactsPage() {
+	const { phones, address, company, email, social, mapUrl } = await getSiteSettings()
+
 	return (
 		<main>
 			<section className='max-w-page mx-auto w-full px-3 pt-4 md:px-6 md:pt-8'>
@@ -84,7 +84,7 @@ export function ContactsPage() {
 									</span>
 								</span>
 							</span>
-							<Button href={site.mapUrl} variant='inverse' className='px-4 md:px-5'>
+							<Button href={mapUrl} variant='inverse' className='px-4 md:px-5'>
 								Маршрут<span className='hidden md:inline'> ↗</span>
 							</Button>
 						</div>
@@ -94,13 +94,13 @@ export function ContactsPage() {
 						href={phones.restaurant.href}
 						label={{ mobile: <>Ресторан · {hours}</>, desktop: <>Ресторан и доставка · {hours}</> }}
 						number={phones.restaurant.display}
-						alt={phones.restaurant.alt.display}
+						alt={phones.restaurant.alt?.display}
 					/>
 					<PhoneCard
 						href={phones.hotel.href}
 						label={{ mobile: 'Отель · 24/7', desktop: 'Отель · круглосуточно' }}
 						number={phones.hotel.display}
-						alt={phones.hotel.alt.display}
+						alt={phones.hotel.alt?.display}
 					/>
 					<PhoneCard
 						href={phones.free.href}

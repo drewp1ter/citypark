@@ -1,9 +1,9 @@
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { Button } from '@/shared/ui'
 
 /** "Акции — первыми в соцсетях" (desktop only): lime block with the VK and OK buttons. */
-export function SocialCta() {
-	const [vk, ok] = site.social
+export async function SocialCta() {
+	const [vk, ok] = (await getSiteSettings()).social
 
 	return (
 		<section className='max-w-page mx-auto w-full px-6 pt-6 pb-6 max-md:hidden'>

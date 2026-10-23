@@ -2,7 +2,7 @@ import { getPageContent } from '@/entities/content'
 import { getHotelPrices } from '@/entities/hotel'
 import { getRoomAvailability, getRooms, type Room } from '@/entities/room'
 import { StayDatesBar } from '@/features/search-rooms'
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { cn, fillPlaceholders, plural } from '@/shared/lib'
 import { AppLink, Breadcrumbs, Button, Chip, cardClass, Section } from '@/shared/ui'
 import { roomsHref, type RoomsQuery, type RoomType } from '../model/query'
@@ -25,6 +25,7 @@ const chipLi = 'rounded-pill bg-bg px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-b
 
 /** The rooms page: search bar, filters, the room cards, what every room has, and the phone numbers. */
 export async function RoomsPage({ query }: { query: RoomsQuery }) {
+	const { phones } = await getSiteSettings()
 	const [rooms, availability, content, prices] = await Promise.all([
 		getRooms().catch((error: unknown) => {
 			console.error(error)
@@ -47,8 +48,8 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 			<main className='max-w-page mx-auto flex w-full flex-col items-start gap-4 px-3 pt-4 pb-16 md:px-6 md:pt-8 md:pb-28'>
 				<h1 className='heading mx-1.5 mt-2 text-[38px] md:mx-0 md:mt-0 md:text-[length:var(--text-h1)]'>Номера</h1>
 				<p className='text-text-muted mx-1.5 md:mx-0 md:text-lg'>Не удалось загрузить номера. Позвоните нам:</p>
-				<Button href={site.phones.hotel.href} size='xl' variant='outline'>
-					{site.phones.hotel.display}
+				<Button href={phones.hotel.href} size='xl' variant='outline'>
+					{phones.hotel.display}
 				</Button>
 			</main>
 		)
@@ -197,11 +198,11 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 				<div className='bg-accent text-on-accent flex flex-wrap items-center justify-between gap-5 rounded-xl px-10 py-8'>
 					<h2 className='heading text-[28px] tracking-[-0.02em]'>Удобнее по телефону?</h2>
 					<div className='flex flex-wrap gap-2'>
-						<Button href={site.phones.hotel.href} variant='inverse' size='xl' className='min-h-[50px]'>
-							{site.phones.hotel.display}
+						<Button href={phones.hotel.href} variant='inverse' size='xl' className='min-h-[50px]'>
+							{phones.hotel.display}
 						</Button>
-						<Button href={site.phones.free.href} variant='surface' size='xl' className='min-h-[50px] border-0'>
-							{site.phones.free.display} · бесплатно
+						<Button href={phones.free.href} variant='surface' size='xl' className='min-h-[50px] border-0'>
+							{phones.free.display} · бесплатно
 						</Button>
 					</div>
 				</div>

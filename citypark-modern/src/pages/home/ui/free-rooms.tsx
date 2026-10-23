@@ -1,12 +1,12 @@
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { nb, plural } from '@/shared/lib'
 import { AppLink } from '@/shared/ui'
 
 const TOTAL_ROOMS = 12
 
 /** Free rooms today: a lime tile with the number and a short caption. Zero shows a phone prompt instead. */
-export function FreeRooms({ count }: { count: number }) {
-	const { hotel } = site.phones
+export async function FreeRooms({ count }: { count: number }) {
+	const { hotel } = (await getSiteSettings()).phones
 
 	if (count === 0) {
 		return (

@@ -1,12 +1,14 @@
 import { delivery } from '@/entities/dish'
-import { site } from '@/shared/config'
+import { getSiteSettings } from '@/shared/api'
 import { Button, cardClass } from '@/shared/ui'
 import { CheckoutHeader } from './checkout-header'
 import { ClearCart } from './clear-cart'
 import { TitleRow } from './title-row'
 
 /** Step 3, "Готово". The order action redirects here after the order has been sent. */
-export function CheckoutDonePage() {
+export async function CheckoutDonePage() {
+	const { phones } = await getSiteSettings()
+
 	return (
 		<>
 			<CheckoutHeader step={3} />
@@ -17,8 +19,7 @@ export function CheckoutDonePage() {
 					<h2 className='heading text-2xl md:text-[32px]'>Спасибо за заказ!</h2>
 					<p className='text-text-muted max-w-xl'>
 						Мы перезвоним по указанному номеру, чтобы подтвердить заказ. Доставляем {delivery.hours}. Если что-то
-						изменилось, позвоните: <span className='text-text whitespace-nowrap'>{site.phones.restaurant.display}</span>
-						.
+						изменилось, позвоните: <span className='text-text whitespace-nowrap'>{phones.restaurant.display}</span>.
 					</p>
 					<div className='mt-2 flex flex-wrap gap-2'>
 						<Button href='/menu' size='xl' variant='inverse'>
