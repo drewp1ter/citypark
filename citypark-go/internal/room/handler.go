@@ -48,20 +48,26 @@ type photoInput struct {
 	Position string `json:"position" validate:"max=100"`
 }
 
+type galleryInput struct {
+	URL string `json:"url" validate:"required"`
+	Alt string `json:"alt" validate:"max=200"`
+}
+
 // updateRequest is the body of PUT /rooms/{id}. The price is a float so that a third decimal can be detected
 // (money.Kopecks would round it away while decoding).
 type updateRequest struct {
-	Name          string     `json:"name" validate:"required,max=100"`
-	HotelName     string     `json:"hotelName" validate:"max=100"`
-	Numbers       string     `json:"numbers" validate:"required,max=100"`
-	Area          string     `json:"area" validate:"required,max=100"`
-	AreaDetailed  string     `json:"areaDetailed" validate:"max=100"`
-	Capacity      string     `json:"capacity" validate:"max=100"`
-	Summary       string     `json:"summary" validate:"max=200"`
-	Description   string     `json:"description"`
-	PricePerNight float64    `json:"pricePerNight" validate:"required,gt=0,max=1000000"`
-	Photo         photoInput `json:"photo"`
-	HotelNote     string     `json:"hotelNote" validate:"max=100"`
+	Name          string         `json:"name" validate:"required,max=100"`
+	HotelName     string         `json:"hotelName" validate:"max=100"`
+	Numbers       string         `json:"numbers" validate:"required,max=100"`
+	Area          string         `json:"area" validate:"required,max=100"`
+	AreaDetailed  string         `json:"areaDetailed" validate:"max=100"`
+	Capacity      string         `json:"capacity" validate:"max=100"`
+	Summary       string         `json:"summary" validate:"max=200"`
+	Description   string         `json:"description"`
+	PricePerNight float64        `json:"pricePerNight" validate:"required,gt=0,max=1000000"`
+	Photo         photoInput     `json:"photo"`
+	Gallery       []galleryInput `json:"gallery" validate:"max=12,dive"`
+	HotelNote     string         `json:"hotelNote" validate:"max=100"`
 }
 
 type photoResponse struct {
@@ -70,22 +76,28 @@ type photoResponse struct {
 	Position string `json:"position"`
 }
 
+type galleryResponse struct {
+	URL string `json:"url"`
+	Alt string `json:"alt"`
+}
+
 type response struct {
-	ID            string        `json:"id"`
-	Kind          string        `json:"kind"`
-	Balcony       bool          `json:"balcony"`
-	Name          string        `json:"name"`
-	HotelName     string        `json:"hotelName"`
-	Numbers       string        `json:"numbers"`
-	Area          string        `json:"area"`
-	AreaDetailed  string        `json:"areaDetailed"`
-	Capacity      string        `json:"capacity"`
-	Summary       string        `json:"summary"`
-	Description   string        `json:"description"`
-	PricePerNight money.Kopecks `json:"pricePerNight"`
-	Photo         photoResponse `json:"photo"`
-	HotelNote     string        `json:"hotelNote"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
+	ID            string            `json:"id"`
+	Kind          string            `json:"kind"`
+	Balcony       bool              `json:"balcony"`
+	Name          string            `json:"name"`
+	HotelName     string            `json:"hotelName"`
+	Numbers       string            `json:"numbers"`
+	Area          string            `json:"area"`
+	AreaDetailed  string            `json:"areaDetailed"`
+	Capacity      string            `json:"capacity"`
+	Summary       string            `json:"summary"`
+	Description   string            `json:"description"`
+	PricePerNight money.Kopecks     `json:"pricePerNight"`
+	Photo         photoResponse     `json:"photo"`
+	Gallery       []galleryResponse `json:"gallery"`
+	HotelNote     string            `json:"hotelNote"`
+	UpdatedAt     time.Time         `json:"updatedAt"`
 }
 
 // Routes registers GET /rooms (public) and PUT /rooms/{id} (admin).
@@ -98,12 +110,16 @@ func (h *Handler) Routes(r chi.Router) {
 }
 
 func (h *Handler) response(r Room) response {
+	gallery := make([]galleryResponse, 0, len(r.Gallery))
+	for _, g := range r.Gallery {
+		gallery = append(gallery, galleryResponse{URL: h.uploads.Public(g.URL), Alt: g.Alt})
+	}
 	return response{
 		ID: r.ID, Kind: r.Kind, Balcony: r.Balcony, Name: r.Name, HotelName: r.HotelName,
 		Numbers: r.Numbers, Area: r.Area, AreaDetailed: r.AreaDetailed, Capacity: r.Capacity,
 		Summary: r.Summary, Description: r.Description, PricePerNight: r.Price,
-		Photo:     photoResponse{URL: h.uploads.Public(r.PhotoURL), Alt: r.PhotoAlt, Position: r.PhotoPosition},
-		HotelNote: r.HotelNote, UpdatedAt: r.UpdatedAt,
+		Photo:   photoResponse{URL: h.uploads.Public(r.PhotoURL), Alt: r.PhotoAlt, Position: r.PhotoPosition},
+		Gallery: gallery, HotelNote: r.HotelNote, UpdatedAt: r.UpdatedAt,
 	}
 }
 
@@ -132,20 +148,41 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) error {
 	}
 	room.ID = chi.URLParam(r, "id")
 
-	saved, oldPhoto, err := h.store.Update(r.Context(), room)
+	saved, old, err := h.store.Update(r.Context(), room)
 	if errors.Is(err, store.ErrNotFound) {
 		return httpx.NotFound()
 	}
 	if err != nil {
 		return err
 	}
-	if oldPhoto != saved.PhotoURL {
-		if err := h.uploads.Remove(oldPhoto); err != nil {
-			slog.Error("remove replaced room photo", "room", saved.ID, "path", oldPhoto, "error", err)
-		}
-	}
+	h.removeUnused(saved, old)
 	httpx.JSON(w, http.StatusOK, h.response(saved))
 	return nil
+}
+
+// removeUnused deletes the uploads that the old photo and gallery used and the saved room does not.
+func (h *Handler) removeUnused(saved Room, old Replaced) {
+	kept := map[string]bool{saved.PhotoURL: true}
+	for _, g := range saved.Gallery {
+		kept[g.URL] = true
+	}
+	for _, path := range append([]string{old.PhotoURL}, galleryURLs(old.Gallery)...) {
+		if kept[path] {
+			continue
+		}
+		kept[path] = true // a path listed twice is removed once
+		if err := h.uploads.Remove(path); err != nil {
+			slog.Error("remove replaced room photo", "room", saved.ID, "path", path, "error", err)
+		}
+	}
+}
+
+func galleryURLs(g Gallery) []string {
+	urls := make([]string, 0, len(g))
+	for _, p := range g {
+		urls = append(urls, p.URL)
+	}
+	return urls
 }
 
 // trim runs before validation so that a whitespace-only name fails "required".
@@ -155,6 +192,10 @@ func trim(req *updateRequest) {
 		&req.Photo.URL, &req.Photo.Alt, &req.Photo.Position,
 	} {
 		*s = strings.TrimSpace(*s)
+	}
+	for i := range req.Gallery {
+		req.Gallery[i].URL = strings.TrimSpace(req.Gallery[i].URL)
+		req.Gallery[i].Alt = strings.TrimSpace(req.Gallery[i].Alt)
 	}
 }
 
@@ -181,6 +222,19 @@ func (h *Handler) check(req updateRequest) (Room, error) {
 		}
 		photoURL = stored
 	}
+	gallery := make(Gallery, 0, len(req.Gallery))
+	for i, g := range req.Gallery {
+		key := "gallery[" + strconv.Itoa(i) + "].url"
+		if _, bad := fields[key]; bad {
+			continue
+		}
+		stored, err := h.uploads.Stored(g.URL)
+		if err != nil {
+			fields[key] = "недопустимый адрес фото"
+			continue
+		}
+		gallery = append(gallery, GalleryPhoto{URL: stored, Alt: g.Alt})
+	}
 	if _, bad := fields["photo.position"]; !bad && !validPosition(req.Photo.Position) {
 		fields["photo.position"] = "формат «50% 30%»"
 	}
@@ -201,7 +255,7 @@ func (h *Handler) check(req updateRequest) (Room, error) {
 		Name: req.Name, HotelName: req.HotelName, Numbers: req.Numbers, Area: req.Area,
 		AreaDetailed: req.AreaDetailed, Capacity: req.Capacity, Summary: req.Summary, Description: description,
 		Price:    money.FromRubles(req.PricePerNight),
-		PhotoURL: photoURL, PhotoAlt: req.Photo.Alt, PhotoPosition: req.Photo.Position,
+		PhotoURL: photoURL, PhotoAlt: req.Photo.Alt, PhotoPosition: req.Photo.Position, Gallery: gallery,
 		HotelNote: req.HotelNote,
 	}, nil
 }

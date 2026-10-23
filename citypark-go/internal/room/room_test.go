@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -79,9 +80,9 @@ func restoreRooms(t *testing.T, db *sqlx.DB) {
 		for _, r := range before {
 			_, err := db.Exec(`UPDATE rooms SET name = $2, hotel_name = $3, numbers = $4, area = $5, area_detailed = $6,
 				capacity = $7, description = $8, price_kopecks = $9, photo_url = $10, photo_alt = $11,
-				photo_position = $12, hotel_note = $13, updated_at = $14, summary = $15 WHERE id = $1`,
+				photo_position = $12, hotel_note = $13, updated_at = $14, summary = $15, gallery = $16 WHERE id = $1`,
 				r.ID, r.Name, r.HotelName, r.Numbers, r.Area, r.AreaDetailed, r.Capacity, r.Description,
-				int64(r.Price), r.PhotoURL, r.PhotoAlt, r.PhotoPosition, r.HotelNote, r.UpdatedAt, r.Summary)
+				int64(r.Price), r.PhotoURL, r.PhotoAlt, r.PhotoPosition, r.HotelNote, r.UpdatedAt, r.Summary, r.Gallery)
 			if err != nil {
 				t.Errorf("restore room %s: %v", r.ID, err)
 			}
@@ -188,10 +189,11 @@ func TestUpdateRoom(t *testing.T) {
 		AreaDetailed: "30 м² + балкон", Capacity: "до 3 гостей", Description: "<p>Описание</p>",
 		PricePerNight: 520000,
 		Photo:         photoResponse{URL: "/images/room-single.jpg", Alt: "Номер", Position: "50% 30%"},
+		Gallery:       []galleryResponse{},
 		HotelNote:     "№ 1, 2 · кровать",
 	}
 	got.UpdatedAt = time.Time{}
-	if got != want {
+	if !reflect.DeepEqual(got, want) {
 		t.Errorf("PUT response\n got %+v\nwant %+v", got, want)
 	}
 
@@ -201,7 +203,7 @@ func TestUpdateRoom(t *testing.T) {
 		t.Errorf("updatedAt not refreshed: before %v, after %v", before.UpdatedAt, again.UpdatedAt)
 	}
 	again.UpdatedAt = time.Time{}
-	if again != want {
+	if !reflect.DeepEqual(again, want) {
 		t.Errorf("GET after PUT\n got %+v\nwant %+v", again, want)
 	}
 
@@ -500,7 +502,7 @@ func TestStoreUpdateJoinsTransaction(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if saved.Name != "В транзакции" || saved.PhotoURL != "/images/other.jpg" || old != "/images/room-vip.jpg" {
+	if saved.Name != "В транзакции" || saved.PhotoURL != "/images/other.jpg" || old.PhotoURL != "/images/room-vip.jpg" || len(old.Gallery) != 3 {
 		t.Errorf("Update = %+v, old photo %q", saved, old)
 	}
 	if _, _, err := NewStore(tx).Update(ctx, Room{ID: "penthouse", Price: 100}); !errors.Is(err, store.ErrNotFound) {
@@ -520,7 +522,7 @@ func TestStoreUpdateJoinsTransaction(t *testing.T) {
 func TestStoreUpdateNotFound(t *testing.T) {
 	db := testutil.NewDB(t)
 	_, old, err := NewStore(db).Update(context.Background(), Room{ID: "penthouse", Price: 100})
-	if !errors.Is(err, store.ErrNotFound) || old != "" {
+	if !errors.Is(err, store.ErrNotFound) || old.PhotoURL != "" || old.Gallery != nil {
 		t.Errorf("Update unknown id: old %q, err %v; want ErrNotFound", old, err)
 	}
 }
@@ -620,5 +622,238 @@ func TestUpdateRoomSummaryMissing(t *testing.T) {
 	var stored string
 	if err := f.db.Get(&stored, `SELECT summary FROM rooms WHERE id = 'vip'`); err != nil || stored != "" || got.Summary != "" {
 		t.Errorf("stored summary = %q, response %q, err %v; want empty", stored, got.Summary, err)
+	}
+}
+
+func uploadFile(t *testing.T, f fixture) string {
+	t.Helper()
+	p, err := f.uploads.Save(october, []byte("jpeg"), "jpg")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func fileExists(f fixture, p string) bool {
+	_, err := os.Stat(filepath.Join(f.uploads.dir, filepath.FromSlash(strings.TrimPrefix(p, "/uploads/"))))
+	return err == nil
+}
+
+func gallery(items ...[2]string) []any {
+	out := make([]any, 0, len(items))
+	for _, it := range items {
+		out = append(out, map[string]any{"url": it[0], "alt": it[1]})
+	}
+	return out
+}
+
+func storedGallery(t *testing.T, f fixture, id string) string {
+	t.Helper()
+	var raw string
+	if err := f.db.Get(&raw, `SELECT gallery::text FROM rooms WHERE id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+func TestRoomGallerySeed(t *testing.T) {
+	f := newFixture(t)
+	byID := map[string]response{}
+	for _, r := range f.list(t) {
+		byID[r.ID] = r
+	}
+	want := []galleryResponse{
+		{"/images/room-vip-living.jpg", "VIP-номер: гостиная"},
+		{"/images/room-vip-bathroom.jpg", "VIP-номер: санузел"},
+		{"/images/room-vip-balcony.jpg", "VIP-номер: балкон"},
+	}
+	if got := byID["vip"].Gallery; !reflect.DeepEqual(got, want) {
+		t.Errorf("vip gallery = %+v, want %+v", got, want)
+	}
+	if got := byID["single"].Gallery; got == nil || len(got) != 0 {
+		t.Errorf("single gallery = %#v, want empty non-nil", got)
+	}
+	_, body := f.do(t, http.MethodGet, "/rooms", "", nil)
+	if strings.Count(body, `"gallery":[]`) != 4 || strings.Contains(body, `"gallery":null`) {
+		t.Errorf("raw JSON must have 4 empty galleries and no null: %s", body)
+	}
+}
+
+func TestUpdateRoomGallery(t *testing.T) {
+	f := newFixture(t)
+	a, b := uploadFile(t, f), uploadFile(t, f)
+	body := withField(validBody(), "gallery", gallery([2]string{b, "  Второе "}, [2]string{"/images/room-vip.jpg", "Первое"}))
+
+	code, got, _ := f.put(t, "single", body)
+	if code != http.StatusOK {
+		t.Fatalf("PUT status = %d", code)
+	}
+	want := []galleryResponse{{testBase + b, "Второе"}, {"/images/room-vip.jpg", "Первое"}}
+	if !reflect.DeepEqual(got.Gallery, want) {
+		t.Errorf("response gallery = %+v, want %+v", got.Gallery, want)
+	}
+	wantRaw := `[{"alt": "Второе", "url": "` + b + `"}, {"alt": "Первое", "url": "/images/room-vip.jpg"}]`
+	if raw := storedGallery(t, f, "single"); raw != wantRaw {
+		t.Errorf("stored gallery = %s, want %s", raw, wantRaw)
+	}
+	if again := f.list(t)[2].Gallery; !reflect.DeepEqual(again, want) {
+		t.Errorf("GET gallery = %+v, want %+v", again, want)
+	}
+	if !fileExists(f, a) {
+		t.Error("an unrelated upload was removed")
+	}
+}
+
+func TestUpdateRoomGalleryMissing(t *testing.T) {
+	f := newFixture(t)
+	for _, g := range []any{nil, "missing"} {
+		body := validBody()
+		if g != "missing" {
+			body["gallery"] = g
+		}
+		code, got, _ := f.put(t, "vip", body)
+		if code != http.StatusOK {
+			t.Fatalf("PUT status = %d", code)
+		}
+		if got.Gallery == nil || len(got.Gallery) != 0 {
+			t.Errorf("response gallery = %#v, want empty non-nil", got.Gallery)
+		}
+		if raw := storedGallery(t, f, "vip"); raw != "[]" {
+			t.Errorf("stored gallery = %s, want []", raw)
+		}
+	}
+}
+
+func TestUpdateRoomGalleryTooMany(t *testing.T) {
+	f := newFixture(t)
+	items := make([][2]string, 13)
+	for i := range items {
+		items[i] = [2]string{"/images/room-vip.jpg", "x"}
+	}
+	code, _, bad := f.put(t, "vip", withField(validBody(), "gallery", gallery(items...)))
+	if code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", code)
+	}
+	if _, ok := bad.Fields["gallery"]; !ok {
+		t.Errorf("errors = %v, want field gallery", bad.Fields)
+	}
+	if n := len(f.list(t)[0].Gallery); n != 3 {
+		t.Errorf("a rejected request changed the gallery: %d items", n)
+	}
+
+	items = items[:12]
+	if code, _, bad := f.put(t, "vip", withField(validBody(), "gallery", gallery(items...))); code != http.StatusOK {
+		t.Errorf("12 items: status = %d, %+v", code, bad)
+	}
+}
+
+func TestUpdateRoomGalleryBadURL(t *testing.T) {
+	f := newFixture(t)
+	body := withField(validBody(), "gallery", gallery(
+		[2]string{"https://evil.example/a.jpg", "x"},
+		[2]string{"/images/room-vip.jpg", strings.Repeat("я", 201)},
+		[2]string{"", "x"},
+		[2]string{"/images/ok.jpg", "x"},
+	))
+	code, _, bad := f.put(t, "vip", body)
+	if code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", code)
+	}
+	want := map[string]string{
+		"gallery[0].url": "недопустимый адрес фото",
+		"gallery[2].url": "поле не должно быть пустым",
+	}
+	for k, v := range want {
+		if bad.Fields[k] != v {
+			t.Errorf("errors[%s] = %q, want %q (all: %v)", k, bad.Fields[k], v, bad.Fields)
+		}
+	}
+	if _, ok := bad.Fields["gallery[1].alt"]; !ok {
+		t.Errorf("errors = %v, want gallery[1].alt", bad.Fields)
+	}
+	if _, ok := bad.Fields["gallery[3].url"]; ok {
+		t.Errorf("valid item reported: %v", bad.Fields)
+	}
+	if n := len(f.list(t)[0].Gallery); n != 3 {
+		t.Errorf("a rejected request changed the gallery: %d items", n)
+	}
+}
+
+func TestUpdateRoomGalleryRemovesFiles(t *testing.T) {
+	f := newFixture(t)
+	a, b := uploadFile(t, f), uploadFile(t, f)
+
+	if code, _, bad := f.put(t, "vip", withField(validBody(), "gallery", gallery([2]string{a, ""}, [2]string{b, ""}))); code != http.StatusOK {
+		t.Fatalf("PUT [a, b]: status = %d, %+v", code, bad)
+	}
+	if !fileExists(f, a) || !fileExists(f, b) {
+		t.Fatal("gallery files are gone after saving them")
+	}
+
+	if code, _, _ := f.put(t, "vip", withField(validBody(), "gallery", gallery([2]string{b, ""}))); code != http.StatusOK {
+		t.Fatalf("PUT [b]: status = %d", code)
+	}
+	if fileExists(f, a) {
+		t.Error("the file dropped from the gallery was not removed")
+	}
+	if !fileExists(f, b) {
+		t.Fatal("the file kept in the gallery was removed")
+	}
+
+	body := withField(withPhoto(validBody(), "url", b), "gallery", gallery())
+	if code, _, _ := f.put(t, "vip", body); code != http.StatusOK {
+		t.Fatalf("PUT photo = b: status = %d", code)
+	}
+	if !fileExists(f, b) {
+		t.Error("the file moved from the gallery to the photo was removed")
+	}
+
+	// The old photo upload goes when the gallery takes a site image instead, and a site path is never removed.
+	body = withField(validBody(), "gallery", gallery([2]string{"/images/room-vip.jpg", ""}))
+	if code, _, _ := f.put(t, "vip", body); code != http.StatusOK {
+		t.Fatalf("PUT site image: status = %d", code)
+	}
+	if fileExists(f, b) {
+		t.Error("the old photo upload was not removed")
+	}
+}
+
+func TestGalleryValue(t *testing.T) {
+	var nilGallery Gallery
+	v, err := nilGallery.Value()
+	if err != nil || v != "[]" {
+		t.Errorf("nil Value = %v, %v; want []", v, err)
+	}
+	v, err = Gallery{{URL: "/a", Alt: "б"}}.Value()
+	if err != nil || v != `[{"url":"/a","alt":"б"}]` {
+		t.Errorf("Value = %v, %v", v, err)
+	}
+}
+
+func TestGalleryScan(t *testing.T) {
+	tests := []struct {
+		name    string
+		src     any
+		want    Gallery
+		wantErr bool
+	}{
+		{"bytes", []byte(`[{"url":"/a","alt":"x"}]`), Gallery{{"/a", "x"}}, false},
+		{"string", `[{"url":"/a","alt":"x"}]`, Gallery{{"/a", "x"}}, false},
+		{"json null", []byte(`null`), Gallery{}, false},
+		{"sql null", nil, Gallery{}, false},
+		{"bad json", []byte(`{`), nil, true},
+		{"bad type", 42, nil, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var g Gallery
+			err := g.Scan(tt.src)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !tt.wantErr && !reflect.DeepEqual(g, tt.want) {
+				t.Errorf("Scan = %#v, want %#v", g, tt.want)
+			}
+		})
 	}
 }

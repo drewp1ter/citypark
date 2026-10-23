@@ -819,6 +819,11 @@ Returns the five hotel room types with their texts, price per night and photo, o
     "description": "<p>Гостиная и спальня, расширенная комплектация, балкон над кронами парка.</p>",
     "pricePerNight": 8000,
     "photo": { "url": "/images/room-vip.jpg", "alt": "VIP-номер", "position": "" },
+    "gallery": [
+      { "url": "/images/room-vip-living.jpg", "alt": "VIP-номер: гостиная" },
+      { "url": "/images/room-vip-bathroom.jpg", "alt": "VIP-номер: санузел" },
+      { "url": "/images/room-vip-balcony.jpg", "alt": "VIP-номер: балкон" }
+    ],
     "hotelNote": "№ 301 · до 4 гостей",
     "updatedAt": "2026-10-22T21:15:35.527937Z"
   },
@@ -836,6 +841,7 @@ Returns the five hotel room types with their texts, price per night and photo, o
     "description": "",
     "pricePerNight": 4000,
     "photo": { "url": "/images/room-single.jpg", "alt": "Одноместный номер", "position": "right center" },
+    "gallery": [],
     "hotelNote": "№ 204, 304 · двуспальная",
     "updatedAt": "2026-10-22T21:15:35.527937Z"
   }
@@ -846,7 +852,7 @@ The example shows two of the five items.
 
 **Notes**
 
-The five room ids are fixed (the same as in `GET /hotel/rooms`): there is no way to add or remove a room type. `pricePerNight` is rubles for one night, the same all year. `summary` — одна-две фразы для карточки на сайте, простой текст, до 200 символов; `description` — полный текст (HTML). Optional texts that were never filled in are empty strings, not `null`. `description` is HTML with `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li`; anything else is removed on save. Plain texts use normal spaces; the site adds non-breaking spaces itself. `photo.url` is either a site path (`/images/...`) or an uploaded image: an uploaded image comes back as a full URL (the server's public base URL plus `/uploads/...`).
+The five room ids are fixed (the same as in `GET /hotel/rooms`): there is no way to add or remove a room type. `pricePerNight` is rubles for one night, the same all year. `summary` — одна-две фразы для карточки на сайте, простой текст, до 200 символов; `description` — полный текст (HTML). Optional texts that were never filled in are empty strings, not `null`. `description` is HTML with `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li`; anything else is removed on save. Plain texts use normal spaces; the site adds non-breaking spaces itself. `gallery` — дополнительные фото для страницы номера, в заданном порядке; `photo` остаётся главным фото карточки. `gallery` is always an array (`[]` when empty, never `null`); `gallery[].url` follows the same rules as `photo.url` (an uploaded image comes back as a full URL). `photo.url` is either a site path (`/images/...`) or an uploaded image: an uploaded image comes back as a full URL (the server's public base URL plus `/uploads/...`).
 
 #### PUT /rooms/{id}
 
@@ -877,9 +883,12 @@ Replaces all the editable fields of one room type. The room price is edited only
 | `photo.url` | string | yes | a site path `/images/...`, an uploaded image (`/uploads/...` or the full URL that `POST /uploads` returned) |
 | `photo.alt` | string | no | at most 200 characters |
 | `photo.position` | string | no | `""` or `«X% Y%»` with X and Y from 0 to 100, for example `50% 30%` |
+| `gallery` | array | no | at most 12 items; `url` as in `photo.url`; `alt` at most 200 characters; a missing field or `null` is stored as `[]` |
+| `gallery[].url` | string | yes | a site path `/images/...`, an uploaded image (`/uploads/...` or the full URL that `POST /uploads` returned) |
+| `gallery[].alt` | string | no | at most 200 characters |
 | `hotelNote` | string | no | at most 100 characters |
 
-Surrounding spaces of the plain-text fields are removed before the checks. `id`, `kind`, `balcony` and `updatedAt` are not accepted: they cannot be changed.
+The gallery replaces the old one as a whole: send every photo you want to keep, in the order to show. Uploaded files that are no longer used by `photo` or `gallery` are deleted from the server. Surrounding spaces of the plain-text fields are removed before the checks. `id`, `kind`, `balcony` and `updatedAt` are not accepted: they cannot be changed.
 
 ```json
 {
@@ -893,6 +902,10 @@ Surrounding spaces of the plain-text fields are removed before the checks. `id`,
   "description": "<p>Описание</p>",
   "pricePerNight": 5200,
   "photo": { "url": "/images/room-single.jpg", "alt": "Номер", "position": "50% 30%" },
+  "gallery": [
+    { "url": "/images/room-vip-living.jpg", "alt": "Гостиная" },
+    { "url": "/images/room-vip-balcony.jpg", "alt": "Балкон" }
+  ],
   "hotelNote": "№ 1, 2 · кровать"
 }
 ```
@@ -916,6 +929,10 @@ The room as in `GET /rooms`, with the stored values.
   "description": "<p>Описание</p>",
   "pricePerNight": 5200,
   "photo": { "url": "/images/room-single.jpg", "alt": "Номер", "position": "50% 30%" },
+  "gallery": [
+    { "url": "/images/room-vip-living.jpg", "alt": "Гостиная" },
+    { "url": "/images/room-vip-balcony.jpg", "alt": "Балкон" }
+  ],
   "hotelNote": "№ 1, 2 · кровать",
   "updatedAt": "2026-10-22T21:15:51.390535Z"
 }
@@ -929,6 +946,9 @@ The room as in `GET /rooms`, with the stored values.
 | 400 | a field is missing, blank, too long or out of range | validation message, see `errors` (keys look like `name`, `pricePerNight`, `photo.url`) |
 | 400 | `pricePerNight` has more than 2 decimals | `errors.pricePerNight`: `не более 2 знаков после запятой` |
 | 400 | `photo.url` is not a site path or an uploaded image | `errors.photo.url`: `недопустимый адрес фото` |
+| 400 | more than 12 `gallery` items | `errors.gallery`: `значение должно быть не больше 12` |
+| 400 | a `gallery` item has no `url`, or its `alt` is too long | `errors["gallery[0].url"]`: `поле не должно быть пустым`; `errors["gallery[0].alt"]`: `значение должно быть не больше 200` |
+| 400 | `gallery[].url` is not a site path or an uploaded image | `errors["gallery[0].url"]`: `недопустимый адрес фото` (the number is the 0-based index of the item) |
 | 400 | `photo.position` is not `""` or `«X% Y%»` | `errors.photo.position`: `формат «50% 30%»` |
 | 400 | `description` has more than 1000 characters of visible text | `errors.description`: `не более 1000 символов` |
 | 401 | no token or invalid token | `Требуется авторизация` |

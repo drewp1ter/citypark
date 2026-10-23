@@ -658,9 +658,19 @@ components:
           type: string
           description: Empty, or a CSS object-position of the form `50% 30%`.
           example: ''
+    RoomGalleryPhoto:
+      type: object
+      required: [url, alt]
+      properties:
+        url:
+          type: string
+          example: /images/room-vip-living.jpg
+        alt:
+          type: string
+          example: 'VIP-номер: гостиная'
     Room:
       type: object
-      required: [id, kind, balcony, name, hotelName, numbers, area, areaDetailed, capacity, summary, description, pricePerNight, photo, hotelNote, updatedAt]
+      required: [id, kind, balcony, name, hotelName, numbers, area, areaDetailed, capacity, summary, description, pricePerNight, photo, gallery, hotelNote, updatedAt]
       properties:
         id:
           type: string
@@ -702,6 +712,11 @@ components:
           example: 8000
         photo:
           $ref: '#/components/schemas/RoomPhoto'
+        gallery:
+          type: array
+          description: Extra photos for the room page, in display order. Always an array, empty when there are none.
+          items:
+            $ref: '#/components/schemas/RoomGalleryPhoto'
         hotelNote:
           type: string
           example: '№ 301 · до 4 гостей'
@@ -755,6 +770,20 @@ components:
               type: string
               description: Empty, or `X% Y%` with X and Y from 0 to 100.
               example: 50% 30%
+        gallery:
+          type: array
+          maxItems: 12
+          description: Extra photos in display order. A missing field or `null` is stored as an empty array.
+          items:
+            type: object
+            required: [url]
+            properties:
+              url:
+                type: string
+                description: A site path (`/images/...`) or an uploaded image (`/uploads/...` or its full URL).
+              alt:
+                type: string
+                maxLength: 200
         hotelNote:
           type: string
           maxLength: 100
