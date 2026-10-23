@@ -42,4 +42,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - Owner: check the offer is current (domain cityparkvip.ru, payment methods) and send the classification certificate if it changed.
 - [x] 22 3D tours from the old site
   - `public/tour` is 46M (`du -sh`): the owner can decide later whether to move it to a CDN.
-- [ ] 23 Full-size room photos and hotel texts from the old site [20] (needs citypark-go task 55)
+- [x] 23 Full-size room photos and hotel texts from the old site [20] (needs citypark-go task 55)
