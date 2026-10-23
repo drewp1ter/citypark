@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { PageContent } from '../model/types'
+import type { PageContent } from '@/entities/content'
 import { delivery, type Dish, type MenuCategory } from '@/entities/dish'
 import { AddToCartButton } from '@/features/add-to-cart'
 import { formatPrice } from '@/shared/lib'

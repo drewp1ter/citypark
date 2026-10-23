@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 import Image from 'next/image'
-import type { PageContent } from '../model/types'
+import type { PageContent } from '@/entities/content'
 import { delivery } from '@/entities/dish'
 import { minPricePerNight, type Room } from '@/entities/room'
 import { site } from '@/shared/config'

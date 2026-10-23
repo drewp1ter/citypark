@@ -6,14 +6,14 @@ import { AppLink } from '@/shared/ui'
 const ORDER = ['single-balcony', 'single', 'double-twin', 'double-euro', 'vip']
 
 /** Price list of the room types: a table row on desktop, a two-line row on mobile. */
-export function RoomFund({ rooms }: { rooms: readonly Room[] }) {
+export function RoomFund({ heading, rooms }: { heading: string; rooms: readonly Room[] }) {
 	const sorted = ORDER.flatMap((id) => rooms.filter((room) => room.id === id))
 
 	return (
 		<section className='max-w-page mx-auto w-full px-3 pt-11 md:px-6 md:pt-[104px]'>
 			<div className='mb-3 flex items-end justify-between gap-4 md:mb-6'>
 				<h2 className='heading mx-1.5 text-[26px] tracking-[-0.02em] md:mx-0 md:text-5xl md:tracking-[-0.03em]'>
-					Номерной фонд
+					{heading}
 				</h2>
 				<AppLink href='/rooms' className='tap-area font-semibold max-md:hidden'>
 					Фото и бронь ↗

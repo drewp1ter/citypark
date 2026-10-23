@@ -1,4 +1,5 @@
-import { getHotelPrices, getQuickFacts, getRoomAmenities } from '@/entities/hotel'
+import { getPageContent } from '@/entities/content'
+import { getHotelPrices } from '@/entities/hotel'
 import { getRoomAvailability, getRooms, type Room } from '@/entities/room'
 import { StayDatesBar } from '@/features/search-rooms'
 import { site } from '@/shared/config'
@@ -6,9 +7,6 @@ import { cn, fillPlaceholders, plural } from '@/shared/lib'
 import { AppLink, Breadcrumbs, Button, Chip, cardClass, Section } from '@/shared/ui'
 import { roomsHref, type RoomsQuery, type RoomType } from '../model/query'
 import { RoomCard } from './room-card'
-
-// "В каждом номере" is shorter on mobile in the design.
-const mobileAmenities = ['Сплит-система', 'Smart TV', 'Сейф', 'Холодильник', 'Душ и фен', 'Wi-Fi 0 ₽']
 
 const filters: { type: RoomType; label: string }[] = [
 	{ type: 'single', label: 'Одноместные' },
@@ -27,7 +25,7 @@ const chipLi = 'rounded-pill bg-bg px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-b
 
 /** The rooms page: search bar, filters, the room cards, what every room has, and the phone numbers. */
 export async function RoomsPage({ query }: { query: RoomsQuery }) {
-	const [rooms, availability, amenities, quickFacts, prices] = await Promise.all([
+	const [rooms, availability, content, prices] = await Promise.all([
 		getRooms(),
 		getRoomAvailability({
 			checkIn: query.checkIn,
@@ -37,10 +35,14 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 			console.error(error)
 			return null
 		}),
-		getRoomAmenities(),
-		getQuickFacts(),
+		getPageContent('hotel'),
 		getHotelPrices(),
 	])
+
+	const amenities = content.lines('hotel.amenities')
+	const mobileAmenities = content.lines('hotel.amenities-mobile')
+	const quickFacts = content.lines('hotel.quick-facts')
+	const values = { smokingFine: prices.smokingFine }
 
 	const visible = rooms.filter(
 		(room) =>
@@ -140,7 +142,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 
 			<Section className='grid gap-2 pt-10 md:grid-cols-3 md:gap-3 md:pt-[104px]'>
 				<div className={cardClass('surface', 'rounded-lg p-5 md:col-span-2 md:rounded-xl md:p-9')}>
-					<h2 className='heading mb-3 text-[22px] md:mb-5 md:text-4xl'>В каждом номере</h2>
+					<h2 className='heading mb-3 text-[22px] md:mb-5 md:text-4xl'>{content.text('hotel.amenities-heading')}</h2>
 					<ul className='hidden flex-wrap gap-2 md:flex'>
 						{amenities.map((item) => (
 							<li
@@ -164,10 +166,10 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 				</div>
 
 				<div className={cardClass('inverse', 'hidden gap-2.5 rounded-xl p-9 md:flex')}>
-					<h2 className='heading mb-1.5 text-[26px]'>Коротко</h2>
+					<h2 className='heading mb-1.5 text-[26px]'>{content.text('hotel.quick-facts-heading')}</h2>
 					{quickFacts.map((fact, index) => (
 						<p key={fact} className={index === quickFacts.length - 1 ? 'text-inverse-muted' : undefined}>
-							{fillPlaceholders(fact, prices)}
+							{fillPlaceholders(fact, values)}
 						</p>
 					))}
 					<AppLink href='/hotel' className='tap-area text-accent mt-auto font-semibold underline'>

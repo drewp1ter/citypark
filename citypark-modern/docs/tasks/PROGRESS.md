@@ -30,8 +30,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 13 Room prices from one place
 - [x] 14 Hotel prices as numbers
 - [x] 15 Content blocks, part 1: the entity and the home page [13, 14]
-- [ ] 16 Content blocks, part 2: the hotel and rooms pages [15]
-  - Also move `pages/home/{api,model}` content code into `entities/content` (Steiger forbids the entity while only one page uses it; task 15 kept it in the page).
+- [x] 16 Content blocks, part 2: the hotel and rooms pages [15]
+  - `blocks.data.ts` has 101 entries (46 home + 55 hotel). The content code now lives in `entities/content`.
 - [ ] 17 Rooms from the backend [13, 15] (needs citypark-go tasks 45, 48)
 - [ ] 18 News from the backend [12, 17] (needs citypark-go task 49)
 - [ ] 19 Site settings from the backend [17] (needs citypark-go task 51)

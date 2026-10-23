@@ -1,10 +1,10 @@
-import type { GuestDocument, GuestInfoSection } from '@/entities/hotel'
-import { AccordionItem, AppLink, cardClass } from '@/shared/ui'
+import type { GuestDocument } from '@/entities/hotel'
+import { AccordionItem, AppLink, cardClass, RichText } from '@/shared/ui'
 import { emptySectionText } from '../model/content'
+import type { GuestInfoCopy } from '../model/types'
 
 type GuestInfoProps = {
-	intro: string
-	sections: readonly GuestInfoSection[]
+	copy: GuestInfoCopy
 	documents: readonly GuestDocument[]
 }
 
@@ -28,24 +28,24 @@ function DocumentCard({ document }: { document: GuestDocument }) {
 }
 
 /** "Информация для гостей" (accordion) and the document list (PDF). */
-export function GuestInfo({ intro, sections, documents }: GuestInfoProps) {
+export function GuestInfo({ copy, documents }: GuestInfoProps) {
 	return (
 		<section
 			id='info'
 			className='max-w-page mx-auto grid w-full items-start gap-3 px-3 pt-11 pb-6 max-md:hidden md:px-6 md:pt-[104px] lg:grid-cols-3'
 		>
 			<div className={cardClass('surface', 'rounded-lg p-5 md:rounded-xl md:p-8 lg:col-span-2')}>
-				<h2 className='font-display mb-1 text-[22px] font-medium md:text-[30px]'>Информация для гостей</h2>
-				<p className='text-text-muted mb-4 text-sm'>{intro}</p>
+				<h2 className='font-display mb-1 text-[22px] font-medium md:text-[30px]'>{copy.heading}</h2>
+				<p className='text-text-muted mb-4 text-sm'>{copy.intro}</p>
 				<div>
-					{sections.map((section, index) => (
+					{copy.sections.map((section, index) => (
 						<AccordionItem
 							key={section.title}
 							title={section.title}
 							defaultOpen={index === 0}
 							className='border-divider border-t'
 						>
-							{section.text ?? emptySectionText}
+							{section.html ? <RichText html={section.html} variant='short' /> : emptySectionText}
 						</AccordionItem>
 					))}
 				</div>

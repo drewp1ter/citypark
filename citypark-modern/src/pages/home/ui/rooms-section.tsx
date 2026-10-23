@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { PageContent } from '../model/types'
+import type { PageContent } from '@/entities/content'
 import { hasPriceRange, minPricePerNight, type Room } from '@/entities/room'
 import { StayDatesBar } from '@/features/search-rooms'
 import { formatPrice, typo } from '@/shared/lib'

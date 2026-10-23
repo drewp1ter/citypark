@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { PageContent } from '../model/types'
+import type { PageContent } from '@/entities/content'
 import { TableBookingForm } from '@/features/book-table'
 import { AppLink, Button, Card, cardClass, Section } from '@/shared/ui'
 
