@@ -23,7 +23,7 @@ stop if that task is not ticked.
 ## Content
 - [x] 11 Rooms [08, 10] (needs citypark-go task 48)
 - [x] 12 News [11] (needs citypark-go task 49)
-- [ ] 13 Page content (home and hotel) [08, 10] (needs citypark-go tasks 50, 54)
+- [x] 13 Page content (home and hotel) [08, 10] (needs citypark-go tasks 50, 54)
 - [ ] 14 Site settings (contacts) [11] (needs citypark-go task 51)
 - [ ] 15 Hotel prices [14] (needs citypark-go task 52)
 

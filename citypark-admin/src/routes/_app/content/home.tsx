@@ -1,11 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { PageHeader } from '../../../shared/ui/page-header'
+import { PageContent } from '../../../features/page-content/ui/page-content'
 
 export const Route = createFileRoute('/_app/content/home')({
-	component: () => (
-		<>
-			<PageHeader title='Главная' />
-			<p className='text-muted'>Раздел в разработке</p>
-		</>
-	),
+	component: () => <PageContent page='home' />,
 })
