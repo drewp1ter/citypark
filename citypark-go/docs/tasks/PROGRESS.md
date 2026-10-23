@@ -79,3 +79,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 53 Hotel reports from 1C [31]
   - Owner to do: with real `ONEC_*` values run `curl -s -H "Authorization: Bearer $ADMIN_TOKEN" 'localhost:3000/api/v1/reports/hotel/sales?from=2026-10-01&to=2026-10-21'` and paste the output here; if the real 1C field names differ from the task table, fix the structs in `internal/onec/client.go`.
 - [x] 54 Content block rows for the home and hotel pages [50] (needs citypark-modern task 16)
+
+## Content from the old site
+- [x] 55 Hotel guest information and room texts from the old site [48, 54]
+  - Owner: confirm the guest information is current (rules ПП № 1085 are from 2015, the category certificate in the old text expired in 2019).
+  - Assertions in `internal/content/seed_test.go` and `internal/room/room_test.go` were updated for the filled texts (approved by the owner).

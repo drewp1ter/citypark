@@ -163,7 +163,8 @@ func TestSeed(t *testing.T) {
 	if vip.Kind != "vip" || !vip.Balcony || vip.Numbers != "№ 301" || vip.Photo.URL != "/images/room-vip.jpg" {
 		t.Errorf("vip = %+v", vip)
 	}
-	if rooms[1].Description != "" || rooms[2].Photo.Position != "right center" {
+	// Descriptions were filled from the old site by migration 00011 (they were empty before).
+	if !strings.HasPrefix(rooms[1].Description, "<p>Одноместный номер") || rooms[2].Photo.Position != "right center" {
 		t.Errorf("seed rows: single-balcony description %q, single position %q", rooms[1].Description, rooms[2].Photo.Position)
 	}
 	for i, price := range []float64{8000, 4500, 4000, 4500, 4500} {

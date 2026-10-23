@@ -79,9 +79,11 @@ func TestSeedBlocks(t *testing.T) {
 		t.Errorf("hotel.rules.2.text = %v", rich)
 	}
 
-	empty := byKey["hotel.guest-info.2.text"]
-	if empty["type"] != "richtext" || empty["value"] != "" {
-		t.Errorf("hotel.guest-info.2.text = %v, want an empty richtext", empty)
+	// Filled from the old site by migration 00011 (it was an empty richtext before).
+	guest := byKey["hotel.guest-info.2.text"]
+	if guest["type"] != "richtext" || guest["maxLength"] != float64(6000) ||
+		!strings.HasPrefix(guest["value"].(string), "<ul>\n<li>«Люкс»* — 8 000 ₽</li>") {
+		t.Errorf("hotel.guest-info.2.text = %v, want the filled richtext", guest)
 	}
 }
 
