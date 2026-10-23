@@ -3,22 +3,9 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="robots" content="noindex" />
 		<title>Сити Парк — админка</title>
-		<script>
-			// Set the theme before first paint to avoid a flash.
-			;(function () {
-				var theme = null
-				try {
-					theme = localStorage.getItem('citypark-admin-theme')
-				} catch (e) {}
-				if (theme !== 'light' && theme !== 'dark') {
-					theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-				}
-				var root = document.documentElement
-				root.classList.toggle('dark', theme === 'dark')
-				root.setAttribute('data-theme', theme)
-			})()
-		</script>
+		<script src="/theme-init.js"></script>
 	</head>
 	<body>
 		<div id="root"></div>

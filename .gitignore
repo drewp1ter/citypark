@@ -3,3 +3,4 @@
 .vscode/
 *.log
 .claude/settings.local.json
+.task-logs/

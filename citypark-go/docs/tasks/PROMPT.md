@@ -33,8 +33,9 @@ How to work:
    Also run any extra command the task lists under "Done when".
 7. Tick the task in docs/tasks/PROGRESS.md and make one commit named "task {{NN}}: <task title>".
 
-Database tests need PostgreSQL on port 5433. Start it with: make db-test-up
-If it cannot be started, stop and tell me. Do not skip the database tests and do not replace the database with a mock.
+Database tests use the TEST_DB_DSN from .env.development. Load it before running tests: set -a; source .env.development; set +a
+Do not run make db-up, make db-test-up, make test or docker: PostgreSQL is already running outside this environment.
+If it is not reachable, stop and ask me to start it. Do not skip the database tests and do not replace the database with a mock.
 
 Stop and ask me instead of guessing when:
 - the task contradicts CONVENTIONS.md or code from an earlier task;

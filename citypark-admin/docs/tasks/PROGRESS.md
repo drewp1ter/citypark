@@ -30,3 +30,4 @@ stop if that task is not ticked.
 ## Reports and shipping
 - [x] 16 Hotel reports [03] (needs citypark-go task 53)
 - [ ] 17 Docker image and deployment notes [16]
+  - BLOCKED: files are written (Dockerfile, nginx/, .dockerignore, README, public/theme-init.js) and `npm run check` + `npm run build` pass, but `docker` is not installed here and the backend is not running, so the image build, the CSP check on pages 04–16 and e2e were not run. Needs the user: run the manual check, note the image size here, tick, commit.

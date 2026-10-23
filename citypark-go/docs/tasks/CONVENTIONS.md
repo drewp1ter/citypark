@@ -58,7 +58,7 @@ Module path: `github.com/drewp1ter/citypark-go`. A feature package has `store.go
 
 ## Test rules
 
-- Database tests call `testutil.NewDB(t)` (task 08). It returns a migrated, empty database. The DSN comes from `TEST_DB_DSN`, default `postgres://postgres:postgres@127.0.0.1:5433/test?sslmode=disable`. Start it with `make db-test-up`.
+- Database tests call `testutil.NewDB(t)` (task 08). It returns a migrated, empty database. The DSN comes from `TEST_DB_DSN`, set in `.env.development` (load it with `set -a; source .env.development; set +a`). Do not start the database yourself (no `make db-test-up`, `make test` or `docker`); if it is not reachable, stop and ask the user to start it.
 - All packages share that one database, so always run tests with `-p 1` and never call `t.Parallel()` in a test that uses the database.
 - HTTP handlers are tested through a `chi.NewRouter()` with the handler's `Routes`, using `testutil.DoJSON`.
 - External services (iiko, Telegram) are faked with `httptest.NewServer`; clients take a base URL. Moneta needs no fake: the backend never calls it, it only computes and checks signatures.

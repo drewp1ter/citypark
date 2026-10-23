@@ -25,7 +25,7 @@ cp .env.example .env              # once
 make db-up && make seed && make run   # dev DB on :5432, server on :3000
 make test                         # starts the test DB on :5433, runs go test -p 1 ./...
 make lint                         # gofmt -l . && go vet ./...
-# single test (test DB must be up: make db-test-up)
+# single test (agents: never start the DB; use TEST_DB_DSN from .env.development, ask the user if it is down)
 set -a; source .env.development; set +a; go test -p 1 -run TestName ./internal/order/
 ```
 
