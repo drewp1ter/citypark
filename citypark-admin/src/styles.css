@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+@import '@heroui/styles';
+
+/*
+ * Brand accent, defined once: lime from citypark-modern/design/tokens.css with dark text on it.
+ * HeroUI derives hover and soft variants from --accent, so this is the only place to change it.
+ */
+:root,
+.light,
+[data-theme='light'],
+.dark,
+[data-theme='dark'] {
+	--accent: #d6f24a;
+	--accent-foreground: #111111;
+}
+
+@custom-variant dark (&:is(.dark *));

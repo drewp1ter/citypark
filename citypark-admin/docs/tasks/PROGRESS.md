@@ -5,7 +5,7 @@ tasks it depends on. A task that needs a citypark-go task says so; check `../cit
 stop if that task is not ticked.
 
 ## Foundation
-- [ ] 01 Project scaffold
+- [x] 01 Project scaffold
 - [ ] 02 Typed API client and token storage [01]
 - [ ] 03 Sign-in, access guard and app shell [02]
 

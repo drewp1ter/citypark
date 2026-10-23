@@ -1,0 +1,9 @@
+node_modules
+dist
+playwright-report
+test-results
+package-lock.json
+src/routeTree.gen.ts
+src/shared/api/schema.d.ts
+docs
+CLAUDE.md
