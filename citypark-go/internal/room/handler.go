@@ -57,6 +57,7 @@ type updateRequest struct {
 	Area          string     `json:"area" validate:"required,max=100"`
 	AreaDetailed  string     `json:"areaDetailed" validate:"max=100"`
 	Capacity      string     `json:"capacity" validate:"max=100"`
+	Summary       string     `json:"summary" validate:"max=200"`
 	Description   string     `json:"description"`
 	PricePerNight float64    `json:"pricePerNight" validate:"required,gt=0,max=1000000"`
 	Photo         photoInput `json:"photo"`
@@ -79,6 +80,7 @@ type response struct {
 	Area          string        `json:"area"`
 	AreaDetailed  string        `json:"areaDetailed"`
 	Capacity      string        `json:"capacity"`
+	Summary       string        `json:"summary"`
 	Description   string        `json:"description"`
 	PricePerNight money.Kopecks `json:"pricePerNight"`
 	Photo         photoResponse `json:"photo"`
@@ -99,7 +101,7 @@ func (h *Handler) response(r Room) response {
 	return response{
 		ID: r.ID, Kind: r.Kind, Balcony: r.Balcony, Name: r.Name, HotelName: r.HotelName,
 		Numbers: r.Numbers, Area: r.Area, AreaDetailed: r.AreaDetailed, Capacity: r.Capacity,
-		Description: r.Description, PricePerNight: r.Price,
+		Summary: r.Summary, Description: r.Description, PricePerNight: r.Price,
 		Photo:     photoResponse{URL: h.uploads.Public(r.PhotoURL), Alt: r.PhotoAlt, Position: r.PhotoPosition},
 		HotelNote: r.HotelNote, UpdatedAt: r.UpdatedAt,
 	}
@@ -197,7 +199,7 @@ func (h *Handler) check(req updateRequest) (Room, error) {
 	}
 	return Room{
 		Name: req.Name, HotelName: req.HotelName, Numbers: req.Numbers, Area: req.Area,
-		AreaDetailed: req.AreaDetailed, Capacity: req.Capacity, Description: description,
+		AreaDetailed: req.AreaDetailed, Capacity: req.Capacity, Summary: req.Summary, Description: description,
 		Price:    money.FromRubles(req.PricePerNight),
 		PhotoURL: photoURL, PhotoAlt: req.Photo.Alt, PhotoPosition: req.Photo.Position,
 		HotelNote: req.HotelNote,

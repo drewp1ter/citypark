@@ -79,9 +79,9 @@ func restoreRooms(t *testing.T, db *sqlx.DB) {
 		for _, r := range before {
 			_, err := db.Exec(`UPDATE rooms SET name = $2, hotel_name = $3, numbers = $4, area = $5, area_detailed = $6,
 				capacity = $7, description = $8, price_kopecks = $9, photo_url = $10, photo_alt = $11,
-				photo_position = $12, hotel_note = $13, updated_at = $14 WHERE id = $1`,
+				photo_position = $12, hotel_note = $13, updated_at = $14, summary = $15 WHERE id = $1`,
 				r.ID, r.Name, r.HotelName, r.Numbers, r.Area, r.AreaDetailed, r.Capacity, r.Description,
-				int64(r.Price), r.PhotoURL, r.PhotoAlt, r.PhotoPosition, r.HotelNote, r.UpdatedAt)
+				int64(r.Price), r.PhotoURL, r.PhotoAlt, r.PhotoPosition, r.HotelNote, r.UpdatedAt, r.Summary)
 			if err != nil {
 				t.Errorf("restore room %s: %v", r.ID, err)
 			}
@@ -553,5 +553,72 @@ func TestValidPosition(t *testing.T) {
 		if got := validPosition(tt.in); got != tt.want {
 			t.Errorf("validPosition(%q) = %v, want %v", tt.in, got, tt.want)
 		}
+	}
+}
+
+const vipSummary = "Гостиная и спальня, расширенная комплектация, балкон над кронами парка."
+
+func TestRoomSummarySeed(t *testing.T) {
+	f := newFixture(t)
+	byID := map[string]response{}
+	for _, r := range f.list(t) {
+		byID[r.ID] = r
+	}
+	if got := byID["vip"].Summary; got != vipSummary {
+		t.Errorf("vip summary = %q, want %q", got, vipSummary)
+	}
+	if got := byID["single"].Summary; got != "" {
+		t.Errorf("single summary = %q, want empty", got)
+	}
+}
+
+func TestUpdateRoomSummary(t *testing.T) {
+	f := newFixture(t)
+	code, got, _ := f.put(t, "vip", withField(validBody(), "summary", "Кратко о номере"))
+	if code != http.StatusOK {
+		t.Fatalf("PUT status = %d", code)
+	}
+	if got.Summary != "Кратко о номере" {
+		t.Errorf("response summary = %q", got.Summary)
+	}
+	var stored string
+	if err := f.db.Get(&stored, `SELECT summary FROM rooms WHERE id = 'vip'`); err != nil || stored != "Кратко о номере" {
+		t.Errorf("stored summary = %q, err %v", stored, err)
+	}
+}
+
+func TestUpdateRoomSummaryTooLong(t *testing.T) {
+	f := newFixture(t)
+	// 200 Cyrillic letters are 400 bytes: this passes only if the validator counts runes.
+	code, _, _ := f.put(t, "vip", withField(validBody(), "summary", strings.Repeat("я", 200)))
+	if code != http.StatusOK {
+		t.Fatalf("200 characters: status = %d, want 200", code)
+	}
+	if _, err := f.db.Exec(`UPDATE rooms SET summary = $1 WHERE id = 'vip'`, vipSummary); err != nil {
+		t.Fatal(err)
+	}
+
+	code, _, bad := f.put(t, "vip", withField(validBody(), "summary", strings.Repeat("я", 201)))
+	if code != http.StatusBadRequest {
+		t.Fatalf("201 characters: status = %d, want 400", code)
+	}
+	if _, ok := bad.Fields["summary"]; !ok {
+		t.Errorf("errors = %v, want field summary", bad.Fields)
+	}
+	var stored string
+	if err := f.db.Get(&stored, `SELECT summary FROM rooms WHERE id = 'vip'`); err != nil || stored != vipSummary {
+		t.Errorf("a rejected request changed the summary: %q, err %v", stored, err)
+	}
+}
+
+func TestUpdateRoomSummaryMissing(t *testing.T) {
+	f := newFixture(t)
+	code, got, _ := f.put(t, "vip", validBody())
+	if code != http.StatusOK {
+		t.Fatalf("PUT status = %d", code)
+	}
+	var stored string
+	if err := f.db.Get(&stored, `SELECT summary FROM rooms WHERE id = 'vip'`); err != nil || stored != "" || got.Summary != "" {
+		t.Errorf("stored summary = %q, response %q, err %v; want empty", stored, got.Summary, err)
 	}
 }

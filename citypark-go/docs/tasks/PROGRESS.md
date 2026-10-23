@@ -84,3 +84,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 55 Hotel guest information and room texts from the old site [48, 54]
   - Owner: confirm the guest information is current (rules ПП № 1085 are from 2015, the category certificate in the old text expired in 2019).
   - Assertions in `internal/content/seed_test.go` and `internal/room/room_test.go` were updated for the filled texts (approved by the owner).
+- [x] 56 Room summary [55] (needed by citypark-modern task 24 and citypark-admin task 18)

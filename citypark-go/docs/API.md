@@ -815,6 +815,7 @@ Returns the five hotel room types with their texts, price per night and photo, o
     "area": "45 + 7 м²",
     "areaDetailed": "45 м² + балкон 7 м²",
     "capacity": "до 4 гостей",
+    "summary": "Гостиная и спальня, расширенная комплектация, балкон над кронами парка.",
     "description": "<p>Гостиная и спальня, расширенная комплектация, балкон над кронами парка.</p>",
     "pricePerNight": 8000,
     "photo": { "url": "/images/room-vip.jpg", "alt": "VIP-номер", "position": "" },
@@ -831,6 +832,7 @@ Returns the five hotel room types with their texts, price per night and photo, o
     "area": "19 м²",
     "areaDetailed": "",
     "capacity": "",
+    "summary": "",
     "description": "",
     "pricePerNight": 4000,
     "photo": { "url": "/images/room-single.jpg", "alt": "Одноместный номер", "position": "right center" },
@@ -844,7 +846,7 @@ The example shows two of the five items.
 
 **Notes**
 
-The five room ids are fixed (the same as in `GET /hotel/rooms`): there is no way to add or remove a room type. `pricePerNight` is rubles for one night, the same all year. Optional texts that were never filled in are empty strings, not `null`. `description` is HTML with `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li`; anything else is removed on save. Plain texts use normal spaces; the site adds non-breaking spaces itself. `photo.url` is either a site path (`/images/...`) or an uploaded image: an uploaded image comes back as a full URL (the server's public base URL plus `/uploads/...`).
+The five room ids are fixed (the same as in `GET /hotel/rooms`): there is no way to add or remove a room type. `pricePerNight` is rubles for one night, the same all year. `summary` — одна-две фразы для карточки на сайте, простой текст, до 200 символов; `description` — полный текст (HTML). Optional texts that were never filled in are empty strings, not `null`. `description` is HTML with `p`, `br`, `strong`, `em`, `a`, `ul`, `ol`, `li`; anything else is removed on save. Plain texts use normal spaces; the site adds non-breaking spaces itself. `photo.url` is either a site path (`/images/...`) or an uploaded image: an uploaded image comes back as a full URL (the server's public base URL plus `/uploads/...`).
 
 #### PUT /rooms/{id}
 
@@ -868,6 +870,7 @@ Replaces all the editable fields of one room type. The room price is edited only
 | `area` | string | yes | at most 100 characters |
 | `areaDetailed` | string | no | at most 100 characters |
 | `capacity` | string | no | at most 100 characters |
+| `summary` | string | no | plain text, at most 200 characters, stored as sent; a missing field is stored as `""` |
 | `description` | string | no | HTML, cleaned on save; at most 1000 characters of visible text (tags do not count) |
 | `pricePerNight` | number | yes | rubles, greater than 0, at most 1000000, at most 2 decimals |
 | `photo` | object | yes | |
@@ -886,6 +889,7 @@ Surrounding spaces of the plain-text fields are removed before the checks. `id`,
   "area": "30 м²",
   "areaDetailed": "30 м² + балкон",
   "capacity": "до 3 гостей",
+  "summary": "Кратко о номере",
   "description": "<p>Описание</p>",
   "pricePerNight": 5200,
   "photo": { "url": "/images/room-single.jpg", "alt": "Номер", "position": "50% 30%" },
@@ -908,6 +912,7 @@ The room as in `GET /rooms`, with the stored values.
   "area": "30 м²",
   "areaDetailed": "30 м² + балкон",
   "capacity": "до 3 гостей",
+  "summary": "Кратко о номере",
   "description": "<p>Описание</p>",
   "pricePerNight": 5200,
   "photo": { "url": "/images/room-single.jpg", "alt": "Номер", "position": "50% 30%" },

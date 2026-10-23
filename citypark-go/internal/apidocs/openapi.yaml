@@ -660,7 +660,7 @@ components:
           example: ''
     Room:
       type: object
-      required: [id, kind, balcony, name, hotelName, numbers, area, areaDetailed, capacity, description, pricePerNight, photo, hotelNote, updatedAt]
+      required: [id, kind, balcony, name, hotelName, numbers, area, areaDetailed, capacity, summary, description, pricePerNight, photo, hotelNote, updatedAt]
       properties:
         id:
           type: string
@@ -688,6 +688,10 @@ components:
         capacity:
           type: string
           example: до 4 гостей
+        summary:
+          type: string
+          description: Plain text, one or two sentences for the room card on the site. May be empty.
+          example: Гостиная и спальня, расширенная комплектация, балкон над кронами парка.
         description:
           type: string
           description: HTML with p, br, strong, em, a, ul, ol and li only.
@@ -726,6 +730,10 @@ components:
         capacity:
           type: string
           maxLength: 100
+        summary:
+          type: string
+          maxLength: 200
+          description: Plain text, stored as sent. A missing field is stored as an empty string.
         description:
           type: string
           description: HTML, cleaned on save. At most 1000 characters of visible text.

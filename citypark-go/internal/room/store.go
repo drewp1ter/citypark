@@ -11,7 +11,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
 
-const columns = `id, sort, kind, balcony, name, hotel_name, numbers, area, area_detailed, capacity, description,
+const columns = `id, sort, kind, balcony, name, hotel_name, numbers, area, area_detailed, capacity, summary, description,
 	price_kopecks, photo_url, photo_alt, photo_position, hotel_note, updated_at`
 
 type Room struct {
@@ -25,6 +25,7 @@ type Room struct {
 	Area          string        `db:"area"`
 	AreaDetailed  string        `db:"area_detailed"`
 	Capacity      string        `db:"capacity"`
+	Summary       string        `db:"summary"`
 	Description   string        `db:"description"`
 	Price         money.Kopecks `db:"price_kopecks"`
 	PhotoURL      string        `db:"photo_url"`
@@ -92,11 +93,11 @@ func (s *Store) update(ctx context.Context, r Room) (Room, string, error) {
 	err := s.db.GetContext(ctx, &saved,
 		`UPDATE rooms SET name = $2, hotel_name = $3, numbers = $4, area = $5, area_detailed = $6, capacity = $7,
 		     description = $8, price_kopecks = $9, photo_url = $10, photo_alt = $11, photo_position = $12,
-		     hotel_note = $13, updated_at = now()
+		     hotel_note = $13, summary = $14, updated_at = now()
 		 WHERE id = $1
 		 RETURNING `+columns,
 		r.ID, r.Name, r.HotelName, r.Numbers, r.Area, r.AreaDetailed, r.Capacity, r.Description,
-		int64(r.Price), r.PhotoURL, r.PhotoAlt, r.PhotoPosition, r.HotelNote)
+		int64(r.Price), r.PhotoURL, r.PhotoAlt, r.PhotoPosition, r.HotelNote, r.Summary)
 	if err != nil {
 		return Room{}, "", store.NotFound(err)
 	}
