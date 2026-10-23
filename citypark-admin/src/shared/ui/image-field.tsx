@@ -23,6 +23,8 @@ type Props = {
 	aspect?: number
 	allowEmpty?: boolean // shows «Убрать фото» (news); required fields do not
 	errors?: Partial<Record<'url' | 'alt' | 'position', string>>
+	/** Shows the focal-point picker. When false, `onChange` always sends `position: ''`. */
+	withPosition?: boolean
 }
 
 const MAX_BYTES = 10 * 1024 * 1024
@@ -33,7 +35,16 @@ function message(err: unknown): string {
 	return err instanceof Error ? err.message : 'Не удалось загрузить фото'
 }
 
-export function ImageField({ label, value, onChange, aspect = 4 / 3, allowEmpty = false, errors = {} }: Props) {
+export function ImageField({
+	label,
+	value,
+	onChange: onChangeValue,
+	aspect = 4 / 3,
+	allowEmpty = false,
+	errors = {},
+	withPosition = true,
+}: Props) {
+	const onChange = (v: PhotoValue) => onChangeValue(withPosition ? v : { ...v, position: '' })
 	const inputId = useId()
 	const inputRef = useRef<HTMLInputElement>(null)
 	const [uploading, setUploading] = useState(false)
@@ -115,7 +126,19 @@ export function ImageField({ label, value, onChange, aspect = 4 / 3, allowEmpty 
 				aria-label={hasPhoto ? `${label}: выбрать файл` : undefined}
 				onChange={onFileChange}
 			/>
-			{hasPhoto ? (
+			{hasPhoto && !withPosition ? (
+				<div
+					className='relative w-full max-w-md overflow-hidden rounded-lg border border-separator'
+					style={{ aspectRatio: aspect }}
+				>
+					<img src={imageSrc(value.url)} alt='' draggable={false} className='size-full object-cover' />
+					{uploading && (
+						<div className='absolute inset-0 flex items-center justify-center bg-black/40'>
+							<Spinner aria-label='Загрузка фото' />
+						</div>
+					)}
+				</div>
+			) : hasPhoto ? (
 				<div className='flex flex-wrap items-start gap-4'>
 					<div
 						role='group'
@@ -175,20 +198,24 @@ export function ImageField({ label, value, onChange, aspect = 4 / 3, allowEmpty 
 			)}
 			{hasPhoto && (
 				<>
-					<p id={`${inputId}-position`} className='text-xs text-muted'>
-						Фокусная точка: {position}
-					</p>
+					{withPosition && (
+						<p id={`${inputId}-position`} className='text-xs text-muted'>
+							Фокусная точка: {position}
+						</p>
+					)}
 					<div className='flex flex-wrap gap-2'>
 						<Button variant='secondary' isDisabled={uploading} onPress={() => inputRef.current?.click()}>
 							Заменить
 						</Button>
-						<Button
-							variant='secondary'
-							isDisabled={value.position === ''}
-							onPress={() => onChange({ ...value, position: '' })}
-						>
-							Сбросить точку
-						</Button>
+						{withPosition && (
+							<Button
+								variant='secondary'
+								isDisabled={value.position === ''}
+								onPress={() => onChange({ ...value, position: '' })}
+							>
+								Сбросить точку
+							</Button>
+						)}
 						{allowEmpty && (
 							<Button variant='danger-soft' onPress={() => onChange({ url: '', alt: '', position: '' })}>
 								Убрать фото

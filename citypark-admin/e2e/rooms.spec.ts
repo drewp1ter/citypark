@@ -104,3 +104,45 @@ test('edits the short text of the VIP room and keeps it after a reload', async (
 		await save()
 	}
 })
+
+test('shows the VIP gallery and adds and removes a photo of the single room', async ({ page }) => {
+	await signIn(page)
+	const open = async (name: string) => {
+		await page.goto('/content/rooms')
+		await page
+			.getByRole('listitem')
+			.filter({ has: page.getByRole('heading', { name, exact: true }) })
+			.getByRole('link', { name: /Изменить/ })
+			.click()
+		await expect(page.getByRole('heading', { name: 'Галерея' })).toBeVisible()
+	}
+	async function save() {
+		const saved = page.waitForResponse((r) => r.request().method() === 'PUT' && r.url().includes('/rooms/'))
+		await page.getByRole('button', { name: 'Сохранить' }).click()
+		const res = await saved
+		expect(res.ok(), await res.text()).toBe(true)
+	}
+	const photos = page.getByRole('button', { name: 'Удалить' })
+
+	await open('VIP-номер')
+	await expect(photos).toHaveCount(3)
+
+	await open('Одноместный')
+	await expect(photos).toHaveCount(0)
+	try {
+		await page.getByRole('button', { name: 'Добавить фото' }).click()
+		await page.getByLabel('Перетащите фото или выберите файл').setInputFiles('e2e/fixtures/photo.jpg')
+		await expect(page.getByRole('button', { name: 'Заменить' })).toHaveCount(2)
+		await save()
+		await page.reload()
+		await expect(photos).toHaveCount(1)
+		await expect(page.getByRole('button', { name: 'Выше' })).toBeDisabled()
+		await expect(page.getByRole('button', { name: 'Ниже' })).toBeDisabled()
+	} finally {
+		await page.reload()
+		while ((await photos.count()) > 0) await photos.first().click()
+		await save()
+		await page.reload()
+		await expect(photos).toHaveCount(0)
+	}
+})

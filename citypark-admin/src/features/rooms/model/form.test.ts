@@ -13,6 +13,10 @@ const room: RoomData = {
 	photo: { url: '/images/room-single.jpg', alt: 'Одноместный номер', position: '50% 30%' },
 	hotelNote: '№ 204, 304 · двуспальная',
 	summary: 'Уютный номер для одного гостя.',
+	gallery: [
+		{ url: '/images/room-vip-living.jpg', alt: 'Гостиная' },
+		{ url: '/images/room-vip-bathroom.jpg', alt: 'Санузел' },
+	],
 }
 
 describe('toRequest(toForm(room))', () => {
@@ -111,5 +115,42 @@ describe('mapServerFields', () => {
 
 	it('drops unknown keys', () => {
 		expect(mapServerFields({ other: 'x' })).toEqual({})
+	})
+})
+
+describe('gallery', () => {
+	const item = { url: '/images/a.jpg', alt: 'Фото' }
+
+	it('keeps the items and their order in a round trip', () => {
+		expect(toRequest(toForm(room)).gallery).toEqual(room.gallery)
+	})
+
+	it('trims the alt texts', () => {
+		const form = { ...toForm(room), gallery: [{ url: '/images/a.jpg', alt: '  Фото  ' }] }
+		expect(toRequest(form).gallery).toEqual([item])
+	})
+
+	it('allows 12 photos and rejects 13', () => {
+		const base = toForm(room)
+		expect(validateRoom({ ...base, gallery: Array(12).fill(item) }).gallery).toBeUndefined()
+		expect(validateRoom({ ...base, gallery: Array(13).fill(item) }).gallery).toBe('Не больше 12 фото')
+	})
+
+	it('reports an empty url at the index of the item', () => {
+		const gallery = [item, { url: '', alt: '' }]
+		expect(validateRoom({ ...toForm(room), gallery }).galleryItems).toEqual({ 1: { url: 'Загрузите фото' } })
+	})
+
+	it('rejects an alt longer than 200 characters', () => {
+		const gallery = [{ url: '/images/a.jpg', alt: 'я'.repeat(201) }]
+		expect(validateRoom({ ...toForm(room), gallery }).galleryItems).toEqual({ 0: { alt: 'Не больше 200 символов' } })
+	})
+
+	it('maps the backend gallery keys', () => {
+		expect(mapServerFields({ 'gallery.0.url': 'x', 'gallery.0.alt': 'y', 'gallery.2.url': 'z' }).galleryItems).toEqual({
+			0: { url: 'x', alt: 'y' },
+			2: { url: 'z' },
+		})
+		expect(mapServerFields({ gallery: 'много' }).gallery).toBe('много')
 	})
 })

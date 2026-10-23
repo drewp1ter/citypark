@@ -2305,6 +2305,12 @@ export interface components {
              */
             position: string;
         };
+        RoomGalleryPhoto: {
+            /** @example /images/room-vip-living.jpg */
+            url: string;
+            /** @example VIP-номер: гостиная */
+            alt: string;
+        };
         Room: {
             /** @enum {string} */
             id: "vip" | "single-balcony" | "single" | "double-twin" | "double-euro";
@@ -2339,6 +2345,8 @@ export interface components {
              */
             pricePerNight: number;
             photo: components["schemas"]["RoomPhoto"];
+            /** @description Extra photos for the room page, in display order. Always an array, empty when there are none. */
+            gallery: components["schemas"]["RoomGalleryPhoto"][];
             /** @example № 301 · до 4 гостей */
             hotelNote: string;
             /** Format: date-time */
@@ -2370,6 +2378,12 @@ export interface components {
                  */
                 position?: string;
             };
+            /** @description Extra photos in display order. A missing field or `null` is stored as an empty array. */
+            gallery?: {
+                /** @description A site path (`/images/...`) or an uploaded image (`/uploads/...` or its full URL). */
+                url: string;
+                alt?: string;
+            }[];
             hotelNote?: string;
         };
         ContentImage: {

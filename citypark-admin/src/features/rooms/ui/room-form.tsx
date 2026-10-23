@@ -7,6 +7,7 @@ import { ImageField } from '../../../shared/ui/image-field'
 import { RichTextEditor } from '../../../shared/ui/rich-text-editor'
 import { toastError, toastSuccess } from '../../../shared/ui/toast'
 import { useUpdateRoom } from '../api'
+import { GalleryField } from './gallery-field'
 import { mapServerFields, toForm, validateRoom, type RoomErrors, type RoomForm as RoomFormState } from '../model/form'
 
 type Room = components['schemas']['Room']
@@ -148,6 +149,15 @@ export function RoomForm({ room }: { room: Room }) {
 
 			<Section title='Фото'>
 				<ImageField label='Фото' aspect={4 / 3} value={form.photo} onChange={set('photo')} errors={errors.photo} />
+			</Section>
+
+			<Section title='Галерея'>
+				<GalleryField
+					value={form.gallery}
+					onChange={set('gallery')}
+					error={errors.gallery}
+					itemErrors={errors.galleryItems}
+				/>
 			</Section>
 
 			<div>

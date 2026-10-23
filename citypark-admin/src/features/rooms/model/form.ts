@@ -13,11 +13,18 @@ export type RoomForm = {
 	price: string
 	description: string // HTML
 	photo: PhotoValue
+	gallery: GalleryItem[]
 }
+
+export type GalleryItem = { url: string; alt: string }
+export type GalleryItemErrors = { url?: string; alt?: string }
 
 type TextField = 'name' | 'hotelName' | 'numbers' | 'area' | 'areaDetailed' | 'capacity' | 'hotelNote' | 'summary'
 export type RoomErrors = Partial<Record<TextField | 'price' | 'description', string>> & {
 	photo?: Partial<Record<keyof PhotoValue, string>>
+	gallery?: string
+	/** Errors of single gallery photos, by index. */
+	galleryItems?: Record<number, GalleryItemErrors>
 }
 
 /** The fields of a room that the admin can edit, as the backend returns and accepts them. */
@@ -31,6 +38,7 @@ export type RoomData = {
 	description: string
 	pricePerNight: number
 	photo: PhotoValue
+	gallery: GalleryItem[]
 	hotelNote: string
 	summary: string
 }
@@ -38,6 +46,7 @@ export type RoomData = {
 const MAX_TEXT = 100
 const MAX_ALT = 200
 const MAX_SUMMARY = 200
+export const MAX_GALLERY = 12
 const MAX_DESCRIPTION = 1000
 const MAX_PRICE = 1_000_000
 const MAX_TEXT_MESSAGE = `Не больше ${MAX_TEXT} символов`
@@ -73,6 +82,7 @@ export function toForm(room: RoomData): RoomForm {
 			alt: room.photo.alt,
 			position: PERCENT_POSITION.test(room.photo.position) ? room.photo.position : '',
 		},
+		gallery: room.gallery.map(({ url, alt }) => ({ url, alt })),
 	}
 }
 
@@ -88,6 +98,7 @@ export function toRequest(f: RoomForm): RoomData {
 		description: f.description,
 		pricePerNight: Number(normalizePrice(f.price)),
 		photo: { url: f.photo.url, alt: f.photo.alt.trim(), position: f.photo.position },
+		gallery: f.gallery.map(({ url, alt }) => ({ url, alt: alt.trim() })),
 		hotelNote: f.hotelNote.trim(),
 		summary: f.summary.trim(),
 	}
@@ -124,6 +135,14 @@ export function validateRoom(f: RoomForm): RoomErrors {
 	else if (f.photo.alt.trim() === '') photo.alt = 'Опишите, что на фото'
 	else if (length(f.photo.alt.trim()) > MAX_ALT) photo.alt = `Не больше ${MAX_ALT} символов`
 	if (Object.keys(photo).length > 0) errors.photo = photo
+
+	if (f.gallery.length > MAX_GALLERY) errors.gallery = `Не больше ${MAX_GALLERY} фото`
+	const items: Record<number, GalleryItemErrors> = {}
+	f.gallery.forEach((item, index) => {
+		if (item.url === '') items[index] = { url: 'Загрузите фото' }
+		else if (length(item.alt.trim()) > MAX_ALT) items[index] = { alt: `Не больше ${MAX_ALT} символов` }
+	})
+	if (Object.keys(items).length > 0) errors.galleryItems = items
 	return errors
 }
 
@@ -139,6 +158,7 @@ const TEXT_FIELDS: readonly string[] = [
 	'description',
 ]
 const PHOTO_FIELD = /^photo\.(url|alt|position)$/
+const GALLERY_ITEM_FIELD = /^gallery\.(\d+)\.(url|alt)$/
 
 /** Maps the backend's `errors` keys (`pricePerNight`, `photo.url`, ...) to form fields; unknown keys are dropped. */
 export function mapServerFields(fields: Record<string, string>): RoomErrors {
@@ -147,6 +167,15 @@ export function mapServerFields(fields: Record<string, string>): RoomErrors {
 		const photo = PHOTO_FIELD.exec(key)
 		if (photo) {
 			errors.photo = { ...errors.photo, [photo[1] as keyof PhotoValue]: message }
+		} else if (key === 'gallery') {
+			errors.gallery = message
+		} else if (GALLERY_ITEM_FIELD.test(key)) {
+			const [, index, field] = GALLERY_ITEM_FIELD.exec(key) ?? []
+			const at = Number(index)
+			errors.galleryItems = {
+				...errors.galleryItems,
+				[at]: { ...errors.galleryItems?.[at], [field as 'url' | 'alt']: message },
+			}
 		} else if (key === 'pricePerNight') {
 			errors.price = message
 		} else if (TEXT_FIELDS.includes(key)) {

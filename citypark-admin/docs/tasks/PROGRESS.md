@@ -31,3 +31,4 @@ stop if that task is not ticked.
 - [x] 16 Hotel reports [03] (needs citypark-go task 53)
 - [x] 17 Docker image and deployment notes [16]
 - [x] 18 Room summary field [11] (needs citypark-go task 56)
+- [x] 19 Room photo gallery [11, 18] (needs citypark-go task 57)
