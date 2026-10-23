@@ -36,3 +36,9 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 18 News from the backend [12, 17] (needs citypark-go task 49)
 - [x] 19 Site settings from the backend [17] (needs citypark-go task 51)
 - [x] 20 Content blocks and hotel prices from the backend [16, 17] (needs citypark-go tasks 50, 52, 54)
+
+## Content from the old site (/workspace/citypark_frontend)
+- [x] 21 Legal pages from the old site
+  - Owner: check the offer is current (domain cityparkvip.ru, payment methods) and send the classification certificate if it changed.
+- [ ] 22 3D tours from the old site
+- [ ] 23 Full-size room photos and hotel texts from the old site [20] (needs citypark-go task 55)

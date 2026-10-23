@@ -1,8 +1,8 @@
 export type GuestDocument = {
 	title: string
-	/** "PDF · 2 стр." */
+	/** "2 стр." */
 	meta: string
-	/** Link to the file. The PDFs have not been sent yet. */
+	/** Page with the document: scans or text. */
 	href?: string
 }
 

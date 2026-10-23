@@ -161,5 +161,3 @@ second page needs it. Steiger (`npm run lint:fsd`) enforces this, so keep it fre
 - Not designed: mobile nav sheet, news article page, 404, empty cart, form success/error states — build
   them from the existing components and tokens (see `design/pages.md`).
 - Date inputs in the screenshots show sample dates; use real defaults (today / tomorrow).
-- Legal pages (Документы, Оферта, Конфиденциальность) have no content yet — create routes with a
-  placeholder heading.

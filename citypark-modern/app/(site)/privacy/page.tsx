@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { LegalPage } from '@/pages/legal'
+import { LegalPage, privacyPolicy } from '@/pages/legal'
 
-export const metadata: Metadata = { title: 'Конфиденциальность — Сити Парк' }
+export const metadata: Metadata = { title: `${privacyPolicy.title} — Сити Парк` }
 
 export default function Page() {
-	return <LegalPage title='Конфиденциальность' />
+	return <LegalPage document={privacyPolicy} />
 }

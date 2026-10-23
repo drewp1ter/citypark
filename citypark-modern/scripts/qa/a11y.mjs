@@ -19,6 +19,8 @@ const routes = process.argv.slice(2).length
 			'/news/frittata',
 			'/contacts',
 			'/documents',
+			'/privacy',
+			'/offer',
 			'/nope',
 		]
 const sizes = { mobile: { width: 390, height: 844 }, desktop: { width: 1440, height: 900 } }

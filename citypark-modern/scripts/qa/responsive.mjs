@@ -17,6 +17,9 @@ const routes = process.argv.slice(2).length
 			'/news',
 			'/news/frittata',
 			'/contacts',
+			'/privacy',
+			'/offer',
+			'/documents',
 			'/nope',
 		]
 const widths = [360, 390, 600, 768, 820, 1023, 1024, 1180, 1279, 1280, 1440, 1920]

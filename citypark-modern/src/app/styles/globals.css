@@ -142,3 +142,15 @@
 		}
 	}
 }
+
+/* Nested numbered lists of the legal pages: 1. / 1.1. / 1.1.1. */
+.legal-list {
+	counter-reset: legal;
+	list-style: none;
+}
+.legal-list > li {
+	counter-increment: legal;
+}
+.legal-list > li::before {
+	content: counters(legal, '.') '. ';
+}
