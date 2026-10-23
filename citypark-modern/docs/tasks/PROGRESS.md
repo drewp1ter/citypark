@@ -33,6 +33,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 16 Content blocks, part 2: the hotel and rooms pages [15]
   - `blocks.data.ts` has 101 entries (46 home + 55 hotel). The content code now lives in `entities/content`.
 - [x] 17 Rooms from the backend [13, 15] (needs citypark-go tasks 45, 48)
-- [ ] 18 News from the backend [12, 17] (needs citypark-go task 49)
+- [x] 18 News from the backend [12, 17] (needs citypark-go task 49)
 - [ ] 19 Site settings from the backend [17] (needs citypark-go task 51)
 - [ ] 20 Content blocks and hotel prices from the backend [16, 17] (needs citypark-go tasks 50, 52, 54)

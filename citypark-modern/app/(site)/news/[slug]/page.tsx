@@ -1,9 +1,4 @@
-import { ArticlePage, generateArticleMetadata, generateArticleParams } from '@/pages/news-article'
-
-// Only the slugs from generateStaticParams exist; anything else is a 404.
-export const dynamicParams = false
-
-export const generateStaticParams = generateArticleParams
+import { ArticlePage, generateArticleMetadata } from '@/pages/news-article'
 
 export async function generateMetadata({ params }: PageProps<'/news/[slug]'>) {
 	return generateArticleMetadata((await params).slug)

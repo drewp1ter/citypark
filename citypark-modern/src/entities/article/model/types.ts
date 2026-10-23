@@ -11,6 +11,6 @@ export type NewsItem = {
 	/** Teaser under the title of the latest news. */
 	excerpt?: string
 	photo: Photo
-	/** Article text, one string per paragraph. Not written yet. */
-	body?: readonly string[]
+	/** Sanitized HTML of the article text; `''` when there is none. Empty in list items. */
+	bodyHtml: string
 }

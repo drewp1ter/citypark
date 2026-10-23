@@ -1,21 +1,16 @@
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getNews, getNewsItem } from '@/entities/article'
+import { getNewsItem } from '@/entities/article'
 import { formatDate, type Photo } from '@/shared/lib'
-import { AppLink, Button } from '@/shared/ui'
+import { AppLink, Button, RichText } from '@/shared/ui'
 
-type Article = { title: string; meta: string; photo: Photo; body?: readonly string[] }
+type Article = { title: string; meta: string; photo: Photo; bodyHtml: string }
 
 async function findArticle(slug: string): Promise<Article | undefined> {
 	const item = await getNewsItem(slug)
 	if (!item) return undefined
-	return { title: item.title, meta: formatDate(item.date), photo: item.photo, body: item.body }
-}
-
-export async function generateArticleParams() {
-	const news = await getNews()
-	return news.map((item) => ({ slug: item.slug }))
+	return { title: item.title, meta: formatDate(item.date), photo: item.photo, bodyHtml: item.bodyHtml }
 }
 
 export async function generateArticleMetadata(slug: string): Promise<Metadata> {
@@ -46,12 +41,8 @@ export async function ArticlePage({ slug }: { slug: string }) {
 						className='object-cover'
 					/>
 				</div>
-				{article.body?.length ? (
-					article.body.map((paragraph) => (
-						<p key={paragraph} className='mb-4 text-lg leading-relaxed'>
-							{paragraph}
-						</p>
-					))
+				{article.bodyHtml ? (
+					<RichText html={article.bodyHtml} variant='article' className='text-lg leading-relaxed' />
 				) : (
 					<p className='text-text-muted'>Текст статьи скоро появится.</p>
 				)}
