@@ -78,4 +78,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 52 Hotel prices [41]
 - [x] 53 Hotel reports from 1C [31]
   - Owner to do: with real `ONEC_*` values run `curl -s -H "Authorization: Bearer $ADMIN_TOKEN" 'localhost:3000/api/v1/reports/hotel/sales?from=2026-10-01&to=2026-10-21'` and paste the output here; if the real 1C field names differ from the task table, fix the structs in `internal/onec/client.go`.
-- [ ] 54 Content block rows for the home and hotel pages [50] (needs citypark-modern task 16)
+- [x] 54 Content block rows for the home and hotel pages [50] (needs citypark-modern task 16)
