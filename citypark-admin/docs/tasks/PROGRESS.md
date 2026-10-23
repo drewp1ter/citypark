@@ -10,7 +10,7 @@ stop if that task is not ticked.
 - [x] 03 Sign-in, access guard and app shell [02]
 
 ## Operations
-- [ ] 04 Delivery prices [03]
+- [x] 04 Delivery prices [03]
 - [ ] 05 Order history [03] (needs citypark-go task 42)
 - [ ] 06 Free rooms (read only) [03]
 - [ ] 07 Menu (read only) and the sync button [03] (needs citypark-go task 43)

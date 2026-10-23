@@ -69,5 +69,7 @@ npm run e2e          # Playwright flows; needs the backend running at VITE_API_U
 ```
 Do not start the backend or its database yourself (no `make db-up`, `make run`, `docker`). If the backend does not
 answer at `VITE_API_URL`, stop and ask the user to start it.
+The backend is reachable at the URL in `.env` (`VITE_API_URL`), which may be another host, not `localhost`. Read it
+from there and do not assume `http://localhost:3000`.
 
 The dev admin account comes from the backend's `.env`: `ADMIN_EMAIL=dev@dev.io`, `ADMIN_PASSWORD=devdevdev`.
