@@ -36,10 +36,11 @@ type PaymentRequest struct {
 	Amount  money.Kopecks
 }
 
-// PaymentForm is what the frontend needs to open the Moneta payment form.
+// PaymentForm is what the customer needs to pay an online order.
 type PaymentForm struct {
 	Amount    string // rubles with two decimals, "790.00"
 	Signature string
+	URL       string // full MONETA.Assistant address
 }
 
 // PaymentCallback is what Moneta sends after a payment (used in task 30).
@@ -65,12 +66,10 @@ type CreateInput struct {
 	Items       []ItemInput    `json:"items" validate:"required,min=1,dive"`
 }
 
-// CreateResult: a cash order fills RedirectURL; an online order fills Amount and MntSignature.
+// CreateResult: RedirectURL is the thank-you page for a cash order and the Moneta payment page for an online order.
 type CreateResult struct {
-	OrderID      int64  `json:"orderId"`
-	RedirectURL  string `json:"redirectUrl,omitempty"`
-	Amount       string `json:"amount,omitempty"`
-	MntSignature string `json:"mntSignature,omitempty"`
+	OrderID     int64  `json:"orderId"`
+	RedirectURL string `json:"redirectUrl"`
 }
 
 type Options struct {
@@ -167,7 +166,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 			return CreateResult{}, err
 		}
 	}
-	return CreateResult{OrderID: o.ID, Amount: form.Amount, MntSignature: form.Signature}, nil
+	return CreateResult{OrderID: o.ID, RedirectURL: form.URL}, nil
 }
 
 // Confirm sets status "confirmed" and notifies staff. Returns the updated order.

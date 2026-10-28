@@ -57,7 +57,7 @@ var friday = time.Date(2024, 5, 24, 15, 0, 0, 0, time.UTC)
 func newSvcEnv(t *testing.T, now time.Time) *svcEnv {
 	t.Helper()
 	db := testutil.NewDB(t)
-	e := &svcEnv{db: db, notifier: &fakeNotifier{}, payments: &fakePayments{form: PaymentForm{Amount: "749.00", Signature: "sig"}}}
+	e := &svcEnv{db: db, notifier: &fakeNotifier{}, payments: &fakePayments{form: PaymentForm{Amount: "749.00", Signature: "sig", URL: "https://pay.test/?x"}}}
 	e.category = testutil.InsertCategory(t, db, testutil.Category{Name: "Мангал"})
 	e.productA = testutil.InsertProduct(t, db, testutil.Product{CategoryID: e.category, Name: "Шашлык", PriceKopecks: 59900})
 	e.productB = testutil.InsertProduct(t, db, testutil.Product{CategoryID: e.category, Name: "Лаваш", PriceKopecks: 10000})
@@ -114,10 +114,6 @@ func TestCreateCash(t *testing.T) {
 	if res.OrderID == 0 || res.RedirectURL != cashURL {
 		t.Errorf("result = %+v, want order id and redirect %q", res, cashURL)
 	}
-	if res.Amount != "" || res.MntSignature != "" {
-		t.Errorf("result has payment fields: %+v", res)
-	}
-
 	if n := e.count(t, `SELECT count(*) FROM orders`); n != 1 {
 		t.Fatalf("orders = %d, want 1", n)
 	}
@@ -313,7 +309,7 @@ func TestCreateOnline(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	if res.OrderID == 0 || res.Amount != "749.00" || res.MntSignature != "sig" || res.RedirectURL != "" {
+	if res.OrderID == 0 || res.RedirectURL != "https://pay.test/?x" {
 		t.Errorf("result = %+v", res)
 	}
 	o := e.order(t, res.OrderID)
@@ -407,8 +403,8 @@ func TestCreateResultJSON(t *testing.T) {
 	if want := []string{"orderId", "redirectUrl"}; !slices.Equal(cash, want) {
 		t.Errorf("cash keys = %v, want %v", cash, want)
 	}
-	online := jsonKeys(t, CreateResult{OrderID: 1, Amount: "1.00", MntSignature: "s"})
-	if want := []string{"amount", "mntSignature", "orderId"}; !slices.Equal(online, want) {
+	online := jsonKeys(t, CreateResult{OrderID: 1, RedirectURL: "https://pay"})
+	if want := []string{"orderId", "redirectUrl"}; !slices.Equal(online, want) {
 		t.Errorf("online keys = %v, want %v", online, want)
 	}
 }

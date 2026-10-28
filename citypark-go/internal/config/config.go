@@ -39,9 +39,12 @@ type Iiko struct {
 }
 type Telegram struct{ BaseURL, Token, ChatIDOrderCreated, ChatIDOrderConfirmed string }
 type Moneta struct {
-	ID       string // shop id, sent to Moneta as MNT_ID
-	Secret   string // integrity code from the Moneta cabinet
-	TestMode bool
+	ID         string // shop id, sent to Moneta as MNT_ID
+	Secret     string // integrity code from the Moneta cabinet
+	TestMode   bool
+	URL        string // MONETA.Assistant address the customer is sent to
+	SuccessURL string // MNT_SUCCESS_URL; empty = not sent
+	FailURL    string // MNT_FAIL_URL; empty = not sent
 }
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
@@ -134,9 +137,12 @@ func Load(lookup LookupFunc) (Config, error) {
 		ChatIDOrderConfirmed: str("TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED", ""),
 	}
 	c.Moneta = Moneta{
-		ID:       str("MONETA_ID", ""),
-		Secret:   str("MONETA_SECRET", ""),
-		TestMode: str("MONETA_TEST_MODE", "false") == "true",
+		ID:         str("MONETA_ID", ""),
+		Secret:     str("MONETA_SECRET", ""),
+		TestMode:   str("MONETA_TEST_MODE", "false") == "true",
+		URL:        str("MONETA_URL", "https://assistant.demo.moneta.ru/"),
+		SuccessURL: str("MONETA_SUCCESS_URL", "http://localhost:3001/checkout/done"),
+		FailURL:    str("MONETA_FAIL_URL", "http://localhost:3001/checkout?payment=failed"),
 	}
 	c.Hotel = Hotel{WebhookSecret: str("HOTEL_WEBHOOK_SECRET", "")}
 	c.OneC = OneC{

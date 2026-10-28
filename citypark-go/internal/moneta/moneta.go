@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -40,6 +41,26 @@ func FormatAmount(k money.Kopecks) string {
 // RequestSignature signs the payment form for an order. amount comes from FormatAmount.
 func (s *Signer) RequestSignature(orderID int64, amount string) string {
 	return s.sum(s.id + strconv.FormatInt(orderID, 10) + amount + Currency + s.testMode + s.secret)
+}
+
+// PaymentURL returns the MONETA.Assistant address for an order: base followed by the query
+// MNT_ID, MNT_AMOUNT, MNT_TRANSACTION_ID, MNT_CURRENCY_CODE, MNT_TEST_MODE, MNT_SIGNATURE and,
+// when not empty, MNT_SUCCESS_URL and MNT_FAIL_URL. amount comes from FormatAmount.
+func (s *Signer) PaymentURL(base string, orderID int64, amount, successURL, failURL string) string {
+	q := url.Values{}
+	q.Set("MNT_ID", s.id)
+	q.Set("MNT_AMOUNT", amount)
+	q.Set("MNT_TRANSACTION_ID", strconv.FormatInt(orderID, 10))
+	q.Set("MNT_CURRENCY_CODE", Currency)
+	q.Set("MNT_TEST_MODE", s.testMode)
+	q.Set("MNT_SIGNATURE", s.RequestSignature(orderID, amount))
+	if successURL != "" {
+		q.Set("MNT_SUCCESS_URL", successURL)
+	}
+	if failURL != "" {
+		q.Set("MNT_FAIL_URL", failURL)
+	}
+	return base + "?" + q.Encode()
 }
 
 // VerifyCallback reports whether signature is the right one for a payment callback.

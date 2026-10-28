@@ -228,16 +228,16 @@ func TestCreateOrderBadJSON(t *testing.T) {
 
 func TestCreateOrderOnline(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	e.payments.form = PaymentForm{Amount: "790.00", Signature: "sig"}
+	e.payments.form = PaymentForm{Amount: "790.00", Signature: "sig", URL: "https://pay.test/?MNT_ID=100"}
 	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentOnline, true))
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
 	}
 	var got map[string]any
 	testutil.Decode(t, rec, &got)
-	wantKeys(t, got, "orderId", "amount", "mntSignature")
-	if got["amount"] != "790.00" || got["mntSignature"] != "sig" {
-		t.Errorf("amount/mntSignature = %v / %v, want 790.00 / sig", got["amount"], got["mntSignature"])
+	wantKeys(t, got, "orderId", "redirectUrl")
+	if got["redirectUrl"] != "https://pay.test/?MNT_ID=100" {
+		t.Errorf("redirectUrl = %v, want the payment URL", got["redirectUrl"])
 	}
 }
 

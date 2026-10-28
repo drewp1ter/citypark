@@ -48,7 +48,10 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 
 	telegramClient := telegram.NewClient(cfg.Telegram.BaseURL, cfg.Telegram.Token, nil)
 	notifier := NewTelegramNotifier(telegramClient, cfg.Telegram.ChatIDOrderCreated, cfg.Telegram.ChatIDOrderConfirmed, log)
-	payments := NewMonetaPayments(moneta.New(cfg.Moneta.ID, cfg.Moneta.Secret, cfg.Moneta.TestMode))
+	payments := NewMonetaPayments(
+		moneta.New(cfg.Moneta.ID, cfg.Moneta.Secret, cfg.Moneta.TestMode),
+		PaymentPages{Base: cfg.Moneta.URL, Success: cfg.Moneta.SuccessURL, Fail: cfg.Moneta.FailURL},
+	)
 
 	users := user.NewStore(db)
 	iikoClient := iiko.NewClient(

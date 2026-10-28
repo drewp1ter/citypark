@@ -1570,7 +1570,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 **Response 201, `paymentType: "online"`**
 
 ```json
-{ "orderId": 1, "amount": "790.00", "mntSignature": "8c65fcd4afe3dc4cb915e04aaa273574" }
+{ "orderId": 15, "redirectUrl": "https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=8c65fcd4afe3dc4cb915e04aaa273574&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=15" }
 ```
 
 **Errors**
@@ -1588,7 +1588,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 
 **Notes**
 
-For a cash order the frontend sends the customer to `redirectUrl`. For an online order the frontend opens the Moneta payment form with `orderId` as `MNT_TRANSACTION_ID`, `amount` as `MNT_AMOUNT` and `mntSignature` as `MNT_SIGNATURE`. Repeating an identical online order (same phone, address, comment and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. The same product listed twice is merged into one item.
+For both payment types the frontend sends the customer to `redirectUrl`. For an online order it is the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical online order (same phone, address, comment and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. The same product listed twice is merged into one item.
 
 #### GET /orders/my
 

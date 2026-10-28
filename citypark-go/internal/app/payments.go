@@ -8,17 +8,25 @@ import (
 // MonetaPayments implements order.Payments with a moneta.Signer.
 type MonetaPayments struct {
 	signer *moneta.Signer
+	pages  PaymentPages
 }
+
+// PaymentPages are the Moneta addresses the customer is sent to and back from.
+type PaymentPages struct{ Base, Success, Fail string }
 
 var _ order.Payments = (*MonetaPayments)(nil)
 
-func NewMonetaPayments(signer *moneta.Signer) *MonetaPayments {
-	return &MonetaPayments{signer: signer}
+func NewMonetaPayments(signer *moneta.Signer, pages PaymentPages) *MonetaPayments {
+	return &MonetaPayments{signer: signer, pages: pages}
 }
 
 func (p *MonetaPayments) Form(r order.PaymentRequest) order.PaymentForm {
 	amount := moneta.FormatAmount(r.Amount)
-	return order.PaymentForm{Amount: amount, Signature: p.signer.RequestSignature(r.OrderID, amount)}
+	return order.PaymentForm{
+		Amount:    amount,
+		Signature: p.signer.RequestSignature(r.OrderID, amount),
+		URL:       p.signer.PaymentURL(p.pages.Base, r.OrderID, amount, p.pages.Success, p.pages.Fail),
+	}
 }
 
 func (p *MonetaPayments) Verify(c order.PaymentCallback) bool {

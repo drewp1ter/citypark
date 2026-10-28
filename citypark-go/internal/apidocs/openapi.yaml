@@ -407,8 +407,10 @@ components:
             $ref: '#/components/schemas/OrderItemInput'
     CreateOrderResult:
       type: object
-      description: For a cash order `redirectUrl` is set. For an online order `amount` and `mntSignature` are set.
-      required: [orderId]
+      description: >-
+        `redirectUrl` is the thank-you page for a cash order and the Moneta payment page (full
+        MONETA.Assistant address with every `MNT_*` parameter and the signature) for an online order.
+      required: [orderId, redirectUrl]
       properties:
         orderId:
           type: integer
@@ -416,14 +418,6 @@ components:
         redirectUrl:
           type: string
           example: http://localhost:3001/thankyou
-        amount:
-          type: string
-          description: Value of MNT_AMOUNT for the Moneta payment form.
-          example: '790.00'
-        mntSignature:
-          type: string
-          description: Value of MNT_SIGNATURE for the Moneta payment form.
-          example: 8c65fcd4afe3dc4cb915e04aaa273574
     Order:
       type: object
       required: [id, createdAt, updatedAt, status, comment, paymentType, total, deliveryPrice, customer, address, items]
@@ -1791,7 +1785,7 @@ paths:
       description: >-
         Role: public. The customer is found by phone number or created. Orders are accepted only
         during working hours. For a cash order send the customer to `redirectUrl`. For an online
-        order open the Moneta payment form with `orderId`, `amount` and `mntSignature`.
+        order `redirectUrl` is the Moneta payment page; send the customer there too.
       tags: [orders]
       requestBody:
         required: true

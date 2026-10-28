@@ -226,12 +226,14 @@ func assertSent(t *testing.T, got, want []sentMessage) {
 }
 
 func TestPaymentsAdapter(t *testing.T) {
-	p := app.NewMonetaPayments(moneta.New("100", "secret", false))
+	p := app.NewMonetaPayments(moneta.New("100", "secret", false), app.PaymentPages{Base: "https://pay.test/"})
 
 	form := p.Form(order.PaymentRequest{OrderID: 15, Amount: 79000})
-	want := order.PaymentForm{Amount: "790.00", Signature: "8c65fcd4afe3dc4cb915e04aaa273574"}
-	if form != want {
-		t.Errorf("Form = %+v, want %+v", form, want)
+	if form.Amount != "790.00" || form.Signature != "8c65fcd4afe3dc4cb915e04aaa273574" {
+		t.Errorf("Form = %+v, want amount 790.00 and the known signature", form)
+	}
+	if !strings.HasPrefix(form.URL, "https://pay.test/?") || !strings.Contains(form.URL, "MNT_TRANSACTION_ID=15") {
+		t.Errorf("Form.URL = %q", form.URL)
 	}
 
 	good := order.PaymentCallback{TransactionID: "15", OperationID: "555", Amount: "790.00", Signature: "998b6268fe3a6c7f4eeb8ccec65a9566"}
@@ -396,8 +398,8 @@ func TestAppOnlineFlow(t *testing.T) {
 	}
 	var res order.CreateResult
 	testutil.Decode(t, rec, &res)
-	if res.Amount != "790.00" {
-		t.Fatalf("amount = %q, want 790.00", res.Amount)
+	if !strings.Contains(res.RedirectURL, "MNT_AMOUNT=790.00") {
+		t.Fatalf("redirectUrl = %q, want it to carry MNT_AMOUNT=790.00", res.RedirectURL)
 	}
 
 	id := strconv.FormatInt(res.OrderID, 10)
