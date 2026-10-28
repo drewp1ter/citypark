@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mapServerFields, toRequest, validateDeliveryPrice } from './form'
 
-const valid = { name: 'Сочи', value: '', price: '150' }
+const valid = { name: 'Сочи', value: '', price: '150', freeFrom: '' }
 
 describe('validateDeliveryPrice', () => {
 	it('accepts a valid form', () => {
@@ -20,6 +20,14 @@ describe('validateDeliveryPrice', () => {
 		expect(validateDeliveryPrice({ ...valid, value: 'а'.repeat(256) }).value).toBeDefined()
 	})
 
+	it.each(['', '0'])('accepts the free delivery threshold %j', (freeFrom) => {
+		expect(validateDeliveryPrice({ ...valid, freeFrom }).freeFrom).toBeUndefined()
+	})
+
+	it.each(['-1', 'abc', '1.555'])('rejects the free delivery threshold %j', (freeFrom) => {
+		expect(validateDeliveryPrice({ ...valid, freeFrom }).freeFrom).toBeDefined()
+	})
+
 	it.each(['', '0', '-1', 'abc', '1.555', '1 000'])('rejects the price %j', (price) => {
 		expect(validateDeliveryPrice({ ...valid, price }).price).toBeDefined()
 	})
@@ -27,11 +35,16 @@ describe('validateDeliveryPrice', () => {
 
 describe('toRequest', () => {
 	it('trims the texts and reads a comma as the decimal separator', () => {
-		expect(toRequest({ name: '  Сочи ', value: ' Россия ', price: ' 150,5 ' })).toEqual({
+		expect(toRequest({ name: '  Сочи ', value: ' Россия ', price: ' 150,5 ', freeFrom: '' })).toEqual({
 			name: 'Сочи',
 			value: 'Россия',
 			price: 150.5,
+			freeFrom: 0,
 		})
+	})
+
+	it('reads the threshold with a comma', () => {
+		expect(toRequest({ ...valid, freeFrom: '500,5' }).freeFrom).toBe(500.5)
 	})
 })
 
@@ -41,6 +54,11 @@ describe('mapServerFields', () => {
 			price: 'bad',
 			name: 'taken',
 		})
+	})
+
+	it('maps freeFrom', () => {
+		expect(mapServerFields({ 'deliveryPrices[0].freeFrom': 'x' })).toEqual({ freeFrom: 'x' })
+		expect(mapServerFields({ freeFrom: 'x' })).toEqual({ freeFrom: 'x' })
 	})
 
 	it('ignores unknown keys', () => {

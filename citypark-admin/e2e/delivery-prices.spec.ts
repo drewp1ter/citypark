@@ -7,11 +7,12 @@ async function openDelivery(page: Page) {
 	await expect(page.getByRole('heading', { name: 'Доставка' })).toBeVisible()
 }
 
-async function addCity(page: Page, name: string, price: string) {
+async function addCity(page: Page, name: string, price: string, freeFrom = '') {
 	await page.getByRole('button', { name: 'Добавить город' }).click()
 	const dialog = page.getByRole('dialog')
 	await dialog.getByLabel('Название города').fill(name)
 	await dialog.getByLabel('Цена доставки, ₽').fill(price)
+	if (freeFrom !== '') await dialog.getByLabel('Бесплатная доставка от, ₽').fill(freeFrom)
 	await dialog.getByRole('button', { name: 'Сохранить' }).click()
 }
 
@@ -19,10 +20,11 @@ test('add, duplicate, edit and delete a delivery price', async ({ page }) => {
 	const name = `Тест ${Date.now()}`
 	await openDelivery(page)
 
-	await addCity(page, name, '123')
+	await addCity(page, name, '123', '500')
 	await expect(page.getByText('Сохранено')).toBeVisible()
 	const row = page.getByRole('row').filter({ hasText: name })
 	await expect(row).toContainText('123 ₽')
+	await expect(row.getByRole('gridcell').nth(1)).toContainText('500 ₽')
 
 	await addCity(page, name, '123')
 	await expect(page.getByRole('dialog').getByText('Такой город уже есть')).toBeVisible()
@@ -34,6 +36,14 @@ test('add, duplicate, edit and delete a delivery price', async ({ page }) => {
 	await edit.getByLabel('Цена доставки, ₽').fill('150')
 	await edit.getByRole('button', { name: 'Сохранить' }).click()
 	await expect(row).toContainText('150 ₽')
+	await expect(row.getByRole('gridcell').nth(1)).toContainText('500 ₽')
+
+	await page.getByRole('button', { name: `Изменить ${name}` }).click()
+	const threshold = page.getByRole('dialog').getByLabel('Бесплатная доставка от, ₽')
+	await expect(threshold).toHaveValue('500')
+	await threshold.fill('')
+	await page.getByRole('dialog').getByRole('button', { name: 'Сохранить' }).click()
+	await expect(row.getByRole('gridcell').nth(1)).toHaveText('—')
 
 	await page.getByRole('button', { name: `Удалить ${name}` }).click()
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Удалить' }).click()

@@ -32,3 +32,6 @@ stop if that task is not ticked.
 - [x] 17 Docker image and deployment notes [16]
 - [x] 18 Room summary field [11] (needs citypark-go task 56)
 - [x] 19 Room photo gallery [11, 18] (needs citypark-go task 57)
+
+## Delivery
+- [x] 20 Free delivery threshold [04] (needs citypark-go task 59)

@@ -400,13 +400,13 @@ export interface paths {
                      * @example {
                      *       "deliveryPrices": [
                      *         {
-                     *           "name": "Сочи",
-                     *           "value": "Россия, Краснодарский край, Сочи",
-                     *           "price": 150
+                     *           "name": "Белореченск",
+                     *           "price": 100,
+                     *           "freeFrom": 500
                      *         },
                      *         {
-                     *           "name": "Адлер",
-                     *           "price": 99.5
+                     *           "name": "п. Родники",
+                     *           "price": 250
                      *         }
                      *       ]
                      *     }
@@ -1319,7 +1319,7 @@ export interface paths {
         put?: never;
         /**
          * Place an order
-         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during working hours. For a cash order send the customer to `redirectUrl`. For an online order open the Moneta payment form with `orderId`, `amount` and `mntSignature`.
+         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during working hours. For a cash order send the customer to `redirectUrl`. For an online order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
          */
         post: {
             parameters: {
@@ -1335,9 +1335,10 @@ export interface paths {
                      *       "phone": "+79991234567",
                      *       "name": "Иван",
                      *       "comment": "Без лука",
+                     *       "deliveryTime": "18:30",
                      *       "paymentType": "cash",
                      *       "address": {
-                     *         "city": "Сочи",
+                     *         "city": "Белореченск",
                      *         "address": "ул. Ленина, 1"
                      *       },
                      *       "items": [
@@ -2043,15 +2044,20 @@ export interface components {
         DeliveryPrice: {
             /** @example 1 */
             id: number;
-            /** @example Сочи */
+            /** @example Белореченск */
             name: string;
-            /** @example Россия, Краснодарский край, Сочи */
+            /** @example  */
             value: string;
             /**
              * @description Rubles.
-             * @example 150
+             * @example 100
              */
             price: number;
+            /**
+             * @description Order total from which delivery to this town is free. 0 = never free.
+             * @example 500
+             */
+            freeFrom: number;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2060,16 +2066,21 @@ export interface components {
         DeliveryPriceInput: {
             /**
              * @description Must be unique.
-             * @example Сочи
+             * @example Белореченск
              */
             name: string;
-            /** @example Россия, Краснодарский край, Сочи */
+            /** @example  */
             value?: string;
             /**
              * @description Rubles.
-             * @example 150
+             * @example 100
              */
             price: number;
+            /**
+             * @description Order total from which delivery to this town is free. 0 = never free.
+             * @example 500
+             */
+            freeFrom?: number;
         };
         Image: {
             /** @example 1 */
@@ -2142,28 +2153,23 @@ export interface components {
             name: string;
             /** @example Без лука */
             comment?: string;
+            /**
+             * @description Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Identical orders for different times are separate orders.
+             * @example 18:30
+             */
+            deliveryTime?: string;
             /** @enum {string} */
             paymentType: "cash" | "online";
             /** @description Delivery address. Leave it out for pickup. `city` must be the name of a delivery price. */
             address?: components["schemas"]["AddressInput"];
             items: components["schemas"]["OrderItemInput"][];
         };
-        /** @description For a cash order `redirectUrl` is set. For an online order `amount` and `mntSignature` are set. */
+        /** @description `redirectUrl` is the thank-you page for a cash order and the Moneta payment page (full MONETA.Assistant address with every `MNT_*` parameter and the signature) for an online order. */
         CreateOrderResult: {
             /** @example 1 */
             orderId: number;
             /** @example http://localhost:3001/thankyou */
-            redirectUrl?: string;
-            /**
-             * @description Value of MNT_AMOUNT for the Moneta payment form.
-             * @example 790.00
-             */
-            amount?: string;
-            /**
-             * @description Value of MNT_SIGNATURE for the Moneta payment form.
-             * @example 8c65fcd4afe3dc4cb915e04aaa273574
-             */
-            mntSignature?: string;
+            redirectUrl: string;
         };
         Order: {
             /** @example 2 */
@@ -2175,6 +2181,11 @@ export interface components {
             /** @enum {string} */
             status: "new" | "paid" | "confirmed" | "canceled";
             comment: string;
+            /**
+             * @description `HH:MM`, or an empty string when the customer wants the order as soon as possible.
+             * @example 18:30
+             */
+            deliveryTime: string;
             /** @enum {string} */
             paymentType: "cash" | "online";
             /**

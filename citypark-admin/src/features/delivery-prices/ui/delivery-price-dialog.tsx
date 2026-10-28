@@ -16,6 +16,7 @@ export function DeliveryPriceDialog({ item, onClose }: { item?: DeliveryPrice; o
 		name: item?.name ?? '',
 		value: item?.value ?? '',
 		price: item === undefined ? '' : String(item.price),
+		freeFrom: item === undefined || item.freeFrom === 0 ? '' : String(item.freeFrom),
 	})
 	const [errors, setErrors] = useState<Errors>({})
 	const isPending = create.isPending || update.isPending
@@ -89,6 +90,18 @@ export function DeliveryPriceDialog({ item, onClose }: { item?: DeliveryPrice; o
 								<Label>Цена доставки, ₽</Label>
 								<Input />
 								<FieldError>{errors.price}</FieldError>
+							</TextField>
+							<TextField
+								name='freeFrom'
+								inputMode='decimal'
+								value={form.freeFrom}
+								onChange={set('freeFrom')}
+								isInvalid={errors.freeFrom !== undefined}
+							>
+								<Label>Бесплатная доставка от, ₽</Label>
+								<Input />
+								<Description>Сумма заказа без доставки. Пусто или 0 — доставка всегда платная</Description>
+								<FieldError>{errors.freeFrom}</FieldError>
 							</TextField>
 						</Modal.Body>
 						<Modal.Footer>

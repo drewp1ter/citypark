@@ -72,6 +72,7 @@ export function DeliveryPricesPage() {
 							<Table.Header>
 								<Table.Column isRowHeader>Город</Table.Column>
 								<Table.Column>Цена</Table.Column>
+								<Table.Column>Бесплатно от</Table.Column>
 								<Table.Column className='w-24'>
 									<span className='sr-only'>Действия</span>
 								</Table.Column>
@@ -83,6 +84,9 @@ export function DeliveryPricesPage() {
 											<Name item={item} />
 										</Table.Cell>
 										<Table.Cell>{formatRub(item.price)}</Table.Cell>
+										<Table.Cell>
+											{item.freeFrom > 0 ? formatRub(item.freeFrom) : <span className='text-muted'>—</span>}
+										</Table.Cell>
 										<Table.Cell>{actions(item)}</Table.Cell>
 									</Table.Row>
 								))}
@@ -99,6 +103,7 @@ export function DeliveryPricesPage() {
 							<div className='min-w-0'>
 								<Name item={item} />
 								<div className='mt-1 font-medium'>{formatRub(item.price)}</div>
+								{item.freeFrom > 0 && <div className='text-sm text-muted'>Бесплатно от {formatRub(item.freeFrom)}</div>}
 							</div>
 							{actions(item)}
 						</li>
