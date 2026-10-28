@@ -35,3 +35,4 @@ stop if that task is not ticked.
 
 ## Delivery
 - [x] 20 Free delivery threshold [04] (needs citypark-go task 59)
+- [x] 21 Working hours on «Доставка» [20] (needs citypark-go task 63)

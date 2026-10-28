@@ -1270,6 +1270,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/working-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the working hours
+         * @description Role: public. The hours when orders are accepted. Show them without a leading zero (`9:00`).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description The working hours. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "start": "09:00",
+                         *       "end": "22:00",
+                         *       "updatedAt": "2026-10-28T17:31:43.999866Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["WorkingHoursResponse"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+            };
+        };
+        /**
+         * Replace the working hours
+         * @description Role: admin. Both times are trimmed and must be `HH:MM` with a leading zero (`Укажите время в формате ЧЧ:ММ`); `end` must be later than `start` (`errors.end`: `Время окончания должно быть позже начала`). An `updatedAt` in the body is ignored.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "start": "10:00",
+                     *       "end": "23:00"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["WorkingHours"];
+                };
+            };
+            responses: {
+                /** @description The stored hours. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["WorkingHoursResponse"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders": {
         parameters: {
             query?: never;
@@ -1319,7 +1403,7 @@ export interface paths {
         put?: never;
         /**
          * Place an order
-         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during working hours. For a cash order send the customer to `redirectUrl`. For an online order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
+         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). For a cash order send the customer to `redirectUrl`. For an online order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
          */
         post: {
             parameters: {
@@ -2154,7 +2238,7 @@ export interface components {
             /** @example Без лука */
             comment?: string;
             /**
-             * @description Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Identical orders for different times are separate orders.
+             * @description Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Must be within the working hours, both ends included. Identical orders for different times are separate orders.
              * @example 18:30
              */
             deliveryTime?: string;
@@ -2471,6 +2555,22 @@ export interface components {
             social: components["schemas"]["SettingsSocial"][];
         };
         SettingsResponse: components["schemas"]["Settings"] & {
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        WorkingHours: {
+            /**
+             * @description `HH:MM` with a leading zero. Orders are accepted from this time.
+             * @example 09:00
+             */
+            start: string;
+            /**
+             * @description `HH:MM` with a leading zero, later than `start`. Orders are not accepted at this time; a delivery time may equal it.
+             * @example 22:00
+             */
+            end: string;
+        };
+        WorkingHoursResponse: components["schemas"]["WorkingHours"] & {
             /** Format: date-time */
             updatedAt: string;
         };

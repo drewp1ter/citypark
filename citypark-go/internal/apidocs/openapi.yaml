@@ -230,7 +230,7 @@ components:
           example: Белореченск
         value:
           type: string
-          example: ''""
+          example: ''
         price:
           type: number
           description: Rubles.
@@ -258,7 +258,7 @@ components:
         value:
           type: string
           maxLength: 255
-          example: ''""
+          example: ''
         price:
           type: number
           exclusiveMinimum: true

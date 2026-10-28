@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import type { components } from '../../../shared/api/schema'
 import { formatRub } from '../../../shared/lib/format'
 import { PageHeader } from '../../../shared/ui/page-header'
+import { WorkingHoursCard } from '../../working-hours/ui/working-hours-card'
 import { deliveryPricesQuery } from '../api'
 import { DeleteDialog } from './delete-dialog'
 import { DeliveryPriceDialog } from './delivery-price-dialog'
@@ -123,6 +124,7 @@ export function DeliveryPricesPage() {
 					</Button>
 				}
 			/>
+			<WorkingHoursCard />
 			<SearchField name='search' value={search} onChange={setSearch} className='mb-4 max-w-sm'>
 				<Label>Поиск города</Label>
 				<SearchField.Group>
