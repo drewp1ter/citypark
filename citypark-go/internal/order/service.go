@@ -58,12 +58,13 @@ type Payments interface {
 }
 
 type CreateInput struct {
-	Phone       string         `json:"phone" validate:"required,ruphone"`
-	Name        string         `json:"name" validate:"required,max=80"`
-	Comment     string         `json:"comment" validate:"max=8192"`
-	PaymentType string         `json:"paymentType" validate:"required,oneof=cash online"`
-	Address     *address.Input `json:"address" validate:"omitempty"`
-	Items       []ItemInput    `json:"items" validate:"required,min=1,dive"`
+	Phone        string         `json:"phone" validate:"required,ruphone"`
+	Name         string         `json:"name" validate:"required,max=80"`
+	Comment      string         `json:"comment" validate:"max=8192"`
+	DeliveryTime string         `json:"deliveryTime" validate:"omitempty,hhmm"` // "" = as soon as possible
+	PaymentType  string         `json:"paymentType" validate:"required,oneof=cash online"`
+	Address      *address.Input `json:"address" validate:"omitempty"`
+	Items        []ItemInput    `json:"items" validate:"required,min=1,dive"`
 }
 
 // CreateResult: RedirectURL is the thank-you page for a cash order and the Moneta payment page for an online order.
@@ -122,7 +123,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		if in.Address != nil {
 			dupAddr = &Address{City: in.Address.City, Address: in.Address.Address}
 		}
-		id, dup, err := orders.FindOpenDuplicate(ctx, phone, dupAddr, comment, hash)
+		id, dup, err := orders.FindOpenDuplicate(ctx, phone, dupAddr, comment, in.DeliveryTime, hash)
 		if err != nil {
 			return CreateResult{}, err
 		}
@@ -137,14 +138,15 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 
 	if !found {
 		id, err := s.save(ctx, saveParams{
-			name:        name,
-			phone:       phone,
-			comment:     comment,
-			paymentType: in.PaymentType,
-			address:     in.Address,
-			items:       items,
-			hash:        hash,
-			delivery:    delivery,
+			name:         name,
+			phone:        phone,
+			comment:      comment,
+			deliveryTime: in.DeliveryTime,
+			paymentType:  in.PaymentType,
+			address:      in.Address,
+			items:        items,
+			hash:         hash,
+			delivery:     delivery,
 		})
 		if err != nil {
 			return CreateResult{}, err
@@ -234,11 +236,11 @@ func (s *Service) PaymentConfirmed(ctx context.Context, cb PaymentCallback) erro
 }
 
 type saveParams struct {
-	name, phone, comment, paymentType string
-	address                           *address.Input
-	items                             []ItemInput
-	hash                              string
-	delivery                          deliveryprice.DeliveryPrice
+	name, phone, comment, deliveryTime, paymentType string
+	address                                         *address.Input
+	items                                           []ItemInput
+	hash                                            string
+	delivery                                        deliveryprice.DeliveryPrice
 }
 
 // save checks the products and writes the customer, the address and the order in one transaction.
@@ -295,6 +297,7 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 			CustomerID:    customer.ID,
 			AddressID:     addressID,
 			Comment:       p.comment,
+			DeliveryTime:  p.deliveryTime,
 			PaymentType:   p.paymentType,
 			ItemsHash:     p.hash,
 			DeliveryPrice: deliveryCost(p.delivery, subtotal),

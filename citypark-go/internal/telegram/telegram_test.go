@@ -230,3 +230,31 @@ func TestFormatOrderUnknownPaymentType(t *testing.T) {
 		t.Errorf("output does not contain %q:\n%s", want, got)
 	}
 }
+
+func TestFormatOrderDeliveryTime(t *testing.T) {
+	got := FormatOrder(OrderMessage{
+		ID:           15,
+		Name:         "Иван",
+		Phone:        "+79991234567",
+		PaymentType:  "online",
+		Total:        money.FromRubles(640),
+		DeliveryTime: "18:30",
+		Items:        []OrderItem{{Category: "Мангал", Name: "Шашлык", Amount: 2}},
+	})
+	want := "```\n" +
+		"Номер заказа:   15\n" +
+		"Имя:            Иван\n" +
+		"Телефон:        +79991234567\n" +
+		"Доставка:       Нет\n" +
+		"Оплата:         онлайн\n" +
+		"Ко времени:     18:30\n" +
+		"Итого:          640\n" +
+		"Комментарий:    \n" +
+		"\n" +
+		"Заказ:\n" +
+		"Мангал: Шашлык * 2\n" +
+		"```"
+	if got != want {
+		t.Fatalf("got:\n%q\nwant:\n%q", got, want)
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -17,6 +18,8 @@ const topMessage = "Ошибка валидации, пожалуйста про
 
 // v is safe for concurrent use and caches struct metadata, so one instance is shared.
 var v = newValidator()
+
+var hhmmRe = regexp.MustCompile(`^([01][0-9]|2[0-3]):[0-5][0-9]$`)
 
 func newValidator() *validator.Validate {
 	val := validator.New()
@@ -33,6 +36,12 @@ func newValidator() *validator.Validate {
 	})
 	if err != nil {
 		panic("validate: register ruphone: " + err.Error())
+	}
+	err = val.RegisterValidation("hhmm", func(fl validator.FieldLevel) bool {
+		return hhmmRe.MatchString(fl.Field().String())
+	})
+	if err != nil {
+		panic("validate: register hhmm: " + err.Error())
 	}
 	return val
 }
@@ -71,6 +80,8 @@ func message(fe validator.FieldError) string {
 		return "email должен быть электронной почтой"
 	case "ruphone":
 		return "телефон должен быть действительным номером телефона"
+	case "hhmm":
+		return "Укажите время в формате ЧЧ:ММ"
 	case "min", "gte":
 		return "значение должно быть не меньше " + fe.Param()
 	case "max":

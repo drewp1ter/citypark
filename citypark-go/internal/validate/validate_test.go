@@ -173,3 +173,20 @@ func TestNormalizePhone(t *testing.T) {
 		})
 	}
 }
+
+func TestHHMM(t *testing.T) {
+	type s struct {
+		T string `json:"t" validate:"omitempty,hhmm"`
+	}
+	for _, ok := range []string{"", "09:30", "00:00", "23:59"} {
+		if err := Struct(s{T: ok}); err != nil {
+			t.Errorf("Struct(%q) = %v, want nil", ok, err)
+		}
+	}
+	for _, bad := range []string{"24:00", "9:30", "18-30", "18:60", "18:30:00"} {
+		e := asHTTPError(t, Struct(s{T: bad}))
+		if got := e.Fields["t"]; got != "Укажите время в формате ЧЧ:ММ" {
+			t.Errorf("Struct(%q) errors.t = %q", bad, got)
+		}
+	}
+}

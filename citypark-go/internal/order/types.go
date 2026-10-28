@@ -49,6 +49,7 @@ type Order struct {
 	UpdatedAt     time.Time     `json:"updatedAt"`
 	Status        string        `json:"status"`
 	Comment       string        `json:"comment"`
+	DeliveryTime  string        `json:"deliveryTime"` // "HH:MM"; "" = as soon as possible
 	PaymentType   string        `json:"paymentType"`
 	Total         money.Kopecks `json:"total"` // sum of OfferedPrice * Amount, without delivery
 	DeliveryPrice money.Kopecks `json:"deliveryPrice"`

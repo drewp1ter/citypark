@@ -270,3 +270,15 @@ func TestWorkingHoursBoundaries(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateOrderBadDeliveryTime(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	body := orderBody(e, PaymentCash, false)
+	body["deliveryTime"] = "25:00"
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
+	he := decodeError(t, rec, http.StatusBadRequest)
+	wantFieldErrors(t, he, "deliveryTime")
+	if got := he.Fields["deliveryTime"]; got != "Укажите время в формате ЧЧ:ММ" {
+		t.Errorf("errors.deliveryTime = %q", got)
+	}
+}

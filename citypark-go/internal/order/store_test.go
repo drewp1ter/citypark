@@ -43,6 +43,7 @@ func (s seeded) params(withAddress bool) InsertParams {
 	p := InsertParams{
 		CustomerID:    s.userID,
 		Comment:       "позвонить",
+		DeliveryTime:  "18:30",
 		PaymentType:   PaymentCash,
 		ItemsHash:     ItemsHash([]ItemInput{{ProductID: s.productA, Amount: 2}, {ProductID: s.productB, Amount: 1}}),
 		DeliveryPrice: money.Kopecks(15000),
@@ -228,7 +229,7 @@ func TestOrderJSON(t *testing.T) {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	want := []string{"address", "comment", "createdAt", "customer", "deliveryPrice", "id", "items",
+	want := []string{"address", "comment", "createdAt", "customer", "deliveryPrice", "deliveryTime", "id", "items",
 		"paymentType", "status", "total", "updatedAt"}
 	if len(keys) != len(want) {
 		t.Fatalf("keys = %v, want %v", keys, want)
@@ -285,5 +286,32 @@ func TestLoadItemsManyOrders(t *testing.T) {
 	}
 	if len(orders[1].Items) != 2 || orders[1].Total != 129800 {
 		t.Errorf("first order: items %d, total %d", len(orders[1].Items), orders[1].Total)
+	}
+}
+
+func TestInsertDeliveryTime(t *testing.T) {
+	db := testutil.NewDB(t)
+	sd := seed(t, db)
+	withTime := insertOrder(t, db, sd.params(true))
+	p := sd.params(true)
+	p.DeliveryTime = ""
+	without := insertOrder(t, db, p)
+
+	st := NewStore(db)
+	for id, want := range map[int64]string{withTime: "18:30", without: ""} {
+		got, err := st.ByID(context.Background(), id)
+		if err != nil {
+			t.Fatalf("ByID(%d): %v", id, err)
+		}
+		if got.DeliveryTime != want {
+			t.Errorf("ByID(%d).DeliveryTime = %q, want %q", id, got.DeliveryTime, want)
+		}
+	}
+	list, _, err := st.List(context.Background(), ListFilter{}, 10, 0)
+	if err != nil {
+		t.Fatalf("List: %v", err)
+	}
+	if len(list) != 2 || list[0].DeliveryTime != "" || list[1].DeliveryTime != "18:30" {
+		t.Errorf("List delivery times = %q, %q; want \"\" then \"18:30\" (newest first)", list[0].DeliveryTime, list[1].DeliveryTime)
 	}
 }

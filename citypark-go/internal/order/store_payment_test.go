@@ -147,6 +147,7 @@ func TestFindOpenDuplicate(t *testing.T) {
 		payment     string
 		comment     string
 		hashChange  bool
+		timeChange  bool
 		phone       string
 		addr        *Address
 		want        bool
@@ -157,6 +158,8 @@ func TestFindOpenDuplicate(t *testing.T) {
 		{name: "cash", withAddress: true, status: StatusNew, payment: PaymentCash, addr: &base, want: false},
 		{name: "another comment", withAddress: true, status: StatusNew, comment: "другой", addr: &base, want: false},
 		{name: "another hash", withAddress: true, status: StatusNew, hashChange: true, addr: &base, want: false},
+		{name: "another delivery time", withAddress: true, status: StatusNew, timeChange: true, addr: &base, want: false},
+		{name: "another delivery time, pickup", withAddress: false, status: StatusNew, timeChange: true, addr: nil, want: false},
 		{name: "another phone", withAddress: true, status: StatusNew, phone: "+79991112233", addr: &base, want: false},
 		{name: "another address", withAddress: true, status: StatusNew, addr: &other, want: false},
 		{name: "nil address, order has one", withAddress: true, status: StatusNew, addr: nil, want: false},
@@ -183,12 +186,16 @@ func TestFindOpenDuplicate(t *testing.T) {
 			if tt.hashChange {
 				hash = ItemsHash([]ItemInput{{ProductID: sd.productA, Amount: 9}})
 			}
+			dt := p.DeliveryTime
+			if tt.timeChange {
+				dt = "19:30"
+			}
 			ph := phone
 			if tt.phone != "" {
 				ph = tt.phone
 			}
 
-			gotID, found, err := NewStore(db).FindOpenDuplicate(context.Background(), ph, tt.addr, comment, hash)
+			gotID, found, err := NewStore(db).FindOpenDuplicate(context.Background(), ph, tt.addr, comment, dt, hash)
 			if err != nil {
 				t.Fatalf("FindOpenDuplicate: %v", err)
 			}
@@ -214,7 +221,7 @@ func TestFindOpenDuplicateReturnsHighestID(t *testing.T) {
 	second := insertOrder(t, db, p)
 
 	addr := &Address{City: "Москва", Address: "Тверская, 1"}
-	id, found, err := NewStore(db).FindOpenDuplicate(context.Background(), "+79990000000", addr, p.Comment, p.ItemsHash)
+	id, found, err := NewStore(db).FindOpenDuplicate(context.Background(), "+79990000000", addr, p.Comment, p.DeliveryTime, p.ItemsHash)
 	if err != nil {
 		t.Fatalf("FindOpenDuplicate: %v", err)
 	}

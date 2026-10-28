@@ -9,15 +9,16 @@ import (
 
 // OrderMessage is everything the text needs. It is filled by the caller.
 type OrderMessage struct {
-	ID          int64
-	Name        string // customer name
-	Phone       string
-	Address     string        // "city, street"; "" means pickup
-	PaymentType string        // "cash" or "online"
-	Total       money.Kopecks // sum of items, without delivery
-	Delivery    money.Kopecks
-	Comment     string
-	Items       []OrderItem
+	ID           int64
+	Name         string // customer name
+	Phone        string
+	Address      string        // "city, street"; "" means pickup
+	PaymentType  string        // "cash" or "online"
+	Total        money.Kopecks // sum of items, without delivery
+	Delivery     money.Kopecks
+	Comment      string
+	DeliveryTime string // "" = as soon as possible
+	Items        []OrderItem
 }
 
 // OrderItem is one line of the order.
@@ -51,6 +52,9 @@ func FormatOrder(m OrderMessage) string {
 		line("Доставка", "Нет")
 	}
 	line("Оплата", paymentText(m.PaymentType))
+	if m.DeliveryTime != "" {
+		line("Ко времени", m.DeliveryTime)
+	}
 
 	total := m.Total
 	if delivery {

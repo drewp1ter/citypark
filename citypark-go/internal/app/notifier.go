@@ -81,14 +81,15 @@ func (n *TelegramNotifier) send(ctx context.Context, o order.Order, chatID strin
 
 func orderMessage(o order.Order) telegram.OrderMessage {
 	m := telegram.OrderMessage{
-		ID:          o.ID,
-		Name:        o.Customer.Name,
-		Phone:       o.Customer.Phone,
-		PaymentType: o.PaymentType,
-		Total:       o.Total,
-		Delivery:    o.DeliveryPrice,
-		Comment:     o.Comment,
-		Items:       make([]telegram.OrderItem, 0, len(o.Items)),
+		ID:           o.ID,
+		Name:         o.Customer.Name,
+		Phone:        o.Customer.Phone,
+		PaymentType:  o.PaymentType,
+		Total:        o.Total,
+		Delivery:     o.DeliveryPrice,
+		Comment:      o.Comment,
+		DeliveryTime: o.DeliveryTime,
+		Items:        make([]telegram.OrderItem, 0, len(o.Items)),
 	}
 	if o.Address != nil {
 		m.Address = o.Address.City + ", " + o.Address.Address

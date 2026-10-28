@@ -97,5 +97,5 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## iiko orders
 - [x] 60 iiko delivery client [37]
-- [ ] 61 Order delivery time [27] (needed by citypark-modern task 28)
+- [x] 61 Order delivery time [27] (needed by citypark-modern task 28)
 - [ ] 62 Paid online orders go to iiko [30, 60, 61]

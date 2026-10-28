@@ -455,3 +455,44 @@ func TestCreateFreeDelivery(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateDeliveryTime(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	in := e.input(PaymentCash, true)
+	in.DeliveryTime = "18:30"
+	res, err := e.svc.Create(context.Background(), in)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if got := e.order(t, res.OrderID).DeliveryTime; got != "18:30" {
+		t.Errorf("DeliveryTime = %q, want 18:30", got)
+	}
+
+	res, err = e.svc.Create(context.Background(), e.input(PaymentCash, true))
+	if err != nil {
+		t.Fatalf("Create without time: %v", err)
+	}
+	if got := e.order(t, res.OrderID).DeliveryTime; got != "" {
+		t.Errorf("DeliveryTime = %q, want empty", got)
+	}
+}
+
+func TestCreateDuplicateOtherTime(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	create := func(deliveryTime string) int64 {
+		in := e.input(PaymentOnline, true)
+		in.DeliveryTime = deliveryTime
+		res, err := e.svc.Create(context.Background(), in)
+		if err != nil {
+			t.Fatalf("Create(%q): %v", deliveryTime, err)
+		}
+		return res.OrderID
+	}
+	first := create("18:30")
+	if other := create("19:00"); other == first {
+		t.Errorf("another time reused order %d, want a new order", first)
+	}
+	if same := create("18:30"); same != first {
+		t.Errorf("same time gave order %d, want %d", same, first)
+	}
+}

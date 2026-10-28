@@ -1545,6 +1545,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 | `phone` | string | yes | a valid Russian phone number; it is stored as `+7XXXXXXXXXX` |
 | `name` | string | yes | at most 80 characters |
 | `comment` | string | no | at most 8192 characters |
+| `deliveryTime` | string | no | `HH:MM` (24 hours, for example `18:30`); empty or left out means «как можно скорее». The date is always today, and the time is not checked against the working hours |
 | `paymentType` | string | yes | `cash` or `online` |
 | `address` | object | no | delivery address; leave it out for pickup |
 | `address.city` | string | yes, when `address` is set | at most 80 characters; must be the name of a delivery price |
@@ -1558,6 +1559,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
   "phone": "+79991234567",
   "name": "Иван",
   "comment": "Без лука",
+  "deliveryTime": "18:30",
   "paymentType": "cash",
   "address": { "city": "Белореченск", "address": "ул. Ленина, 1" },
   "items": [{ "productId": 1, "amount": 2 }]
@@ -1582,6 +1584,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 |---|---|---|
 | 400 | the body is not valid JSON | `Некорректный JSON` |
 | 400 | a field is missing or invalid; `errors` lists the fields | `Ошибка валидации, пожалуйста проверьте введенные вами данные` |
+| 400 | `deliveryTime` is not `HH:MM`; `errors.deliveryTime` has the text | `Укажите время в формате ЧЧ:ММ` |
 | 400 | the phone number cannot be normalized | `Неверный номер телефона.` |
 | 400 | `address.city` is not a known delivery city | `Указано не существующее имя населенного пункта.` |
 | 400 | a product does not exist or is deleted | `Продукт не найден.` |
@@ -1591,7 +1594,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 
 **Notes**
 
-For both payment types the frontend sends the customer to `redirectUrl`. For an online order it is the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical online order (same phone, address, comment and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
+For both payment types the frontend sends the customer to `redirectUrl`. For an online order it is the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical online order (same phone, address, comment, `deliveryTime` and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
 
 #### GET /orders/my
 
@@ -1617,6 +1620,7 @@ Lists the signed-in user's orders, newest first.
       "updatedAt": "2024-05-24T12:00:00Z",
       "status": "new",
       "comment": "",
+      "deliveryTime": "",
       "paymentType": "cash",
       "total": 599,
       "deliveryPrice": 150,
@@ -1661,6 +1665,7 @@ Returns one order.
   "updatedAt": "2024-05-24T12:00:00Z",
   "status": "new",
   "comment": "",
+  "deliveryTime": "",
   "paymentType": "cash",
   "total": 599,
   "deliveryPrice": 150,
@@ -1712,6 +1717,7 @@ Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&s
       "updatedAt": "2024-05-24T12:00:00Z",
       "status": "new",
       "comment": "",
+      "deliveryTime": "",
       "paymentType": "cash",
       "total": 599,
       "deliveryPrice": 150,
@@ -1796,6 +1802,7 @@ The updated order, in the same format as `GET /orders/{id}`.
   "updatedAt": "2024-05-24T12:00:00Z",
   "status": "new",
   "comment": "",
+  "deliveryTime": "",
   "paymentType": "cash",
   "total": 799,
   "deliveryPrice": 150,
@@ -1902,6 +1909,7 @@ The updated order, in the same format as `GET /orders/{id}`, with `"status": "co
   "updatedAt": "2024-05-24T12:00:00Z",
   "status": "confirmed",
   "comment": "",
+  "deliveryTime": "",
   "paymentType": "cash",
   "total": 799,
   "deliveryPrice": 150,

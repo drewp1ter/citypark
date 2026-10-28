@@ -403,6 +403,11 @@ components:
           type: string
           maxLength: 8192
           example: Без лука
+        deliveryTime:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Identical orders for different times are separate orders.
+          example: '18:30'
         paymentType:
           type: string
           enum: [cash, online]
@@ -430,7 +435,7 @@ components:
           example: http://localhost:3001/thankyou
     Order:
       type: object
-      required: [id, createdAt, updatedAt, status, comment, paymentType, total, deliveryPrice, customer, address, items]
+      required: [id, createdAt, updatedAt, status, comment, deliveryTime, paymentType, total, deliveryPrice, customer, address, items]
       properties:
         id:
           type: integer
@@ -446,6 +451,10 @@ components:
           enum: [new, paid, confirmed, canceled]
         comment:
           type: string
+        deliveryTime:
+          type: string
+          description: '`HH:MM`, or an empty string when the customer wants the order as soon as possible.'
+          example: '18:30'
         paymentType:
           type: string
           enum: [cash, online]
@@ -1808,6 +1817,7 @@ paths:
               phone: '+79991234567'
               name: Иван
               comment: Без лука
+              deliveryTime: '18:30'
               paymentType: cash
               address:
                 city: Белореченск

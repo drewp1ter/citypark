@@ -65,6 +65,7 @@ func testOrder(paymentType string) order.Order {
 		Total:         79000,
 		DeliveryPrice: 15000,
 		Comment:       "позвонить",
+		DeliveryTime:  "18:30",
 		Customer:      order.Customer{ID: 3, Name: "Иван", Phone: "+79991234567"},
 		Address:       &order.Address{ID: 1, City: "Москва", Address: "ул. Ленина, 1"},
 		Items:         []order.Item{{ProductID: 7, Name: "Пицца", CategoryName: "Пиццы", Amount: 2, OfferedPrice: 39500}},
@@ -73,15 +74,16 @@ func testOrder(paymentType string) order.Order {
 
 func testOrderText(paymentType string) string {
 	return telegram.FormatOrder(telegram.OrderMessage{
-		ID:          15,
-		Name:        "Иван",
-		Phone:       "+79991234567",
-		Address:     "Москва, ул. Ленина, 1",
-		PaymentType: paymentType,
-		Total:       79000,
-		Delivery:    15000,
-		Comment:     "позвонить",
-		Items:       []telegram.OrderItem{{Category: "Пиццы", Name: "Пицца", Amount: 2}},
+		ID:           15,
+		Name:         "Иван",
+		Phone:        "+79991234567",
+		Address:      "Москва, ул. Ленина, 1",
+		PaymentType:  paymentType,
+		Total:        79000,
+		Delivery:     15000,
+		Comment:      "позвонить",
+		DeliveryTime: "18:30",
+		Items:        []telegram.OrderItem{{Category: "Пиццы", Name: "Пицца", Amount: 2}},
 	})
 }
 
