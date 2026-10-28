@@ -99,5 +99,6 @@ func run() error {
 		return fmt.Errorf("shutdown: %w", err)
 	}
 	a.Notifier.Wait()
+	a.IikoOrders.Wait()
 	return nil
 }

@@ -41,6 +41,7 @@ type Item struct {
 	CategoryName string        `db:"category_name" json:"categoryName"`
 	Amount       int           `db:"amount" json:"amount"`
 	OfferedPrice money.Kopecks `db:"offered_price_kopecks" json:"offeredPrice"`
+	IikoID       string        `db:"iiko_id" json:"-"`
 }
 
 type Order struct {
@@ -58,6 +59,7 @@ type Order struct {
 	Items         []Item        `json:"items"`   // never nil
 	ItemsHash     string        `json:"-"`
 	PaymentID     string        `json:"-"`
+	IikoOrderID   string        `json:"-"`
 }
 
 type ItemInput struct {

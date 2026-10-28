@@ -18,7 +18,7 @@ import (
 // Callers append a WHERE clause.
 const selectOrders = `
 SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.payment_type, o.items_hash, o.payment_id,
-       o.delivery_price_kopecks,
+       o.delivery_price_kopecks, o.iiko_order_id,
        u.id AS customer_id, u.name AS customer_name, u.phone AS customer_phone,
        a.id AS address_id, a.city AS address_city, a.address AS address_text
 FROM orders o
@@ -61,6 +61,7 @@ type orderRow struct {
 	ItemsHash     string    `db:"items_hash"`
 	PaymentID     string    `db:"payment_id"`
 	DeliveryPrice int64     `db:"delivery_price_kopecks"`
+	IikoOrderID   string    `db:"iiko_order_id"`
 	CustomerID    int64     `db:"customer_id"`
 	CustomerName  string    `db:"customer_name"`
 	CustomerPhone string    `db:"customer_phone"`
@@ -83,6 +84,7 @@ func (r orderRow) toOrder() Order {
 		Items:         []Item{},
 		ItemsHash:     r.ItemsHash,
 		PaymentID:     r.PaymentID,
+		IikoOrderID:   r.IikoOrderID,
 	}
 	if r.AddressID != nil {
 		// city and address are NOT NULL in addresses, so they are set whenever the id is.
@@ -303,6 +305,23 @@ func (s *Store) SetStatus(ctx context.Context, id int64, status string) error {
 	return nil
 }
 
+// SetIikoOrderID saves the id of the order in iiko. It returns store.ErrNotFound when the order does not exist.
+func (s *Store) SetIikoOrderID(ctx context.Context, id int64, iikoID string) error {
+	res, err := s.db.ExecContext(ctx,
+		`UPDATE orders SET iiko_order_id = $2, updated_at = now() WHERE id = $1`, id, iikoID)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return store.ErrNotFound
+	}
+	return nil
+}
+
 // MarkPaid sets status "paid" and stores the payment id (Moneta's operation id),
 // but only when the order is still new or pending. A single UPDATE lets the database
 // pick the winner when the same callback arrives twice at once.
@@ -356,7 +375,8 @@ func (s *Store) loadItems(ctx context.Context, orders []Order) error {
 	}
 	var items []Item
 	err := s.db.SelectContext(ctx, &items,
-		`SELECT oi.order_id, oi.product_id, p.name, c.name AS category_name, oi.amount, oi.offered_price_kopecks
+		`SELECT oi.order_id, oi.product_id, p.name, c.name AS category_name, oi.amount, oi.offered_price_kopecks,
+		        COALESCE(p.iiko_id, '') AS iiko_id
 		 FROM order_items oi
 		 JOIN products p ON p.id = oi.product_id
 		 JOIN categories c ON c.id = p.category_id

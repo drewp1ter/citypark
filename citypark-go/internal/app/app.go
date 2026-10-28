@@ -3,6 +3,7 @@ package app
 import (
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
@@ -30,12 +31,13 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/user"
 )
 
-// App is the assembled application. Notifier is exposed so the caller can wait for pending sends.
+// App is the assembled application. Notifier and IikoOrders are exposed so the caller can wait for pending sends.
 type App struct {
-	Handler  http.Handler
-	Notifier *TelegramNotifier
-	Syncer   *iiko.Syncer
-	Uploads  *upload.Storage
+	Handler    http.Handler
+	Notifier   *TelegramNotifier
+	IikoOrders *IikoOrders
+	Syncer     *iiko.Syncer
+	Uploads    *upload.Storage
 }
 
 // New builds all stores, services and handlers and returns the router.
@@ -65,7 +67,17 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 
 	uploads := upload.NewStorage(cfg.Upload.Dir, cfg.Upload.PublicBaseURL)
 
-	orders := order.NewService(db, c, notifier, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
+	iikoOrders := NewIikoOrders(iikoClient, db, telegramClient, cfg.Telegram.ChatIDOrderConfirmed, IikoOrderSettings{
+		TerminalGroupID: cfg.Iiko.TerminalGroupID,
+		PaymentTypeID:   cfg.Iiko.PaymentTypeID,
+		PaymentTypeKind: cfg.Iiko.PaymentTypeKind,
+		City:            cfg.Iiko.AddressCity,
+		Street:          cfg.Iiko.AddressStreet,
+		House:           cfg.Iiko.AddressHouse,
+		Delays:          []time.Duration{30 * time.Second, 2 * time.Minute},
+	}, log)
+
+	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders}, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
 
 	r := chi.NewRouter()
 	r.Use(logging.Recover(log), logging.Requests(log), cors)
@@ -95,7 +107,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	r.Get("/uploads/*", uploads.Serve().ServeHTTP)
 	r.Head("/uploads/*", uploads.Serve().ServeHTTP)
 
-	return &App{Handler: r, Notifier: notifier, Syncer: syncer, Uploads: uploads}
+	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Syncer: syncer, Uploads: uploads}
 }
 
 // cors allows any origin and answers preflight requests itself.

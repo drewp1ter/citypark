@@ -315,3 +315,49 @@ func TestInsertDeliveryTime(t *testing.T) {
 		t.Errorf("List delivery times = %q, %q; want \"\" then \"18:30\" (newest first)", list[0].DeliveryTime, list[1].DeliveryTime)
 	}
 }
+
+func TestSetIikoOrderID(t *testing.T) {
+	db := testutil.NewDB(t)
+	sd := seed(t, db)
+	id := insertOrder(t, db, sd.params(true))
+	st := NewStore(db)
+
+	got, err := st.ByID(context.Background(), id)
+	if err != nil || got.IikoOrderID != "" {
+		t.Fatalf("before: IikoOrderID = %q, err = %v; want empty", got.IikoOrderID, err)
+	}
+	if err := st.SetIikoOrderID(context.Background(), id, "iiko-1"); err != nil {
+		t.Fatalf("SetIikoOrderID: %v", err)
+	}
+	got, err = st.ByID(context.Background(), id)
+	if err != nil || got.IikoOrderID != "iiko-1" {
+		t.Errorf("after: IikoOrderID = %q, err = %v; want iiko-1", got.IikoOrderID, err)
+	}
+	if err := st.SetIikoOrderID(context.Background(), id+1000, "x"); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("missing order: err = %v, want store.ErrNotFound", err)
+	}
+}
+
+func TestItemsHaveIikoID(t *testing.T) {
+	db := testutil.NewDB(t)
+	sd := seed(t, db)
+	withID := testutil.InsertProduct(t, db, testutil.Product{CategoryID: sd.categoryID, PriceKopecks: 100, IikoID: "iiko-p"})
+	p := sd.params(true)
+	p.Items = []InsertItem{
+		{ProductID: sd.productA, Amount: 1, OfferedPrice: 59900},
+		{ProductID: withID, Amount: 1, OfferedPrice: 100},
+	}
+	id := insertOrder(t, db, p)
+
+	got, err := NewStore(db).ByID(context.Background(), id)
+	if err != nil {
+		t.Fatalf("ByID: %v", err)
+	}
+	byProduct := map[int64]string{}
+	for _, it := range got.Items {
+		byProduct[it.ProductID] = it.IikoID
+	}
+	if len(byProduct) != 2 || byProduct[sd.productA] != "" || byProduct[withID] != "iiko-p" {
+		t.Errorf("iiko ids = %v, want {%d: \"\", %d: iiko-p}", byProduct, sd.productA, withID)
+	}
+}

@@ -55,6 +55,7 @@ type Product struct {
 	SaleStart    *int
 	SaleEnd      *int
 	SaleDays     string
+	IikoID       string // stored as NULL when empty
 }
 
 func InsertProduct(t *testing.T, db *sqlx.DB, p Product) int64 {
@@ -64,9 +65,9 @@ func InsertProduct(t *testing.T, db *sqlx.DB, p Product) int64 {
 	}
 	var id int64
 	err := db.GetContext(context.Background(), &id,
-		`INSERT INTO products (category_id, name, price_kopecks, sort_order, is_deleted, sale_start, sale_end, sale_days)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
-		p.CategoryID, p.Name, p.PriceKopecks, p.SortOrder, p.IsDeleted, p.SaleStart, p.SaleEnd, p.SaleDays)
+		`INSERT INTO products (category_id, name, price_kopecks, sort_order, is_deleted, sale_start, sale_end, sale_days, iiko_id)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, '')) RETURNING id`,
+		p.CategoryID, p.Name, p.PriceKopecks, p.SortOrder, p.IsDeleted, p.SaleStart, p.SaleEnd, p.SaleDays, p.IikoID)
 	if err != nil {
 		t.Fatalf("insert product: %v", err)
 	}

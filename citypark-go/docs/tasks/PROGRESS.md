@@ -98,4 +98,5 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## iiko orders
 - [x] 60 iiko delivery client [37]
 - [x] 61 Order delivery time [27] (needed by citypark-modern task 28)
-- [ ] 62 Paid online orders go to iiko [30, 60, 61]
+- [x] 62 Paid online orders go to iiko [30, 60, 61]
+  - Owner check: set the real `IIKO_*` values (including `IIKO_TERMINAL_GROUP_ID` and `IIKO_PAYMENT_TYPE_ID`), pay an order in Moneta's demo shop and see it in iikoFront. Its comment should show the address, the time and the fee, and `orders.iiko_order_id` should be filled.

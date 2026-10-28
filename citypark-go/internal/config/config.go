@@ -36,6 +36,11 @@ type Admin struct{ Email, Password, Phone string }
 type Iiko struct {
 	BaseURL, APIKey, AppID, ClientSecret, OrganizationID, ExternalMenuID, UpdateToken string
 	SyncInterval                                                                      time.Duration // 0 = no scheduled sync
+
+	// Orders sent to iiko. Without TerminalGroupID and PaymentTypeID orders are not sent.
+	TerminalGroupID, PaymentTypeID, PaymentTypeKind string
+	// Placeholder address of the iiko order: iiko's legacy address needs a street and a house of its own.
+	AddressCity, AddressStreet, AddressHouse string
 }
 type Telegram struct{ BaseURL, Token, ChatIDOrderCreated, ChatIDOrderConfirmed string }
 type Moneta struct {
@@ -121,6 +126,13 @@ func Load(lookup LookupFunc) (Config, error) {
 		OrganizationID: str("IIKO_ORGANIZATION_ID", ""),
 		ExternalMenuID: str("IIKO_EXTERNAL_MENU_ID", ""),
 		UpdateToken:    str("IIKO_UPDATE_TOKEN", ""),
+
+		TerminalGroupID: str("IIKO_TERMINAL_GROUP_ID", ""),
+		PaymentTypeID:   str("IIKO_PAYMENT_TYPE_ID", ""),
+		PaymentTypeKind: str("IIKO_PAYMENT_TYPE_KIND", "Card"),
+		AddressCity:     str("IIKO_ADDRESS_CITY", "Белореченск"),
+		AddressStreet:   str("IIKO_ADDRESS_STREET", "Гоголя"),
+		AddressHouse:    str("IIKO_ADDRESS_HOUSE", "61"),
 	}
 	syncInterval := str("IIKO_SYNC_INTERVAL", "0")
 	if c.Iiko.SyncInterval, err = time.ParseDuration(syncInterval); err != nil {
