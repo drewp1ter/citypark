@@ -94,3 +94,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Delivery
 - [x] 59 Delivery prices from the old site, free delivery threshold [16, 26]
   - Follow-up in citypark-modern: read `price` and `freeFrom` from `GET /delivery-prices` instead of `freeFrom: 500` in `src/entities/dish/model/delivery.ts`.
+
+## iiko orders
+- [x] 60 iiko delivery client [37]
+- [ ] 61 Order delivery time [27] (needed by citypark-modern task 28)
+- [ ] 62 Paid online orders go to iiko [30, 60, 61]

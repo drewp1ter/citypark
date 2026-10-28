@@ -14,6 +14,21 @@ import (
 // ErrUnauthorized is returned when iiko answers 401.
 var ErrUnauthorized = errors.New("iiko: unauthorized")
 
+// StatusError: iiko answered with a status other than 200 and 401.
+type StatusError struct {
+	Endpoint    string
+	Status      int
+	Description string // errorDescription from the body, "" when the body has none
+}
+
+func (e *StatusError) Error() string {
+	msg := fmt.Sprintf("iiko: %s: unexpected status %d", e.Endpoint, e.Status)
+	if e.Description != "" {
+		msg += ": " + e.Description
+	}
+	return msg
+}
+
 // Credentials authenticate the application in iiko.
 type Credentials struct{ APIKey, AppID, ClientSecret string }
 
@@ -24,6 +39,8 @@ type Client struct {
 	organizationID string
 	externalMenuID string
 	http           *http.Client
+	pollEvery      time.Duration // pause before each commands/status check
+	pollTimes      int           // how many checks CreateDelivery makes at most
 
 	mu    sync.Mutex
 	token string
@@ -41,6 +58,8 @@ func NewClient(baseURL string, creds Credentials, organizationID, externalMenuID
 		organizationID: organizationID,
 		externalMenuID: externalMenuID,
 		http:           httpClient,
+		pollEvery:      2 * time.Second,
+		pollTimes:      15,
 	}
 }
 
@@ -140,7 +159,11 @@ func (c *Client) post(ctx context.Context, endpoint, token string, body, out any
 	case http.StatusUnauthorized:
 		return ErrUnauthorized
 	default:
-		return fmt.Errorf("iiko: %s: unexpected status %d", endpoint, resp.StatusCode)
+		var failure struct {
+			ErrorDescription string `json:"errorDescription"`
+		}
+		_ = json.NewDecoder(resp.Body).Decode(&failure) // the body is optional
+		return &StatusError{Endpoint: endpoint, Status: resp.StatusCode, Description: failure.ErrorDescription}
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
