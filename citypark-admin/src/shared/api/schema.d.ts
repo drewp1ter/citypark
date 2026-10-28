@@ -1378,7 +1378,6 @@ export interface paths {
                     /** @description Last day, inclusive, in the restaurant's time zone. Not before `from`. */
                     to?: string;
                     status?: "new" | "pending" | "paid" | "canceled" | "confirmed";
-                    paymentType?: "cash" | "online";
                 };
                 header?: never;
                 path?: never;
@@ -1403,7 +1402,7 @@ export interface paths {
         put?: never;
         /**
          * Place an order
-         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). For a cash order send the customer to `redirectUrl`. For an online order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
+         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
          */
         post: {
             parameters: {
@@ -1420,7 +1419,6 @@ export interface paths {
                      *       "name": "Иван",
                      *       "comment": "Без лука",
                      *       "deliveryTime": "18:30",
-                     *       "paymentType": "cash",
                      *       "address": {
                      *         "city": "Белореченск",
                      *         "address": "ул. Ленина, 1"
@@ -2283,22 +2281,20 @@ export interface components {
              * @example 18:30
              */
             deliveryTime?: string;
-            /** @enum {string} */
-            paymentType: "cash" | "online";
             /** @description Delivery address. Leave it out for pickup. `city` must be the name of a delivery price. */
             address?: components["schemas"]["AddressInput"];
             items: components["schemas"]["OrderItemInput"][];
         };
-        /** @description `redirectUrl` is the thank-you page for a cash order and the Moneta payment page (full MONETA.Assistant address with every `MNT_*` parameter and the signature) for an online order. */
+        /** @description `redirectUrl` is the Moneta payment page (full MONETA.Assistant address with every `MNT_*` parameter and the signature). */
         CreateOrderResult: {
             /** @example 1 */
             orderId: number;
-            /** @example http://localhost:3001/thankyou */
+            /** @example https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_ID=100&MNT_TRANSACTION_ID=1 */
             redirectUrl: string;
         };
         LiveOrderEvent: {
             /** @enum {string} */
-            type: "hello" | "order.pending" | "order.created" | "order.paid" | "order.confirmed";
+            type: "hello" | "order.pending" | "order.paid" | "order.confirmed";
             order?: components["schemas"]["Order"];
         };
         Order: {
@@ -2316,8 +2312,6 @@ export interface components {
              * @example 18:30
              */
             deliveryTime: string;
-            /** @enum {string} */
-            paymentType: "cash" | "online";
             /**
              * @description Sum of the items without delivery, in rubles.
              * @example 599

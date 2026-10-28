@@ -4,7 +4,7 @@ import { ApiError } from '../../../shared/api'
 import type { components } from '../../../shared/api/schema'
 import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import { orderQuery } from '../api'
-import { PaymentChip, StatusChip } from '../../../shared/ui/order-chips'
+import { StatusChip } from '../../../shared/ui/order-chips'
 import { addressText } from './orders-table'
 
 type Order = components['schemas']['Order']
@@ -23,7 +23,6 @@ function OrderBody({ order }: { order: Order }) {
 		<div className='flex flex-col gap-4'>
 			<div className='flex flex-wrap items-center gap-2'>
 				<StatusChip status={order.status} />
-				<PaymentChip type={order.paymentType} />
 				<span className='text-sm text-muted'>{formatDateTime(order.createdAt)}</span>
 			</div>
 			<dl className='grid gap-3 sm:grid-cols-2'>

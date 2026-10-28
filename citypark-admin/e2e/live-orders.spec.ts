@@ -25,35 +25,21 @@ test('new orders appear without a reload and open their details', async ({ page,
 	await expect(page.getByRole('heading', { name: 'Заказы онлайн' })).toBeVisible()
 	await expect(page.getByText('Онлайн', { exact: true })).toBeVisible()
 
-	const cashName = `Тест ${Date.now()}`
-	const cash = await request.post(`${apiUrl()}/orders`, {
-		data: { phone: newPhone(), name: cashName, paymentType: 'cash', items: [{ productId: product!.id, amount: 1 }] },
+	const name = `Тест ${Date.now()}`
+	const created = await request.post(`${apiUrl()}/orders`, {
+		data: { phone: newPhone(), name, items: [{ productId: product!.id, amount: 1 }] },
 	})
-	test.skip(cash.status() === 503, 'the restaurant is closed now, orders are not accepted')
-	expect(cash.status()).toBe(201)
-	const cashId = ((await cash.json()) as { orderId: number }).orderId
+	test.skip(created.status() === 503, 'the restaurant is closed now, orders are not accepted')
+	expect(created.status()).toBe(201)
+	const id = ((await created.json()) as { orderId: number }).orderId
 
-	const fresh = page.getByRole('region', { name: 'Новые' })
-	await expect(fresh.getByRole('listitem').filter({ hasText: cashName })).toBeVisible()
-	// Only a paid order alerts.
-	await expect(page.getByRole('region', { name: 'Ждут оплаты' }).getByText(cashName)).toBeHidden()
+	// An unpaid order waits for the payment: it is not in «Новые» and does not alert.
+	const waiting = page.getByRole('region', { name: 'Ждут оплаты' })
+	await expect(waiting.getByRole('listitem').filter({ hasText: name })).toBeVisible()
+	await expect(page.getByRole('region', { name: 'Новые' }).getByText(name)).toBeHidden()
 	await expect(page.getByText('Оплачен заказ')).toBeHidden()
 
-	const onlineName = `Тест онлайн ${Date.now()}`
-	const online = await request.post(`${apiUrl()}/orders`, {
-		data: {
-			phone: newPhone(),
-			name: onlineName,
-			paymentType: 'online',
-			items: [{ productId: product!.id, amount: 1 }],
-		},
-	})
-	expect(online.status()).toBe(201)
-	await expect(
-		page.getByRole('region', { name: 'Ждут оплаты' }).getByRole('listitem').filter({ hasText: onlineName })
-	).toBeVisible()
-
-	await fresh.getByRole('link', { name: `Заказ ${cashId}` }).click()
-	await expect(page.getByRole('dialog')).toContainText(`Заказ № ${cashId}`)
-	await expect(page.getByRole('dialog')).toContainText(cashName)
+	await waiting.getByRole('link', { name: `Заказ ${id}` }).click()
+	await expect(page.getByRole('dialog')).toContainText(`Заказ № ${id}`)
+	await expect(page.getByRole('dialog')).toContainText(name)
 })

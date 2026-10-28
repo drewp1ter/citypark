@@ -1,4 +1,4 @@
-import { isOrderStatus, isPaymentType, type OrderStatus, type PaymentType } from '../../../shared/lib/order-labels'
+import { isOrderStatus, type OrderStatus } from '../../../shared/lib/order-labels'
 
 export const PAGE_SIZE = 20
 
@@ -7,7 +7,6 @@ export type OrderSearch = {
 	from?: string
 	to?: string
 	status?: OrderStatus
-	paymentType?: PaymentType
 	page?: number
 }
 
@@ -47,7 +46,6 @@ export function parseOrderSearch(raw: Record<string, unknown>): OrderSearch {
 	if (from !== undefined) search.from = from
 	if (to !== undefined) search.to = to
 	if (isOrderStatus(raw.status)) search.status = raw.status
-	if (isPaymentType(raw.paymentType)) search.paymentType = raw.paymentType
 	const page = parsePage(raw.page)
 	if (page !== undefined) search.page = page
 	return search
@@ -56,7 +54,7 @@ export function parseOrderSearch(raw: Record<string, unknown>): OrderSearch {
 /** Query string values for `GET /orders`; empty values are left out. */
 export function toApiQuery(s: OrderSearch, pageSize: number): Record<string, string | number> {
 	const query: Record<string, string | number> = { page: s.page ?? 1, pageSize }
-	for (const key of ['q', 'from', 'to', 'status', 'paymentType'] as const) {
+	for (const key of ['q', 'from', 'to', 'status'] as const) {
 		const value = s[key]
 		if (value !== undefined && value !== '') query[key] = value
 	}
@@ -64,11 +62,5 @@ export function toApiQuery(s: OrderSearch, pageSize: number): Record<string, str
 }
 
 export function hasFilters(s: OrderSearch): boolean {
-	return (
-		s.q !== undefined ||
-		s.from !== undefined ||
-		s.to !== undefined ||
-		s.status !== undefined ||
-		s.paymentType !== undefined
-	)
+	return s.q !== undefined || s.from !== undefined || s.to !== undefined || s.status !== undefined
 }

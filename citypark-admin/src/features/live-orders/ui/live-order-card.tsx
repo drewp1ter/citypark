@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 import { formatRub } from '../../../shared/lib/format'
-import { PaymentChip } from '../../../shared/ui/order-chips'
 import type { LiveOrder } from '../model/board'
 
 const timeFormat = new Intl.DateTimeFormat('ru-RU', {
@@ -37,10 +36,7 @@ export function LiveOrderCard({ order, isFresh }: { order: LiveOrder; isFresh: b
 				{order.address === null ? 'Самовывоз' : `${order.address.city}, ${order.address.address}`}
 			</div>
 			{order.comment !== '' && <p className='line-clamp-2 text-sm text-muted'>{order.comment}</p>}
-			<div className='mt-1 flex items-center justify-between gap-2'>
-				<span className='font-medium'>{formatRub(order.total + order.deliveryPrice)}</span>
-				<PaymentChip type={order.paymentType} />
-			</div>
+			<span className='mt-1 font-medium'>{formatRub(order.total + order.deliveryPrice)}</span>
 		</li>
 	)
 }

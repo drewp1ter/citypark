@@ -52,11 +52,14 @@ beforeEach(() => {
 	FakeSocket.instances = []
 	vi.useFakeTimers()
 	vi.stubGlobal('WebSocket', FakeSocket)
+	// No reconnect jitter, so the delays are exact.
+	vi.spyOn(Math, 'random').mockReturnValue(0)
 })
 
 afterEach(() => {
 	vi.useRealTimers()
 	vi.unstubAllGlobals()
+	vi.restoreAllMocks()
 })
 
 describe('liveUrl', () => {

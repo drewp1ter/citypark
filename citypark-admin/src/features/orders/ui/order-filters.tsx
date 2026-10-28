@@ -11,14 +11,7 @@ import {
 } from '@heroui/react'
 import { parseDate } from '@internationalized/date'
 import { useEffect, useRef, useState } from 'react'
-import {
-	ORDER_STATUSES,
-	PAYMENT_TYPES,
-	isOrderStatus,
-	isPaymentType,
-	paymentLabel,
-	statusLabel,
-} from '../../../shared/lib/order-labels'
+import { ORDER_STATUSES, isOrderStatus, statusLabel } from '../../../shared/lib/order-labels'
 import { moscowToday, quickRanges, rangeFor } from '../model/quick-ranges'
 import { hasFilters, type OrderSearch } from '../model/search'
 
@@ -161,12 +154,6 @@ export function OrderFilters({ search, onChange, onReset }: Props) {
 					value={search.status}
 					options={ORDER_STATUSES.map((id) => ({ id, text: statusLabel(id) }))}
 					onChange={(id) => onChange({ status: isOrderStatus(id) ? id : undefined })}
-				/>
-				<FilterSelect
-					label='Оплата'
-					value={search.paymentType}
-					options={PAYMENT_TYPES.map((id) => ({ id, text: paymentLabel(id) }))}
-					onChange={(id) => onChange({ paymentType: isPaymentType(id) ? id : undefined })}
 				/>
 			</div>
 			<div className='flex flex-wrap items-center gap-2'>

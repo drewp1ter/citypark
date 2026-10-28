@@ -39,3 +39,6 @@ stop if that task is not ticked.
 
 ## Live orders
 - [x] 22 Live orders [05] (needs citypark-go task 64)
+
+## Online payment only
+- [x] 23 Online payment only [22] (needs citypark-go task 65)

@@ -25,7 +25,7 @@ test.beforeAll(async ({ request }) => {
 	test.skip(found === undefined, 'no product available for order in the dev database')
 	product = found!
 	const response = await request.post(`${apiUrl()}/orders`, {
-		data: { phone, name: customer, paymentType: 'cash', items: [{ productId: product.id, amount: 2 }] },
+		data: { phone, name: customer, items: [{ productId: product.id, amount: 2 }] },
 	})
 	test.skip(response.status() === 503, 'the restaurant is closed now, orders are not accepted')
 	expect(response.status()).toBe(201)
@@ -42,8 +42,7 @@ test('search, filter, open and go back', async ({ page }) => {
 	await expect(row).toBeVisible()
 	await expect(page.getByText('Найдено: 1')).toBeVisible()
 	await expect(row).toContainText('Самовывоз')
-	await expect(row).toContainText('Наличными')
-	await expect(row).toContainText('Новый')
+	await expect(row).toContainText('Ожидает оплаты')
 	await expect(row.getByRole('link', { name: phone })).toHaveAttribute('href', `tel:${phone}`)
 
 	await search.fill(`нет-такого-${Date.now()}`)
@@ -74,7 +73,7 @@ test('search, filter, open and go back', async ({ page }) => {
 
 test('a link reproduces the view, a missing order says so', async ({ page }) => {
 	await signIn(page)
-	await page.goto(`/orders?status=new&paymentType=cash&q=${encodeURIComponent(customer)}`)
+	await page.goto(`/orders?status=pending&q=${encodeURIComponent(customer)}`)
 	await expect(page.getByRole('row').filter({ hasText: customer })).toBeVisible()
 	await expect(page.getByRole('button', { name: 'Сбросить', exact: true })).toBeVisible()
 

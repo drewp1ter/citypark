@@ -10,7 +10,6 @@ function order(id: number, patch: Omit<Partial<LiveOrder>, 'status'> & { status?
 		status: 'new',
 		comment: '',
 		deliveryTime: '',
-		paymentType: 'cash',
 		total: 500,
 		deliveryPrice: 0,
 		customer: { id: 1, name: 'Иван', phone: '+79990000000' },
@@ -24,7 +23,7 @@ const today = '2026-10-28'
 
 describe('applyEvent', () => {
 	it('inserts a new order', () => {
-		const result = applyEvent([order(1)], { type: 'order.created', order: order(2) }, today)
+		const result = applyEvent([order(1)], { type: 'order.pending', order: order(2) }, today)
 		expect(result.map((o) => o.id)).toEqual([1, 2])
 	})
 
@@ -46,10 +45,10 @@ describe('applyEvent', () => {
 	it('ignores an order of another Moscow day', () => {
 		const orders = [order(1)]
 		const yesterday = order(2, { createdAt: '2026-10-27T20:59:00Z' })
-		expect(applyEvent(orders, { type: 'order.created', order: yesterday }, today)).toBe(orders)
+		expect(applyEvent(orders, { type: 'order.pending', order: yesterday }, today)).toBe(orders)
 		// 21:00 UTC is already the next day in Moscow.
 		const midnight = order(3, { createdAt: '2026-10-27T21:00:00Z' })
-		expect(applyEvent(orders, { type: 'order.created', order: midnight }, today)).toHaveLength(2)
+		expect(applyEvent(orders, { type: 'order.pending', order: midnight }, today)).toHaveLength(2)
 	})
 
 	it('leaves the list unchanged on hello', () => {

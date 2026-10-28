@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import type { components } from '../../../shared/api/schema'
 import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import type { OrderSearch } from '../model/search'
-import { PaymentChip, StatusChip } from '../../../shared/ui/order-chips'
+import { StatusChip } from '../../../shared/ui/order-chips'
 
 type Order = components['schemas']['Order']
 
@@ -33,7 +33,6 @@ export function OrdersTable({ orders, search }: { orders: Order[]; search: Order
 							<Table.Column>Клиент</Table.Column>
 							<Table.Column>Адрес</Table.Column>
 							<Table.Column>Сумма</Table.Column>
-							<Table.Column>Оплата</Table.Column>
 							<Table.Column>Статус</Table.Column>
 						</Table.Header>
 						<Table.Body>
@@ -57,9 +56,6 @@ export function OrdersTable({ orders, search }: { orders: Order[]; search: Order
 									</Table.Cell>
 									<Table.Cell>{addressText(order)}</Table.Cell>
 									<Table.Cell>{formatRub(order.total + order.deliveryPrice)}</Table.Cell>
-									<Table.Cell>
-										<PaymentChip type={order.paymentType} />
-									</Table.Cell>
 									<Table.Cell>
 										<StatusChip status={order.status} />
 									</Table.Cell>

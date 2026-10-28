@@ -9,10 +9,9 @@ describe('parseOrderSearch', () => {
 				from: '2026-10-01',
 				to: '2026-10-21',
 				status: 'paid',
-				paymentType: 'online',
 				page: 3,
 			})
-		).toEqual({ q: 'иван', from: '2026-10-01', to: '2026-10-21', status: 'paid', paymentType: 'online', page: 3 })
+		).toEqual({ q: 'иван', from: '2026-10-01', to: '2026-10-21', status: 'paid', page: 3 })
 	})
 
 	it('drops an invalid page', () => {
@@ -32,9 +31,8 @@ describe('parseOrderSearch', () => {
 		expect(parseOrderSearch({ from: '2026-10-21', to: '2026-10-01' })).toEqual({ from: '2026-10-21' })
 	})
 
-	it('drops an unknown status or payment type', () => {
+	it('drops an unknown status', () => {
 		expect(parseOrderSearch({ status: 'done' })).toEqual({})
-		expect(parseOrderSearch({ paymentType: 'card' })).toEqual({})
 	})
 
 	it('trims q, accepts a number, drops empty and too long', () => {
