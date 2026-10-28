@@ -113,3 +113,6 @@ docker build -t citypark-go .
 The image sets `APP_ENV=production`, so the server refuses to start with the default `JWT_SECRET`. Set at least `JWT_SECRET`, `DATABASE_URL`, the `ADMIN_*` variables and the iiko, Telegram and Moneta secrets. Migrations are embedded in the binary and run automatically at startup.
 
 To run the app with Compose: `docker compose --profile app up --build`.
+
+Do all unchecked tasks:
+CLAUDE_FLAGS="--dangerously-skip-permissions" scripts/run-tasks.sh
