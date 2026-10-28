@@ -2,7 +2,8 @@ import Image from 'next/image'
 import type { PageContent } from '@/entities/content'
 import { delivery, type Dish, type MenuCategory } from '@/entities/dish'
 import { AddToCartButton } from '@/features/add-to-cart'
-import { formatPrice } from '@/shared/lib'
+import { getWorkingHours } from '@/shared/api'
+import { formatHours, formatPrice } from '@/shared/lib'
 import { AppLink, cardClass, Chip, Section } from '@/shared/ui'
 
 type DeliverySectionProps = {
@@ -46,7 +47,9 @@ function DishTeaser({ dish }: { dish: Dish }) {
 	)
 }
 
-export function DeliverySection({ content, categories, dishes }: DeliverySectionProps) {
+export async function DeliverySection({ content, categories, dishes }: DeliverySectionProps) {
+	const hours = await getWorkingHours()
+
 	return (
 		<Section
 			title={content.text('home.delivery.heading')}
@@ -82,7 +85,7 @@ export function DeliverySection({ content, categories, dishes }: DeliverySection
 						{content.text('home.delivery.all-menu-title')}
 					</span>
 					<span className='text-inverse-muted text-[15px]'>
-						{content.text('home.delivery.all-menu-note')} {formatPrice(delivery.freeFrom)} · {delivery.hours} ·{' '}
+						{content.text('home.delivery.all-menu-note')} {formatPrice(delivery.freeFrom)} · {formatHours(hours)} ·{' '}
 						{delivery.outskirtsFee}
 					</span>
 					<span

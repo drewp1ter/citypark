@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import { getSiteSettings } from '@/shared/api'
+import { getSiteSettings, getWorkingHours } from '@/shared/api'
 import { site } from '@/shared/config'
-import { delivery } from '@/entities/dish'
+import { formatHours } from '@/shared/lib'
 
 /** Checkout frame: no site navigation, just a quiet footer (the page brings its own header). */
 export async function CheckoutLayout({ children }: { children: ReactNode }) {
-	const { company, address } = await getSiteSettings()
+	const [{ company, address }, hours] = await Promise.all([getSiteSettings(), getWorkingHours()])
 
 	return (
 		<div className='flex min-h-dvh flex-col'>
@@ -16,7 +16,7 @@ export async function CheckoutLayout({ children }: { children: ReactNode }) {
 				<span>
 					© {site.year} {company.name} · {address.street}
 				</span>
-				<span>Доставка {delivery.hours}</span>
+				<span>Доставка {formatHours(hours)}</span>
 			</footer>
 		</div>
 	)

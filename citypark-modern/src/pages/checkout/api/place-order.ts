@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { getDeliveryTowns, getMenu, priceLines } from '@/entities/dish'
+import { getWorkingHours } from '@/shared/api'
 import { phoneDigits } from '@/shared/lib'
 import {
 	conditionalErrors,
@@ -32,7 +33,8 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 			errors[field] ??= issue.message
 		}
 	}
-	for (const [field, message] of Object.entries(conditionalErrors(values)) as [OrderField, string][]) {
+	const hours = await getWorkingHours()
+	for (const [field, message] of Object.entries(conditionalErrors(values, hours)) as [OrderField, string][]) {
 		errors[field] ??= message
 	}
 
@@ -95,7 +97,8 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 	try {
 		const result = await createOrder(body)
 		if (!result.ok) {
-			errors.form = result.message
+			if (result.fields?.deliveryTime) errors.time = result.fields.deliveryTime
+			else errors.form = result.message
 			return { status: 'error', errors, values }
 		}
 		redirectUrl = result.redirectUrl

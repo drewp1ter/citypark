@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState, type ReactNode } from 'react'
 import { useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
-import { formatPrice, plural } from '@/shared/lib'
+import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
 import {
 	AppLink,
 	Button,
@@ -27,13 +27,15 @@ type CheckoutFormProps = {
 	dishes: readonly Dish[]
 	/** Towns with delivery prices from the backend. */
 	towns: readonly DeliveryTown[]
+	/** Hours when orders are accepted: the bounds of the «Ко времени» input. */
+	hours: WorkingHours
 	/** The customer came back from Moneta after a failed payment. */
 	paymentFailed: boolean
 	/** Title row of the page (h1 and the steps). */
 	intro: ReactNode
 }
 
-export function CheckoutForm({ dishes, towns, paymentFailed, intro }: CheckoutFormProps) {
+export function CheckoutForm({ dishes, towns, hours, paymentFailed, intro }: CheckoutFormProps) {
 	const [state, formAction, pending] = useActionState(placeOrder, initialState)
 	const errors = state.status === 'error' ? state.errors : {}
 	const values = state.status === 'error' ? state.values : undefined
@@ -125,8 +127,8 @@ export function CheckoutForm({ dishes, towns, paymentFailed, intro }: CheckoutFo
 										label='Время'
 										type='time'
 										name='time'
-										min='10:00'
-										max='23:00'
+										min={hours.start}
+										max={hours.end}
 										defaultValue={values?.time}
 										error={errors.time}
 									/>

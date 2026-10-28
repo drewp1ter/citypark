@@ -1,11 +1,8 @@
 import type { ReactNode } from 'react'
 import { ContactForm } from './contact-form'
-import { getSiteSettings } from '@/shared/api'
-import { NBSP } from '@/shared/lib'
+import { getSiteSettings, getWorkingHours } from '@/shared/api'
+import { NBSP, formatHours } from '@/shared/lib'
 import { AppLink, Button, PinIcon, cardClass } from '@/shared/ui'
-
-/** Opening hours stay on one line. */
-const hours = <span className='whitespace-nowrap'>10:00–23:00</span>
 
 /** "8 918 311-97-91" -> ["8 918", "311-97-91"] (the number is set on two lines in the big cards). */
 const splitPhone = (display: string): [string, string] => {
@@ -56,7 +53,12 @@ function PhoneCard({ href, label, number, alt, variant = 'surface' }: PhoneCardP
 }
 
 export async function ContactsPage() {
-	const { phones, address, company, email, social, mapUrl } = await getSiteSettings()
+	const [{ phones, address, company, email, social, mapUrl }, workingHours] = await Promise.all([
+		getSiteSettings(),
+		getWorkingHours(),
+	])
+	// Opening hours stay on one line.
+	const hours = <span className='whitespace-nowrap'>{formatHours(workingHours)}</span>
 
 	return (
 		<main>

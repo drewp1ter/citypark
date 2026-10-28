@@ -56,3 +56,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Cleanup
 - [x] 27 Remove the table booking form
+
+## Working hours
+- [x] 29 Working hours from the backend [28] (needs citypark-go task 63)
+  - Owner: the backend at `MENU_API_URL` (192.168.4.15) is older than task 63 (`GET /working-hours` → 404), so here the pages showed the built-in `9:00–22:00`. Deploy citypark-go with task 63, then check that changing the hours in admin shows on `/menu`, `/`, `/contacts`, `/checkout` within 60 s and that «Ко времени» `08:30` gives «Мы работаем с 9:00 до 22:00» under the time field. The `min`/`max` of the time input make the browser block out-of-range times before the server sees them.

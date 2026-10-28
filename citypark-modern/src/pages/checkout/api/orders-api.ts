@@ -13,8 +13,8 @@ export type CreateOrderBody = {
 
 export type CreateOrderResult =
 	| { ok: true; orderId: number; redirectUrl: string }
-	/** `message` is the backend's text for the customer (400 and 503). */
-	| { ok: false; message: string }
+	/** `message` is the backend's text for the customer (400 and 503); `fields` are the 400's per-field `errors`. */
+	| { ok: false; message: string; fields?: Record<string, string> }
 
 /** POST /orders. Never cached. A network error or an unexpected status throws. */
 export async function createOrder(body: CreateOrderBody): Promise<CreateOrderResult> {
@@ -29,8 +29,11 @@ export async function createOrder(body: CreateOrderBody): Promise<CreateOrderRes
 		return { ok: true, orderId, redirectUrl }
 	}
 	if (response.status === 400 || response.status === 503) {
-		const { message } = (await response.json().catch(() => ({}))) as { message?: string }
-		if (message) return { ok: false, message }
+		const { message, errors } = (await response.json().catch(() => ({}))) as {
+			message?: string
+			errors?: Record<string, string>
+		}
+		if (message) return { ok: false, message, fields: errors }
 	}
 	throw new Error(`POST /orders: ${response.status}`)
 }

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isValidRuPhone } from '@/shared/lib'
+import { hoursError, isValidRuPhone, type WorkingHours } from '@/shared/lib'
 
 export const methods = ['delivery', 'pickup'] as const
 export const whens = ['asap', 'scheduled'] as const
@@ -28,7 +28,10 @@ export type OrderField = keyof z.infer<typeof orderSchema>
  * They are a separate function, not a refinement of the schema, because zod skips object-level refinements
  * while any field is invalid, and then the visitor would find these errors one submit later.
  */
-export function conditionalErrors(order: Record<OrderField, string>): Partial<Record<OrderField, string>> {
+export function conditionalErrors(
+	order: Record<OrderField, string>,
+	hours: WorkingHours
+): Partial<Record<OrderField, string>> {
 	const errors: Partial<Record<OrderField, string>> = {}
 	if (order.method === 'delivery') {
 		if (order.city.trim() === '') errors.city = 'Выберите населённый пункт'
@@ -36,7 +39,7 @@ export function conditionalErrors(order: Record<OrderField, string>): Partial<Re
 	}
 	if (order.when === 'scheduled') {
 		if (!/^\d{2}:\d{2}$/.test(order.time)) errors.time = 'Выберите время'
-		else if (order.time < '10:00' || order.time > '23:00') errors.time = 'Мы работаем с 10:00 до 23:00'
+		else if (order.time < hours.start || order.time > hours.end) errors.time = hoursError(hours)
 	}
 	return errors
 }

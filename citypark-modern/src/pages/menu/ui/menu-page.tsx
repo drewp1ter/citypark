@@ -1,5 +1,6 @@
 import { delivery, getMenu } from '@/entities/dish'
-import { formatPrice } from '@/shared/lib'
+import { getWorkingHours } from '@/shared/api'
+import { formatHours, formatPrice } from '@/shared/lib'
 import { CartPanel } from '@/widgets/cart-summary'
 import { MenuCatalog } from './menu-catalog'
 
@@ -7,7 +8,7 @@ const pill = 'rounded-pill border border-border bg-surface px-3 py-1.5 text-sm m
 
 /** Delivery menu: facts, search and categories, dishes, and the cart column. */
 export async function MenuPage({ categoryId }: { categoryId?: string }) {
-	const menu = await getMenu()
+	const [menu, hours] = await Promise.all([getMenu(), getWorkingHours()])
 
 	return (
 		<main className='max-w-wide-page mx-auto w-full px-3 pt-2 md:px-6 md:pt-8'>
@@ -17,7 +18,7 @@ export async function MenuPage({ categoryId }: { categoryId?: string }) {
 					<li className='rounded-pill bg-accent text-on-accent px-3 py-1.5 text-sm font-semibold md:px-4 md:py-2 md:text-base'>
 						0 ₽ от {formatPrice(delivery.freeFrom)}
 					</li>
-					<li className={pill}>{delivery.hours}</li>
+					<li className={pill}>{formatHours(hours)}</li>
 					<li className={pill}>
 						{delivery.cooking}
 						<span className='hidden md:inline'> готовим</span>
