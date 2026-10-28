@@ -99,7 +99,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	items := mergeItems(in.Items)
 	hash := ItemsHash(items)
 
-	var delivery money.Kopecks
+	var delivery deliveryprice.DeliveryPrice
 	if in.Address != nil {
 		dp, err := deliveryprice.NewStore(s.db).ByName(ctx, in.Address.City)
 		if errors.Is(err, store.ErrNotFound) {
@@ -108,7 +108,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		if err != nil {
 			return CreateResult{}, err
 		}
-		delivery = dp.Price
+		delivery = dp
 	}
 
 	orders := NewStore(s.db)
@@ -238,7 +238,7 @@ type saveParams struct {
 	address                           *address.Input
 	items                             []ItemInput
 	hash                              string
-	delivery                          money.Kopecks
+	delivery                          deliveryprice.DeliveryPrice
 }
 
 // save checks the products and writes the customer, the address and the order in one transaction.
@@ -263,12 +263,14 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 
 		now := s.clock.Now()
 		insertItems := make([]InsertItem, 0, len(p.items))
+		var subtotal money.Kopecks
 		for _, it := range p.items {
 			pr := byID[it.ProductID]
 			if err := checkWindows(pr, now); err != nil {
 				return err
 			}
 			insertItems = append(insertItems, InsertItem{ProductID: pr.ID, Amount: it.Amount, OfferedPrice: pr.Price})
+			subtotal += pr.Price.Mul(it.Amount)
 		}
 
 		customer, err := user.NewStore(tx).UpsertCustomer(ctx, p.name, p.phone)
@@ -295,7 +297,7 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 			Comment:       p.comment,
 			PaymentType:   p.paymentType,
 			ItemsHash:     p.hash,
-			DeliveryPrice: p.delivery,
+			DeliveryPrice: deliveryCost(p.delivery, subtotal),
 			Items:         insertItems,
 		})
 		return err
@@ -304,6 +306,14 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 		return 0, err
 	}
 	return orderID, nil
+}
+
+// deliveryCost is the price of the town, or 0 when the order reaches the town's free-delivery threshold.
+func deliveryCost(dp deliveryprice.DeliveryPrice, subtotal money.Kopecks) money.Kopecks {
+	if dp.FreeFrom > 0 && subtotal >= dp.FreeFrom {
+		return 0
+	}
+	return dp.Price
 }
 
 // mergeItems adds up the amounts of repeated products, keeping the order of first appearance.

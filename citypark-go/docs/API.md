@@ -322,13 +322,14 @@ Returns the delivery price of every town, ordered by `id`.
 
 ```json
 [
-  { "id": 1, "name": "Сочи", "value": "Россия, Краснодарский край, Сочи", "price": 150, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
+  { "id": 1, "name": "Белореченск", "value": "", "price": 100, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
+  { "id": 2, "name": "п. Родники", "value": "", "price": 250, "freeFrom": 0, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
 ]
 ```
 
 **Notes**
 
-The list is `[]` when there are no delivery prices. An order is matched to a price by comparing the address `city` with `name`.
+The list is `[]` when there are no delivery prices. An order is matched to a price by comparing the address `city` with `name`. `freeFrom` is the order total (rubles, without delivery) from which delivery to this town is free; `0` means never free. After `make migrate` the list holds the 58 towns of the old site.
 
 #### POST /delivery-prices
 
@@ -344,17 +345,18 @@ Creates one or more delivery prices.
 | `deliveryPrices[].name` | string | yes | at most 255 characters; surrounding spaces are removed; must be unique |
 | `deliveryPrices[].value` | string | no | at most 255 characters; surrounding spaces are removed |
 | `deliveryPrices[].price` | number | yes | rubles, greater than 0 |
+| `deliveryPrices[].freeFrom` | number | no | rubles, 0 or more; order total from which delivery is free; `0` (default) = never free |
 
 ```json
-{ "deliveryPrices": [{ "name": "Сочи", "value": "Россия, Краснодарский край, Сочи", "price": 150 }, { "name": "Адлер", "price": 99.5 }] }
+{ "deliveryPrices": [{ "name": "Белореченск", "price": 100, "freeFrom": 500 }, { "name": "п. Родники", "price": 250 }] }
 ```
 
 **Response 201**
 
 ```json
 [
-  { "id": 1, "name": "Сочи", "value": "Россия, Краснодарский край, Сочи", "price": 150, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
-  { "id": 2, "name": "Адлер", "value": "", "price": 99.5, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
+  { "id": 1, "name": "Белореченск", "value": "", "price": 100, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
+  { "id": 2, "name": "п. Родники", "value": "", "price": 250, "freeFrom": 0, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
 ]
 ```
 
@@ -374,7 +376,7 @@ All items are created or none: when one item fails, nothing is saved.
 
 #### PATCH /delivery-prices/{id}
 
-Replaces the name, description and price of a delivery price.
+Replaces the name, description, price and free-delivery threshold of a delivery price.
 
 - **Role:** admin
 
@@ -391,15 +393,16 @@ Replaces the name, description and price of a delivery price.
 | `name` | string | yes | at most 255 characters; surrounding spaces are removed; must be unique |
 | `value` | string | no | at most 255 characters; surrounding spaces are removed |
 | `price` | number | yes | rubles, greater than 0 |
+| `freeFrom` | number | no | rubles, 0 or more; `0` (default) = never free |
 
 ```json
-{ "name": "Сочи", "value": "Россия, Краснодарский край, Сочи", "price": 200 }
+{ "name": "Белореченск", "value": "", "price": 120, "freeFrom": 500 }
 ```
 
 **Response 200**
 
 ```json
-{ "id": 1, "name": "Сочи", "value": "Россия, Краснодарский край, Сочи", "price": 200, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:05:10.1182Z" }
+{ "id": 1, "name": "Белореченск", "value": "", "price": 120, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:05:10.1182Z" }
 ```
 
 **Errors**
@@ -1556,7 +1559,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
   "name": "Иван",
   "comment": "Без лука",
   "paymentType": "cash",
-  "address": { "city": "Сочи", "address": "ул. Ленина, 1" },
+  "address": { "city": "Белореченск", "address": "ул. Ленина, 1" },
   "items": [{ "productId": 1, "amount": 2 }]
 }
 ```
@@ -1588,7 +1591,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 
 **Notes**
 
-For both payment types the frontend sends the customer to `redirectUrl`. For an online order it is the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical online order (same phone, address, comment and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. The same product listed twice is merged into one item.
+For both payment types the frontend sends the customer to `redirectUrl`. For an online order it is the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical online order (same phone, address, comment and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
 
 #### GET /orders/my
 

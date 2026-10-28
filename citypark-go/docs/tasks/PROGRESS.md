@@ -90,3 +90,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Payment
 - [x] 58 Moneta payment URL [30] (needed by citypark-modern task 26)
   - Owner check: with the demo shop's real `MONETA_ID`/`MONETA_SECRET`, open `redirectUrl` from a `POST /orders` and see the payment form, not a signature error.
+
+## Delivery
+- [x] 59 Delivery prices from the old site, free delivery threshold [16, 26]
+  - Follow-up in citypark-modern: read `price` and `freeFrom` from `GET /delivery-prices` instead of `freeFrom: 500` in `src/entities/dish/model/delivery.ts`.

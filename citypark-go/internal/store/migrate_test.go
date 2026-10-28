@@ -118,3 +118,50 @@ func TestSchemaConstraints(t *testing.T) {
 		}
 	})
 }
+
+func TestSeededDeliveryPrices(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	_ = MigrateDown(ctx, db)
+	if err := Migrate(ctx, db); err != nil {
+		t.Fatalf("Migrate: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := Migrate(ctx, db); err != nil {
+			t.Errorf("final Migrate: %v", err)
+		}
+	})
+
+	var n int
+	if err := db.Get(&n, `SELECT count(*) FROM delivery_prices`); err != nil {
+		t.Fatalf("count: %v", err)
+	}
+	if n != 58 {
+		t.Errorf("delivery_prices = %d, want 58", n)
+	}
+	for _, tt := range []struct {
+		name            string
+		price, freeFrom int64
+	}{
+		{"Белореченск", 10000, 50000},
+		{"п. Комсомольский", 120000, 0},
+	} {
+		var price, freeFrom int64
+		err := db.QueryRow(`SELECT price_kopecks, free_from_kopecks FROM delivery_prices WHERE name = $1`, tt.name).
+			Scan(&price, &freeFrom)
+		if err != nil {
+			t.Fatalf("select %q: %v", tt.name, err)
+		}
+		if price != tt.price || freeFrom != tt.freeFrom {
+			t.Errorf("%q = %d, %d, want %d, %d", tt.name, price, freeFrom, tt.price, tt.freeFrom)
+		}
+	}
+	for name, want := range map[string]int{"с. Школьное": 1, "c. Школьное": 0} { // the second has a Latin c
+		if err := db.Get(&n, `SELECT count(*) FROM delivery_prices WHERE name = $1`, name); err != nil {
+			t.Fatalf("count %q: %v", name, err)
+		}
+		if n != want {
+			t.Errorf("rows named %q = %d, want %d", name, n, want)
+		}
+	}
+}

@@ -17,7 +17,7 @@ func TestRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Run: %v", err)
 	}
-	want := seed.Summary{Users: 1, Categories: 4, Products: 16, DeliveryPrices: 3, Orders: 2}
+	want := seed.Summary{Users: 1, Categories: 4, Products: 16, Orders: 2}
 	if got != want {
 		t.Fatalf("summary = %+v, want %+v", got, want)
 	}
@@ -29,7 +29,6 @@ func TestRun(t *testing.T) {
 		{`SELECT count(*) FROM users`, 1},
 		{`SELECT count(*) FROM categories`, 4},
 		{`SELECT count(*) FROM products`, 16},
-		{`SELECT count(*) FROM delivery_prices`, 3},
 		{`SELECT count(*) FROM orders`, 2},
 		{`SELECT count(*) FROM product_images`, 16},
 		{`SELECT count(*) FROM tags`, 3},
@@ -64,7 +63,7 @@ func TestRunTwice(t *testing.T) {
 	if sum != (seed.Summary{}) {
 		t.Errorf("second Run summary = %+v, want zero", sum)
 	}
-	for table, want := range map[string]int{"users": 1, "categories": 4, "products": 16, "delivery_prices": 3, "orders": 2} {
+	for table, want := range map[string]int{"users": 1, "categories": 4, "products": 16, "orders": 2} {
 		if n := testutil.Count(t, db, `SELECT count(*) FROM `+table); n != want {
 			t.Errorf("%s count = %d after second Run, want %d", table, n, want)
 		}
@@ -119,8 +118,8 @@ func TestSeedOrdersLoad(t *testing.T) {
 		}
 		if o.Address != nil {
 			withAddress++
-			if o.DeliveryPrice != 15000 {
-				t.Errorf("delivery price = %d, want 15000", o.DeliveryPrice)
+			if o.DeliveryPrice != 10000 {
+				t.Errorf("delivery price = %d, want 10000", o.DeliveryPrice)
 			}
 			if len(o.Items) != 2 {
 				t.Errorf("delivery order has %d items, want 2", len(o.Items))

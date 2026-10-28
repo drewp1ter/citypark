@@ -51,7 +51,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("seeded: %d users, %d categories, %d products, %d delivery prices, %d orders\n",
-		sum.Users, sum.Categories, sum.Products, sum.DeliveryPrices, sum.Orders)
+	fmt.Printf("seeded: %d users, %d categories, %d products, %d orders\n",
+		sum.Users, sum.Categories, sum.Products, sum.Orders)
 	return nil
 }

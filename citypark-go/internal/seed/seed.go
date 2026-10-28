@@ -18,7 +18,7 @@ import (
 var ErrNotEmpty = errors.New("seed: database is not empty")
 
 type Summary struct {
-	Users, Categories, Products, DeliveryPrices, Orders int
+	Users, Categories, Products, Orders int
 }
 
 const (
@@ -42,15 +42,6 @@ type categorySeed struct {
 }
 
 func minutes(v int) *int { return &v }
-
-var deliveryPrices = []struct {
-	name  string
-	price money.Kopecks
-}{
-	{"Сочи", money.FromRubles(150)},
-	{"Адлер", money.FromRubles(250)},
-	{"Красная Поляна", money.FromRubles(500)},
-}
 
 var categories = []categorySeed{
 	{
@@ -115,16 +106,6 @@ func Run(ctx context.Context, db *sqlx.DB) (Summary, error) {
 		}
 		sum.Users = 1
 
-		for _, dp := range deliveryPrices {
-			_, err := tx.ExecContext(ctx,
-				`INSERT INTO delivery_prices (name, price_kopecks) VALUES ($1, $2)`,
-				dp.name, int64(dp.price))
-			if err != nil {
-				return fmt.Errorf("insert delivery price %q: %w", dp.name, err)
-			}
-			sum.DeliveryPrices++
-		}
-
 		// productIDs and prices keep insertion order, so orders can pick products by index.
 		var productIDs []int64
 		var prices []money.Kopecks
@@ -154,7 +135,7 @@ func Run(ctx context.Context, db *sqlx.DB) (Summary, error) {
 		var addressID int64
 		err = tx.GetContext(ctx, &addressID,
 			`INSERT INTO addresses (city, address) VALUES ($1, $2) RETURNING id`,
-			"Сочи", "ул. Навагинская, 1")
+			"Белореченск", "ул. Красная, 1")
 		if err != nil {
 			return fmt.Errorf("insert address: %w", err)
 		}
@@ -170,7 +151,7 @@ func Run(ctx context.Context, db *sqlx.DB) (Summary, error) {
 			price     money.Kopecks
 			products  []int // indexes into productIDs
 		}{
-			{&addressID, deliveryPrices[0].price, []int{0, 4}},
+			{&addressID, money.FromRubles(100), []int{0, 4}},
 			{nil, 0, []int{8}},
 		}
 		for _, o := range delivery {

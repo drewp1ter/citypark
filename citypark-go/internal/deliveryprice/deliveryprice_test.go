@@ -83,10 +83,10 @@ func TestList(t *testing.T) {
 		t.Fatalf("len = %d, want 2", len(list))
 	}
 	first := list[0]
-	if len(first) != 6 {
-		t.Errorf("keys = %v, want exactly id, name, value, price, createdAt, updatedAt", first)
+	if len(first) != 7 {
+		t.Errorf("keys = %v, want exactly id, name, value, price, freeFrom, createdAt, updatedAt", first)
 	}
-	for _, key := range []string{"id", "name", "value", "price", "createdAt", "updatedAt"} {
+	for _, key := range []string{"id", "name", "value", "price", "freeFrom", "createdAt", "updatedAt"} {
 		if _, ok := first[key]; !ok {
 			t.Errorf("missing key %q in %v", key, first)
 		}
@@ -113,7 +113,7 @@ func TestListEmpty(t *testing.T) {
 func TestCreate(t *testing.T) {
 	e := newEnv(t)
 	body := map[string]any{"deliveryPrices": []map[string]any{
-		{"name": "Сочи", "value": "Россия, Сочи", "price": 150},
+		{"name": "Сочи", "value": "Россия, Сочи", "price": 150, "freeFrom": 500},
 		{"name": "Адлер", "price": 99.5},
 		{"name": "  Сириус  ", "value": "  Федеральная территория  ", "price": 300},
 	}}
@@ -128,6 +128,16 @@ func TestCreate(t *testing.T) {
 	}
 	if created[1]["price"] != 99.5 {
 		t.Errorf("price = %v, want 99.5", created[1]["price"])
+	}
+	if created[0]["freeFrom"] != float64(500) || created[1]["freeFrom"] != float64(0) {
+		t.Errorf("freeFrom = %v and %v, want 500 and 0 (missing = 0)", created[0]["freeFrom"], created[1]["freeFrom"])
+	}
+	var freeFrom int64
+	if err := e.db.Get(&freeFrom, `SELECT free_from_kopecks FROM delivery_prices WHERE name = 'Сочи'`); err != nil {
+		t.Fatalf("select Сочи: %v", err)
+	}
+	if freeFrom != 50000 {
+		t.Errorf("free_from_kopecks = %d, want 50000", freeFrom)
 	}
 	if e.count(t) != 3 {
 		t.Errorf("rows = %d, want 3", e.count(t))
@@ -184,6 +194,11 @@ func TestCreateValidation(t *testing.T) {
 			name:     "empty name and zero price",
 			body:     map[string]any{"deliveryPrices": []map[string]any{{"name": "", "price": 0}}},
 			wantKeys: []string{"deliveryPrices[0].name", "deliveryPrices[0].price"},
+		},
+		{
+			name:     "negative freeFrom",
+			body:     map[string]any{"deliveryPrices": []map[string]any{{"name": "Сочи", "price": 10, "freeFrom": -1}}},
+			wantKeys: []string{"deliveryPrices[0].freeFrom"},
 		},
 		{
 			name:     "whitespace-only name",
@@ -252,25 +267,25 @@ func TestCreateDuplicateRollsBack(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	e := newEnv(t)
 	id := testutil.InsertDeliveryPrice(t, e.db, "Сочи", 15000)
-	body := map[string]any{"name": "updated name", "value": "updated value", "price": 99}
+	body := map[string]any{"name": "updated name", "value": "updated value", "price": 99, "freeFrom": 500}
 
 	rec := e.do(t, http.MethodPatch, "/delivery-prices/"+strconv.FormatInt(id, 10), e.admin, body)
 
 	wantStatus(t, rec, http.StatusOK)
 	var got map[string]any
 	testutil.Decode(t, rec, &got)
-	if got["name"] != "updated name" || got["value"] != "updated value" || got["price"] != float64(99) {
+	if got["name"] != "updated name" || got["value"] != "updated value" || got["price"] != float64(99) || got["freeFrom"] != float64(500) {
 		t.Errorf("response = %v", got)
 	}
 	var name, value string
-	var kopecks int64
-	err := e.db.QueryRow(`SELECT name, value, price_kopecks FROM delivery_prices WHERE id = $1`, id).
-		Scan(&name, &value, &kopecks)
+	var kopecks, freeFrom int64
+	err := e.db.QueryRow(`SELECT name, value, price_kopecks, free_from_kopecks FROM delivery_prices WHERE id = $1`, id).
+		Scan(&name, &value, &kopecks, &freeFrom)
 	if err != nil {
 		t.Fatalf("select row: %v", err)
 	}
-	if name != "updated name" || value != "updated value" || kopecks != 9900 {
-		t.Errorf("row = %q, %q, %d, want updated name, updated value, 9900", name, value, kopecks)
+	if name != "updated name" || value != "updated value" || kopecks != 9900 || freeFrom != 50000 {
+		t.Errorf("row = %q, %q, %d, %d, want updated name, updated value, 9900, 50000", name, value, kopecks, freeFrom)
 	}
 }
 

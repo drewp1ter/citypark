@@ -219,21 +219,26 @@ components:
           example: ул. Ленина, 1
     DeliveryPrice:
       type: object
-      required: [id, name, value, price, createdAt, updatedAt]
+      required: [id, name, value, price, freeFrom, createdAt, updatedAt]
       properties:
         id:
           type: integer
           example: 1
         name:
           type: string
-          example: Сочи
+          example: Белореченск
         value:
           type: string
-          example: Россия, Краснодарский край, Сочи
+          example: ''""
         price:
           type: number
           description: Rubles.
-          example: 150
+          example: 100
+        freeFrom:
+          type: number
+          minimum: 0
+          description: Order total from which delivery to this town is free. 0 = never free.
+          example: 500
         createdAt:
           type: string
           format: date-time
@@ -248,17 +253,22 @@ components:
           type: string
           maxLength: 255
           description: Must be unique.
-          example: Сочи
+          example: Белореченск
         value:
           type: string
           maxLength: 255
-          example: Россия, Краснодарский край, Сочи
+          example: ''""
         price:
           type: number
           exclusiveMinimum: true
           minimum: 0
           description: Rubles.
-          example: 150
+          example: 100
+        freeFrom:
+          type: number
+          minimum: 0
+          description: Order total from which delivery to this town is free. 0 = never free.
+          example: 500
     Image:
       type: object
       required: [id, url, type]
@@ -1260,11 +1270,11 @@ paths:
                     $ref: '#/components/schemas/DeliveryPriceInput'
             example:
               deliveryPrices:
-                - name: Сочи
-                  value: Россия, Краснодарский край, Сочи
-                  price: 150
-                - name: Адлер
-                  price: 99.5
+                - name: Белореченск
+                  price: 100
+                  freeFrom: 500
+                - name: п. Родники
+                  price: 250
       responses:
         '201':
           description: The created delivery prices.
@@ -1785,7 +1795,8 @@ paths:
       description: >-
         Role: public. The customer is found by phone number or created. Orders are accepted only
         during working hours. For a cash order send the customer to `redirectUrl`. For an online
-        order `redirectUrl` is the Moneta payment page; send the customer there too.
+        order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the
+        town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
       tags: [orders]
       requestBody:
         required: true
@@ -1799,7 +1810,7 @@ paths:
               comment: Без лука
               paymentType: cash
               address:
-                city: Сочи
+                city: Белореченск
                 address: ул. Ленина, 1
               items:
                 - productId: 1

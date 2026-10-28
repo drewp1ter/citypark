@@ -9,21 +9,24 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
 
-const columns = `id, name, value, price_kopecks, created_at, updated_at`
+const columns = `id, name, value, price_kopecks, free_from_kopecks, created_at, updated_at`
 
 type DeliveryPrice struct {
-	ID        int64         `db:"id" json:"id"`
-	Name      string        `db:"name" json:"name"`
-	Value     string        `db:"value" json:"value"`
-	Price     money.Kopecks `db:"price_kopecks" json:"price"`
+	ID    int64         `db:"id" json:"id"`
+	Name  string        `db:"name" json:"name"`
+	Value string        `db:"value" json:"value"`
+	Price money.Kopecks `db:"price_kopecks" json:"price"`
+	// FreeFrom is the order total from which delivery is free; 0 = never free.
+	FreeFrom  money.Kopecks `db:"free_from_kopecks" json:"freeFrom"`
 	CreatedAt time.Time     `db:"created_at" json:"createdAt"`
 	UpdatedAt time.Time     `db:"updated_at" json:"updatedAt"`
 }
 
 type Input struct {
-	Name  string        `json:"name" validate:"required,max=255"`
-	Value string        `json:"value" validate:"max=255"`
-	Price money.Kopecks `json:"price" validate:"gt=0"`
+	Name     string        `json:"name" validate:"required,max=255"`
+	Value    string        `json:"value" validate:"max=255"`
+	Price    money.Kopecks `json:"price" validate:"gt=0"`
+	FreeFrom money.Kopecks `json:"freeFrom" validate:"gte=0"`
 }
 
 type Store struct{ db store.DBTX }
@@ -36,9 +39,9 @@ func NewStore(db store.DBTX) *Store {
 func (s *Store) Create(ctx context.Context, in Input) (DeliveryPrice, error) {
 	var d DeliveryPrice
 	err := s.db.GetContext(ctx, &d,
-		`INSERT INTO delivery_prices (name, value, price_kopecks) VALUES ($1, $2, $3)
+		`INSERT INTO delivery_prices (name, value, price_kopecks, free_from_kopecks) VALUES ($1, $2, $3, $4)
 		 RETURNING `+columns,
-		in.Name, in.Value, int64(in.Price))
+		in.Name, in.Value, int64(in.Price), int64(in.FreeFrom))
 	if err != nil {
 		return DeliveryPrice{}, err
 	}
@@ -64,14 +67,14 @@ func (s *Store) ByName(ctx context.Context, name string) (DeliveryPrice, error) 
 	return d, nil
 }
 
-// Update replaces name, value and price. It returns store.ErrNotFound when the row is missing.
+// Update replaces name, value, price and free-delivery threshold. It returns store.ErrNotFound when the row is missing.
 func (s *Store) Update(ctx context.Context, id int64, in Input) (DeliveryPrice, error) {
 	var d DeliveryPrice
 	err := s.db.GetContext(ctx, &d,
-		`UPDATE delivery_prices SET name = $2, value = $3, price_kopecks = $4, updated_at = now()
+		`UPDATE delivery_prices SET name = $2, value = $3, price_kopecks = $4, free_from_kopecks = $5, updated_at = now()
 		 WHERE id = $1
 		 RETURNING `+columns,
-		id, in.Name, in.Value, int64(in.Price))
+		id, in.Name, in.Value, int64(in.Price), int64(in.FreeFrom))
 	if err != nil {
 		return DeliveryPrice{}, store.NotFound(err)
 	}

@@ -13,6 +13,7 @@ import (
 
 	"github.com/drewp1ter/citypark-go/internal/address"
 	"github.com/drewp1ter/citypark-go/internal/clock"
+	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/money"
 	"github.com/drewp1ter/citypark-go/internal/testutil"
@@ -406,5 +407,51 @@ func TestCreateResultJSON(t *testing.T) {
 	online := jsonKeys(t, CreateResult{OrderID: 1, RedirectURL: "https://pay"})
 	if want := []string{"orderId", "redirectUrl"}; !slices.Equal(online, want) {
 		t.Errorf("online keys = %v, want %v", online, want)
+	}
+}
+
+func TestDeliveryCost(t *testing.T) {
+	tests := []struct {
+		name     string
+		dp       deliveryprice.DeliveryPrice
+		subtotal money.Kopecks
+		want     money.Kopecks
+	}{
+		{"below the threshold", deliveryprice.DeliveryPrice{Price: 10000, FreeFrom: 50000}, 49999, 10000},
+		{"at the threshold", deliveryprice.DeliveryPrice{Price: 10000, FreeFrom: 50000}, 50000, 0},
+		{"above the threshold", deliveryprice.DeliveryPrice{Price: 10000, FreeFrom: 50000}, 60000, 0},
+		{"never free", deliveryprice.DeliveryPrice{Price: 25000, FreeFrom: 0}, 500000, 25000},
+		{"pickup", deliveryprice.DeliveryPrice{}, 100000, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := deliveryCost(tt.dp, tt.subtotal); got != tt.want {
+				t.Errorf("deliveryCost = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateFreeDelivery(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	if _, err := e.db.Exec(`INSERT INTO delivery_prices (name, price_kopecks, free_from_kopecks)
+		VALUES ('Белореченск', 10000, 50000)`); err != nil {
+		t.Fatalf("insert delivery price: %v", err)
+	}
+	product := testutil.InsertProduct(t, e.db, testutil.Product{CategoryID: e.category, Name: "Пицца", PriceKopecks: 25000})
+	for _, tt := range []struct {
+		amount int
+		want   money.Kopecks
+	}{{2, 0}, {1, 10000}} {
+		in := e.input(PaymentCash, true)
+		in.Address.City = "Белореченск"
+		in.Items = []ItemInput{{ProductID: product, Amount: tt.amount}}
+		res, err := e.svc.Create(context.Background(), in)
+		if err != nil {
+			t.Fatalf("Create x%d: %v", tt.amount, err)
+		}
+		if got := e.order(t, res.OrderID).DeliveryPrice; got != tt.want {
+			t.Errorf("x%d: DeliveryPrice = %d, want %d", tt.amount, got, tt.want)
+		}
 	}
 }
