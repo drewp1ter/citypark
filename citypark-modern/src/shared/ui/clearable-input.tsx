@@ -3,16 +3,14 @@
 import { useRef, useState, type ComponentPropsWithoutRef } from 'react'
 import { cn } from '@/shared/lib'
 import { ClearButton } from './clear-button'
-import type { FieldTone } from './fields'
 
 type ClearableInputProps = Omit<ComponentPropsWithoutRef<'input'>, 'className'> & {
 	className: string
-	tone: FieldTone
 	onClear?: () => void
 }
 
 /** Input with a «×» button while it has text. Works controlled (`value`) and uncontrolled (`defaultValue`). */
-export function ClearableInput({ className, tone, onClear, onChange, ...props }: ClearableInputProps) {
+export function ClearableInput({ className, onClear, onChange, ...props }: ClearableInputProps) {
 	const ref = useRef<HTMLInputElement>(null)
 	const [hasText, setHasText] = useState(() => String(props.value ?? props.defaultValue ?? '') !== '')
 	const controlled = props.value !== undefined
@@ -40,7 +38,7 @@ export function ClearableInput({ className, tone, onClear, onChange, ...props }:
 				}}
 				className={cn(className, 'pr-12')}
 			/>
-			{showButton && <ClearButton tone={tone} onClick={clear} className='absolute top-1/2 right-0 -translate-y-1/2' />}
+			{showButton && <ClearButton onClick={clear} className='absolute top-1/2 right-0 -translate-y-1/2' />}
 		</div>
 	)
 }

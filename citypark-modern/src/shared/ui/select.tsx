@@ -12,7 +12,7 @@ import {
 	Text,
 } from 'react-aria-components'
 import { cn } from '@/shared/lib'
-import { controlClass, fieldErrorClass, fieldLabelClass, inverseControlClass, type FieldTone } from './fields'
+import { controlClass, fieldErrorClass, fieldLabelClass } from './fields'
 import { ChevronDownIcon } from './icons'
 
 export type SelectOption = {
@@ -31,7 +31,6 @@ type SelectProps = {
 	defaultValue?: string
 	onValueChange?: (value: string) => void
 	error?: string
-	tone?: FieldTone
 	className?: string
 	required?: boolean
 	disabled?: boolean
@@ -49,13 +48,10 @@ export function Select({
 	defaultValue,
 	onValueChange,
 	error,
-	tone = 'default',
 	className,
 	required,
 	disabled,
 }: SelectProps) {
-	const inverse = tone === 'inverse'
-
 	return (
 		<AriaSelect
 			name={name}
@@ -65,14 +61,14 @@ export function Select({
 			isInvalid={Boolean(error)}
 			isRequired={required}
 			isDisabled={disabled}
-			className={cn(fieldLabelClass(tone), className)}
+			className={cn(fieldLabelClass, className)}
 		>
 			<Label>{label}</Label>
 			<Button
 				className={cn(
-					inverse ? inverseControlClass : controlClass,
+					controlClass,
 					'group data-[focus-visible]:outline-accent flex items-center justify-between gap-2 text-left data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2',
-					inverse ? 'data-[invalid]:border-danger-on-inverse' : 'data-[invalid]:border-danger'
+					'data-[invalid]:border-danger'
 				)}
 			>
 				<SelectValue className='truncate' />
@@ -82,7 +78,7 @@ export function Select({
 				/>
 			</Button>
 			{error && (
-				<Text slot='errorMessage' role='alert' className={fieldErrorClass(tone)}>
+				<Text slot='errorMessage' role='alert' className={fieldErrorClass}>
 					{error}
 				</Text>
 			)}
@@ -90,9 +86,7 @@ export function Select({
 				offset={6}
 				className={cn(
 					'max-h-72 w-(--trigger-width) overflow-auto rounded-xs border p-1 text-base font-normal',
-					inverse
-						? 'border-inverse-border-strong bg-inverse-surface text-inverse-text'
-						: 'border-border bg-surface text-text',
+					'border-border bg-surface text-text',
 					'data-[entering]:motion-safe:animate-[select-in_120ms_ease-out] data-[exiting]:motion-safe:animate-[select-out_90ms_ease-in]'
 				)}
 			>
@@ -104,9 +98,7 @@ export function Select({
 							textValue={option.textValue ?? (typeof option.label === 'string' ? option.label : option.value)}
 							className={cn(
 								'flex min-h-11 cursor-pointer items-center rounded-[12px] px-3',
-								inverse
-									? 'data-[focused]:bg-inverse-bg data-[selected]:bg-accent data-[selected]:text-on-accent data-[selected]:font-semibold'
-									: 'data-[focused]:bg-bg data-[selected]:bg-inverse-bg data-[selected]:text-inverse-text data-[selected]:font-semibold',
+								'data-[focused]:bg-bg data-[selected]:bg-inverse-bg data-[selected]:text-inverse-text data-[selected]:font-semibold',
 								'data-[focus-visible]:outline-accent data-[focus-visible]:outline-2 data-[focus-visible]:-outline-offset-2'
 							)}
 						>

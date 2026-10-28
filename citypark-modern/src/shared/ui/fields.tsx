@@ -2,41 +2,30 @@ import { useId, type ComponentPropsWithoutRef, type ReactNode } from 'react'
 import { cn } from '@/shared/lib'
 import { ClearableInput } from './clearable-input'
 
-/** "default": light fields on a light card. "inverse": for a dark block (booking block of the restaurant page). */
-export type FieldTone = 'default' | 'inverse'
-
 /** Look of every text input, select and textarea (the design fills them with the page colour). */
 export const controlClass =
 	'min-h-12 w-full rounded-xs border border-border bg-bg px-4 py-3 font-normal text-text placeholder:text-text-muted aria-[invalid=true]:border-danger'
 
-export const inverseControlClass =
-	'min-h-12 w-full rounded-xs border border-inverse-border-strong bg-inverse-surface px-4 py-3 font-normal text-inverse-text placeholder:text-inverse-subtle [color-scheme:dark] aria-[invalid=true]:border-danger-on-inverse'
-
 /** Label + spacing shared by every field, so `Select` (React Aria) matches `FieldShell`. */
-export const fieldLabelClass = (tone: FieldTone) =>
-	cn('flex flex-col gap-1.5 text-[13px] md:text-sm', tone === 'inverse' ? 'text-inverse-muted' : 'font-semibold')
+export const fieldLabelClass = 'flex flex-col gap-1.5 text-[13px] font-semibold md:text-sm'
 
-export const fieldErrorClass = (tone: FieldTone) =>
-	cn('text-sm font-normal', tone === 'inverse' ? 'text-danger-on-inverse' : 'text-danger')
-
-const control = (tone: FieldTone) => (tone === 'inverse' ? inverseControlClass : controlClass)
+export const fieldErrorClass = 'text-danger text-sm font-normal'
 
 type FieldShellProps = {
 	label: ReactNode
 	error?: string
 	errorId: string
-	tone: FieldTone
 	className?: string
 	children: ReactNode
 }
 
-function FieldShell({ label, error, errorId, tone, className, children }: FieldShellProps) {
+function FieldShell({ label, error, errorId, className, children }: FieldShellProps) {
 	return (
-		<label className={cn(fieldLabelClass(tone), className)}>
+		<label className={cn(fieldLabelClass, className)}>
 			{label}
 			{children}
 			{error && (
-				<span id={errorId} role='alert' className={fieldErrorClass(tone)}>
+				<span id={errorId} role='alert' className={fieldErrorClass}>
 					{error}
 				</span>
 			)}
@@ -53,7 +42,6 @@ type CommonProps = {
 	/** Text or markup: use two spans (`md:hidden` / `hidden md:inline`) for a shorter label on mobile. */
 	label: ReactNode
 	error?: string
-	tone?: FieldTone
 	className?: string
 }
 
@@ -65,20 +53,14 @@ type TextFieldProps = Omit<ComponentPropsWithoutRef<'input'>, 'className'> &
 	}
 
 /** Label + input + error message. Works for text, tel, date, time, email … */
-export function TextField({ label, error, tone = 'default', className, clearable, onClear, ...props }: TextFieldProps) {
+export function TextField({ label, error, className, clearable, onClear, ...props }: TextFieldProps) {
 	const errorId = useId()
 	return (
-		<FieldShell label={label} error={error} errorId={errorId} tone={tone} className={className}>
+		<FieldShell label={label} error={error} errorId={errorId} className={className}>
 			{clearable ? (
-				<ClearableInput
-					{...props}
-					{...invalid(error, errorId)}
-					tone={tone}
-					onClear={onClear}
-					className={control(tone)}
-				/>
+				<ClearableInput {...props} {...invalid(error, errorId)} onClear={onClear} className={controlClass} />
 			) : (
-				<input {...props} {...invalid(error, errorId)} className={control(tone)} />
+				<input {...props} {...invalid(error, errorId)} className={controlClass} />
 			)}
 		</FieldShell>
 	)
@@ -86,11 +68,11 @@ export function TextField({ label, error, tone = 'default', className, clearable
 
 type TextareaFieldProps = Omit<ComponentPropsWithoutRef<'textarea'>, 'className'> & CommonProps
 
-export function TextareaField({ label, error, tone = 'default', className, ...props }: TextareaFieldProps) {
+export function TextareaField({ label, error, className, ...props }: TextareaFieldProps) {
 	const errorId = useId()
 	return (
-		<FieldShell label={label} error={error} errorId={errorId} tone={tone} className={className}>
-			<textarea {...props} {...invalid(error, errorId)} className={cn(control(tone), 'resize-y')} />
+		<FieldShell label={label} error={error} errorId={errorId} className={className}>
+			<textarea {...props} {...invalid(error, errorId)} className={cn(controlClass, 'resize-y')} />
 		</FieldShell>
 	)
 }

@@ -1,17 +1,15 @@
 import { cn } from '@/shared/lib'
 import { CloseIcon } from './icons'
-import type { FieldTone } from './fields'
 
 type ClearButtonProps = {
 	onClick?: () => void
 	/** Accessible name; Russian, shown to screen readers. */
 	label?: string
-	tone?: FieldTone
 	className?: string
 }
 
 /** «×» that empties a text input. 44×44 hit area; the parent owns the state and passes `onClick`. */
-export function ClearButton({ onClick, label = 'Очистить поле', tone = 'default', className }: ClearButtonProps) {
+export function ClearButton({ onClick, label = 'Очистить поле', className }: ClearButtonProps) {
 	return (
 		<button
 			type='button'
@@ -19,7 +17,7 @@ export function ClearButton({ onClick, label = 'Очистить поле', tone
 			onClick={onClick}
 			className={cn(
 				'inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full',
-				tone === 'inverse' ? 'text-inverse-muted hover:text-inverse-text' : 'text-text-muted hover:text-text',
+				'text-text-muted hover:text-text',
 				className
 			)}
 		>

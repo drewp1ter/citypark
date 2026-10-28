@@ -50,9 +50,6 @@ export async function ArticlePage({ slug }: { slug: string }) {
 					<Button href='/menu' size='xl'>
 						Меню доставки
 					</Button>
-					<Button href='/restaurant' size='xl' variant='outline'>
-						Забронировать столик
-					</Button>
 				</div>
 			</article>
 		</main>

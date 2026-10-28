@@ -69,7 +69,7 @@ colours differ — so build each component once and let the tokens switch the th
   it from citypark-go (`GET /categories`, `GET /products`) on the server; set `MENU_API_URL` (see `.env.example`).
 - **Cart:** client state (React context or Zustand) persisted to `localStorage`. Used by DishCard,
   CartPanel (desktop `/menu`), CartBar (mobile), header cart button and `/checkout`.
-- **Forms** (table booking, checkout, contact form, room search): Server Actions with zod validation.
+- **Forms** (checkout, contact form, room search): Server Actions with zod validation.
   There is no backend yet, so the actions validate, log the payload and return a success state.
   Leave a clear `TODO: send to …` where the real integration (e-mail / Telegram / CRM) goes.
 - No styled UI kit (no HeroUI, shadcn, MUI, etc.). Components are small and custom, built from the tokens.
@@ -141,9 +141,8 @@ from `@/features/<slice>/api`, not from the barrel. Check with `npm run lint:fsd
 
 ## Forms (how they work)
 
-Every form is a Server Action in the `api/` segment next to its UI, with a zod schema in `model/`. The table-booking
-form is a feature (`features/book-table`, used by home and restaurant); the checkout and contact forms live in their
-pages (`pages/checkout`, `pages/contacts`) because only one page uses each. The action validates, then calls
+Every form is a Server Action in the `api/` segment next to its UI, with a zod schema in `model/`. The checkout
+and contact forms live in their pages (`pages/checkout`, `pages/contacts`) because only one page uses each. The action validates, then calls
 `submitLead(kind, payload)` from `shared/api` (the only place that will talk to e-mail / Telegram / CRM; for now it
 logs); the order form is the exception (below). It returns `{ status: "error", errors, values }` so the form can show field errors and keep what was typed, or
 `{ status: "success" }`. The order action re-prices the cart from the menu on the server, posts it to the backend's

@@ -11,8 +11,6 @@ const txt = async (loc) =>
 			.innerText()
 			.catch(() => '—')
 	).replace(/\s+/g, ' ')
-const iso = (d) =>
-	`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 async function open(path, viewport) {
 	const ctx = await browser.newContext({ viewport })
 	const p = await ctx.newPage()
@@ -56,64 +54,22 @@ out(
 	`${await txt(p.locator("nav[aria-label='Основное меню'] a[aria-current=page]"))} / ${await p.getByRole('link', { name: 'Позвонить' }).first().getAttribute('href')}`
 )
 
-// dark booking form
-const form = p.locator('#booking form')
+// no booking form: guests call
 out(
-	'form fields',
-	JSON.stringify(await form.locator('label').evaluateAll((l) => l.map((x) => x.firstChild?.textContent.trim())))
+	'booking anchor count / hero call link',
+	`${await p.locator('[id=booking]').count()} / ${await p.locator('main section').first().getByRole('link', { name: 'Позвонить' }).getAttribute('href')}  (want 0 / tel:+79183119791)`
 )
-out('date default today', await form.locator('input[name=date]').inputValue())
-await form.getByRole('button', { name: 'Отправить заявку' }).click()
-await p.waitForTimeout(700)
-out(
-	'empty submit -> alert + colour',
-	`${await txt(form.getByRole('alert'))} / ${await form
-		.getByRole('alert')
-		.first()
-		.evaluate((e) => getComputedStyle(e).color)}`
-)
-await form.locator('input[name=date]').fill('2020-01-01')
-await form.getByLabel('Телефон').pressSequentially('89183119791')
-await form.getByRole('button', { name: 'Отправить заявку' }).click()
-await p.waitForTimeout(700)
-out(
-	'past date -> error, phone kept',
-	`${(await form.getByRole('alert').allInnerTexts()).filter(Boolean)} / ${await form.getByLabel('Телефон').inputValue()}`
-)
-await form.locator('input[name=date]').fill(iso(new Date()))
-await form.getByRole('button', { name: /Гостей/ }).click()
-await p.getByRole('option', { name: '5–8' }).click()
-await form.getByRole('button', { name: /Зал/ }).click()
-await p.getByRole('option', { name: /Летнее кафе/ }).click()
-const guests = form.getByRole('button', { name: /Гостей/ })
-await guests.focus()
-await p.keyboard.press('Enter')
-await p.keyboard.press('ArrowDown')
-await p.keyboard.press('Enter')
-out('select: keyboard', await txt(guests))
-await p.waitForTimeout(300)
-await guests.press('Enter')
-await p.getByRole('listbox').waitFor()
-await p.keyboard.press('Escape')
-await p.waitForTimeout(300)
-out(
-	'select: Escape closes / focus back on trigger',
-	`${(await p.getByRole('listbox').count()) === 0} / ${await guests.evaluate((el) => el === document.activeElement)}`
-)
-await form.getByRole('button', { name: 'Отправить заявку' }).click()
-await p.waitForTimeout(900)
-out('valid -> success', await txt(form.getByRole('status')))
 out(
 	'desktop: overflow / errors',
 	`${await p.evaluate(() => document.documentElement.scrollWidth > innerWidth)} / ${JSON.stringify(p.problems)}`
 )
 
-// home form still works without the hall
+// home: no form in the restaurant section
 const h = await open('/', D)
-await h.getByLabel('Телефон').pressSequentially('89183119791')
-await h.getByRole('button', { name: 'Отправить заявку' }).click()
-await h.waitForTimeout(900)
-out('home booking form (no hall) -> success', await txt(h.getByRole('status')))
+out(
+	'home: forms in the restaurant section',
+	`${await h.locator('section:has(h2:text-is("Ресторан")) form').count()}  (want 0)`
+)
 
 // mobile
 const m = await open('/restaurant', M)
@@ -131,20 +87,9 @@ out(
 	'mobile: quick bar',
 	`${await txt(m.locator("nav[aria-label='Быстрые действия']"))} ${JSON.stringify(await m.locator("nav[aria-label='Быстрые действия'] a").evaluateAll((a) => a.map((x) => x.getAttribute('href'))))}`
 )
-await m.locator("nav[aria-label='Быстрые действия'] a").last().click()
-await m.waitForTimeout(500)
 out(
-	"mobile: 'Столик' scrolls to the form",
-	String(
-		await m.locator('#booking').evaluate((e) => {
-			const r = e.getBoundingClientRect()
-			return r.top >= 0 && r.top < 200
-		})
-	)
-)
-out(
-	'mobile: left column hidden / heading shown',
-	`${await m.locator('#booking div.hidden').first().isVisible()} / ${await txt(m.locator('#booking h2:visible'))}`
+	"mobile: quick bar 'Меню' href",
+	`${await m.locator("nav[aria-label='Быстрые действия'] a", { hasText: 'Меню' }).getAttribute('href')}  (want /menu)`
 )
 out(
 	'mobile: overflow / errors',

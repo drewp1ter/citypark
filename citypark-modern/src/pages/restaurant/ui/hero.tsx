@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { getSiteSettings } from '@/shared/api'
 import { Breadcrumbs, Button, Card, cardClass, StatTile } from '@/shared/ui'
 import { facts } from '../model/content'
 
@@ -24,7 +25,9 @@ const panorama = (
 )
 
 /** Intro card, photos and facts. On mobile: the intro, a photo rail and two small tiles. */
-export function Hero() {
+export async function Hero() {
+	const { phones } = await getSiteSettings()
+
 	return (
 		<section className='max-w-page mx-auto w-full px-3 pt-4 md:px-6 md:pt-8'>
 			<div className='px-1.5 md:hidden'>
@@ -52,8 +55,8 @@ export function Hero() {
 						</span>
 					</p>
 					<div className='flex flex-wrap gap-2 max-md:hidden'>
-						<Button href='#booking' size='lg'>
-							Забронировать столик
+						<Button href={phones.restaurant.href} size='lg'>
+							Позвонить
 						</Button>
 						<Button href='/menu' variant='outline' size='lg'>
 							Меню

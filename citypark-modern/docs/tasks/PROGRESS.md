@@ -53,4 +53,4 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - Owner: run `QA_PLACE_ORDER=1 MENU_API_URL=... node scripts/qa/flows/checkout-and-contacts.mjs` (creates a real order; the URL host must be the Moneta assistant host) and place one manual order on a local backend with `MONETA_TEST_MODE=true`: the Moneta demo form must open, not a signature error. Not run here: both POST to the backend.
 
 ## Cleanup
-- [ ] 27 Remove the table booking form
+- [x] 27 Remove the table booking form

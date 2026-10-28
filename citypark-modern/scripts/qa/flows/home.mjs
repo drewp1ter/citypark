@@ -29,7 +29,6 @@ const now = new Date()
 const tom = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
 out('stay bar check-in = today', `${await p.locator('input[name=checkIn]').inputValue()}  (want ${iso(now)})`)
 out('stay bar check-out = tomorrow', `${await p.locator('input[name=checkOut]').inputValue()}  (want ${iso(tom)})`)
-out('booking form date = today', await p.locator('form input[name=date]').inputValue())
 await p.locator('input[name=checkIn]').fill(iso(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 5)))
 out('check-out follows a later check-in', await p.locator('input[name=checkOut]').inputValue())
 await p.getByRole('button', { name: 'Проверить' }).click()
@@ -83,52 +82,6 @@ await c.getByRole('button', { name: 'Убрать порцию' }).click()
 await c.getByRole('button', { name: 'Убрать порцию' }).click()
 out("removed to 0 -> '+' is back", String(await c.getByRole('button', { name: addName, exact: true }).count()))
 out('localStorage cleared', String(await c.evaluate(() => localStorage.getItem('citypark-cart'))))
-
-// ---- booking form
-const f = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-await f.goto(base + '/')
-await f.waitForTimeout(400)
-await f.getByRole('button', { name: 'Отправить заявку' }).click()
-await f.waitForTimeout(600)
-out(
-	'empty phone -> error',
-	await f
-		.getByRole('alert')
-		.first()
-		.innerText()
-		.catch(() => 'NO ERROR SHOWN')
-)
-const phone = f.getByLabel('Телефон')
-await phone.fill('')
-await phone.pressSequentially('89183119791')
-out('phone mask', await phone.inputValue())
-await phone.fill('')
-await phone.pressSequentially('9183')
-out('phone mask partial (9183)', await phone.inputValue())
-await f.locator('form input[name=date]').fill('2020-01-01')
-await phone.fill('')
-await phone.pressSequentially('89183119791')
-await f.getByRole('button', { name: 'Отправить заявку' }).click()
-await f.waitForTimeout(600)
-out(
-	'past date -> error',
-	await f
-		.getByRole('alert')
-		.first()
-		.innerText()
-		.catch(() => 'NO ERROR SHOWN')
-)
-out('typed phone kept after error', await f.getByLabel('Телефон').inputValue())
-await f.locator('form input[name=date]').fill(iso(now))
-await f.getByRole('button', { name: 'Отправить заявку' }).click()
-await f.waitForTimeout(800)
-out(
-	'success message',
-	await f
-		.getByRole('status')
-		.innerText()
-		.catch(() => 'NO SUCCESS')
-)
 
 // ---- mobile: no overflow, buttons hidden
 const m = await browser.newPage({ viewport: { width: 390, height: 844 } })

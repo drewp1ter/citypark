@@ -6,7 +6,7 @@ import { Button } from '@/shared/ui'
 
 /**
  * Sticky bar at the bottom of mobile pages. On /rooms it calls the hotel and the free number, on /hotel it calls
- * the hotel and leads to the rooms, on /restaurant it jumps to the booking form, on /news it opens the menu and the
+ * the hotel and leads to the rooms, on /restaurant it calls and opens the menu, on /news it opens the menu and the
  * rooms; elsewhere it calls the restaurant and leads to the rooms.
  */
 export function MobileQuickActions() {
@@ -36,8 +36,8 @@ export function MobileQuickActions() {
 					8 800 · бесплатно
 				</Button>
 			) : restaurant ? (
-				<Button href='#booking' variant='inverse' size='xl'>
-					Столик
+				<Button href='/menu' variant='inverse' size='xl'>
+					Меню
 				</Button>
 			) : (
 				<Button href='/rooms' variant='inverse' size='xl'>

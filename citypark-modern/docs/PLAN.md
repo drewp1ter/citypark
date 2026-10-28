@@ -28,7 +28,7 @@ src/
                             #   cart-panel, cart-bar, rooms-catalog, menu-catalog, hotel-rules, chef-blog …
   features/                 # theme-toggle, add-to-cart (+ / stepper / size switch), filter-menu
                             #   (category chips + search), search-rooms (StayDatesBar), filter-rooms,
-                            #   book-table (form + action), place-order (checkout form + action),
+                            #   place-order (checkout form + action),
                             #   contact-us (form + action)
   entities/                 # room, dish, article (news + chef blog), cart (model: context/reducer/localStorage), hotel
                             #   (rules, amenities, documents). Each: model/ (types + data), ui/ (cards), api/ (getters)
@@ -101,10 +101,11 @@ Date defaults are today / tomorrow, computed on the client.
 **After each page:** Playwright screenshots at 390 and 1440 px, light and dark. Compare them with
 `design/screenshots/…`, fix the differences, then move on.
 
-## Step 5 — Forms & states ✅ done for the forms that have a page (book-table, place-order, contact-us); the pages rooms, hotel, restaurant, menu, news list are still step 4
-zod schemas + Server Actions in `features/{book-table,search-rooms,place-order,contact-us}/api`. Each action
+## Step 5 — Forms & states ✅ done for the forms that have a page (place-order, contact-us); the pages rooms, hotel, restaurant, menu, news list are still step 4
+zod schemas + Server Actions in `features/{search-rooms,place-order,contact-us}/api`. Each action
 validates, logs the payload and returns `{ok}|{errors}`, with `// TODO: send to e-mail / Telegram / CRM`.
 `useActionState` for the pending / success / error states. Also: empty cart, news article, 404, legal placeholders.
+The table booking form was removed on 2026-10-28 (owner's decision): guests book a table by phone.
 
 ## Learning-mode contribution points (you write 5–10 lines each)
 - Cart reducer `addItem` / `changeQty` in `entities/cart/model` (size variants, what qty 0 does).
