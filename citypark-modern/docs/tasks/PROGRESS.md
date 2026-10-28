@@ -51,6 +51,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Payment
 - [x] 26 Checkout sends the order to the backend and opens the payment page [01] (needs citypark-go task 58)
   - Owner: run `QA_PLACE_ORDER=1 MENU_API_URL=... node scripts/qa/flows/checkout-and-contacts.mjs` (creates a real order; the URL host must be the Moneta assistant host) and place one manual order on a local backend with `MONETA_TEST_MODE=true`: the Moneta demo form must open, not a signature error. Not run here: both POST to the backend.
+- [x] 28 Checkout sends the delivery time as its own field [26] (needs citypark-go task 61)
+  - Owner: with a local citypark-go that has task 61, place a «Ко времени» order. In Telegram it has the «Ко времени» line, and the comment has only the customer's text. Not run here: it POSTs to the backend.
 
 ## Cleanup
 - [x] 27 Remove the table booking form

@@ -81,10 +81,11 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 	const body: CreateOrderBody = {
 		phone: `+${phoneDigits(order.data.phone)}`,
 		name: order.data.name,
-		comment: [when === 'scheduled' ? `Ко времени ${time}.` : '', comment].filter(Boolean).join(' '),
+		comment,
 		paymentType: 'online',
 		items: priced.items.map((item) => ({ productId: Number(item.dish.externalId), amount: item.quantity })),
 	}
+	if (when === 'scheduled') body.deliveryTime = time
 	if (order.data.method === 'delivery') {
 		const address = [street, apartment && `кв. ${apartment}`, entrance && `подъезд ${entrance}`].filter(Boolean)
 		body.address = { city, address: address.join(', ') }
