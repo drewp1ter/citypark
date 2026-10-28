@@ -19,6 +19,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/health"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
 	"github.com/drewp1ter/citypark-go/internal/iiko"
+	"github.com/drewp1ter/citypark-go/internal/live"
 	"github.com/drewp1ter/citypark-go/internal/logging"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/news"
@@ -37,6 +38,7 @@ type App struct {
 	Handler    http.Handler
 	Notifier   *TelegramNotifier
 	IikoOrders *IikoOrders
+	Hub        *live.Hub
 	Syncer     *iiko.Syncer
 	Uploads    *upload.Storage
 }
@@ -78,7 +80,8 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		Delays:          []time.Duration{30 * time.Second, 2 * time.Minute},
 	}, log)
 
-	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders}, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
+	hub := live.NewHub(log)
+	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders, hub}, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
 	hours := workinghours.NewStore(db)
 
 	r := chi.NewRouter()
@@ -98,6 +101,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		content.NewHandler(db, uploads, tokens).Routes(r)
 		settings.NewHandler(settings.NewStore(db), tokens).Routes(r)
 		workinghours.NewHandler(hours, tokens).Routes(r)
+		live.NewHandler(hub, tokens, log).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			Hours:           hours,
 			DefaultPageSize: cfg.DefaultPageSize,
@@ -109,7 +113,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	r.Get("/uploads/*", uploads.Serve().ServeHTTP)
 	r.Head("/uploads/*", uploads.Serve().ServeHTTP)
 
-	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Syncer: syncer, Uploads: uploads}
+	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Hub: hub, Syncer: syncer, Uploads: uploads}
 }
 
 // cors allows any origin and answers preflight requests itself.

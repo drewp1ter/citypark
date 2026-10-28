@@ -1763,6 +1763,80 @@ Returns one order.
 
 An admin can read any order. For a normal user someone else's order looks the same as a missing one.
 
+#### GET /orders/live
+
+Streams every order event over a WebSocket as it happens. The admin's live orders page is built on it.
+
+- **Role:** admin
+
+**Connecting**
+
+A browser cannot set `Authorization` on a WebSocket, so the token travels in the subprotocol header:
+
+```js
+const ws = new WebSocket('ws://host/api/v1/orders/live', ['bearer', token])
+```
+
+This sends `Sec-WebSocket-Protocol: bearer, <jwt>`. The server answers with the subprotocol `bearer`. The token never goes into the URL.
+
+**Errors** (before the upgrade, as a normal HTTP response)
+
+| Status | When | Message |
+|---|---|---|
+| 401 | no subprotocol, not exactly `bearer` and a token, or an invalid token | `Требуется авторизация` |
+| 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
+
+**Messages**
+
+Every message is a text frame with one JSON object. `order` has the same shape as the response of `GET /orders/{id}`.
+
+| `type` | When |
+|---|---|
+| `hello` | right after the connection is open; has no `order` |
+| `order.pending` | an online order was created and waits for payment |
+| `order.created` | a cash order was placed |
+| `order.paid` | an online order was paid |
+| `order.confirmed` | an admin confirmed an order |
+
+`hello`:
+
+```json
+{"type":"hello"}
+```
+
+`order.pending`:
+
+```json
+{"type":"order.pending","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "pending", "comment": "", "deliveryTime": "", "paymentType": "online", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+```
+
+`order.created`:
+
+```json
+{"type":"order.created","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "new", "comment": "", "deliveryTime": "", "paymentType": "cash", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+```
+
+`order.paid`:
+
+```json
+{"type":"order.paid","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "paid", "comment": "", "deliveryTime": "", "paymentType": "online", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+```
+
+`order.confirmed`:
+
+```json
+{"type":"order.confirmed","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "confirmed", "comment": "", "deliveryTime": "", "paymentType": "cash", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+```
+
+**Notes**
+
+- The client sends nothing. The server pings every 30 seconds.
+- Close code `1013` (try again later) means reconnect: the server is restarting, or the client read too slowly and was dropped.
+- Events are not stored and not replayed. After every `hello` (the first connect and each reconnect) the client reloads the list with `GET /orders`.
+- A browser cannot read the status of a failed handshake. After a failed connect, make a normal authorised request (for example `GET /orders`) to find out whether the token expired.
+- Proxies must pass the `Upgrade` and `Connection` headers and keep idle connections for more than 30 seconds.
+- `GET /orders/live` is matched before `GET /orders/{id}`, so `/orders/7` is still an order.
+
 #### GET /orders
 
 Lists orders, newest first. The filters are optional and combine with AND.

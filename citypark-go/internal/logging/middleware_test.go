@@ -3,6 +3,7 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -221,5 +222,25 @@ func TestNew(t *testing.T) {
 				t.Errorf("info line missing: %s", out)
 			}
 		})
+	}
+}
+
+func TestRequestsAllowsHijack(t *testing.T) {
+	hijacked := make(chan error, 1)
+	srv := httptest.NewServer(Requests(New(io.Discard, "production", false))(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, _, err := http.NewResponseController(w).Hijack()
+		hijacked <- err
+		if err == nil {
+			_ = conn.Close()
+		}
+	})))
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL)
+	if err == nil {
+		_ = resp.Body.Close()
+	}
+	if err := <-hijacked; err != nil {
+		t.Errorf("Hijack through Requests: %v", err)
 	}
 }

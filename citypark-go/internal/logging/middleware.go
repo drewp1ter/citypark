@@ -18,6 +18,9 @@ type statusWriter struct {
 	wroteHeader bool
 }
 
+// Unwrap lets http.ResponseController (and the WebSocket library) reach the real writer to hijack the connection.
+func (s *statusWriter) Unwrap() http.ResponseWriter { return s.ResponseWriter }
+
 func (s *statusWriter) WriteHeader(code int) {
 	if !s.wroteHeader {
 		s.status = code

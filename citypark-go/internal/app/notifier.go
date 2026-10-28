@@ -37,6 +37,9 @@ func NewTelegramNotifier(sender MessageSender, chatCreated, chatConfirmed string
 // Wait blocks until all sends that were started have finished. Used on shutdown and in tests.
 func (n *TelegramNotifier) Wait() { n.wg.Wait() }
 
+// OrderPending does nothing: an unpaid online order is announced when it is paid.
+func (n *TelegramNotifier) OrderPending(ctx context.Context, o order.Order) {}
+
 // OrderCreated reports a cash order. Online orders are announced later, when they are paid.
 func (n *TelegramNotifier) OrderCreated(ctx context.Context, o order.Order) {
 	if o.PaymentType != order.PaymentCash {

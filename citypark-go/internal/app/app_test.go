@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coder/websocket"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/drewp1ter/citypark-go/internal/app"
@@ -492,4 +493,62 @@ func TestAppUploads(t *testing.T) {
 	if head.Code != http.StatusOK {
 		t.Errorf("HEAD %s = %d, want 200", path, head.Code)
 	}
+}
+
+func TestAppLiveOrders(t *testing.T) {
+	db := testutil.NewDB(t)
+	a := newApp(t, db, newFakeTelegram(t), nil)
+	srv := httptest.NewServer(a.Handler)
+	defer srv.Close()
+	defer a.Hub.Close()
+
+	adminID := testutil.InsertUser(t, db, "Админ", "+79990000000", auth.RoleAdmin)
+	tokens := auth.NewTokens("changeme", time.Hour, clock.Fixed(time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)))
+	token, err := tokens.Issue(adminID, auth.RoleAdmin)
+	if err != nil {
+		t.Fatalf("Issue: %v", err)
+	}
+
+	// The static /orders/live route must not swallow /orders/{id}.
+	if rec := testutil.DoJSON(t, a.Handler, http.MethodGet, "/api/v1/orders/7", token, nil); rec.Code != http.StatusNotFound {
+		t.Errorf("GET /orders/7 = %d, want 404 for a missing order; body %s", rec.Code, rec.Body)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(srv.URL, "http")+"/api/v1/orders/live",
+		&websocket.DialOptions{Subprotocols: []string{"bearer", token}})
+	if err != nil {
+		t.Fatalf("Dial through the full router: %v", err)
+	}
+	defer conn.CloseNow()
+	if _, data, err := conn.Read(ctx); err != nil || strings.TrimSpace(string(data)) != `{"type":"hello"}` {
+		t.Fatalf("first message = %s, %v; want the hello", data, err)
+	}
+
+	cat := testutil.InsertCategory(t, db, testutil.Category{Name: "Пиццы"})
+	product := testutil.InsertProduct(t, db, testutil.Product{CategoryID: cat, Name: "Пицца", PriceKopecks: 39500})
+	body := map[string]any{
+		"phone":       "+79991234567",
+		"name":        "Иван",
+		"paymentType": "cash",
+		"items":       []map[string]any{{"productId": product, "amount": 1}},
+	}
+	if rec := testutil.DoJSON(t, a.Handler, http.MethodPost, "/api/v1/orders", "", body); rec.Code != http.StatusCreated {
+		t.Fatalf("create order = %d; body %s", rec.Code, rec.Body)
+	}
+	_, data, err := conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+	var ev struct {
+		Type  string `json:"type"`
+		Order struct {
+			Status string `json:"status"`
+		} `json:"order"`
+	}
+	if err := json.Unmarshal(data, &ev); err != nil || ev.Type != "order.created" || ev.Order.Status != order.StatusNew {
+		t.Errorf("event = %s (%v), want order.created with status new", data, err)
+	}
+	a.Notifier.Wait()
 }

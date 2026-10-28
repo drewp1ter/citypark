@@ -434,6 +434,15 @@ components:
         redirectUrl:
           type: string
           example: http://localhost:3001/thankyou
+    LiveOrderEvent:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [hello, order.pending, order.created, order.paid, order.confirmed]
+        order:
+          $ref: '#/components/schemas/Order'
     Order:
       type: object
       required: [id, createdAt, updatedAt, status, comment, deliveryTime, paymentType, total, deliveryPrice, customer, address, items]
@@ -1992,6 +2001,28 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /orders/live:
+    get:
+      summary: Live order events (WebSocket)
+      description: >-
+        Role: admin. Open it with `new WebSocket(url, ['bearer', token])`; the token goes in
+        `Sec-WebSocket-Protocol: bearer, <jwt>` and the server answers with the subprotocol `bearer`.
+        The server sends a `hello` message, then one message per order event. There is no replay, so a
+        client reloads `GET /orders` after each `hello`. Close code 1013 means reconnect.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      responses:
+        '101':
+          description: WebSocket upgrade; messages are LiveOrderEvent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveOrderEvent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /orders/{id}:
     get:
       summary: Get one order

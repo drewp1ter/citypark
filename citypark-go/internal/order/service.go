@@ -26,6 +26,7 @@ import (
 
 // Notifier tells staff about orders. Implementations must not block for long and must not fail the request.
 type Notifier interface {
+	OrderPending(ctx context.Context, o Order)   // an online order was created and waits for payment
 	OrderCreated(ctx context.Context, o Order)   // a cash order was placed
 	OrderPaid(ctx context.Context, o Order)      // an online order was paid
 	OrderConfirmed(ctx context.Context, o Order) // an admin confirmed an order
@@ -167,6 +168,8 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		if err := orders.SetStatus(ctx, o.ID, StatusPending); err != nil {
 			return CreateResult{}, err
 		}
+		o.Status = StatusPending
+		s.notifier.OrderPending(ctx, o)
 	}
 	return CreateResult{OrderID: o.ID, RedirectURL: form.URL}, nil
 }

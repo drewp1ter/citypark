@@ -21,8 +21,9 @@ import (
 
 const cashURL = "http://cash"
 
-type fakeNotifier struct{ created, paid, confirmed []Order }
+type fakeNotifier struct{ pending, created, paid, confirmed []Order }
 
+func (f *fakeNotifier) OrderPending(_ context.Context, o Order) { f.pending = append(f.pending, o) }
 func (f *fakeNotifier) OrderCreated(_ context.Context, o Order) { f.created = append(f.created, o) }
 func (f *fakeNotifier) OrderPaid(_ context.Context, o Order)    { f.paid = append(f.paid, o) }
 func (f *fakeNotifier) OrderConfirmed(_ context.Context, o Order) {
@@ -135,6 +136,9 @@ func TestCreateCash(t *testing.T) {
 		t.Errorf("Items = %+v", o.Items)
 	}
 
+	if len(e.notifier.pending) != 0 {
+		t.Errorf("OrderPending calls = %+v, want none for a cash order", e.notifier.pending)
+	}
 	if len(e.notifier.created) != 1 || e.notifier.created[0].ID != o.ID {
 		t.Errorf("OrderCreated calls = %+v, want one for order %d", e.notifier.created, o.ID)
 	}
@@ -323,6 +327,35 @@ func TestCreateOnline(t *testing.T) {
 	}
 	if len(e.notifier.created) != 0 {
 		t.Errorf("notifier called: %+v", e.notifier.created)
+	}
+}
+
+func TestCreateOnlinePendingEvent(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	res, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true))
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if len(e.notifier.pending) != 1 {
+		t.Fatalf("OrderPending calls = %d, want 1", len(e.notifier.pending))
+	}
+	if got := e.notifier.pending[0]; got.ID != res.OrderID || got.Status != StatusPending {
+		t.Errorf("pending order = id %d status %q, want id %d status pending", got.ID, got.Status, res.OrderID)
+	}
+	if len(e.notifier.created) != 0 {
+		t.Errorf("OrderCreated calls = %+v, want none", e.notifier.created)
+	}
+}
+
+func TestCreateOnlineDuplicateNoEvent(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	for i := 0; i < 2; i++ {
+		if _, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true)); err != nil {
+			t.Fatalf("Create #%d: %v", i+1, err)
+		}
+	}
+	if len(e.notifier.pending) != 1 {
+		t.Errorf("OrderPending calls = %d, want 1 (a reused duplicate does not fire)", len(e.notifier.pending))
 	}
 }
 

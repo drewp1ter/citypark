@@ -362,6 +362,9 @@ type recordingNotifier struct {
 	log  *[]string
 }
 
+func (r recordingNotifier) OrderPending(context.Context, order.Order) {
+	*r.log = append(*r.log, r.name+":pending")
+}
 func (r recordingNotifier) OrderCreated(context.Context, order.Order) {
 	*r.log = append(*r.log, r.name+":created")
 }
@@ -376,11 +379,12 @@ func TestNotifiersFanOut(t *testing.T) {
 	var log []string
 	ns := app.Notifiers{recordingNotifier{"a", &log}, recordingNotifier{"b", &log}}
 	ctx, o := context.Background(), order.Order{}
+	ns.OrderPending(ctx, o)
 	ns.OrderCreated(ctx, o)
 	ns.OrderPaid(ctx, o)
 	ns.OrderConfirmed(ctx, o)
 
-	want := []string{"a:created", "b:created", "a:paid", "b:paid", "a:confirmed", "b:confirmed"}
+	want := []string{"a:pending", "b:pending", "a:created", "b:created", "a:paid", "b:paid", "a:confirmed", "b:confirmed"}
 	if len(log) != len(want) {
 		t.Fatalf("log = %v, want %v", log, want)
 	}

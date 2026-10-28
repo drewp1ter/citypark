@@ -104,3 +104,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Working hours
 - [x] 63 Working hours from the database [27, 61] (needed by citypark-admin task 21 and citypark-modern task 29)
   - Owner: remove `WORKING_HOURS_START` and `WORKING_HOURS_END` from local `.env` files (they are no longer read). The hours are now edited with `PUT /working-hours`.
+
+## Live orders
+- [x] 64 Live order events over WebSocket [29, 63] (needed by citypark-admin task 22)
