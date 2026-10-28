@@ -158,7 +158,6 @@ second page needs it. Steiger (`npm run lint:fsd`) enforces this, so keep it fre
 ## Known gaps
 
 - Three news photos are missing (`/public/images/placeholder.svg` is used). The owner will send them.
-- Map is a placeholder; later embed Yandex Maps (address above).
 - Not designed: mobile nav sheet, news article page, 404, empty cart, form success/error states — build
   them from the existing components and tokens (see `design/pages.md`).
 - Date inputs in the screenshots show sample dates; use real defaults (today / tomorrow).

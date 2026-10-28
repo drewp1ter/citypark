@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import { ContactForm } from './contact-form'
 import { getSiteSettings, getWorkingHours } from '@/shared/api'
+import { serverEnv, site } from '@/shared/config'
 import { NBSP, formatHours } from '@/shared/lib'
-import { AppLink, Button, PinIcon, cardClass } from '@/shared/ui'
+import { AppLink, Button, PinIcon, YandexMap, cardClass } from '@/shared/ui'
 
 /** "8 918 311-97-91" -> ["8 918", "311-97-91"] (the number is set on two lines in the big cards). */
 const splitPhone = (display: string): [string, string] => {
@@ -57,6 +58,7 @@ export async function ContactsPage() {
 		getSiteSettings(),
 		getWorkingHours(),
 	])
+	const apiKey = serverEnv().YANDEX_MAPS_API_KEY
 	// Opening hours stay on one line.
 	const hours = <span className='whitespace-nowrap'>{formatHours(workingHours)}</span>
 
@@ -68,15 +70,24 @@ export async function ContactsPage() {
 				</h1>
 
 				<div className='grid gap-2 md:grid-cols-4 md:gap-3'>
-					{/* Map placeholder, to be replaced by the Yandex Map */}
-					<div className='border-placeholder-border bg-placeholder relative flex h-[260px] items-center justify-center rounded-lg border md:col-span-2 md:row-span-2 md:h-auto md:min-h-[480px] md:rounded-xl'>
+					{/* The placeholder stays under the map until it loads, and without a key. */}
+					<div className='border-placeholder-border bg-placeholder relative flex h-[260px] items-center justify-center overflow-hidden rounded-lg border md:col-span-2 md:row-span-2 md:h-auto md:min-h-[480px] md:rounded-xl'>
 						<div className='text-text-muted flex flex-col items-center gap-2'>
 							<span className='bg-accent text-on-accent inline-flex size-[52px] items-center justify-center rounded-full md:size-14'>
 								<PinIcon width={24} height={24} />
 							</span>
 							<strong className='text-text hidden md:block'>Яндекс Карта</strong>
 						</div>
-						<div className='bg-surface absolute inset-x-2.5 bottom-2.5 flex items-center justify-between gap-3 rounded-sm px-3.5 py-3 md:inset-x-4 md:bottom-4 md:flex-wrap md:rounded-md md:px-5 md:py-4'>
+						{apiKey && (
+							<YandexMap
+								apiKey={apiKey}
+								center={site.map.center}
+								zoom={site.map.zoom}
+								label={`Карта: ${address.street}`}
+								className='absolute inset-0'
+							/>
+						)}
+						<div className='bg-surface absolute z-10 inset-x-2.5 bottom-2.5 flex items-center justify-between gap-3 rounded-sm px-3.5 py-3 md:inset-x-4 md:bottom-4 md:flex-wrap md:rounded-md md:px-5 md:py-4'>
 							<span className='flex flex-col'>
 								<strong>{address.street}</strong>
 								<span className='text-text-muted text-[13px] md:text-sm'>

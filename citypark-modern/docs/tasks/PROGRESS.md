@@ -60,3 +60,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Working hours
 - [x] 29 Working hours from the backend [28] (needs citypark-go task 63)
   - Owner: the backend at `MENU_API_URL` (192.168.4.15) is older than task 63 (`GET /working-hours` → 404), so here the pages showed the built-in `9:00–22:00`. Deploy citypark-go with task 63, then check that changing the hours in admin shows on `/menu`, `/`, `/contacts`, `/checkout` within 60 s and that «Ко времени» `08:30` gives «Мы работаем с 9:00 до 22:00» under the time field. The `min`/`max` of the time input make the browser block out-of-range times before the server sees them.
+
+## Map
+- [x] 30 Yandex map on the home and contacts pages [29]
+  - Owner: `/` and `/contacts` are static (revalidate 1m), so `YANDEX_MAPS_API_KEY` is read at build time and refreshed on revalidation: rebuild after changing the key. Coordinates `39.8749086, 44.7596453` come from OpenStreetMap. A dev server behind nginx needs `Upgrade`/`Connection` headers for `/_next/hmr`, or the page does not hydrate.

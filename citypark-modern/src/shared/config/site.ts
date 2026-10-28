@@ -3,6 +3,7 @@ export const site = {
 	wordmark: 'Сити Парк',
 	chef: 'Денис Троицкий',
 	year: 2026,
+	map: { center: [39.8749086, 44.7596453] as const, zoom: 16 },
 	nav: [
 		{ href: '/restaurant', label: 'Ресторан' },
 		{ href: '/hotel', label: 'Отель' },

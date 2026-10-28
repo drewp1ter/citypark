@@ -11,7 +11,7 @@ Find each component in the reference HTML by the page and section named in "Seen
 | `SiteHeader` | all | Desktop: white pill bar (`--surface`, `--border`, radius pill), logo, 6 nav links, phone icon button, cart icon button with count, "Забронировать" inverse pill, + **ThemeToggle** (new). Mobile: logo, phone button, menu button. Sticky on mobile. Client: cart count, menu open state. |
 | `MobileNav` | — (not designed) | Full-screen sheet with the same links, phones and ThemeToggle. Client. |
 | `SiteFooter` | all | Giant "СИТИ ПАРК" wordmark (Unbounded, `--text-wordmark`), © line, legal links (Документы, Оферта, Конфиденциальность, VK, OK). |
-| `ContactsBlock` | home, contacts | Inverse block (`--inverse-bg`): address in Unbounded, rows with label + phone (`--inverse-border` dividers), "Построить маршрут" accent pill, e-mail outline pill, map area (`--inverse-surface`). Map: embed Yandex Maps later; keep the placeholder for now. |
+| `ContactsBlock` | home, contacts | Inverse block (`--inverse-bg`): address in Unbounded, rows with label + phone (`--inverse-border` dividers), "Построить маршрут" accent pill, e-mail outline pill, map area (`--inverse-surface`). Map: Yandex JS API v3 (`YandexMap`) when `YANDEX_MAPS_API_KEY` is set, otherwise the placeholder. |
 | `Section` | all | `max-width: var(--container)`, side padding `--gutter-*`, title row (h2 in Unbounded + optional right-side action like "Все новости ↗" or chips). |
 | `Breadcrumbs` | rooms | Small muted links. |
 

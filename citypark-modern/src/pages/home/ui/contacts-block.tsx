@@ -1,9 +1,11 @@
 import { getSiteSettings } from '@/shared/api'
-import { AppLink, Button, PinIcon } from '@/shared/ui'
+import { serverEnv, site } from '@/shared/config'
+import { AppLink, Button, PinIcon, YandexMap } from '@/shared/ui'
 
 /** Inverse block with address, phones and the map. Shorter on mobile: no e-mail, no map. */
 export async function ContactsBlock() {
 	const { address, phones, email } = await getSiteSettings()
+	const apiKey = serverEnv().YANDEX_MAPS_API_KEY
 	const phoneRows = [phones.restaurant, phones.hotel, phones.free]
 
 	return (
@@ -44,10 +46,19 @@ export async function ContactsBlock() {
 				</div>
 			</div>
 
-			{/* Placeholder until the Yandex Map is embedded. */}
-			<div className='bg-inverse-surface text-inverse-muted hidden min-h-[340px] min-w-0 flex-col items-center justify-center gap-2.5 rounded-lg md:flex md:flex-[1_1_420px]'>
+			{/* The placeholder stays under the map until it loads, and without a key. */}
+			<div className='bg-inverse-surface text-inverse-muted relative hidden min-h-[340px] min-w-0 flex-col items-center justify-center gap-2.5 overflow-hidden rounded-lg md:flex md:flex-[1_1_420px]'>
 				<PinIcon />
 				<p className='text-inverse-text font-semibold'>Яндекс Карта</p>
+				{apiKey && (
+					<YandexMap
+						apiKey={apiKey}
+						center={site.map.center}
+						zoom={site.map.zoom}
+						label={`Карта: ${address.street}`}
+						className='absolute inset-0'
+					/>
+				)}
 			</div>
 		</div>
 	)
