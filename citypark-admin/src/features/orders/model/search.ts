@@ -1,4 +1,4 @@
-import { isOrderStatus, isPaymentType, type OrderStatus, type PaymentType } from './labels'
+import { isOrderStatus, isPaymentType, type OrderStatus, type PaymentType } from '../../../shared/lib/order-labels'
 
 export const PAGE_SIZE = 20
 

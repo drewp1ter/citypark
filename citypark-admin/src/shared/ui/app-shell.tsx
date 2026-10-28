@@ -13,7 +13,14 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
 		<ul className='flex flex-col gap-1'>
 			{items.map((item) => (
 				<li key={item.to}>
-					<Link to={item.to} className={linkClass} activeProps={{ className: activeLinkClass }} onClick={onNavigate}>
+					<Link
+						to={item.to}
+						className={linkClass}
+						activeProps={{ className: activeLinkClass }}
+						// «Заказы» must not stay lit on /orders/live; its own search params and /orders/<id> still count.
+						activeOptions={item.to === '/orders' ? { exact: true, includeSearch: false } : undefined}
+						onClick={onNavigate}
+					>
 						{item.label}
 					</Link>
 				</li>

@@ -34,6 +34,10 @@ or the browser blocks requests and images.
 
 - **DNS and TLS:** point `admin.<domain>` at the main reverse proxy, which terminates TLS and proxies to this container
   (port 80).
+- **Live orders:** the page «Заказы онлайн» opens a WebSocket to `<VITE_API_URL>/orders/live`. The proxy in front of the
+  API must pass the `Upgrade` and `Connection` headers for `/api/v1/orders/live` and keep idle connections for more than
+  30 s (the server pings every 30 s), for example `proxy_http_version 1.1`, `proxy_set_header Upgrade $http_upgrade`,
+  `proxy_set_header Connection "upgrade"` and `proxy_read_timeout 75s` in nginx.
 - **Uploaded images:** the backend must have `PUBLIC_BASE_URL` set to its public origin, otherwise `/uploads` images do
   not load in the admin.
 - **Old admin:** switch it off by hand, then redirect it in the main site's nginx:

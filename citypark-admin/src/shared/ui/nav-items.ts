@@ -4,6 +4,7 @@ export type NavItem = { label: string; to: NonNullable<LinkProps['to']> }
 
 export const mainNavItems: NavItem[] = [
 	{ label: 'Заказы', to: '/orders' },
+	{ label: 'Заказы онлайн', to: '/orders/live' },
 	{ label: 'Доставка', to: '/delivery' },
 	{ label: 'Меню', to: '/menu' },
 ]

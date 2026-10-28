@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ORDER_STATUSES, PAYMENT_TYPES, paymentLabel, statusColor, statusLabel } from './labels'
+import { ORDER_STATUSES, PAYMENT_TYPES, paymentLabel, statusColor, statusLabel } from './order-labels'
 
 describe('labels', () => {
 	it('names every status in Russian', () => {

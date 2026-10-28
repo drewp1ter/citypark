@@ -11,7 +11,14 @@ import {
 } from '@heroui/react'
 import { parseDate } from '@internationalized/date'
 import { useEffect, useRef, useState } from 'react'
-import { ORDER_STATUSES, PAYMENT_TYPES, isOrderStatus, isPaymentType, paymentLabel, statusLabel } from '../model/labels'
+import {
+	ORDER_STATUSES,
+	PAYMENT_TYPES,
+	isOrderStatus,
+	isPaymentType,
+	paymentLabel,
+	statusLabel,
+} from '../../../shared/lib/order-labels'
 import { moscowToday, quickRanges, rangeFor } from '../model/quick-ranges'
 import { hasFilters, type OrderSearch } from '../model/search'
 

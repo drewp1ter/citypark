@@ -1501,6 +1501,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live order events (WebSocket)
+         * @description Role: admin. Open it with `new WebSocket(url, ['bearer', token])`; the token goes in `Sec-WebSocket-Protocol: bearer, <jwt>` and the server answers with the subprotocol `bearer`. The server sends a `hello` message, then one message per order event. There is no replay, so a client reloads `GET /orders` after each `hello`. Close code 1013 means reconnect.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description WebSocket upgrade; messages are LiveOrderEvent */
+                101: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["LiveOrderEvent"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/{id}": {
         parameters: {
             query?: never;
@@ -2254,6 +2295,11 @@ export interface components {
             orderId: number;
             /** @example http://localhost:3001/thankyou */
             redirectUrl: string;
+        };
+        LiveOrderEvent: {
+            /** @enum {string} */
+            type: "hello" | "order.pending" | "order.created" | "order.paid" | "order.confirmed";
+            order?: components["schemas"]["Order"];
         };
         Order: {
             /** @example 2 */

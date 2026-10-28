@@ -4,7 +4,7 @@ import { ApiError } from '../../../shared/api'
 import type { components } from '../../../shared/api/schema'
 import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import { orderQuery } from '../api'
-import { PaymentChip, StatusChip } from './order-chips'
+import { PaymentChip, StatusChip } from '../../../shared/ui/order-chips'
 import { addressText } from './orders-table'
 
 type Order = components['schemas']['Order']

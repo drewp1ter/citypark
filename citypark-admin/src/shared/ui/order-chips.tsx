@@ -1,5 +1,5 @@
 import { Chip } from '@heroui/react'
-import { paymentLabel, statusColor, statusLabel } from '../model/labels'
+import { paymentLabel, statusColor, statusLabel } from '../lib/order-labels'
 
 export function StatusChip({ status }: { status: string }) {
 	return (

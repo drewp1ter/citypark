@@ -3,7 +3,7 @@ import { Link } from '@tanstack/react-router'
 import type { components } from '../../../shared/api/schema'
 import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import type { OrderSearch } from '../model/search'
-import { PaymentChip, StatusChip } from './order-chips'
+import { PaymentChip, StatusChip } from '../../../shared/ui/order-chips'
 
 type Order = components['schemas']['Order']
 

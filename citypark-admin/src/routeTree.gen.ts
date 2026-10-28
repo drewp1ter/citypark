@@ -26,6 +26,7 @@ import { Route as AppContentSettingsRouteImport } from './routes/_app/content/se
 import { Route as AppDevImageFieldRouteImport } from './routes/_app/dev.image-field'
 import { Route as AppDevRichTextRouteImport } from './routes/_app/dev.rich-text'
 import { Route as AppOrdersOrderIdRouteImport } from './routes/_app/orders.$orderId'
+import { Route as AppOrdersLiveRouteImport } from './routes/_app/orders_.live'
 import { Route as AppReportsReportIdRouteImport } from './routes/_app/reports_.$reportId'
 import { Route as AppContentNewsSlugRouteImport } from './routes/_app/content/news_.$slug'
 import { Route as AppContentNewsNewRouteImport } from './routes/_app/content/news_.new'
@@ -115,6 +116,11 @@ const AppOrdersOrderIdRoute = AppOrdersOrderIdRouteImport.update({
   path: '/$orderId',
   getParentRoute: () => AppOrdersRoute,
 } as any)
+const AppOrdersLiveRoute = AppOrdersLiveRouteImport.update({
+  id: '/orders_/live',
+  path: '/orders/live',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppReportsReportIdRoute = AppReportsReportIdRouteImport.update({
   id: '/reports_/$reportId',
   path: '/reports/$reportId',
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/dev/image-field': typeof AppDevImageFieldRoute
   '/dev/rich-text': typeof AppDevRichTextRoute
   '/orders/$orderId': typeof AppOrdersOrderIdRoute
+  '/orders/live': typeof AppOrdersLiveRoute
   '/reports/$reportId': typeof AppReportsReportIdRoute
   '/content/news/$slug': typeof AppContentNewsSlugRoute
   '/content/news/new': typeof AppContentNewsNewRoute
@@ -175,6 +182,7 @@ export interface FileRoutesByTo {
   '/dev/image-field': typeof AppDevImageFieldRoute
   '/dev/rich-text': typeof AppDevRichTextRoute
   '/orders/$orderId': typeof AppOrdersOrderIdRoute
+  '/orders/live': typeof AppOrdersLiveRoute
   '/reports/$reportId': typeof AppReportsReportIdRoute
   '/content/news/$slug': typeof AppContentNewsSlugRoute
   '/content/news/new': typeof AppContentNewsNewRoute
@@ -199,6 +207,7 @@ export interface FileRoutesById {
   '/_app/dev/image-field': typeof AppDevImageFieldRoute
   '/_app/dev/rich-text': typeof AppDevRichTextRoute
   '/_app/orders/$orderId': typeof AppOrdersOrderIdRoute
+  '/_app/orders_/live': typeof AppOrdersLiveRoute
   '/_app/reports_/$reportId': typeof AppReportsReportIdRoute
   '/_app/content/news_/$slug': typeof AppContentNewsSlugRoute
   '/_app/content/news_/new': typeof AppContentNewsNewRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/dev/image-field'
     | '/dev/rich-text'
     | '/orders/$orderId'
+    | '/orders/live'
     | '/reports/$reportId'
     | '/content/news/$slug'
     | '/content/news/new'
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/dev/image-field'
     | '/dev/rich-text'
     | '/orders/$orderId'
+    | '/orders/live'
     | '/reports/$reportId'
     | '/content/news/$slug'
     | '/content/news/new'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/_app/dev/image-field'
     | '/_app/dev/rich-text'
     | '/_app/orders/$orderId'
+    | '/_app/orders_/live'
     | '/_app/reports_/$reportId'
     | '/_app/content/news_/$slug'
     | '/_app/content/news_/new'
@@ -400,6 +412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrdersOrderIdRouteImport
       parentRoute: typeof AppOrdersRoute
     }
+    '/_app/orders_/live': {
+      id: '/_app/orders_/live'
+      path: '/orders/live'
+      fullPath: '/orders/live'
+      preLoaderRoute: typeof AppOrdersLiveRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/reports_/$reportId': {
       id: '/_app/reports_/$reportId'
       path: '/reports/$reportId'
@@ -458,6 +477,7 @@ interface AppRouteChildren {
   AppContentSettingsRoute: typeof AppContentSettingsRoute
   AppDevImageFieldRoute: typeof AppDevImageFieldRoute
   AppDevRichTextRoute: typeof AppDevRichTextRoute
+  AppOrdersLiveRoute: typeof AppOrdersLiveRoute
   AppReportsReportIdRoute: typeof AppReportsReportIdRoute
   AppContentNewsSlugRoute: typeof AppContentNewsSlugRoute
   AppContentNewsNewRoute: typeof AppContentNewsNewRoute
@@ -479,6 +499,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppContentSettingsRoute: AppContentSettingsRoute,
   AppDevImageFieldRoute: AppDevImageFieldRoute,
   AppDevRichTextRoute: AppDevRichTextRoute,
+  AppOrdersLiveRoute: AppOrdersLiveRoute,
   AppReportsReportIdRoute: AppReportsReportIdRoute,
   AppContentNewsSlugRoute: AppContentNewsSlugRoute,
   AppContentNewsNewRoute: AppContentNewsNewRoute,
