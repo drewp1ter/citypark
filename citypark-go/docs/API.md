@@ -32,7 +32,7 @@ Every error has the same shape. `errors` is present only for validation failures
 
 ## Endpoints
 
-Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Settings, Orders, Reports, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
+Sections are grouped by area, in this order: Health, Auth, User, Addresses, Delivery prices, Catalog, Hotel, Rooms, News, Content, Settings, Working hours, Orders, Reports, Integrations, Uploads. Add an area heading (`### Auth`) when its first endpoint is documented. Each endpoint uses this format:
 
 ````markdown
 #### POST /addresses
@@ -1530,6 +1530,82 @@ Example of a 400 response:
 
 PUT replaces everything; send the object you got from GET with your changes. Nothing is saved when any field is invalid.
 
+### Working hours
+
+The hours when orders are accepted are one record. The admin changes them; the site shows them and `POST /orders` checks them.
+
+#### GET /working-hours
+
+Returns the working hours.
+
+- **Role:** public
+
+**Response 200**
+
+```json
+{ "start": "09:00", "end": "22:00", "updatedAt": "2026-10-28T17:31:43.999866Z" }
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 404 | the row is missing (it is created by a migration, so this should not happen) | `Не найдено` |
+
+**Notes**
+
+Times are `HH:MM` with a leading zero; show them with `9:00`-style formatting (no leading zero). Orders are accepted from `start` until `end` (not at `end`). A «Ко времени» `deliveryTime` may equal `end`.
+
+#### PUT /working-hours
+
+Replaces both times.
+
+- **Role:** admin
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `start` | string | yes | `HH:MM`, 24 hours, with a leading zero (`09:00`, not `9:00`); spaces around it are trimmed |
+| `end` | string | yes | same format; must be later than `start` (no overnight hours) |
+
+```json
+{ "start": "10:00", "end": "23:00" }
+```
+
+An `updatedAt` in the body is ignored.
+
+**Response 200**
+
+```json
+{ "start": "10:00", "end": "23:00", "updatedAt": "2026-10-28T17:32:08.701197Z" }
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | a time is empty or not `HH:MM` | `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with `errors.start` or `errors.end` = `Укажите время в формате ЧЧ:ММ` (an empty value gives `поле не должно быть пустым`) |
+| 400 | `end` is not later than `start` | `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with `errors.end` = `Время окончания должно быть позже начала` |
+| 401 | no token or invalid token | `Требуется авторизация` |
+| 403 | the user is not an admin | `Недостаточно прав` |
+| 404 | the row is missing | `Не найдено` |
+
+Example of a 400 response:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Ошибка валидации, пожалуйста проверьте введенные вами данные",
+  "errors": { "end": "Время окончания должно быть позже начала" }
+}
+```
+
+**Notes**
+
+The new hours apply to the next `POST /orders` at once. Nothing is saved when a field is invalid.
+
 ### Orders
 
 #### POST /orders
@@ -1545,7 +1621,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 | `phone` | string | yes | a valid Russian phone number; it is stored as `+7XXXXXXXXXX` |
 | `name` | string | yes | at most 80 characters |
 | `comment` | string | no | at most 8192 characters |
-| `deliveryTime` | string | no | `HH:MM` (24 hours, for example `18:30`); empty or left out means «как можно скорее». The date is always today, and the time is not checked against the working hours |
+| `deliveryTime` | string | no | `HH:MM` (24 hours, for example `18:30`); empty or left out means «как можно скорее». The date is always today. The time must be within the working hours from `GET /working-hours`, both ends included |
 | `paymentType` | string | yes | `cash` or `online` |
 | `address` | object | no | delivery address; leave it out for pickup |
 | `address.city` | string | yes, when `address` is set | at most 80 characters; must be the name of a delivery price |
@@ -1585,10 +1661,11 @@ Places an order. The customer is found by phone number or created. Orders are ac
 | 400 | the body is not valid JSON | `Некорректный JSON` |
 | 400 | a field is missing or invalid; `errors` lists the fields | `Ошибка валидации, пожалуйста проверьте введенные вами данные` |
 | 400 | `deliveryTime` is not `HH:MM`; `errors.deliveryTime` has the text | `Укажите время в формате ЧЧ:ММ` |
+| 400 | `deliveryTime` is outside the working hours; `errors.deliveryTime` has the text (built from the current hours) | `Мы работаем с 9:00 до 22:00` |
 | 400 | the phone number cannot be normalized | `Неверный номер телефона.` |
 | 400 | `address.city` is not a known delivery city | `Указано не существующее имя населенного пункта.` |
 | 400 | a product does not exist or is deleted | `Продукт не найден.` |
-| 503 | the current time is outside the working hours | `Извините, но мы не можем принять ваш заказ.` followed by a newline and `Заказы принимаются с 9:00 до 22:00` (the configured hours) |
+| 503 | the current time is outside the working hours | `Извините, но мы не можем принять ваш заказ.` followed by a newline and `Заказы принимаются с 9:00 до 22:00` (the hours from `GET /working-hours`) |
 | 503 | the product's or its category's weekday limit excludes today | `Возможность заказа "<name>" доступна только в следующие дни недели: Пн, Вт, Ср, Чт, Пт` |
 | 503 | the product's or its category's time limit excludes now | `Время заказа "<name>" ограничено с 9:00 до 21:00.` |
 

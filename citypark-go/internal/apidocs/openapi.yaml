@@ -16,6 +16,7 @@ tags:
   - name: news
   - name: content
   - name: settings
+  - name: working-hours
   - name: orders
   - name: reports
   - name: integrations
@@ -406,7 +407,7 @@ components:
         deliveryTime:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
-          description: Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Identical orders for different times are separate orders.
+          description: Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Must be within the working hours, both ends included. Identical orders for different times are separate orders.
           example: '18:30'
         paymentType:
           type: string
@@ -866,6 +867,27 @@ components:
     SettingsResponse:
       allOf:
         - $ref: '#/components/schemas/Settings'
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt: {type: string, format: date-time}
+    WorkingHours:
+      type: object
+      required: [start, end]
+      properties:
+        start:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: '`HH:MM` with a leading zero. Orders are accepted from this time.'
+          example: '09:00'
+        end:
+          type: string
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+          description: '`HH:MM` with a leading zero, later than `start`. Orders are not accepted at this time; a delivery time may equal it.'
+          example: '22:00'
+    WorkingHoursResponse:
+      allOf:
+        - $ref: '#/components/schemas/WorkingHours'
         - type: object
           required: [updatedAt]
           properties:
@@ -1798,12 +1820,65 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /working-hours:
+    get:
+      summary: Get the working hours
+      description: >-
+        Role: public. The hours when orders are accepted. Show them without a leading zero (`9:00`).
+      tags: [working-hours]
+      responses:
+        '200':
+          description: The working hours.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+              example:
+                start: '09:00'
+                end: '22:00'
+                updatedAt: '2026-10-28T17:31:43.999866Z'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Replace the working hours
+      description: >-
+        Role: admin. Both times are trimmed and must be `HH:MM` with a leading zero
+        (`Укажите время в формате ЧЧ:ММ`); `end` must be later than `start`
+        (`errors.end`: `Время окончания должно быть позже начала`). An `updatedAt` in the body is ignored.
+      tags: [working-hours]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkingHours'
+            example:
+              start: '10:00'
+              end: '23:00'
+      responses:
+        '200':
+          description: The stored hours.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkingHoursResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /orders:
     post:
       summary: Place an order
       description: >-
         Role: public. The customer is found by phone number or created. Orders are accepted only
-        during working hours. For a cash order send the customer to `redirectUrl`. For an online
+        during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with
+        `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). For a cash order send the customer to `redirectUrl`. For an online
         order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the
         town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
       tags: [orders]

@@ -65,8 +65,6 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `MONETA_URL` | `https://assistant.demo.moneta.ru/` | MONETA.Assistant address (production: `https://www.payanyway.ru/assistant.htm`) |
 | `MONETA_SUCCESS_URL` | `http://localhost:3001/checkout/done` | `MNT_SUCCESS_URL`; empty = not sent |
 | `MONETA_FAIL_URL` | `http://localhost:3001/checkout?payment=failed` | `MNT_FAIL_URL`; empty = not sent |
-| `WORKING_HOURS_START` | `9:00` | Orders are accepted from this time |
-| `WORKING_HOURS_END` | `22:00` | Orders are accepted until this time |
 | `THANK_YOU_PAGE_PAYMENT_CASH` | `http://localhost:3001/thankyou` | Frontend page shown after a cash order |
 
 ## Project layout

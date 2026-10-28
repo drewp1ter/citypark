@@ -291,8 +291,6 @@ func newApp(t *testing.T, db *sqlx.DB, tg *fakeTelegram, env map[string]string) 
 		"TELEGRAM_TOKEN":                       "tok",
 		"TELEGRAM_CHAT_ID_FOR_ORDER_CREATED":   chatCreated,
 		"TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED": chatConfirmed,
-		"WORKING_HOURS_START":                  "",
-		"WORKING_HOURS_END":                    "",
 	}
 	for k, v := range env {
 		merged[k] = v

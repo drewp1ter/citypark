@@ -17,12 +17,14 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/validate"
+	"github.com/drewp1ter/citypark-go/internal/workinghours"
 )
 
+const validationMessage = "Ошибка валидации, пожалуйста проверьте введенные вами данные"
+
 type HandlerOptions struct {
-	WorkingHoursStart string
-	WorkingHoursEnd   string
-	DefaultPageSize   int
+	Hours           HoursSource
+	DefaultPageSize int
 }
 
 // Handler serves the order endpoints.
@@ -39,7 +41,7 @@ func NewHandler(svc *Service, tokens *auth.Tokens, opts HandlerOptions) *Handler
 // Routes registers POST /orders, which is public and limited to the working hours,
 // the read endpoints for users and admins, and the admin routes that change an order.
 func (h *Handler) Routes(r chi.Router) {
-	r.With(WorkingHours(h.svc.clock, h.opts.WorkingHoursStart, h.opts.WorkingHoursEnd)).
+	r.With(WorkingHours(h.svc.clock, h.opts.Hours)).
 		Post("/orders", httpx.Handle(h.create))
 
 	r.Post("/webhooks/moneta", h.moneta)
@@ -206,6 +208,18 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) error {
 	}
 	if err := validate.Struct(in); err != nil {
 		return err
+	}
+	if in.DeliveryTime != "" {
+		hours, _, err := h.opts.Hours.Get(r.Context())
+		if err != nil {
+			return err
+		}
+		if !hours.Contains(in.DeliveryTime) {
+			e := httpx.NewError(http.StatusBadRequest, validationMessage)
+			e.Fields = map[string]string{"deliveryTime": "Мы работаем с " +
+				workinghours.Display(hours.Start) + " до " + workinghours.Display(hours.End)}
+			return e
+		}
 	}
 	res, err := h.svc.Create(r.Context(), in)
 	if err != nil {

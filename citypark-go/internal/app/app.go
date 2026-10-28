@@ -29,6 +29,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/telegram"
 	"github.com/drewp1ter/citypark-go/internal/upload"
 	"github.com/drewp1ter/citypark-go/internal/user"
+	"github.com/drewp1ter/citypark-go/internal/workinghours"
 )
 
 // App is the assembled application. Notifier and IikoOrders are exposed so the caller can wait for pending sends.
@@ -78,6 +79,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	}, log)
 
 	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders}, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
+	hours := workinghours.NewStore(db)
 
 	r := chi.NewRouter()
 	r.Use(logging.Recover(log), logging.Requests(log), cors)
@@ -95,10 +97,10 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		news.NewHandler(db, uploads, tokens, c, cfg.DefaultPageSize).Routes(r)
 		content.NewHandler(db, uploads, tokens).Routes(r)
 		settings.NewHandler(settings.NewStore(db), tokens).Routes(r)
+		workinghours.NewHandler(hours, tokens).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
-			WorkingHoursStart: cfg.WorkingHours.Start,
-			WorkingHoursEnd:   cfg.WorkingHours.End,
-			DefaultPageSize:   cfg.DefaultPageSize,
+			Hours:           hours,
+			DefaultPageSize: cfg.DefaultPageSize,
 		}).Routes(r)
 		onec.NewHandler(onec.NewClient(cfg.OneC.HotelURL, cfg.OneC.User, cfg.OneC.Password, nil), tokens, c).Routes(r)
 		upload.NewHandler(uploads, tokens).Routes(r)

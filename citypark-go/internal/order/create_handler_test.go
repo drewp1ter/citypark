@@ -1,6 +1,8 @@
 package order
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,12 +14,23 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/testutil"
+	"github.com/drewp1ter/citypark-go/internal/workinghours"
 )
 
 const (
-	hoursStart = "9:00"
+	hoursStart = "09:00"
 	hoursEnd   = "22:00"
 )
+
+// fakeHours is a HoursSource that returns a fixed value or error.
+type fakeHours struct {
+	h   workinghours.Hours
+	err error
+}
+
+func (f fakeHours) Get(context.Context) (workinghours.Hours, time.Time, error) {
+	return f.h, time.Time{}, f.err
+}
 
 var (
 	nightTime = time.Date(2024, 5, 24, 5, 0, 0, 0, time.UTC)
@@ -31,7 +44,10 @@ func newRouter(e *svcEnv, opts HandlerOptions) http.Handler {
 }
 
 func defaultOpts() HandlerOptions {
-	return HandlerOptions{WorkingHoursStart: hoursStart, WorkingHoursEnd: hoursEnd, DefaultPageSize: 20}
+	return HandlerOptions{
+		Hours:           fakeHours{h: workinghours.Hours{Start: hoursStart, End: hoursEnd}},
+		DefaultPageSize: 20,
+	}
 }
 
 func orderBody(e *svcEnv, paymentType string, withAddress bool) map[string]any {
@@ -122,16 +138,6 @@ func TestCreateOrderNight(t *testing.T) {
 	}
 	if n := e.count(t, `SELECT count(*) FROM orders`); n != 0 {
 		t.Errorf("orders = %d, want 0", n)
-	}
-}
-
-func TestCreateOrderNoWorkingHours(t *testing.T) {
-	e := newSvcEnv(t, nightTime)
-	opts := defaultOpts()
-	opts.WorkingHoursStart = ""
-	rec := testutil.DoJSON(t, newRouter(e, opts), http.MethodPost, "/orders", "", orderBody(e, PaymentCash, true))
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
 	}
 }
 
@@ -242,25 +248,24 @@ func TestCreateOrderOnline(t *testing.T) {
 }
 
 func TestWorkingHoursBoundaries(t *testing.T) {
+	good := fakeHours{h: workinghours.Hours{Start: hoursStart, End: hoursEnd}}
 	tests := []struct {
-		name       string
-		start, end string
-		hour, min  int
-		want       int
+		name      string
+		hours     fakeHours
+		hour, min int
+		want      int
 	}{
-		{"before opening", hoursStart, hoursEnd, 8, 59, http.StatusServiceUnavailable},
-		{"at opening", hoursStart, hoursEnd, 9, 0, http.StatusOK},
-		{"before closing", hoursStart, hoursEnd, 21, 59, http.StatusOK},
-		{"at closing", hoursStart, hoursEnd, 22, 0, http.StatusServiceUnavailable},
-		{"unparsable start", "abc", hoursEnd, 5, 0, http.StatusOK},
-		{"unparsable end", hoursStart, "abc", 5, 0, http.StatusOK},
-		{"empty both", "", "", 5, 0, http.StatusOK},
+		{"before opening", good, 8, 59, http.StatusServiceUnavailable},
+		{"at opening", good, 9, 0, http.StatusOK},
+		{"before closing", good, 21, 59, http.StatusOK},
+		{"at closing", good, 22, 0, http.StatusServiceUnavailable},
+		{"read error", fakeHours{err: errors.New("db down")}, 12, 0, http.StatusInternalServerError},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			now := time.Date(2024, 5, 24, tt.hour, tt.min, 0, 0, time.UTC)
 			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
-			h := WorkingHours(clock.Fixed(now), tt.start, tt.end)(next)
+			h := WorkingHours(clock.Fixed(now), tt.hours)(next)
 
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/orders", nil))
@@ -268,6 +273,78 @@ func TestWorkingHoursBoundaries(t *testing.T) {
 				t.Errorf("status = %d, want %d", rec.Code, tt.want)
 			}
 		})
+	}
+}
+
+func TestWorkingHoursClosedMessage(t *testing.T) {
+	good := fakeHours{h: workinghours.Hours{Start: hoursStart, End: hoursEnd}}
+	now := time.Date(2024, 5, 24, 3, 0, 0, 0, time.UTC)
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	rec := httptest.NewRecorder()
+	WorkingHours(clock.Fixed(now), good)(next).ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/orders", nil))
+	he := decodeError(t, rec, http.StatusServiceUnavailable)
+	want := "Извините, но мы не можем принять ваш заказ.\nЗаказы принимаются с 9:00 до 22:00"
+	if he.Message != want {
+		t.Errorf("message = %q, want %q", he.Message, want)
+	}
+}
+
+func TestCreateDeliveryTimeOutsideHours(t *testing.T) {
+	tests := []struct {
+		time string
+		want int
+	}{
+		{"08:30", http.StatusBadRequest},
+		{"22:30", http.StatusBadRequest},
+		{"22:00", http.StatusCreated},
+	}
+	for _, tt := range tests {
+		t.Run(tt.time, func(t *testing.T) {
+			e := newSvcEnv(t, friday)
+			body := orderBody(e, PaymentCash, false)
+			body["deliveryTime"] = tt.time
+			rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
+			if tt.want == http.StatusCreated {
+				if rec.Code != tt.want {
+					t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
+				}
+				return
+			}
+			he := decodeError(t, rec, tt.want)
+			wantFieldErrors(t, he, "deliveryTime")
+			if got := he.Fields["deliveryTime"]; got != "Мы работаем с 9:00 до 22:00" {
+				t.Errorf("errors.deliveryTime = %q", got)
+			}
+			if n := e.count(t, `SELECT count(*) FROM orders`); n != 0 {
+				t.Errorf("orders = %d, want 0", n)
+			}
+		})
+	}
+}
+
+// flakyHours succeeds on the first read (the middleware) and fails on the second (the handler).
+type flakyHours struct {
+	good  fakeHours
+	calls int
+}
+
+func (f *flakyHours) Get(ctx context.Context) (workinghours.Hours, time.Time, error) {
+	f.calls++
+	if f.calls > 1 {
+		return workinghours.Hours{}, time.Time{}, errors.New("db down")
+	}
+	return f.good.Get(ctx)
+}
+
+func TestCreateDeliveryTimeHoursReadError(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	opts := defaultOpts()
+	opts.Hours = &flakyHours{good: fakeHours{h: workinghours.Hours{Start: hoursStart, End: hoursEnd}}}
+	body := orderBody(e, PaymentCash, false)
+	body["deliveryTime"] = "12:00"
+	rec := testutil.DoJSON(t, newRouter(e, opts), http.MethodPost, "/orders", "", body)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500; body %s", rec.Code, rec.Body.String())
 	}
 }
 

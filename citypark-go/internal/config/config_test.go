@@ -37,7 +37,6 @@ func TestLoadDefaults(t *testing.T) {
 		{"Hotel", c.Hotel, Hotel{}},
 		{"OneC", c.OneC, OneC{}},
 		{"Upload", c.Upload, Upload{"./uploads", "http://localhost:3000"}},
-		{"WorkingHours", c.WorkingHours, WorkingHours{"9:00", "22:00"}},
 		{"ThankYouPageCash", c.ThankYouPageCash, "http://localhost:3001/thankyou"},
 	}
 	for _, ch := range checks {
@@ -93,8 +92,6 @@ func TestLoadOverrides(t *testing.T) {
 		"ONEC_PASSWORD":                        "pw1c",
 		"UPLOAD_DIR":                           "/data/uploads",
 		"PUBLIC_BASE_URL":                      "https://api.example.com/",
-		"WORKING_HOURS_START":                  "10:30",
-		"WORKING_HOURS_END":                    "23:00",
 		"THANK_YOU_PAGE_PAYMENT_CASH":          "http://cash",
 	}))
 	if err != nil {
@@ -118,7 +115,6 @@ func TestLoadOverrides(t *testing.T) {
 		{"Hotel", c.Hotel, Hotel{"hotel"}},
 		{"OneC", c.OneC, OneC{"http://1c.local/CityParkHotel/ru_RU", "reports", "pw1c"}},
 		{"Upload", c.Upload, Upload{"/data/uploads", "https://api.example.com"}},
-		{"WorkingHours", c.WorkingHours, WorkingHours{"10:30", "23:00"}},
 		{"ThankYouPageCash", c.ThankYouPageCash, "http://cash"},
 	}
 	for _, ch := range checks {
@@ -183,16 +179,6 @@ func TestLoadNoOldVariables(t *testing.T) {
 		if strings.HasPrefix(k, "YOOKASSA_") || k == "THANK_YOU_PAGE_PAYMENT_ONLINE" {
 			t.Errorf("Load asked for removed variable %s", k)
 		}
-	}
-}
-
-func TestLoadEmptyWorkingHours(t *testing.T) {
-	c, err := Load(lookupMap(map[string]string{"WORKING_HOURS_START": "", "WORKING_HOURS_END": ""}))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if c.WorkingHours.Start != "" || c.WorkingHours.End != "" {
-		t.Errorf("WorkingHours = %+v, want both empty", c.WorkingHours)
 	}
 }
 

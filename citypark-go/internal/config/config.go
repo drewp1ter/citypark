@@ -24,7 +24,6 @@ type Config struct {
 	Hotel            Hotel
 	OneC             OneC
 	Upload           Upload
-	WorkingHours     WorkingHours
 	ThankYouPageCash string
 }
 
@@ -54,7 +53,6 @@ type Moneta struct {
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
 type Upload struct{ Dir, PublicBaseURL string }
-type WorkingHours struct{ Start, End string } // "9:00"; empty string means no restriction
 
 // LookupFunc has the signature of os.LookupEnv.
 type LookupFunc func(key string) (string, bool)
@@ -165,10 +163,6 @@ func Load(lookup LookupFunc) (Config, error) {
 	c.Upload = Upload{
 		Dir:           str("UPLOAD_DIR", "./uploads"),
 		PublicBaseURL: strings.TrimRight(str("PUBLIC_BASE_URL", "http://localhost:3000"), "/"),
-	}
-	c.WorkingHours = WorkingHours{
-		Start: str("WORKING_HOURS_START", "9:00"),
-		End:   str("WORKING_HOURS_END", "22:00"),
 	}
 	c.ThankYouPageCash = str("THANK_YOU_PAGE_PAYMENT_CASH", "http://localhost:3001/thankyou")
 

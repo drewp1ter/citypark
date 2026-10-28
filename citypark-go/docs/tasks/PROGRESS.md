@@ -100,3 +100,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 61 Order delivery time [27] (needed by citypark-modern task 28)
 - [x] 62 Paid online orders go to iiko [30, 60, 61]
   - Owner check: set the real `IIKO_*` values (including `IIKO_TERMINAL_GROUP_ID` and `IIKO_PAYMENT_TYPE_ID`), pay an order in Moneta's demo shop and see it in iikoFront. Its comment should show the address, the time and the fee, and `orders.iiko_order_id` should be filled.
+
+## Working hours
+- [x] 63 Working hours from the database [27, 61] (needed by citypark-admin task 21 and citypark-modern task 29)
+  - Owner: remove `WORKING_HOURS_START` and `WORKING_HOURS_END` from local `.env` files (they are no longer read). The hours are now edited with `PUT /working-hours`.
