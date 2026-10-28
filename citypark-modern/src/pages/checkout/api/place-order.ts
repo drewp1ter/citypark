@@ -1,8 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { getMenu, priceLines, quoteDelivery } from '@/entities/dish'
-import { submitLead } from '@/shared/api'
+import { getDeliveryTowns, getMenu, priceLines } from '@/entities/dish'
 import { phoneDigits } from '@/shared/lib'
 import {
 	conditionalErrors,
@@ -13,10 +12,11 @@ import {
 	type OrderField,
 	type OrderState,
 } from '../model/schema'
+import { createOrder, type CreateOrderBody } from './orders-api'
 
 /**
- * Validates the order, prices it from the menu (never from the browser) and sends it through `submitLead`.
- * On success it redirects to the "Готово" step; the cart is cleared there.
+ * Validates the order, checks the cart against the menu (never trusting the browser's prices) and places it with the
+ * backend's `POST /orders`. On success it redirects to the Moneta payment page; the cart is cleared on `/checkout/done`.
  */
 export async function placeOrder(_previous: OrderState, formData: FormData): Promise<OrderState> {
 	const values = Object.fromEntries(orderFields.map((field) => [field, String(formData.get(field) ?? '')])) as Record<
@@ -62,22 +62,48 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 		return { status: 'error', errors, values }
 	}
 
-	const quote = quoteDelivery({ method: order.data.method, zone: order.data.zone, subtotal: priced.subtotal })
-	await submitLead('order', {
-		...order.data,
-		consent: true,
+	if (order.data.method === 'delivery') {
+		let towns
+		try {
+			towns = await getDeliveryTowns()
+		} catch (error) {
+			console.error(error)
+			errors.form = 'Не удалось проверить адрес доставки. Попробуйте ещё раз через минуту.'
+			return { status: 'error', errors, values }
+		}
+		if (!towns.some((town) => town.name === order.data.city)) {
+			errors.city = 'Выберите населённый пункт'
+			return { status: 'error', errors, values }
+		}
+	}
+
+	const { street, apartment, entrance, city, when, time, comment } = order.data
+	const body: CreateOrderBody = {
 		phone: `+${phoneDigits(order.data.phone)}`,
-		items: priced.items.map((item) => ({
-			dish: item.dish.name,
-			size: item.variant.label,
-			quantity: item.quantity,
-			total: item.total,
-		})),
-		subtotal: priced.subtotal,
-		delivery: quote.label,
-		total: priced.subtotal + (quote.amount ?? 0),
-	})
+		name: order.data.name,
+		comment: [when === 'scheduled' ? `Ко времени ${time}.` : '', comment].filter(Boolean).join(' '),
+		paymentType: 'online',
+		items: priced.items.map((item) => ({ productId: Number(item.dish.externalId), amount: item.quantity })),
+	}
+	if (order.data.method === 'delivery') {
+		const address = [street, apartment && `кв. ${apartment}`, entrance && `подъезд ${entrance}`].filter(Boolean)
+		body.address = { city, address: address.join(', ') }
+	}
+
+	let redirectUrl: string
+	try {
+		const result = await createOrder(body)
+		if (!result.ok) {
+			errors.form = result.message
+			return { status: 'error', errors, values }
+		}
+		redirectUrl = result.redirectUrl
+	} catch (error) {
+		console.error(error)
+		errors.form = 'Не удалось отправить заказ. Попробуйте ещё раз через минуту.'
+		return { status: 'error', errors, values }
+	}
 
 	// redirect() works by throwing, so it must stay outside any try/catch.
-	redirect('/checkout/done')
+	redirect(redirectUrl)
 }

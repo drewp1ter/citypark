@@ -3,8 +3,6 @@ import { isValidRuPhone } from '@/shared/lib'
 
 export const methods = ['delivery', 'pickup'] as const
 export const whens = ['asap', 'scheduled'] as const
-export const zones = ['city', 'outskirts'] as const
-export const payments = ['card', 'cash', 'sbp'] as const
 
 const oneOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(values, { error: 'Выберите вариант' })
 
@@ -12,14 +10,13 @@ export const orderSchema = z.object({
 	method: oneOf(methods),
 	when: oneOf(whens),
 	time: z.string(),
-	zone: oneOf(zones),
+	city: z.string().trim().max(80),
 	street: z.string().trim().max(120, 'Слишком длинный адрес'),
 	apartment: z.string().trim().max(20, 'Не больше 20 символов'),
 	entrance: z.string().trim().max(20, 'Не больше 20 символов'),
 	name: z.string().trim().min(2, 'Укажите имя').max(80, 'Слишком длинное имя'),
 	phone: z.string().refine(isValidRuPhone, 'Введите номер полностью: +7 ___ ___-__-__'),
 	comment: z.string().trim().max(500, 'Не больше 500 символов'),
-	payment: oneOf(payments),
 	// The box is unchecked by default: consent to personal data processing must be given actively.
 	consent: z.literal('on', { error: 'Нужно согласие с политикой конфиденциальности' }),
 })
@@ -33,8 +30,9 @@ export type OrderField = keyof z.infer<typeof orderSchema>
  */
 export function conditionalErrors(order: Record<OrderField, string>): Partial<Record<OrderField, string>> {
 	const errors: Partial<Record<OrderField, string>> = {}
-	if (order.method === 'delivery' && order.street.trim().length < 3) {
-		errors.street = 'Укажите улицу и дом'
+	if (order.method === 'delivery') {
+		if (order.city.trim() === '') errors.city = 'Выберите населённый пункт'
+		if (order.street.trim().length < 3) errors.street = 'Укажите улицу и дом'
 	}
 	if (order.when === 'scheduled') {
 		if (!/^\d{2}:\d{2}$/.test(order.time)) errors.time = 'Выберите время'

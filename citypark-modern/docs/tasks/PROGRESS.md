@@ -47,3 +47,10 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - No other place rendered `descriptionHtml` on a card. Checked on a build at 1440 px (light, dark) and 390 px; first row is about 455 px tall. In `qa:responsive` the 400s on `/` and `/news` come from Next's private-IP image guard for backend uploads (`192.168.4.15`), not from this task.
 - [x] 25 Room pages with a gallery [17, 22, 24] (needs citypark-go task 57)
   - `qa:a11y` still reports `target-size` on the `/hotel` list link (obscured by the mobile quick bar, same as a `/news` item) and landmark warnings on `/news/frittata`; none on `/rooms/vip`. The 400s in `qa:responsive` are the private-IP image guard on `/` and `/news`.
+
+## Payment
+- [x] 26 Checkout sends the order to the backend and opens the payment page [01] (needs citypark-go task 58)
+  - Owner: run `QA_PLACE_ORDER=1 MENU_API_URL=... node scripts/qa/flows/checkout-and-contacts.mjs` (creates a real order; the URL host must be the Moneta assistant host) and place one manual order on a local backend with `MONETA_TEST_MODE=true`: the Moneta demo form must open, not a signature error. Not run here: both POST to the backend.
+
+## Cleanup
+- [ ] 27 Remove the table booking form

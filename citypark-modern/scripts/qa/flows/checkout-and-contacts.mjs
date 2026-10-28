@@ -24,12 +24,12 @@ let p = await pageWithCart()
 await p.goto(base + '/checkout')
 await p.waitForTimeout(500)
 out('summary: lines + total', await txt(p.locator("aside[aria-label='Ваш заказ']")))
-await p.getByRole('button', { name: 'Подтвердить заказ' }).click()
+await p.getByRole('button', { name: 'Оплатить заказ' }).click()
 await p.waitForTimeout(700)
 out('empty submit -> alerts', JSON.stringify((await p.getByRole('alert').allInnerTexts()).filter(Boolean)))
 await p.getByLabel('Имя').fill('Анна')
 await p.getByLabel('Улица и дом').fill('Гоголя 10')
-await p.getByRole('button', { name: 'Подтвердить заказ' }).click()
+await p.getByRole('button', { name: 'Оплатить заказ' }).click()
 await p.waitForTimeout(700)
 out(
 	'typed name + street kept after error',
@@ -39,15 +39,18 @@ out('remaining alerts', JSON.stringify((await p.getByRole('alert').allInnerTexts
 
 // variants: outskirts, pickup, scheduled
 await p.getByRole('button', { name: /Населённый пункт/ }).click()
-await p.getByRole('option', { name: /СОТ/ }).click()
+const townOptions = p.getByRole('option')
+out('towns from the backend', JSON.stringify(await townOptions.allInnerTexts()))
+if ((await townOptions.count()) > 1) await townOptions.nth(1).click()
+else await p.keyboard.press('Escape')
 out(
-	'outskirts: delivery line + note',
-	(await txt(p.locator('aside li', { hasText: 'Доставка' }))) + ' || ' + (await txt(p.getByText('не входит в сумму')))
+	'second town: delivery line + total',
+	(await txt(p.locator('aside li', { hasText: 'Доставка' }))) + ' || ' + (await txt(p.getByText('К оплате')))
 )
 await p.getByRole('button', { name: /Когда/ }).click()
 await p.getByRole('option', { name: /Ко времени/ }).click()
 await p.getByLabel('Время', { exact: true }).fill('23:45')
-await p.getByRole('button', { name: 'Подтвердить заказ' }).click()
+await p.getByRole('button', { name: 'Оплатить заказ' }).click()
 await p.waitForTimeout(700)
 out('scheduled 23:45 -> error', JSON.stringify((await p.getByRole('alert').allInnerTexts()).filter(Boolean)))
 await p.getByText('Самовывоз').click()
@@ -71,20 +74,29 @@ out('unknown size of a real dish -> empty state', await txt(t2.getByText('В к�
 const res = await fetch(base + '/checkout', { method: 'GET' })
 out('GET /checkout', res.status)
 
-// valid order
-await p.getByText('Доставка', { exact: true }).first().click()
-await p.getByLabel('Улица и дом').fill('Гоголя 10')
-await p.getByRole('button', { name: /Когда/ }).click()
-await p.getByRole('option', { name: /В ближайшее/ }).click()
-await p.getByLabel('Телефон').fill('')
-await p.getByLabel('Телефон').pressSequentially('89183119791')
-await p.getByLabel(/Согласен/).check()
-await p.getByRole('button', { name: 'Подтвердить заказ' }).click()
-await p.waitForURL('**/checkout/done')
-await p.waitForTimeout(500)
-out('after valid order: url', p.url().replace(base, ''))
-out('done page h1 + step', `${await txt(p.locator('h1'))} | ${await txt(p.locator('ol li[aria-current=step]'))}`)
-out('cart cleared', String(await p.evaluate(() => localStorage.getItem('citypark-cart'))))
+// failed payment
+const f = await pageWithCart()
+await f.goto(base + '/checkout?payment=failed')
+await f.waitForTimeout(500)
+out('?payment=failed -> alert', JSON.stringify((await f.getByRole('alert').allInnerTexts()).filter(Boolean)))
+
+// valid order: creates a real order on the backend, so it only runs with QA_PLACE_ORDER=1
+if (process.env.QA_PLACE_ORDER === '1') {
+	await p.getByText('Доставка', { exact: true }).first().click()
+	await p.getByLabel('Улица и дом').fill('Гоголя 10')
+	await p.getByRole('button', { name: /Когда/ }).click()
+	await p.getByRole('option', { name: /В ближайшее/ }).click()
+	await p.getByLabel('Телефон').fill('')
+	await p.getByLabel('Телефон').pressSequentially('89183119791')
+	await p.getByLabel(/Согласен/).check()
+	await p.getByRole('button', { name: 'Оплатить заказ' }).click()
+	await p.waitForTimeout(3000)
+	const alerts = (await p.getByRole('alert').allInnerTexts()).filter(Boolean)
+	out('after valid order: host', alerts.length ? 'no redirect' : new URL(p.url()).host)
+	if (alerts.length) out('alerts', JSON.stringify(alerts))
+} else {
+	out('valid order', 'skipped (set QA_PLACE_ORDER=1 to create a real order)')
+}
 
 // empty cart
 const e = await pageWithCart(null)

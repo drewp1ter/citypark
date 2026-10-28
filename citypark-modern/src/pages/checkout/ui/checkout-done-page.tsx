@@ -5,7 +5,7 @@ import { CheckoutHeader } from './checkout-header'
 import { ClearCart } from './clear-cart'
 import { TitleRow } from './title-row'
 
-/** Step 3, "Готово". The order action redirects here after the order has been sent. */
+/** Step 3, "Готово". Moneta brings the customer here after a successful payment. */
 export async function CheckoutDonePage() {
 	const { phones } = await getSiteSettings()
 
@@ -18,8 +18,9 @@ export async function CheckoutDonePage() {
 				<div className={cardClass('surface', 'items-start gap-3 rounded-lg p-6 md:rounded-xl md:p-10')}>
 					<h2 className='heading text-2xl md:text-[32px]'>Спасибо за заказ!</h2>
 					<p className='text-text-muted max-w-xl'>
-						Мы перезвоним по указанному номеру, чтобы подтвердить заказ. Доставляем {delivery.hours}. Если что-то
-						изменилось, позвоните: <span className='text-text whitespace-nowrap'>{phones.restaurant.display}</span>.
+						Оплата прошла, заказ принят. Мы перезвоним, если что-то нужно уточнить. Доставляем {delivery.hours}. Если
+						что-то изменилось, позвоните:{' '}
+						<span className='text-text whitespace-nowrap'>{phones.restaurant.display}</span>.
 					</p>
 					<div className='mt-2 flex flex-wrap gap-2'>
 						<Button href='/menu' size='xl' variant='inverse'>

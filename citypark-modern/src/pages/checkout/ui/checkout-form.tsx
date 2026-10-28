@@ -2,8 +2,8 @@
 
 import { useActionState, useMemo, useState, type ReactNode } from 'react'
 import { useCartLines, useCartReady } from '@/entities/cart'
-import { priceLines, quoteDelivery, type DeliveryMethod, type DeliveryZone, type Dish } from '@/entities/dish'
-import { formatPrice, plural, typo } from '@/shared/lib'
+import { priceLines, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
+import { formatPrice, plural } from '@/shared/lib'
 import {
 	AppLink,
 	Button,
@@ -25,11 +25,15 @@ const dishWord = (count: number) => plural(count, ['блюдо', 'блюда', '
 type CheckoutFormProps = {
 	/** The whole menu: the cart only stores ids, so the prices are looked up here. */
 	dishes: readonly Dish[]
+	/** Towns with delivery prices from the backend. */
+	towns: readonly DeliveryTown[]
+	/** The customer came back from Moneta after a failed payment. */
+	paymentFailed: boolean
 	/** Title row of the page (h1 and the steps). */
 	intro: ReactNode
 }
 
-export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
+export function CheckoutForm({ dishes, towns, paymentFailed, intro }: CheckoutFormProps) {
 	const [state, formAction, pending] = useActionState(placeOrder, initialState)
 	const errors = state.status === 'error' ? state.errors : {}
 	const values = state.status === 'error' ? state.values : undefined
@@ -39,15 +43,14 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 	const priced = useMemo(() => priceLines(lines, dishes), [lines, dishes])
 
 	const [method, setMethod] = useState<DeliveryMethod>('delivery')
-	const [zone, setZone] = useState<DeliveryZone>('city')
+	const [city, setCity] = useState(towns[0]?.name ?? '')
 	const [when, setWhen] = useState('asap')
-	const [payment, setPayment] = useState('card')
 	const [consent, setConsent] = useState(false)
 
-	const quote = quoteDelivery({ method, zone, subtotal: priced.subtotal })
-	const total = priced.subtotal + (quote.amount ?? 0)
-	const deliveryBadge = quote.label === 'уточним' ? 'доставка уточнится' : `${quote.label} доставка`
-	const canSubmit = cartReady && priced.items.length > 0 && !pending
+	const noDelivery = method === 'delivery' && towns.length === 0
+	const deliveryPrice = method === 'delivery' ? (towns.find((town) => town.name === city)?.price ?? 0) : 0
+	const total = priced.subtotal + deliveryPrice
+	const canSubmit = cartReady && priced.items.length > 0 && !pending && !noDelivery
 
 	return (
 		<div className='max-w-narrow-page mx-auto w-full px-3 pt-2 pb-4 md:px-6 md:pt-10 md:pb-10'>
@@ -63,8 +66,16 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 				</div>
 			) : (
 				<>
-					{errors.form && (
+					{paymentFailed && (
 						<p role='alert' className='border-danger text-danger mb-2 rounded-sm border px-4 py-3 md:mb-3'>
+							Оплата не прошла. Заказ сохранён в корзине: попробуйте ещё раз или позвоните нам.
+						</p>
+					)}
+					{errors.form && (
+						<p
+							role='alert'
+							className='border-danger text-danger mb-2 rounded-sm border px-4 py-3 whitespace-pre-line md:mb-3'
+						>
 							{errors.form}
 						</p>
 					)}
@@ -92,6 +103,11 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 									{ value: 'pickup', label: 'Самовывоз' },
 								]}
 							/>
+							{noDelivery && (
+								<p role='alert' className='text-danger'>
+									Доставка сейчас недоступна, выберите самовывоз.
+								</p>
+							)}
 							<div className='grid gap-3 md:grid-cols-2'>
 								<Select
 									label='Когда'
@@ -115,18 +131,19 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 										error={errors.time}
 									/>
 								)}
-								{method === 'delivery' && (
+								{method === 'delivery' && !noDelivery && (
 									<>
 										<Select
 											label='Населённый пункт'
-											name='zone'
-											options={[
-												{ value: 'city', label: 'Белореченск' },
-												{ value: 'outskirts', label: typo('СОТ / ДНТ (+200–350 ₽)'), textValue: 'СОТ / ДНТ' },
-											]}
-											value={zone}
-											onValueChange={(next) => setZone(next as DeliveryZone)}
-											error={errors.zone}
+											name='city'
+											options={towns.map((town) => ({
+												value: town.name,
+												label: `${town.name} (+${formatPrice(town.price)})`,
+												textValue: town.name,
+											}))}
+											value={city}
+											onValueChange={setCity}
+											error={errors.city}
 										/>
 										<TextField
 											label='Улица и дом'
@@ -185,47 +202,21 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 								error={errors.comment}
 								className='md:col-span-2'
 							/>
-							<RadioPills
-								name='payment'
-								legend='Оплата'
-								value={payment}
-								onValueChange={setPayment}
-								className='md:col-span-2'
-								options={[
-									{
-										value: 'card',
-										label: (
-											<>
-												<span className='md:hidden'>Картой</span>
-												<span className='hidden md:inline'>Картой курьеру</span>
-											</>
-										),
-									},
-									{ value: 'cash', label: 'Наличными' },
-									{
-										value: 'sbp',
-										label: (
-											<>
-												<span className='md:hidden'>СБП</span>
-												<span className='hidden md:inline'>СБП онлайн</span>
-											</>
-										),
-									},
-								]}
-							/>
 						</section>
 
 						{/* Заказ: a dark panel on desktop; on mobile a collapsible summary and the consent row */}
 						<aside
 							aria-label='Ваш заказ'
-							className='md:bg-inverse-bg md:text-inverse-text flex flex-col gap-2 md:sticky md:top-6 md:col-start-3 md:row-span-2 md:row-start-1 md:mt-6 md:gap-3.5 md:rounded-xl md:p-7'
+							className='md:bg-inverse-bg md:text-inverse-text flex flex-col gap-2 md:sticky md:top-6 md:col-start-3 md:row-span-2 md:row-start-1 md:gap-3.5 md:rounded-xl md:p-7'
 						>
 							<details className='bg-inverse-bg text-inverse-text rounded-lg px-[18px] py-1 md:hidden'>
 								<summary className='flex min-h-[52px] cursor-pointer items-center justify-between gap-2 font-semibold'>
 									<span>
 										Заказ · {priced.count} {dishWord(priced.count)}
 									</span>
-									<span className='text-accent'>{deliveryBadge}</span>
+									<span className='text-accent'>
+										{method === 'delivery' ? `доставка ${formatPrice(deliveryPrice)}` : 'самовывоз'}
+									</span>
 								</summary>
 								<ul className='mb-3 text-[15px]'>
 									{priced.items.map((item) => (
@@ -254,19 +245,13 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 								))}
 								<li className='flex justify-between gap-3 py-[9px]'>
 									<span className='text-inverse-muted'>Доставка</span>
-									<span className='text-accent font-semibold'>{quote.label}</span>
+									<span className='text-accent font-semibold'>{formatPrice(deliveryPrice)}</span>
 								</li>
 							</ul>
 							<div className='hidden items-baseline justify-between md:flex'>
 								<span>К оплате</span>
 								<span className='font-display text-[32px] font-medium'>{formatPrice(total)}</span>
 							</div>
-							{quote.amount === null && (
-								<p className='text-inverse-muted hidden text-[13px] md:block'>
-									Доставка ({quote.label}) не входит в сумму, стоимость подтвердим по телефону.
-								</p>
-							)}
-
 							<CheckboxField
 								name='consent'
 								checked={consent}
@@ -286,9 +271,11 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 								size='xl'
 								className='hidden min-h-14 text-[17px] md:inline-flex'
 							>
-								{pending ? 'Отправляем…' : 'Подтвердить заказ'}
+								{pending ? 'Переходим к оплате…' : 'Оплатить заказ'}
 							</Button>
-							<p className='text-inverse-muted hidden text-center text-[13px] md:block'>Перезвоним для подтверждения</p>
+							<p className='text-inverse-muted hidden text-center text-[13px] md:block'>
+								Оплата картой или через СБП на странице MONETA.RU
+							</p>
 						</aside>
 
 						{/* Mobile: the submit button stays at the bottom of the screen */}
@@ -298,7 +285,7 @@ export function CheckoutForm({ dishes, intro }: CheckoutFormProps) {
 								disabled={!canSubmit}
 								className='min-h-[58px] w-full justify-between px-6 text-[17px]'
 							>
-								<span>{pending ? 'Отправляем…' : 'Подтвердить'}</span>
+								<span>{pending ? 'Переходим к оплате…' : 'Оплатить'}</span>
 								<span className='font-display font-medium'>{formatPrice(total)}</span>
 							</Button>
 						</div>

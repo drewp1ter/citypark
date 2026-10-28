@@ -145,9 +145,11 @@ Every form is a Server Action in the `api/` segment next to its UI, with a zod s
 form is a feature (`features/book-table`, used by home and restaurant); the checkout and contact forms live in their
 pages (`pages/checkout`, `pages/contacts`) because only one page uses each. The action validates, then calls
 `submitLead(kind, payload)` from `shared/api` (the only place that will talk to e-mail / Telegram / CRM; for now it
-logs). It returns `{ status: "error", errors, values }` so the form can show field errors and keep what was typed, or
-`{ status: "success" }`. The order action re-prices the cart from the menu on the server and redirects to
-`/checkout/done`, where the cart is cleared. Rules that depend on other fields (address for delivery, time for
+logs); the order form is the exception (below). It returns `{ status: "error", errors, values }` so the form can show field errors and keep what was typed, or
+`{ status: "success" }`. The order action re-prices the cart from the menu on the server, posts it to the backend's
+`POST /orders` (online payment only) and redirects to the Moneta page from `redirectUrl`; Moneta returns the customer
+to `/checkout/done`, where the cart is cleared (or to `/checkout?payment=failed`). The delivery towns and prices come
+from `GET /delivery-prices`. Rules that depend on other fields (address for delivery, time for
 "Ко времени…") are separate functions, not zod refinements, because zod skips object-level refinements while any
 field is invalid.
 
