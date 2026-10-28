@@ -13,7 +13,6 @@ type OrderMessage struct {
 	Name         string // customer name
 	Phone        string
 	Address      string        // "city, street"; "" means pickup
-	PaymentType  string        // "cash" or "online"
 	Total        money.Kopecks // sum of items, without delivery
 	Delivery     money.Kopecks
 	Comment      string
@@ -51,7 +50,6 @@ func FormatOrder(m OrderMessage) string {
 	} else {
 		line("Доставка", "Нет")
 	}
-	line("Оплата", paymentText(m.PaymentType))
 	if m.DeliveryTime != "" {
 		line("Ко времени", m.DeliveryTime)
 	}
@@ -71,16 +69,6 @@ func FormatOrder(m OrderMessage) string {
 	}
 	b.WriteString("```")
 	return b.String()
-}
-
-func paymentText(t string) string {
-	switch t {
-	case "cash":
-		return "наличными"
-	case "online":
-		return "онлайн"
-	}
-	return t
 }
 
 // safe replaces backticks so user text cannot close the Markdown code block.

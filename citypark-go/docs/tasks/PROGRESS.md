@@ -107,3 +107,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Live orders
 - [x] 64 Live order events over WebSocket [29, 63] (needed by citypark-admin task 22)
+
+## Online payment only
+- [x] 65 Online payment only [64] (needed by citypark-admin task 23 and citypark-modern task 31)

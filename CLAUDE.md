@@ -52,7 +52,7 @@ The QA scripts use `BASE_URL` (default `http://localhost:3111`) and need `npx pl
 - The backend's API contract for the frontend is `citypark-go/docs/API.md` (OpenAPI in
   `citypark-go/internal/apidocs/openapi.yaml`). A change to an endpoint must update `docs/API.md`.
 - Both dev servers use port **3000** by default. To run them together, change one of them (the backend expects the
-  frontend at `:3001`, see `THANK_YOU_PAGE_PAYMENT_CASH`).
+  frontend at `:3001`, see `MONETA_SUCCESS_URL`).
 
 ## Project-specific rules worth knowing up front
 

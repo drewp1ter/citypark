@@ -81,7 +81,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	}, log)
 
 	hub := live.NewHub(log)
-	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders, hub}, payments, order.Options{ThankYouCash: cfg.ThankYouPageCash})
+	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders, hub}, payments)
 	hours := workinghours.NewStore(db)
 
 	r := chi.NewRouter()

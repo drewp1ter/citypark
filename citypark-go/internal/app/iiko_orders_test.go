@@ -63,7 +63,6 @@ func fullOrder() order.Order {
 		ID:            7,
 		Comment:       "Без лука",
 		DeliveryTime:  "18:30",
-		PaymentType:   order.PaymentOnline,
 		Total:         79000,
 		DeliveryPrice: 15000,
 		Customer:      order.Customer{ID: 3, Name: "Иван", Phone: "+79991234567"},
@@ -170,7 +169,7 @@ func iikoFixture(t *testing.T, db *sqlx.DB, iikoIDs ...string) order.Order {
 	userID := testutil.InsertUser(t, db, "Иван", "+79990000000", "user")
 	catID := testutil.InsertCategory(t, db, testutil.Category{Name: "Пицца"})
 	addrID := testutil.InsertAddress(t, db, userID, "Белореченск", "ул. Мира, 5")
-	p := order.InsertParams{CustomerID: userID, AddressID: &addrID, PaymentType: order.PaymentOnline, DeliveryPrice: 15000}
+	p := order.InsertParams{CustomerID: userID, AddressID: &addrID, DeliveryPrice: 15000}
 	for i, id := range iikoIDs {
 		pid := testutil.InsertProduct(t, db, testutil.Product{CategoryID: catID, Name: "П" + string(rune('A'+i)), PriceKopecks: 10000, IikoID: id})
 		p.Items = append(p.Items, order.InsertItem{ProductID: pid, Amount: 1, OfferedPrice: 10000})
@@ -349,7 +348,7 @@ func TestIikoOrdersIgnoresOtherEvents(t *testing.T) {
 	o := iikoFixture(t, db, "iiko-a")
 	creator := &fakeCreator{}
 	n := app.NewIikoOrders(creator, db, &fakeSender{}, alertChat, iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	n.OrderCreated(context.Background(), o)
+	n.OrderPending(context.Background(), o)
 	n.OrderConfirmed(context.Background(), o)
 	n.Wait()
 	if len(creator.calls()) != 0 {
@@ -365,9 +364,6 @@ type recordingNotifier struct {
 func (r recordingNotifier) OrderPending(context.Context, order.Order) {
 	*r.log = append(*r.log, r.name+":pending")
 }
-func (r recordingNotifier) OrderCreated(context.Context, order.Order) {
-	*r.log = append(*r.log, r.name+":created")
-}
 func (r recordingNotifier) OrderPaid(context.Context, order.Order) {
 	*r.log = append(*r.log, r.name+":paid")
 }
@@ -380,11 +376,10 @@ func TestNotifiersFanOut(t *testing.T) {
 	ns := app.Notifiers{recordingNotifier{"a", &log}, recordingNotifier{"b", &log}}
 	ctx, o := context.Background(), order.Order{}
 	ns.OrderPending(ctx, o)
-	ns.OrderCreated(ctx, o)
 	ns.OrderPaid(ctx, o)
 	ns.OrderConfirmed(ctx, o)
 
-	want := []string{"a:pending", "b:pending", "a:created", "b:created", "a:paid", "b:paid", "a:confirmed", "b:confirmed"}
+	want := []string{"a:pending", "b:pending", "a:paid", "b:paid", "a:confirmed", "b:confirmed"}
 	if len(log) != len(want) {
 		t.Fatalf("log = %v, want %v", log, want)
 	}

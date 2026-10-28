@@ -17,9 +17,6 @@ const (
 	StatusPaid      = "paid"
 	StatusCanceled  = "canceled"
 	StatusConfirmed = "confirmed"
-
-	PaymentCash   = "cash"
-	PaymentOnline = "online"
 )
 
 type Customer struct {
@@ -51,8 +48,7 @@ type Order struct {
 	Status        string        `json:"status"`
 	Comment       string        `json:"comment"`
 	DeliveryTime  string        `json:"deliveryTime"` // "HH:MM"; "" = as soon as possible
-	PaymentType   string        `json:"paymentType"`
-	Total         money.Kopecks `json:"total"` // sum of OfferedPrice * Amount, without delivery
+	Total         money.Kopecks `json:"total"`        // sum of OfferedPrice * Amount, without delivery
 	DeliveryPrice money.Kopecks `json:"deliveryPrice"`
 	Customer      Customer      `json:"customer"`
 	Address       *Address      `json:"address"` // nil = pickup, JSON null

@@ -40,12 +40,12 @@ func TestHubFanOut(t *testing.T) {
 	a, _ := h.Subscribe()
 	b, _ := h.Subscribe()
 
-	h.OrderCreated(context.Background(), order.Order{ID: 7})
+	h.OrderPending(context.Background(), order.Order{ID: 7})
 
 	for _, ch := range []<-chan Event{a, b} {
 		e := recv(t, ch)
-		if e.Type != "order.created" || e.Order == nil || e.Order.ID != 7 {
-			t.Errorf("event = %+v, want order.created for order 7", e)
+		if e.Type != "order.pending" || e.Order == nil || e.Order.ID != 7 {
+			t.Errorf("event = %+v, want order.pending for order 7", e)
 		}
 	}
 }
@@ -56,11 +56,10 @@ func TestHubEventTypes(t *testing.T) {
 	ctx, o := context.Background(), order.Order{ID: 1}
 
 	h.OrderPending(ctx, o)
-	h.OrderCreated(ctx, o)
 	h.OrderPaid(ctx, o)
 	h.OrderConfirmed(ctx, o)
 
-	for _, want := range []string{"order.pending", "order.created", "order.paid", "order.confirmed"} {
+	for _, want := range []string{"order.pending", "order.paid", "order.confirmed"} {
 		if got := recv(t, ch).Type; got != want {
 			t.Errorf("type = %q, want %q", got, want)
 		}
@@ -104,7 +103,7 @@ func TestHubSlowSubscriberDropped(t *testing.T) {
 	go func() {
 		defer close(done)
 		for i := 0; i < 17; i++ {
-			h.OrderCreated(context.Background(), order.Order{ID: int64(i)})
+			h.OrderPending(context.Background(), order.Order{ID: int64(i)})
 			// Give the fast reader time so its own buffer never overflows.
 			time.Sleep(time.Millisecond)
 		}

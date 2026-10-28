@@ -128,7 +128,6 @@ CREATE TABLE orders (
     status                 text NOT NULL DEFAULT 'new'
                            CHECK (status IN ('new', 'pending', 'paid', 'canceled', 'confirmed')),
     comment                text NOT NULL DEFAULT '',
-    payment_type           text NOT NULL CHECK (payment_type IN ('cash', 'online')),
     items_hash             text NOT NULL,
     payment_id             text NOT NULL DEFAULT '',
     delivery_price_kopecks bigint NOT NULL DEFAULT 0 CHECK (delivery_price_kopecks >= 0)

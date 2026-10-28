@@ -121,14 +121,13 @@ func TestSendMessageNoTokenInBuildError(t *testing.T) {
 
 func TestFormatOrderDelivery(t *testing.T) {
 	got := FormatOrder(OrderMessage{
-		ID:          15,
-		Name:        "Иван",
-		Phone:       "+79991234567",
-		Address:     "Сочи, ул. Ленина, 1",
-		PaymentType: "cash",
-		Total:       money.FromRubles(640),
-		Delivery:    money.FromRubles(150),
-		Comment:     "Без лука",
+		ID:       15,
+		Name:     "Иван",
+		Phone:    "+79991234567",
+		Address:  "Сочи, ул. Ленина, 1",
+		Total:    money.FromRubles(640),
+		Delivery: money.FromRubles(150),
+		Comment:  "Без лука",
 		Items: []OrderItem{
 			{Category: "Мангал", Name: "Шашлык", Amount: 2},
 			{Category: "Пицца", Name: "Маргарита", Amount: 1},
@@ -140,7 +139,6 @@ func TestFormatOrderDelivery(t *testing.T) {
 		"Телефон:        +79991234567\n" +
 		"Доставка:       Да\n" +
 		"Адрес доставки: Сочи, ул. Ленина, 1\n" +
-		"Оплата:         наличными\n" +
 		"Сумма заказа:   640\n" +
 		"Сумма доставки: 150\n" +
 		"Итого:          790\n" +
@@ -157,20 +155,18 @@ func TestFormatOrderDelivery(t *testing.T) {
 
 func TestFormatOrderPickup(t *testing.T) {
 	got := FormatOrder(OrderMessage{
-		ID:          15,
-		Name:        "Иван",
-		Phone:       "+79991234567",
-		PaymentType: "online",
-		Total:       money.FromRubles(640),
-		Delivery:    money.FromRubles(150), // ignored for pickup
-		Items:       []OrderItem{{Category: "Мангал", Name: "Шашлык", Amount: 2}},
+		ID:       15,
+		Name:     "Иван",
+		Phone:    "+79991234567",
+		Total:    money.FromRubles(640),
+		Delivery: money.FromRubles(150), // ignored for pickup
+		Items:    []OrderItem{{Category: "Мангал", Name: "Шашлык", Amount: 2}},
 	})
 	want := "```\n" +
 		"Номер заказа:   15\n" +
 		"Имя:            Иван\n" +
 		"Телефон:        +79991234567\n" +
 		"Доставка:       Нет\n" +
-		"Оплата:         онлайн\n" +
 		"Итого:          640\n" +
 		"Комментарий:    \n" +
 		"\n" +
@@ -224,19 +220,11 @@ func TestFormatOrderBackticks(t *testing.T) {
 	}
 }
 
-func TestFormatOrderUnknownPaymentType(t *testing.T) {
-	got := FormatOrder(OrderMessage{ID: 1, PaymentType: "card"})
-	if want := "Оплата:         card\n"; !strings.Contains(got, want) {
-		t.Errorf("output does not contain %q:\n%s", want, got)
-	}
-}
-
 func TestFormatOrderDeliveryTime(t *testing.T) {
 	got := FormatOrder(OrderMessage{
 		ID:           15,
 		Name:         "Иван",
 		Phone:        "+79991234567",
-		PaymentType:  "online",
 		Total:        money.FromRubles(640),
 		DeliveryTime: "18:30",
 		Items:        []OrderItem{{Category: "Мангал", Name: "Шашлык", Amount: 2}},
@@ -246,7 +234,6 @@ func TestFormatOrderDeliveryTime(t *testing.T) {
 		"Имя:            Иван\n" +
 		"Телефон:        +79991234567\n" +
 		"Доставка:       Нет\n" +
-		"Оплата:         онлайн\n" +
 		"Ко времени:     18:30\n" +
 		"Итого:          640\n" +
 		"Комментарий:    \n" +

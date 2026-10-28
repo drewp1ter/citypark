@@ -50,13 +50,12 @@ func defaultOpts() HandlerOptions {
 	}
 }
 
-func orderBody(e *svcEnv, paymentType string, withAddress bool) map[string]any {
+func orderBody(e *svcEnv, withAddress bool) map[string]any {
 	body := map[string]any{
-		"phone":       "+79991234567",
-		"name":        "Иван",
-		"comment":     "Без лука",
-		"paymentType": paymentType,
-		"items":       []map[string]any{{"productId": e.productA, "amount": 2}},
+		"phone":   "+79991234567",
+		"name":    "Иван",
+		"comment": "Без лука",
+		"items":   []map[string]any{{"productId": e.productA, "amount": 2}},
 	}
 	if withAddress {
 		body["address"] = map[string]any{"city": "Сочи", "address": "ул. Ленина, 1"}
@@ -100,24 +99,43 @@ func wantFieldErrors(t *testing.T, he httpx.Error, keys ...string) {
 
 func TestCreateOrder(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentCash, true))
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, true))
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
 	}
 	var got map[string]any
 	testutil.Decode(t, rec, &got)
 	wantKeys(t, got, "orderId", "redirectUrl")
-	if got["redirectUrl"] != cashURL {
-		t.Errorf("redirectUrl = %v, want %q", got["redirectUrl"], cashURL)
+	if got["redirectUrl"] != "https://pay.test/?x" {
+		t.Errorf("redirectUrl = %v, want the Moneta page", got["redirectUrl"])
 	}
 	if n := e.count(t, `SELECT count(*) FROM orders`); n != 1 {
 		t.Errorf("orders = %d, want 1", n)
 	}
 }
 
+func TestCreateIgnoresPaymentType(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	body := orderBody(e, true)
+	body["paymentType"] = "cash"
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
+	}
+	var got map[string]any
+	testutil.Decode(t, rec, &got)
+	if got["redirectUrl"] != "https://pay.test/?x" {
+		t.Errorf("redirectUrl = %v, want the Moneta page", got["redirectUrl"])
+	}
+	id := int64(got["orderId"].(float64))
+	if o := e.order(t, id); o.Status != StatusPending {
+		t.Errorf("Status = %q, want pending", o.Status)
+	}
+}
+
 func TestCreateOrderPickup(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentCash, false))
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, false))
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
 	}
@@ -128,7 +146,7 @@ func TestCreateOrderPickup(t *testing.T) {
 
 func TestCreateOrderNight(t *testing.T) {
 	e := newSvcEnv(t, nightTime)
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentCash, true))
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, true))
 	want := `{"statusCode":503,"message":"Извините, но мы не можем принять ваш заказ.\nЗаказы принимаются с 9:00 до 22:00"}`
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d, want 503", rec.Code)
@@ -146,7 +164,7 @@ func TestCreateOrderCategoryWeekend(t *testing.T) {
 	if _, err := e.db.Exec(`UPDATE categories SET sale_days = '1111100' WHERE id = $1`, e.category); err != nil {
 		t.Fatal(err)
 	}
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentCash, false))
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, false))
 	he := decodeError(t, rec, http.StatusServiceUnavailable)
 	if !strings.HasPrefix(he.Message, "Возможность заказа") {
 		t.Errorf("message = %q, want prefix %q", he.Message, "Возможность заказа")
@@ -161,7 +179,7 @@ func TestCreateOrderProductWeekend(t *testing.T) {
 	if _, err := e.db.Exec(`UPDATE products SET sale_days = '1111100' WHERE id = $1`, e.productA); err != nil {
 		t.Fatal(err)
 	}
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentCash, false))
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, false))
 	he := decodeError(t, rec, http.StatusServiceUnavailable)
 	if !strings.HasPrefix(he.Message, "Возможность заказа") {
 		t.Errorf("message = %q, want prefix %q", he.Message, "Возможность заказа")
@@ -173,7 +191,7 @@ func TestCreateOrderProductWeekend(t *testing.T) {
 
 func TestCreateOrderBadAmount(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	body := orderBody(e, PaymentCash, false)
+	body := orderBody(e, false)
 	body["items"] = []map[string]any{{"productId": e.productA, "amount": 0}}
 	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
 	he := decodeError(t, rec, http.StatusBadRequest)
@@ -185,7 +203,7 @@ func TestCreateOrderBadAmount(t *testing.T) {
 
 func TestCreateOrderBadProduct(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	body := orderBody(e, PaymentCash, false)
+	body := orderBody(e, false)
 	body["items"] = []map[string]any{{"productId": 999, "amount": 1}}
 	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
 	want := `{"statusCode":400,"message":"Продукт не найден."}`
@@ -201,19 +219,12 @@ func TestCreateOrderValidation(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", map[string]any{})
 	he := decodeError(t, rec, http.StatusBadRequest)
-	wantFieldErrors(t, he, "phone", "name", "paymentType", "items")
-}
-
-func TestCreateOrderBadPaymentType(t *testing.T) {
-	e := newSvcEnv(t, friday)
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, "card", false))
-	he := decodeError(t, rec, http.StatusBadRequest)
-	wantFieldErrors(t, he, "paymentType")
+	wantFieldErrors(t, he, "phone", "name", "items")
 }
 
 func TestCreateOrderBadAddress(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	body := orderBody(e, PaymentCash, false)
+	body := orderBody(e, false)
 	body["address"] = map[string]any{"city": ""}
 	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
 	he := decodeError(t, rec, http.StatusBadRequest)
@@ -235,7 +246,7 @@ func TestCreateOrderBadJSON(t *testing.T) {
 func TestCreateOrderOnline(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	e.payments.form = PaymentForm{Amount: "790.00", Signature: "sig", URL: "https://pay.test/?MNT_ID=100"}
-	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, PaymentOnline, true))
+	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", orderBody(e, true))
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want 201; body %s", rec.Code, rec.Body.String())
 	}
@@ -301,7 +312,7 @@ func TestCreateDeliveryTimeOutsideHours(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.time, func(t *testing.T) {
 			e := newSvcEnv(t, friday)
-			body := orderBody(e, PaymentCash, false)
+			body := orderBody(e, false)
 			body["deliveryTime"] = tt.time
 			rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
 			if tt.want == http.StatusCreated {
@@ -340,7 +351,7 @@ func TestCreateDeliveryTimeHoursReadError(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	opts := defaultOpts()
 	opts.Hours = &flakyHours{good: fakeHours{h: workinghours.Hours{Start: hoursStart, End: hoursEnd}}}
-	body := orderBody(e, PaymentCash, false)
+	body := orderBody(e, false)
 	body["deliveryTime"] = "12:00"
 	rec := testutil.DoJSON(t, newRouter(e, opts), http.MethodPost, "/orders", "", body)
 	if rec.Code != http.StatusInternalServerError {
@@ -350,7 +361,7 @@ func TestCreateDeliveryTimeHoursReadError(t *testing.T) {
 
 func TestCreateOrderBadDeliveryTime(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	body := orderBody(e, PaymentCash, false)
+	body := orderBody(e, false)
 	body["deliveryTime"] = "25:00"
 	rec := testutil.DoJSON(t, newRouter(e, defaultOpts()), http.MethodPost, "/orders", "", body)
 	he := decodeError(t, rec, http.StatusBadRequest)

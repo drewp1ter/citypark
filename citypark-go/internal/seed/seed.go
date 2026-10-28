@@ -158,7 +158,6 @@ func Run(ctx context.Context, db *sqlx.DB) (Summary, error) {
 			p := order.InsertParams{
 				CustomerID:    userID,
 				AddressID:     o.addressID,
-				PaymentType:   order.PaymentCash,
 				DeliveryPrice: o.price,
 			}
 			inputs := make([]order.ItemInput, 0, len(o.products))
@@ -169,8 +168,13 @@ func Run(ctx context.Context, db *sqlx.DB) (Summary, error) {
 				})
 			}
 			p.ItemsHash = order.ItemsHash(inputs)
-			if _, err := orders.Insert(ctx, p); err != nil {
+			id, err := orders.Insert(ctx, p)
+			if err != nil {
 				return fmt.Errorf("insert order: %w", err)
+			}
+			// Seed orders are paid online orders, so they show on the admin's lists as real ones.
+			if _, err := orders.MarkPaid(ctx, id, fmt.Sprintf("seed-%d", sum.Orders+1)); err != nil {
+				return fmt.Errorf("mark order paid: %w", err)
 			}
 			sum.Orders++
 		}

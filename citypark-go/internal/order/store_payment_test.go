@@ -144,7 +144,6 @@ func TestFindOpenDuplicate(t *testing.T) {
 		name        string
 		withAddress bool
 		status      string
-		payment     string
 		comment     string
 		hashChange  bool
 		timeChange  bool
@@ -155,7 +154,6 @@ func TestFindOpenDuplicate(t *testing.T) {
 		{name: "same", withAddress: true, status: StatusNew, addr: &base, want: true},
 		{name: "pending", withAddress: true, status: StatusPending, addr: &base, want: true},
 		{name: "paid", withAddress: true, status: StatusPaid, addr: &base, want: false},
-		{name: "cash", withAddress: true, status: StatusNew, payment: PaymentCash, addr: &base, want: false},
 		{name: "another comment", withAddress: true, status: StatusNew, comment: "другой", addr: &base, want: false},
 		{name: "another hash", withAddress: true, status: StatusNew, hashChange: true, addr: &base, want: false},
 		{name: "another delivery time", withAddress: true, status: StatusNew, timeChange: true, addr: &base, want: false},
@@ -171,10 +169,6 @@ func TestFindOpenDuplicate(t *testing.T) {
 			db := testutil.NewDB(t)
 			sd := seed(t, db)
 			p := sd.params(tt.withAddress)
-			p.PaymentType = PaymentOnline
-			if tt.payment != "" {
-				p.PaymentType = tt.payment
-			}
 			id := insertOrder(t, db, p)
 			setOrderState(t, db, id, tt.status, "")
 
@@ -216,7 +210,6 @@ func TestFindOpenDuplicateReturnsHighestID(t *testing.T) {
 	db := testutil.NewDB(t)
 	sd := seed(t, db)
 	p := sd.params(true)
-	p.PaymentType = PaymentOnline
 	insertOrder(t, db, p)
 	second := insertOrder(t, db, p)
 

@@ -37,7 +37,6 @@ func TestLoadDefaults(t *testing.T) {
 		{"Hotel", c.Hotel, Hotel{}},
 		{"OneC", c.OneC, OneC{}},
 		{"Upload", c.Upload, Upload{"./uploads", "http://localhost:3000"}},
-		{"ThankYouPageCash", c.ThankYouPageCash, "http://localhost:3001/thankyou"},
 	}
 	for _, ch := range checks {
 		if ch.got != ch.want {
@@ -92,7 +91,6 @@ func TestLoadOverrides(t *testing.T) {
 		"ONEC_PASSWORD":                        "pw1c",
 		"UPLOAD_DIR":                           "/data/uploads",
 		"PUBLIC_BASE_URL":                      "https://api.example.com/",
-		"THANK_YOU_PAGE_PAYMENT_CASH":          "http://cash",
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -115,7 +113,6 @@ func TestLoadOverrides(t *testing.T) {
 		{"Hotel", c.Hotel, Hotel{"hotel"}},
 		{"OneC", c.OneC, OneC{"http://1c.local/CityParkHotel/ru_RU", "reports", "pw1c"}},
 		{"Upload", c.Upload, Upload{"/data/uploads", "https://api.example.com"}},
-		{"ThankYouPageCash", c.ThankYouPageCash, "http://cash"},
 	}
 	for _, ch := range checks {
 		if ch.got != ch.want {

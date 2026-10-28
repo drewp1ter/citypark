@@ -20,18 +20,17 @@ import (
 
 var moscow = time.FixedZone("MSK", 3*3600)
 
-// searchOrder inserts a pickup cash order for the customer with a fixed created_at, status and payment type.
-func searchOrder(t *testing.T, db *sqlx.DB, customer, product int64, createdAt time.Time, status, payment string) int64 {
+// searchOrder inserts a pickup order for the customer with a fixed created_at and status.
+func searchOrder(t *testing.T, db *sqlx.DB, customer, product int64, createdAt time.Time, status string) int64 {
 	t.Helper()
 	id := insertOrder(t, db, InsertParams{
-		CustomerID:  customer,
-		PaymentType: PaymentCash,
-		ItemsHash:   createdAt.String(),
-		Items:       []InsertItem{{ProductID: product, Amount: 1, OfferedPrice: 10000}},
+		CustomerID: customer,
+		ItemsHash:  createdAt.String(),
+		Items:      []InsertItem{{ProductID: product, Amount: 1, OfferedPrice: 10000}},
 	})
 	_, err := db.ExecContext(context.Background(),
-		`UPDATE orders SET created_at = $1, status = $2, payment_type = $3 WHERE id = $4`,
-		createdAt, status, payment, id)
+		`UPDATE orders SET created_at = $1, status = $2 WHERE id = $3`,
+		createdAt, status, id)
 	if err != nil {
 		t.Fatalf("update order: %v", err)
 	}
@@ -73,9 +72,9 @@ func newSearchSeed(t *testing.T) searchSeed {
 func TestListFilterNone(t *testing.T) {
 	s := newSearchSeed(t)
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
-	a := searchOrder(t, s.db, s.ivan, s.product, base, StatusNew, PaymentCash)
-	b := searchOrder(t, s.db, s.petr, s.product, base.Add(time.Hour), StatusNew, PaymentCash)
-	c := searchOrder(t, s.db, s.ivan, s.product, base.Add(2*time.Hour), StatusNew, PaymentCash)
+	a := searchOrder(t, s.db, s.ivan, s.product, base, StatusNew)
+	b := searchOrder(t, s.db, s.petr, s.product, base.Add(time.Hour), StatusNew)
+	c := searchOrder(t, s.db, s.ivan, s.product, base.Add(2*time.Hour), StatusNew)
 
 	ids, count := listIDs(t, s.db, ListFilter{}, 10, 0)
 	if want := []int64{c, b, a}; !reflect.DeepEqual(ids, want) || count != 3 {
@@ -89,8 +88,8 @@ func TestListFilterQueryID(t *testing.T) {
 	a := testutil.InsertUser(t, s.db, "Анна", "+70000000000", auth.RoleUser)
 	b := testutil.InsertUser(t, s.db, "Борис", "+70000000009", auth.RoleUser)
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
-	searchOrder(t, s.db, a, s.product, base, StatusNew, PaymentCash)
-	second := searchOrder(t, s.db, b, s.product, base.Add(time.Hour), StatusNew, PaymentCash)
+	searchOrder(t, s.db, a, s.product, base, StatusNew)
+	second := searchOrder(t, s.db, b, s.product, base.Add(time.Hour), StatusNew)
 
 	ids, count := listIDs(t, s.db, ListFilter{Query: " " + strconv.FormatInt(second, 10) + " "}, 10, 0)
 	if want := []int64{second}; !reflect.DeepEqual(ids, want) || count != 1 {
@@ -101,9 +100,9 @@ func TestListFilterQueryID(t *testing.T) {
 func TestListFilterQueryPhone(t *testing.T) {
 	s := newSearchSeed(t)
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
-	a := searchOrder(t, s.db, s.ivan, s.product, base, StatusNew, PaymentCash)
-	searchOrder(t, s.db, s.petr, s.product, base.Add(time.Hour), StatusNew, PaymentCash)
-	c := searchOrder(t, s.db, s.ivan, s.product, base.Add(2*time.Hour), StatusNew, PaymentCash)
+	a := searchOrder(t, s.db, s.ivan, s.product, base, StatusNew)
+	searchOrder(t, s.db, s.petr, s.product, base.Add(time.Hour), StatusNew)
+	c := searchOrder(t, s.db, s.ivan, s.product, base.Add(2*time.Hour), StatusNew)
 
 	ids, count := listIDs(t, s.db, ListFilter{Query: "1234"}, 10, 0)
 	if want := []int64{c, a}; !reflect.DeepEqual(ids, want) || count != 2 {
@@ -114,8 +113,8 @@ func TestListFilterQueryPhone(t *testing.T) {
 func TestListFilterQueryName(t *testing.T) {
 	s := newSearchSeed(t)
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
-	a := searchOrder(t, s.db, s.ivan, s.product, base, StatusNew, PaymentCash)
-	searchOrder(t, s.db, s.petr, s.product, base.Add(time.Hour), StatusNew, PaymentCash)
+	a := searchOrder(t, s.db, s.ivan, s.product, base, StatusNew)
+	searchOrder(t, s.db, s.petr, s.product, base.Add(time.Hour), StatusNew)
 
 	ids, count := listIDs(t, s.db, ListFilter{Query: "иван"}, 10, 0)
 	if want := []int64{a}; !reflect.DeepEqual(ids, want) || count != 1 {
@@ -126,7 +125,7 @@ func TestListFilterQueryName(t *testing.T) {
 func TestListFilterQueryEscape(t *testing.T) {
 	s := newSearchSeed(t)
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
-	searchOrder(t, s.db, s.ivan, s.product, base, StatusNew, PaymentCash)
+	searchOrder(t, s.db, s.ivan, s.product, base, StatusNew)
 
 	for _, q := range []string{"%", "_", `\`, "И_ан"} {
 		ids, count := listIDs(t, s.db, ListFilter{Query: q}, 10, 0)
@@ -138,7 +137,7 @@ func TestListFilterQueryEscape(t *testing.T) {
 
 func TestListFilterQueryLongDigits(t *testing.T) {
 	s := newSearchSeed(t)
-	searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 20, 10, 0, 0, 0, moscow), StatusNew, PaymentCash)
+	searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 20, 10, 0, 0, 0, moscow), StatusNew)
 
 	// 19 digits do not fit the id branch; they are matched against the phone and the name only.
 	ids, count := listIDs(t, s.db, ListFilter{Query: "9999999999999999999"}, 10, 0)
@@ -149,9 +148,9 @@ func TestListFilterQueryLongDigits(t *testing.T) {
 
 func TestListFilterDates(t *testing.T) {
 	s := newSearchSeed(t)
-	searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 20, 23, 30, 0, 0, moscow), StatusNew, PaymentCash)
-	mid := searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 21, 10, 0, 0, 0, moscow), StatusNew, PaymentCash)
-	searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 22, 0, 0, 0, 0, moscow), StatusNew, PaymentCash)
+	searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 20, 23, 30, 0, 0, moscow), StatusNew)
+	mid := searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 21, 10, 0, 0, 0, moscow), StatusNew)
+	searchOrder(t, s.db, s.ivan, s.product, time.Date(2026, 10, 22, 0, 0, 0, 0, moscow), StatusNew)
 
 	from := time.Date(2026, 10, 21, 0, 0, 0, 0, moscow)
 	before := time.Date(2026, 10, 22, 0, 0, 0, 0, moscow)
@@ -161,14 +160,13 @@ func TestListFilterDates(t *testing.T) {
 	}
 }
 
-func TestListFilterStatusAndPayment(t *testing.T) {
+func TestListFilterStatus(t *testing.T) {
 	s := newSearchSeed(t)
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
-	searchOrder(t, s.db, s.ivan, s.product, base, StatusPaid, PaymentCash)
-	want := searchOrder(t, s.db, s.ivan, s.product, base.Add(time.Hour), StatusPaid, PaymentOnline)
-	searchOrder(t, s.db, s.ivan, s.product, base.Add(2*time.Hour), StatusNew, PaymentOnline)
+	want := searchOrder(t, s.db, s.ivan, s.product, base, StatusPaid)
+	searchOrder(t, s.db, s.ivan, s.product, base.Add(time.Hour), StatusNew)
 
-	ids, count := listIDs(t, s.db, ListFilter{Status: StatusPaid, PaymentType: PaymentOnline}, 10, 0)
+	ids, count := listIDs(t, s.db, ListFilter{Status: StatusPaid}, 10, 0)
 	if !reflect.DeepEqual(ids, []int64{want}) || count != 1 {
 		t.Errorf("ids = %v, count = %d; want [%d] and 1", ids, count, want)
 	}
@@ -179,9 +177,9 @@ func TestListFilterPaging(t *testing.T) {
 	base := time.Date(2026, 10, 20, 10, 0, 0, 0, moscow)
 	var all []int64
 	for i := 0; i < 5; i++ {
-		all = append(all, searchOrder(t, s.db, s.ivan, s.product, base.Add(time.Duration(i)*time.Hour), StatusPaid, PaymentCash))
+		all = append(all, searchOrder(t, s.db, s.ivan, s.product, base.Add(time.Duration(i)*time.Hour), StatusPaid))
 	}
-	searchOrder(t, s.db, s.ivan, s.product, base.Add(10*time.Hour), StatusNew, PaymentCash)
+	searchOrder(t, s.db, s.ivan, s.product, base.Add(10*time.Hour), StatusNew)
 
 	ids, count := listIDs(t, s.db, ListFilter{Status: StatusPaid}, 2, 2)
 	// newest first: all[4], all[3], all[2], all[1], all[0]
@@ -210,10 +208,10 @@ func newSearchEnv(t *testing.T) *searchEnv {
 	admin := testutil.InsertUser(t, e.db, "Админ", "+79990000000", auth.RoleAdmin)
 	env := &searchEnv{router: r, admin: issue(t, tokens, admin, auth.RoleAdmin)}
 	env.ivan = append(env.ivan,
-		searchOrder(t, e.db, ivan, e.productA, time.Date(2026, 10, 20, 23, 30, 0, 0, moscow), StatusNew, PaymentCash),
-		searchOrder(t, e.db, ivan, e.productA, time.Date(2026, 10, 21, 10, 0, 0, 0, moscow), StatusNew, PaymentCash),
+		searchOrder(t, e.db, ivan, e.productA, time.Date(2026, 10, 20, 23, 30, 0, 0, moscow), StatusNew),
+		searchOrder(t, e.db, ivan, e.productA, time.Date(2026, 10, 21, 10, 0, 0, 0, moscow), StatusNew),
 	)
-	env.petr = searchOrder(t, e.db, petr, e.productB, time.Date(2026, 10, 22, 9, 0, 0, 0, moscow), StatusNew, PaymentCash)
+	env.petr = searchOrder(t, e.db, petr, e.productB, time.Date(2026, 10, 22, 9, 0, 0, 0, moscow), StatusNew)
 	return env
 }
 
@@ -256,13 +254,13 @@ func TestListOrdersSearchDates(t *testing.T) {
 	}
 }
 
-func TestListOrdersSearchStatusAndPayment(t *testing.T) {
+func TestListOrdersSearchStatus(t *testing.T) {
 	e := newSearchEnv(t)
 	if got := e.ids(t, "?status=paid"); len(got) != 0 {
 		t.Errorf("status=paid: ids = %v, want none", got)
 	}
-	if got := e.ids(t, "?status=new&paymentType=cash"); len(got) != 3 {
-		t.Errorf("status=new&paymentType=cash: ids = %v, want 3", got)
+	if got := e.ids(t, "?status=new"); len(got) != 3 {
+		t.Errorf("status=new: ids = %v, want 3", got)
 	}
 }
 
@@ -275,7 +273,6 @@ func TestListOrdersSearchInvalid(t *testing.T) {
 		{"to month", "to=2026-13-01", "to", "дата в формате ГГГГ-ММ-ДД"},
 		{"to before from", "from=2026-10-22&to=2026-10-21", "to", "не раньше даты from"},
 		{"status", "status=done", "status", "недопустимое значение"},
-		{"payment type", "paymentType=card", "paymentType", "недопустимое значение"},
 		{"long q", "q=" + strings.Repeat("я", 101), "q", "не более 100 символов"},
 	}
 	for _, tt := range tests {
@@ -295,8 +292,8 @@ func TestListOrdersSearchInvalid(t *testing.T) {
 
 func TestListOrdersSearchAllErrorsReported(t *testing.T) {
 	e := newSearchEnv(t)
-	rec := testutil.DoJSON(t, e.router, http.MethodGet, "/orders?from=x&status=done&paymentType=card", e.admin, nil)
-	want := `{"statusCode":400,"message":"Некорректные параметры поиска","errors":{"from":"дата в формате ГГГГ-ММ-ДД","paymentType":"недопустимое значение","status":"недопустимое значение"}}`
+	rec := testutil.DoJSON(t, e.router, http.MethodGet, "/orders?from=x&status=done", e.admin, nil)
+	want := `{"statusCode":400,"message":"Некорректные параметры поиска","errors":{"from":"дата в формате ГГГГ-ММ-ДД","status":"недопустимое значение"}}`
 	if got := strings.TrimSpace(rec.Body.String()); rec.Code != http.StatusBadRequest || got != want {
 		t.Errorf("status = %d, body = %s; want 400 and %s", rec.Code, got, want)
 	}
@@ -311,7 +308,7 @@ func TestListOrdersSearchQueryMaxLength(t *testing.T) {
 
 func TestListOrdersSearchEmptyParams(t *testing.T) {
 	e := newSearchEnv(t)
-	got := e.ids(t, "?status=&q=&from=&to=&paymentType=")
+	got := e.ids(t, "?status=&q=&from=&to=")
 	if want := []int64{e.petr, e.ivan[1], e.ivan[0]}; !reflect.DeepEqual(got, want) {
 		t.Errorf("ids = %v, want %v", got, want)
 	}

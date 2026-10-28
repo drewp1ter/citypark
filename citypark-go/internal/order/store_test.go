@@ -44,7 +44,6 @@ func (s seeded) params(withAddress bool) InsertParams {
 		CustomerID:    s.userID,
 		Comment:       "позвонить",
 		DeliveryTime:  "18:30",
-		PaymentType:   PaymentCash,
 		ItemsHash:     ItemsHash([]ItemInput{{ProductID: s.productA, Amount: 2}, {ProductID: s.productB, Amount: 1}}),
 		DeliveryPrice: money.Kopecks(15000),
 		Items: []InsertItem{
@@ -92,7 +91,7 @@ func TestInsertAndByID(t *testing.T) {
 		t.Fatalf("ByID: %v", err)
 	}
 
-	if got.ID != id || got.Status != StatusNew || got.Comment != "позвонить" || got.PaymentType != PaymentCash {
+	if got.ID != id || got.Status != StatusNew || got.Comment != "позвонить" {
 		t.Errorf("order fields: %+v", got)
 	}
 	if got.Customer != (Customer{ID: sd.userID, Name: "Иван", Phone: "+79990000000"}) {
@@ -230,7 +229,7 @@ func TestOrderJSON(t *testing.T) {
 	}
 	sort.Strings(keys)
 	want := []string{"address", "comment", "createdAt", "customer", "deliveryPrice", "deliveryTime", "id", "items",
-		"paymentType", "status", "total", "updatedAt"}
+		"status", "total", "updatedAt"}
 	if len(keys) != len(want) {
 		t.Fatalf("keys = %v, want %v", keys, want)
 	}

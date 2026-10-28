@@ -1622,7 +1622,6 @@ Places an order. The customer is found by phone number or created. Orders are ac
 | `name` | string | yes | at most 80 characters |
 | `comment` | string | no | at most 8192 characters |
 | `deliveryTime` | string | no | `HH:MM` (24 hours, for example `18:30`); empty or left out means «как можно скорее». The date is always today. The time must be within the working hours from `GET /working-hours`, both ends included |
-| `paymentType` | string | yes | `cash` or `online` |
 | `address` | object | no | delivery address; leave it out for pickup |
 | `address.city` | string | yes, when `address` is set | at most 80 characters; must be the name of a delivery price |
 | `address.address` | string | yes, when `address` is set | at most 1000 characters |
@@ -1636,19 +1635,12 @@ Places an order. The customer is found by phone number or created. Orders are ac
   "name": "Иван",
   "comment": "Без лука",
   "deliveryTime": "18:30",
-  "paymentType": "cash",
   "address": { "city": "Белореченск", "address": "ул. Ленина, 1" },
   "items": [{ "productId": 1, "amount": 2 }]
 }
 ```
 
-**Response 201, `paymentType: "cash"`**
-
-```json
-{ "orderId": 1, "redirectUrl": "http://localhost:3001/thankyou" }
-```
-
-**Response 201, `paymentType: "online"`**
+**Response 201**
 
 ```json
 { "orderId": 15, "redirectUrl": "https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=8c65fcd4afe3dc4cb915e04aaa273574&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=15" }
@@ -1671,7 +1663,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 
 **Notes**
 
-For both payment types the frontend sends the customer to `redirectUrl`. For an online order it is the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical online order (same phone, address, comment, `deliveryTime` and items) while the previous one is still unpaid returns the same `orderId`. The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
+Orders are paid only online. The frontend sends the customer to `redirectUrl`, the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical order (same phone, address, comment, `deliveryTime` and items) while the previous one is still unpaid returns the same `orderId`. `paymentType` is not a field any more: responses do not have it, and a request that still sends it is accepted (the field is ignored). The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
 
 #### GET /orders/my
 
@@ -1698,7 +1690,6 @@ Lists the signed-in user's orders, newest first.
       "status": "new",
       "comment": "",
       "deliveryTime": "",
-      "paymentType": "cash",
       "total": 599,
       "deliveryPrice": 150,
       "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
@@ -1743,7 +1734,6 @@ Returns one order.
   "status": "new",
   "comment": "",
   "deliveryTime": "",
-  "paymentType": "cash",
   "total": 599,
   "deliveryPrice": 150,
   "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
@@ -1793,9 +1783,8 @@ Every message is a text frame with one JSON object. `order` has the same shape a
 | `type` | When |
 |---|---|
 | `hello` | right after the connection is open; has no `order` |
-| `order.pending` | an online order was created and waits for payment |
-| `order.created` | a cash order was placed |
-| `order.paid` | an online order was paid |
+| `order.pending` | an order was created and waits for payment |
+| `order.paid` | an order was paid |
 | `order.confirmed` | an admin confirmed an order |
 
 `hello`:
@@ -1807,25 +1796,19 @@ Every message is a text frame with one JSON object. `order` has the same shape a
 `order.pending`:
 
 ```json
-{"type":"order.pending","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "pending", "comment": "", "deliveryTime": "", "paymentType": "online", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
-```
-
-`order.created`:
-
-```json
-{"type":"order.created","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "new", "comment": "", "deliveryTime": "", "paymentType": "cash", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+{"type":"order.pending","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "pending", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
 ```
 
 `order.paid`:
 
 ```json
-{"type":"order.paid","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "paid", "comment": "", "deliveryTime": "", "paymentType": "online", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+{"type":"order.paid","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "paid", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
 ```
 
 `order.confirmed`:
 
 ```json
-{"type":"order.confirmed","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "confirmed", "comment": "", "deliveryTime": "", "paymentType": "cash", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+{"type":"order.confirmed","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "confirmed", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
 ```
 
 **Notes**
@@ -1853,9 +1836,8 @@ Lists orders, newest first. The filters are optional and combine with AND.
 | `from` | string | no | `YYYY-MM-DD`, the first day, inclusive |
 | `to` | string | no | `YYYY-MM-DD`, the last day, inclusive, not before `from` |
 | `status` | string | no | `new`, `pending`, `paid`, `canceled` or `confirmed` |
-| `paymentType` | string | no | `cash` or `online` |
 
-Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&status=paid&paymentType=online`.
+Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&status=paid`.
 
 **Response 200**
 
@@ -1869,7 +1851,6 @@ Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&s
       "status": "new",
       "comment": "",
       "deliveryTime": "",
-      "paymentType": "cash",
       "total": 599,
       "deliveryPrice": 150,
       "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
@@ -1897,7 +1878,7 @@ The `errors` object of a search 400 lists every invalid field:
 | `q` | `не более 100 символов` |
 | `from`, `to` | `дата в формате ГГГГ-ММ-ДД` |
 | `to` | `не раньше даты from` |
-| `status`, `paymentType` | `недопустимое значение` |
+| `status` | `недопустимое значение` |
 
 ```json
 {
@@ -1905,7 +1886,6 @@ The `errors` object of a search 400 lists every invalid field:
   "message": "Некорректные параметры поиска",
   "errors": {
     "from": "дата в формате ГГГГ-ММ-ДД",
-    "paymentType": "недопустимое значение",
     "status": "недопустимое значение"
   }
 }
@@ -1954,7 +1934,6 @@ The updated order, in the same format as `GET /orders/{id}`.
   "status": "new",
   "comment": "",
   "deliveryTime": "",
-  "paymentType": "cash",
   "total": 799,
   "deliveryPrice": 150,
   "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
@@ -2061,7 +2040,6 @@ The updated order, in the same format as `GET /orders/{id}`, with `"status": "co
   "status": "confirmed",
   "comment": "",
   "deliveryTime": "",
-  "paymentType": "cash",
   "total": 799,
   "deliveryPrice": 150,
   "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },

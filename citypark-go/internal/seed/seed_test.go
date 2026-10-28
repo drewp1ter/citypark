@@ -30,6 +30,7 @@ func TestRun(t *testing.T) {
 		{`SELECT count(*) FROM categories`, 4},
 		{`SELECT count(*) FROM products`, 16},
 		{`SELECT count(*) FROM orders`, 2},
+		{`SELECT count(*) FROM orders WHERE status = 'paid' AND payment_id IN ('seed-1', 'seed-2')`, 2},
 		{`SELECT count(*) FROM product_images`, 16},
 		{`SELECT count(*) FROM tags`, 3},
 		{`SELECT count(*) FROM addresses`, 1},

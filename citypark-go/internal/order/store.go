@@ -17,7 +17,7 @@ import (
 // selectOrders is the base SELECT for orders with customer and address.
 // Callers append a WHERE clause.
 const selectOrders = `
-SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.payment_type, o.items_hash, o.payment_id,
+SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id,
        o.delivery_price_kopecks, o.iiko_order_id,
        u.id AS customer_id, u.name AS customer_name, u.phone AS customer_phone,
        a.id AS address_id, a.city AS address_city, a.address AS address_text
@@ -37,7 +37,6 @@ type InsertParams struct {
 	AddressID     *int64
 	Comment       string
 	DeliveryTime  string
-	PaymentType   string
 	ItemsHash     string
 	DeliveryPrice money.Kopecks
 	Items         []InsertItem
@@ -57,7 +56,6 @@ type orderRow struct {
 	Status        string    `db:"status"`
 	Comment       string    `db:"comment"`
 	DeliveryTime  string    `db:"delivery_time"`
-	PaymentType   string    `db:"payment_type"`
 	ItemsHash     string    `db:"items_hash"`
 	PaymentID     string    `db:"payment_id"`
 	DeliveryPrice int64     `db:"delivery_price_kopecks"`
@@ -78,7 +76,6 @@ func (r orderRow) toOrder() Order {
 		Status:        r.Status,
 		Comment:       r.Comment,
 		DeliveryTime:  r.DeliveryTime,
-		PaymentType:   r.PaymentType,
 		DeliveryPrice: money.Kopecks(r.DeliveryPrice),
 		Customer:      Customer{ID: r.CustomerID, Name: r.CustomerName, Phone: r.CustomerPhone},
 		Items:         []Item{},
@@ -98,9 +95,9 @@ func (r orderRow) toOrder() Order {
 func (s *Store) Insert(ctx context.Context, p InsertParams) (int64, error) {
 	var id int64
 	err := s.db.GetContext(ctx, &id,
-		`INSERT INTO orders (customer_id, address_id, comment, delivery_time, payment_type, items_hash, delivery_price_kopecks)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-		p.CustomerID, p.AddressID, p.Comment, p.DeliveryTime, p.PaymentType, p.ItemsHash, int64(p.DeliveryPrice))
+		`INSERT INTO orders (customer_id, address_id, comment, delivery_time, items_hash, delivery_price_kopecks)
+		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+		p.CustomerID, p.AddressID, p.Comment, p.DeliveryTime, p.ItemsHash, int64(p.DeliveryPrice))
 	if err != nil {
 		return 0, err
 	}
@@ -131,11 +128,10 @@ func (s *Store) ByID(ctx context.Context, id int64) (Order, error) {
 
 // ListFilter narrows List. Zero values mean "no condition".
 type ListFilter struct {
-	Query       string     // trimmed; matched against id, customer phone and customer name
-	From        *time.Time // inclusive: o.created_at >= From
-	Before      *time.Time // exclusive: o.created_at < Before
-	Status      string     // one of the Status* constants
-	PaymentType string     // "cash" or "online"
+	Query  string     // trimmed; matched against id, customer phone and customer name
+	From   *time.Time // inclusive: o.created_at >= From
+	Before *time.Time // exclusive: o.created_at < Before
+	Status string     // one of the Status* constants
 }
 
 var digitsOnly = regexp.MustCompile(`^\d+$`)
@@ -169,9 +165,6 @@ func (f ListFilter) where() (string, []any) {
 	}
 	if f.Status != "" {
 		add("o.status = $%d", f.Status)
-	}
-	if f.PaymentType != "" {
-		add("o.payment_type = $%d", f.PaymentType)
 	}
 	if len(conds) == 0 {
 		return "", args
@@ -244,8 +237,7 @@ SELECT o.id
 FROM orders o
 JOIN users u ON u.id = o.customer_id
 LEFT JOIN addresses a ON a.id = o.address_id
-WHERE o.payment_type = 'online'
-  AND o.status IN ('new', 'pending')
+WHERE o.status IN ('new', 'pending')
   AND u.phone = $1
   AND o.comment = $2
   AND o.items_hash = $3
@@ -259,8 +251,7 @@ SELECT o.id
 FROM orders o
 JOIN users u ON u.id = o.customer_id
 LEFT JOIN addresses a ON a.id = o.address_id
-WHERE o.payment_type = 'online'
-  AND o.status IN ('new', 'pending')
+WHERE o.status IN ('new', 'pending')
   AND u.phone = $1
   AND o.comment = $2
   AND o.items_hash = $3

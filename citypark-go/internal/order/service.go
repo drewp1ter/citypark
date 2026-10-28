@@ -26,9 +26,8 @@ import (
 
 // Notifier tells staff about orders. Implementations must not block for long and must not fail the request.
 type Notifier interface {
-	OrderPending(ctx context.Context, o Order)   // an online order was created and waits for payment
-	OrderCreated(ctx context.Context, o Order)   // a cash order was placed
-	OrderPaid(ctx context.Context, o Order)      // an online order was paid
+	OrderPending(ctx context.Context, o Order)   // an order was created and waits for payment
+	OrderPaid(ctx context.Context, o Order)      // an order was paid
 	OrderConfirmed(ctx context.Context, o Order) // an admin confirmed an order
 }
 
@@ -63,19 +62,14 @@ type CreateInput struct {
 	Name         string         `json:"name" validate:"required,max=80"`
 	Comment      string         `json:"comment" validate:"max=8192"`
 	DeliveryTime string         `json:"deliveryTime" validate:"omitempty,hhmm"` // "" = as soon as possible
-	PaymentType  string         `json:"paymentType" validate:"required,oneof=cash online"`
 	Address      *address.Input `json:"address" validate:"omitempty"`
 	Items        []ItemInput    `json:"items" validate:"required,min=1,dive"`
 }
 
-// CreateResult: RedirectURL is the thank-you page for a cash order and the Moneta payment page for an online order.
+// CreateResult: RedirectURL is the Moneta payment page.
 type CreateResult struct {
 	OrderID     int64  `json:"orderId"`
 	RedirectURL string `json:"redirectUrl"`
-}
-
-type Options struct {
-	ThankYouCash string
 }
 
 type Service struct {
@@ -83,11 +77,10 @@ type Service struct {
 	clock    clock.Clock
 	notifier Notifier
 	payments Payments
-	opts     Options
 }
 
-func NewService(db *sqlx.DB, c clock.Clock, n Notifier, p Payments, opts Options) *Service {
-	return &Service{db: db, clock: c, notifier: n, payments: p, opts: opts}
+func NewService(db *sqlx.DB, c clock.Clock, n Notifier, p Payments) *Service {
+	return &Service{db: db, clock: c, notifier: n, payments: p}
 }
 
 // Create places an order. in must already be validated.
@@ -119,22 +112,20 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		o     Order
 		found bool
 	)
-	if in.PaymentType == PaymentOnline {
-		var dupAddr *Address
-		if in.Address != nil {
-			dupAddr = &Address{City: in.Address.City, Address: in.Address.Address}
-		}
-		id, dup, err := orders.FindOpenDuplicate(ctx, phone, dupAddr, comment, in.DeliveryTime, hash)
+	var dupAddr *Address
+	if in.Address != nil {
+		dupAddr = &Address{City: in.Address.City, Address: in.Address.Address}
+	}
+	id, dup, err := orders.FindOpenDuplicate(ctx, phone, dupAddr, comment, in.DeliveryTime, hash)
+	if err != nil {
+		return CreateResult{}, err
+	}
+	if dup {
+		o, err = orders.ByID(ctx, id)
 		if err != nil {
 			return CreateResult{}, err
 		}
-		if dup {
-			o, err = orders.ByID(ctx, id)
-			if err != nil {
-				return CreateResult{}, err
-			}
-			found = true
-		}
+		found = true
 	}
 
 	if !found {
@@ -143,7 +134,6 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 			phone:        phone,
 			comment:      comment,
 			deliveryTime: in.DeliveryTime,
-			paymentType:  in.PaymentType,
 			address:      in.Address,
 			items:        items,
 			hash:         hash,
@@ -156,11 +146,6 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		if err != nil {
 			return CreateResult{}, err
 		}
-	}
-
-	if in.PaymentType == PaymentCash {
-		s.notifier.OrderCreated(ctx, o)
-		return CreateResult{OrderID: o.ID, RedirectURL: s.opts.ThankYouCash}, nil
 	}
 
 	form := s.payments.Form(PaymentRequest{OrderID: o.ID, Amount: o.Total + o.DeliveryPrice})
@@ -239,11 +224,11 @@ func (s *Service) PaymentConfirmed(ctx context.Context, cb PaymentCallback) erro
 }
 
 type saveParams struct {
-	name, phone, comment, deliveryTime, paymentType string
-	address                                         *address.Input
-	items                                           []ItemInput
-	hash                                            string
-	delivery                                        deliveryprice.DeliveryPrice
+	name, phone, comment, deliveryTime string
+	address                            *address.Input
+	items                              []ItemInput
+	hash                               string
+	delivery                           deliveryprice.DeliveryPrice
 }
 
 // save checks the products and writes the customer, the address and the order in one transaction.
@@ -301,7 +286,6 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 			AddressID:     addressID,
 			Comment:       p.comment,
 			DeliveryTime:  p.deliveryTime,
-			PaymentType:   p.paymentType,
 			ItemsHash:     p.hash,
 			DeliveryPrice: deliveryCost(p.delivery, subtotal),
 			Items:         insertItems,

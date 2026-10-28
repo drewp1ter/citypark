@@ -390,7 +390,7 @@ components:
           example: 2
     CreateOrder:
       type: object
-      required: [phone, name, paymentType, items]
+      required: [phone, name, items]
       properties:
         phone:
           type: string
@@ -409,9 +409,6 @@ components:
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
           description: Delivery or pickup time today, `HH:MM`. Empty or left out means as soon as possible. Must be within the working hours, both ends included. Identical orders for different times are separate orders.
           example: '18:30'
-        paymentType:
-          type: string
-          enum: [cash, online]
         address:
           allOf:
             - $ref: '#/components/schemas/AddressInput'
@@ -424,8 +421,8 @@ components:
     CreateOrderResult:
       type: object
       description: >-
-        `redirectUrl` is the thank-you page for a cash order and the Moneta payment page (full
-        MONETA.Assistant address with every `MNT_*` parameter and the signature) for an online order.
+        `redirectUrl` is the Moneta payment page (full MONETA.Assistant address with every `MNT_*`
+        parameter and the signature).
       required: [orderId, redirectUrl]
       properties:
         orderId:
@@ -433,19 +430,19 @@ components:
           example: 1
         redirectUrl:
           type: string
-          example: http://localhost:3001/thankyou
+          example: https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_ID=100&MNT_TRANSACTION_ID=1
     LiveOrderEvent:
       type: object
       required: [type]
       properties:
         type:
           type: string
-          enum: [hello, order.pending, order.created, order.paid, order.confirmed]
+          enum: [hello, order.pending, order.paid, order.confirmed]
         order:
           $ref: '#/components/schemas/Order'
     Order:
       type: object
-      required: [id, createdAt, updatedAt, status, comment, deliveryTime, paymentType, total, deliveryPrice, customer, address, items]
+      required: [id, createdAt, updatedAt, status, comment, deliveryTime, total, deliveryPrice, customer, address, items]
       properties:
         id:
           type: integer
@@ -465,9 +462,6 @@ components:
           type: string
           description: '`HH:MM`, or an empty string when the customer wants the order as soon as possible.'
           example: '18:30'
-        paymentType:
-          type: string
-          enum: [cash, online]
         total:
           type: number
           description: Sum of the items without delivery, in rubles.
@@ -1887,8 +1881,8 @@ paths:
       description: >-
         Role: public. The customer is found by phone number or created. Orders are accepted only
         during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with
-        `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). For a cash order send the customer to `redirectUrl`. For an online
-        order `redirectUrl` is the Moneta payment page; send the customer there too. `deliveryPrice` is the
+        `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the
+        Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the
         town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
       tags: [orders]
       requestBody:
@@ -1902,7 +1896,6 @@ paths:
               name: Иван
               comment: Без лука
               deliveryTime: '18:30'
-              paymentType: cash
               address:
                 city: Белореченск
                 address: ул. Ленина, 1
@@ -1961,12 +1954,6 @@ paths:
           schema:
             type: string
             enum: [new, pending, paid, canceled, confirmed]
-        - name: paymentType
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [cash, online]
       responses:
         '200':
           description: A page of orders.

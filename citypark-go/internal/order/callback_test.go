@@ -23,7 +23,6 @@ func seedPending(t *testing.T, e *svcEnv) int64 {
 	customer := testutil.InsertUser(t, e.db, "Иван", "+79990000000", "user")
 	id := insertOrder(t, e.db, InsertParams{
 		CustomerID:    customer,
-		PaymentType:   PaymentOnline,
 		ItemsHash:     ItemsHash([]ItemInput{{ProductID: e.productA, Amount: 1}, {ProductID: e.productB, Amount: 1}}),
 		DeliveryPrice: 9100,
 		Items: []InsertItem{

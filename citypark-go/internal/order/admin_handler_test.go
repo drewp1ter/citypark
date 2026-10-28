@@ -41,7 +41,6 @@ func newAdminEnv(t *testing.T) *adminEnv {
 	id, err := NewStore(e.db).Insert(context.Background(), InsertParams{
 		CustomerID:    userID,
 		AddressID:     &addr,
-		PaymentType:   PaymentCash,
 		ItemsHash:     "hash",
 		DeliveryPrice: 15000,
 		Items:         []InsertItem{{ProductID: e.productA, Amount: 1, OfferedPrice: 59900}},

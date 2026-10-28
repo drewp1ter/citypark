@@ -40,14 +40,6 @@ func (n *TelegramNotifier) Wait() { n.wg.Wait() }
 // OrderPending does nothing: an unpaid online order is announced when it is paid.
 func (n *TelegramNotifier) OrderPending(ctx context.Context, o order.Order) {}
 
-// OrderCreated reports a cash order. Online orders are announced later, when they are paid.
-func (n *TelegramNotifier) OrderCreated(ctx context.Context, o order.Order) {
-	if o.PaymentType != order.PaymentCash {
-		return
-	}
-	n.send(ctx, o, n.chatCreated)
-}
-
 func (n *TelegramNotifier) OrderPaid(ctx context.Context, o order.Order) {
 	n.send(ctx, o, n.chatConfirmed)
 }
@@ -87,7 +79,6 @@ func orderMessage(o order.Order) telegram.OrderMessage {
 		ID:           o.ID,
 		Name:         o.Customer.Name,
 		Phone:        o.Customer.Phone,
-		PaymentType:  o.PaymentType,
 		Total:        o.Total,
 		Delivery:     o.DeliveryPrice,
 		Comment:      o.Comment,

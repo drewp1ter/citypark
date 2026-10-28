@@ -72,7 +72,6 @@ func (e *readEnv) insert(t *testing.T, customer int64, addr *int64, comment stri
 		CustomerID:    customer,
 		AddressID:     addr,
 		Comment:       comment,
-		PaymentType:   PaymentCash,
 		ItemsHash:     comment,
 		DeliveryPrice: delivery,
 		Items:         items,
@@ -182,7 +181,7 @@ func TestGetOwn(t *testing.T) {
 	}
 	var got map[string]any
 	testutil.Decode(t, rec, &got)
-	wantKeys(t, got, "id", "createdAt", "updatedAt", "status", "comment", "paymentType",
+	wantKeys(t, got, "id", "createdAt", "updatedAt", "status", "comment",
 		"total", "deliveryPrice", "deliveryTime", "customer", "address", "items")
 	if got["comment"] != "first" || got["status"] != StatusNew || got["deliveryPrice"] != float64(150) {
 		t.Errorf("order = %v", got)

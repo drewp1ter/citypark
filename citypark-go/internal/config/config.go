@@ -10,21 +10,20 @@ import (
 )
 
 type Config struct {
-	Env              string // "development", "production" or "test"
-	Port             int
-	Debug            bool
-	Timezone         *time.Location
-	DefaultPageSize  int
-	DatabaseURL      string
-	JWT              JWT
-	Admin            Admin
-	Iiko             Iiko
-	Telegram         Telegram
-	Moneta           Moneta
-	Hotel            Hotel
-	OneC             OneC
-	Upload           Upload
-	ThankYouPageCash string
+	Env             string // "development", "production" or "test"
+	Port            int
+	Debug           bool
+	Timezone        *time.Location
+	DefaultPageSize int
+	DatabaseURL     string
+	JWT             JWT
+	Admin           Admin
+	Iiko            Iiko
+	Telegram        Telegram
+	Moneta          Moneta
+	Hotel           Hotel
+	OneC            OneC
+	Upload          Upload
 }
 
 type JWT struct {
@@ -164,7 +163,6 @@ func Load(lookup LookupFunc) (Config, error) {
 		Dir:           str("UPLOAD_DIR", "./uploads"),
 		PublicBaseURL: strings.TrimRight(str("PUBLIC_BASE_URL", "http://localhost:3000"), "/"),
 	}
-	c.ThankYouPageCash = str("THANK_YOU_PAGE_PAYMENT_CASH", "http://localhost:3001/thankyou")
 
 	return c, nil
 }

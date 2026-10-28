@@ -165,12 +165,6 @@ func (h *Handler) parseFilter(r *http.Request) (ListFilter, error) {
 		}
 		f.Status = v
 	}
-	if v := qs.Get("paymentType"); v != "" {
-		if v != PaymentCash && v != PaymentOnline {
-			fields["paymentType"] = "недопустимое значение"
-		}
-		f.PaymentType = v
-	}
 
 	if len(fields) > 0 {
 		e := httpx.BadRequest("Некорректные параметры поиска")

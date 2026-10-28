@@ -59,10 +59,9 @@ func (f *fakeSender) calls() []sentMessage {
 	return append([]sentMessage(nil), f.sent...)
 }
 
-func testOrder(paymentType string) order.Order {
+func testOrder() order.Order {
 	return order.Order{
 		ID:            15,
-		PaymentType:   paymentType,
 		Total:         79000,
 		DeliveryPrice: 15000,
 		Comment:       "позвонить",
@@ -73,13 +72,12 @@ func testOrder(paymentType string) order.Order {
 	}
 }
 
-func testOrderText(paymentType string) string {
+func testOrderText() string {
 	return telegram.FormatOrder(telegram.OrderMessage{
 		ID:           15,
 		Name:         "Иван",
 		Phone:        "+79991234567",
 		Address:      "Москва, ул. Ленина, 1",
-		PaymentType:  paymentType,
 		Total:        79000,
 		Delivery:     15000,
 		Comment:      "позвонить",
@@ -93,37 +91,16 @@ func newNotifier(sender app.MessageSender, buf *bytes.Buffer) *app.TelegramNotif
 	return app.NewTelegramNotifier(sender, chatCreated, chatConfirmed, log)
 }
 
-func TestNotifierCash(t *testing.T) {
-	sender := &fakeSender{}
-	n := newNotifier(sender, &bytes.Buffer{})
-
-	n.OrderCreated(context.Background(), testOrder(order.PaymentCash))
-	n.Wait()
-
-	want := []sentMessage{{chatCreated, testOrderText(order.PaymentCash)}, {chatCreated, "+79991234567"}}
-	assertSent(t, sender.calls(), want)
-}
-
-func TestNotifierCreatedOnlineIgnored(t *testing.T) {
-	sender := &fakeSender{}
-	n := newNotifier(sender, &bytes.Buffer{})
-
-	n.OrderCreated(context.Background(), testOrder(order.PaymentOnline))
-	n.Wait()
-
-	assertSent(t, sender.calls(), nil)
-}
-
 func TestNotifierPaid(t *testing.T) {
 	sender := &fakeSender{}
 	n := newNotifier(sender, &bytes.Buffer{})
 
-	o := testOrder(order.PaymentOnline)
+	o := testOrder()
 	n.OrderPaid(context.Background(), o)
 	n.Wait()
 
 	want := []sentMessage{
-		{chatConfirmed, testOrderText(order.PaymentOnline)},
+		{chatConfirmed, testOrderText()},
 		{chatCreated, "+79991234567"},
 	}
 	assertSent(t, sender.calls(), want)
@@ -133,10 +110,10 @@ func TestNotifierConfirmed(t *testing.T) {
 	sender := &fakeSender{}
 	n := newNotifier(sender, &bytes.Buffer{})
 
-	n.OrderConfirmed(context.Background(), testOrder(order.PaymentCash))
+	n.OrderConfirmed(context.Background(), testOrder())
 	n.Wait()
 
-	want := []sentMessage{{chatConfirmed, testOrderText(order.PaymentCash)}, {chatCreated, "+79991234567"}}
+	want := []sentMessage{{chatConfirmed, testOrderText()}, {chatCreated, "+79991234567"}}
 	assertSent(t, sender.calls(), want)
 }
 
@@ -145,7 +122,7 @@ func TestNotifierSendError(t *testing.T) {
 	var buf bytes.Buffer
 	n := newNotifier(sender, &buf)
 
-	n.OrderCreated(context.Background(), testOrder(order.PaymentCash))
+	n.OrderPaid(context.Background(), testOrder())
 	n.Wait()
 
 	if got := len(sender.calls()); got != 1 {
@@ -164,7 +141,7 @@ func TestNotifierPhoneSendError(t *testing.T) {
 	var buf bytes.Buffer
 	n := newNotifier(sender, &buf)
 
-	n.OrderCreated(context.Background(), testOrder(order.PaymentCash))
+	n.OrderPaid(context.Background(), testOrder())
 	n.Wait()
 
 	if got := len(sender.calls()); got != 2 {
@@ -191,8 +168,8 @@ func TestNotifierEmptyChat(t *testing.T) {
 	var buf bytes.Buffer
 	n := app.NewTelegramNotifier(sender, "", "", slog.New(slog.NewTextHandler(&buf, nil)))
 
-	n.OrderCreated(context.Background(), testOrder(order.PaymentCash))
-	n.OrderPaid(context.Background(), testOrder(order.PaymentOnline))
+	n.OrderPaid(context.Background(), testOrder())
+	n.OrderConfirmed(context.Background(), testOrder())
 	n.Wait()
 
 	assertSent(t, sender.calls(), nil)
@@ -205,9 +182,9 @@ func TestNotifierPickupHasNoAddress(t *testing.T) {
 	sender := &fakeSender{}
 	n := newNotifier(sender, &bytes.Buffer{})
 
-	o := testOrder(order.PaymentCash)
+	o := testOrder()
 	o.Address = nil
-	n.OrderCreated(context.Background(), o)
+	n.OrderPaid(context.Background(), o)
 	n.Wait()
 
 	calls := sender.calls()
@@ -356,11 +333,10 @@ func TestAppOrderFlow(t *testing.T) {
 	testutil.InsertDeliveryPrice(t, db, "Москва", 15000)
 
 	body := map[string]any{
-		"phone":       "+79991234567",
-		"name":        "Иван",
-		"paymentType": "cash",
-		"address":     map[string]string{"city": "Москва", "address": "ул. Ленина, 1"},
-		"items":       []map[string]any{{"productId": product, "amount": 2}},
+		"phone":   "+79991234567",
+		"name":    "Иван",
+		"address": map[string]string{"city": "Москва", "address": "ул. Ленина, 1"},
+		"items":   []map[string]any{{"productId": product, "amount": 2}},
 	}
 	rec := testutil.DoJSON(t, a.Handler, http.MethodPost, "/api/v1/orders", "", body)
 	if rec.Code != http.StatusCreated {
@@ -368,14 +344,14 @@ func TestAppOrderFlow(t *testing.T) {
 	}
 	var res order.CreateResult
 	testutil.Decode(t, rec, &res)
-	if res.OrderID == 0 {
-		t.Errorf("result has no order id: %+v", res)
+	if res.OrderID == 0 || !strings.Contains(res.RedirectURL, "MNT_AMOUNT=940.00") {
+		t.Errorf("result = %+v, want an order id and a Moneta redirect with MNT_AMOUNT=940.00", res)
 	}
 
+	// An unpaid order is not announced to staff.
 	a.Notifier.Wait()
-	got := tg.sentChats()
-	if len(got) != 2 || got[0] != chatCreated || got[1] != chatCreated {
-		t.Errorf("telegram chats = %v, want [%s %s]", got, chatCreated, chatCreated)
+	if got := tg.sentChats(); len(got) != 0 {
+		t.Errorf("telegram chats = %v, want none for an unpaid order", got)
 	}
 }
 
@@ -388,10 +364,9 @@ func TestAppOnlineFlow(t *testing.T) {
 	product := testutil.InsertProduct(t, db, testutil.Product{CategoryID: cat, Name: "Пицца", PriceKopecks: 79000})
 
 	body := map[string]any{
-		"phone":       "+79991234567",
-		"name":        "Иван",
-		"paymentType": "online",
-		"items":       []map[string]any{{"productId": product, "amount": 1}},
+		"phone": "+79991234567",
+		"name":  "Иван",
+		"items": []map[string]any{{"productId": product, "amount": 1}},
 	}
 	rec := testutil.DoJSON(t, a.Handler, http.MethodPost, "/api/v1/orders", "", body)
 	if rec.Code != http.StatusCreated {
@@ -529,10 +504,9 @@ func TestAppLiveOrders(t *testing.T) {
 	cat := testutil.InsertCategory(t, db, testutil.Category{Name: "Пиццы"})
 	product := testutil.InsertProduct(t, db, testutil.Product{CategoryID: cat, Name: "Пицца", PriceKopecks: 39500})
 	body := map[string]any{
-		"phone":       "+79991234567",
-		"name":        "Иван",
-		"paymentType": "cash",
-		"items":       []map[string]any{{"productId": product, "amount": 1}},
+		"phone": "+79991234567",
+		"name":  "Иван",
+		"items": []map[string]any{{"productId": product, "amount": 1}},
 	}
 	if rec := testutil.DoJSON(t, a.Handler, http.MethodPost, "/api/v1/orders", "", body); rec.Code != http.StatusCreated {
 		t.Fatalf("create order = %d; body %s", rec.Code, rec.Body)
@@ -547,8 +521,8 @@ func TestAppLiveOrders(t *testing.T) {
 			Status string `json:"status"`
 		} `json:"order"`
 	}
-	if err := json.Unmarshal(data, &ev); err != nil || ev.Type != "order.created" || ev.Order.Status != order.StatusNew {
-		t.Errorf("event = %s (%v), want order.created with status new", data, err)
+	if err := json.Unmarshal(data, &ev); err != nil || ev.Type != "order.pending" || ev.Order.Status != order.StatusPending {
+		t.Errorf("event = %s (%v), want order.pending with status pending", data, err)
 	}
 	a.Notifier.Wait()
 }

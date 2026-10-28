@@ -19,12 +19,9 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/testutil"
 )
 
-const cashURL = "http://cash"
-
-type fakeNotifier struct{ pending, created, paid, confirmed []Order }
+type fakeNotifier struct{ pending, paid, confirmed []Order }
 
 func (f *fakeNotifier) OrderPending(_ context.Context, o Order) { f.pending = append(f.pending, o) }
-func (f *fakeNotifier) OrderCreated(_ context.Context, o Order) { f.created = append(f.created, o) }
 func (f *fakeNotifier) OrderPaid(_ context.Context, o Order)    { f.paid = append(f.paid, o) }
 func (f *fakeNotifier) OrderConfirmed(_ context.Context, o Order) {
 	f.confirmed = append(f.confirmed, o)
@@ -64,17 +61,16 @@ func newSvcEnv(t *testing.T, now time.Time) *svcEnv {
 	e.productA = testutil.InsertProduct(t, db, testutil.Product{CategoryID: e.category, Name: "Шашлык", PriceKopecks: 59900})
 	e.productB = testutil.InsertProduct(t, db, testutil.Product{CategoryID: e.category, Name: "Лаваш", PriceKopecks: 10000})
 	testutil.InsertDeliveryPrice(t, db, "Сочи", 15000)
-	e.svc = NewService(db, clock.Fixed(now), e.notifier, e.payments, Options{ThankYouCash: cashURL})
+	e.svc = NewService(db, clock.Fixed(now), e.notifier, e.payments)
 	return e
 }
 
-func (e *svcEnv) input(paymentType string, withAddress bool) CreateInput {
+func (e *svcEnv) input(withAddress bool) CreateInput {
 	in := CreateInput{
-		Phone:       "8 (999) 111-22-33",
-		Name:        "  Пётр ",
-		Comment:     " без лука ",
-		PaymentType: paymentType,
-		Items:       []ItemInput{{ProductID: e.productA, Amount: 1}},
+		Phone:   "8 (999) 111-22-33",
+		Name:    "  Пётр ",
+		Comment: " без лука ",
+		Items:   []ItemInput{{ProductID: e.productA, Amount: 1}},
 	}
 	if withAddress {
 		in.Address = &address.Input{City: "Сочи", Address: "Ленина, 1"}
@@ -107,52 +103,9 @@ func wantHTTPError(t *testing.T, err error, status int, message string) {
 	}
 }
 
-func TestCreateCash(t *testing.T) {
-	e := newSvcEnv(t, friday)
-	res, err := e.svc.Create(context.Background(), e.input(PaymentCash, true))
-	if err != nil {
-		t.Fatalf("Create: %v", err)
-	}
-	if res.OrderID == 0 || res.RedirectURL != cashURL {
-		t.Errorf("result = %+v, want order id and redirect %q", res, cashURL)
-	}
-	if n := e.count(t, `SELECT count(*) FROM orders`); n != 1 {
-		t.Fatalf("orders = %d, want 1", n)
-	}
-	o := e.order(t, res.OrderID)
-	if o.Status != StatusNew {
-		t.Errorf("Status = %q, want new", o.Status)
-	}
-	if o.DeliveryPrice != 15000 {
-		t.Errorf("DeliveryPrice = %d, want 15000", o.DeliveryPrice)
-	}
-	if o.Customer.Name != "Пётр" || o.Customer.Phone != "+79991112233" || o.Comment != "без лука" {
-		t.Errorf("customer/comment = %+v / %q", o.Customer, o.Comment)
-	}
-	if o.Address == nil || o.Address.City != "Сочи" || o.Address.Address != "Ленина, 1" {
-		t.Errorf("Address = %+v", o.Address)
-	}
-	if len(o.Items) != 1 || o.Items[0].ProductID != e.productA || o.Items[0].Amount != 1 || o.Items[0].OfferedPrice != 59900 {
-		t.Errorf("Items = %+v", o.Items)
-	}
-
-	if len(e.notifier.pending) != 0 {
-		t.Errorf("OrderPending calls = %+v, want none for a cash order", e.notifier.pending)
-	}
-	if len(e.notifier.created) != 1 || e.notifier.created[0].ID != o.ID {
-		t.Errorf("OrderCreated calls = %+v, want one for order %d", e.notifier.created, o.ID)
-	}
-	if len(e.payments.requests) != 0 {
-		t.Errorf("payments called: %+v", e.payments.requests)
-	}
-	if n := e.count(t, `SELECT count(*) FROM user_addresses WHERE user_id = $1`, o.Customer.ID); n != 1 {
-		t.Errorf("user_addresses links = %d, want 1", n)
-	}
-}
-
 func TestCreatePickup(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	res, err := e.svc.Create(context.Background(), e.input(PaymentCash, false))
+	res, err := e.svc.Create(context.Background(), e.input(false))
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -169,7 +122,7 @@ func TestCreateExistingCustomer(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := testutil.InsertUser(t, e.db, "Старое имя", "+79991112233", "user")
 
-	res, err := e.svc.Create(context.Background(), e.input(PaymentCash, false))
+	res, err := e.svc.Create(context.Background(), e.input(false))
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -184,7 +137,7 @@ func TestCreateExistingCustomer(t *testing.T) {
 
 func TestCreateMergesDuplicateItems(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	in := e.input(PaymentCash, false)
+	in := e.input(false)
 	in.Items = []ItemInput{{ProductID: e.productA, Amount: 1}, {ProductID: e.productB, Amount: 1}, {ProductID: e.productA, Amount: 2}}
 
 	res, err := e.svc.Create(context.Background(), in)
@@ -210,7 +163,7 @@ func TestCreateMergesDuplicateItems(t *testing.T) {
 
 func TestCreateBadPhone(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	in := e.input(PaymentCash, false)
+	in := e.input(false)
 	in.Phone = "123"
 	_, err := e.svc.Create(context.Background(), in)
 	wantHTTPError(t, err, http.StatusBadRequest, "Неверный номер телефона.")
@@ -221,7 +174,7 @@ func TestCreateBadPhone(t *testing.T) {
 
 func TestCreateUnknownCity(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	in := e.input(PaymentCash, true)
+	in := e.input(true)
 	in.Address.City = "Атлантида"
 	_, err := e.svc.Create(context.Background(), in)
 	wantHTTPError(t, err, http.StatusBadRequest, "Указано не существующее имя населенного пункта.")
@@ -232,7 +185,7 @@ func TestCreateUnknownCity(t *testing.T) {
 
 func TestCreateUnknownProduct(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	in := e.input(PaymentCash, true)
+	in := e.input(true)
 	in.Items = []ItemInput{{ProductID: e.productA, Amount: 1}, {ProductID: 999, Amount: 1}}
 	_, err := e.svc.Create(context.Background(), in)
 	wantHTTPError(t, err, http.StatusBadRequest, "Продукт не найден.")
@@ -247,7 +200,7 @@ func TestCreateUnknownProduct(t *testing.T) {
 func TestCreateDeletedProduct(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	deleted := testutil.InsertProduct(t, e.db, testutil.Product{CategoryID: e.category, Name: "Удалён", PriceKopecks: 100, IsDeleted: true})
-	in := e.input(PaymentCash, false)
+	in := e.input(false)
 	in.Items = []ItemInput{{ProductID: deleted, Amount: 1}}
 	_, err := e.svc.Create(context.Background(), in)
 	wantHTTPError(t, err, http.StatusBadRequest, "Продукт не найден.")
@@ -259,7 +212,7 @@ func TestCreateCategoryClosedDay(t *testing.T) {
 	if _, err := e.db.Exec(`UPDATE categories SET sale_days = '1111100' WHERE id = $1`, e.category); err != nil {
 		t.Fatal(err)
 	}
-	_, err := e.svc.Create(context.Background(), e.input(PaymentCash, false))
+	_, err := e.svc.Create(context.Background(), e.input(false))
 	wantHTTPError(t, err, http.StatusServiceUnavailable,
 		`Возможность заказа "Мангал" доступна только в следующие дни недели: Пн, Вт, Ср, Чт, Пт`)
 	if n := e.count(t, `SELECT count(*) FROM orders`); n != 0 {
@@ -272,7 +225,7 @@ func TestCreateCategoryClosedTime(t *testing.T) {
 	if _, err := e.db.Exec(`UPDATE categories SET sale_start = 540, sale_end = 1260 WHERE id = $1`, e.category); err != nil {
 		t.Fatal(err)
 	}
-	_, err := e.svc.Create(context.Background(), e.input(PaymentCash, false))
+	_, err := e.svc.Create(context.Background(), e.input(false))
 	wantHTTPError(t, err, http.StatusServiceUnavailable, `Время заказа "Мангал" ограничено с 9:00 до 21:00.`)
 }
 
@@ -282,7 +235,7 @@ func TestCreateProductClosedDay(t *testing.T) {
 	if _, err := e.db.Exec(`UPDATE products SET sale_days = '1111100' WHERE id = $1`, e.productA); err != nil {
 		t.Fatal(err)
 	}
-	_, err := e.svc.Create(context.Background(), e.input(PaymentCash, false))
+	_, err := e.svc.Create(context.Background(), e.input(false))
 	wantHTTPError(t, err, http.StatusServiceUnavailable,
 		`Возможность заказа "Шашлык" доступна только в следующие дни недели: Пн, Вт, Ср, Чт, Пт`)
 }
@@ -292,7 +245,7 @@ func TestCreateProductClosedTime(t *testing.T) {
 	if _, err := e.db.Exec(`UPDATE products SET sale_start = 600, sale_end = 1200 WHERE id = $1`, e.productA); err != nil {
 		t.Fatal(err)
 	}
-	_, err := e.svc.Create(context.Background(), e.input(PaymentCash, false))
+	_, err := e.svc.Create(context.Background(), e.input(false))
 	wantHTTPError(t, err, http.StatusServiceUnavailable, `Время заказа "Шашлык" ограничено с 10:00 до 20:00.`)
 }
 
@@ -302,7 +255,7 @@ func TestCreateFirstClosedProductWins(t *testing.T) {
 		[]int64{e.productA, e.productB}); err != nil {
 		t.Fatal(err)
 	}
-	in := e.input(PaymentCash, false)
+	in := e.input(false)
 	in.Items = []ItemInput{{ProductID: e.productB, Amount: 1}, {ProductID: e.productA, Amount: 1}}
 	_, err := e.svc.Create(context.Background(), in)
 	wantHTTPError(t, err, http.StatusServiceUnavailable, `Время заказа "Лаваш" ограничено с 10:00 до 20:00.`)
@@ -310,7 +263,7 @@ func TestCreateFirstClosedProductWins(t *testing.T) {
 
 func TestCreateOnline(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	res, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true))
+	res, err := e.svc.Create(context.Background(), e.input(true))
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -325,14 +278,26 @@ func TestCreateOnline(t *testing.T) {
 	if !slices.Equal(e.payments.requests, want) {
 		t.Errorf("payment requests = %+v, want %+v", e.payments.requests, want)
 	}
-	if len(e.notifier.created) != 0 {
-		t.Errorf("notifier called: %+v", e.notifier.created)
+	if o.DeliveryPrice != 15000 {
+		t.Errorf("DeliveryPrice = %d, want 15000", o.DeliveryPrice)
+	}
+	if o.Customer.Name != "Пётр" || o.Customer.Phone != "+79991112233" || o.Comment != "без лука" {
+		t.Errorf("customer/comment = %+v / %q", o.Customer, o.Comment)
+	}
+	if o.Address == nil || o.Address.City != "Сочи" || o.Address.Address != "Ленина, 1" {
+		t.Errorf("Address = %+v", o.Address)
+	}
+	if len(o.Items) != 1 || o.Items[0].ProductID != e.productA || o.Items[0].Amount != 1 || o.Items[0].OfferedPrice != 59900 {
+		t.Errorf("Items = %+v", o.Items)
+	}
+	if n := e.count(t, `SELECT count(*) FROM user_addresses WHERE user_id = $1`, o.Customer.ID); n != 1 {
+		t.Errorf("user_addresses links = %d, want 1", n)
 	}
 }
 
-func TestCreateOnlinePendingEvent(t *testing.T) {
+func TestCreateNotifiesPending(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	res, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true))
+	res, err := e.svc.Create(context.Background(), e.input(true))
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -342,15 +307,12 @@ func TestCreateOnlinePendingEvent(t *testing.T) {
 	if got := e.notifier.pending[0]; got.ID != res.OrderID || got.Status != StatusPending {
 		t.Errorf("pending order = id %d status %q, want id %d status pending", got.ID, got.Status, res.OrderID)
 	}
-	if len(e.notifier.created) != 0 {
-		t.Errorf("OrderCreated calls = %+v, want none", e.notifier.created)
-	}
 }
 
 func TestCreateOnlineDuplicateNoEvent(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	for i := 0; i < 2; i++ {
-		if _, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true)); err != nil {
+		if _, err := e.svc.Create(context.Background(), e.input(true)); err != nil {
 			t.Fatalf("Create #%d: %v", i+1, err)
 		}
 	}
@@ -361,7 +323,7 @@ func TestCreateOnlineDuplicateNoEvent(t *testing.T) {
 
 func TestCreateOnlinePickup(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	res, err := e.svc.Create(context.Background(), e.input(PaymentOnline, false))
+	res, err := e.svc.Create(context.Background(), e.input(false))
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
@@ -373,11 +335,11 @@ func TestCreateOnlinePickup(t *testing.T) {
 
 func TestCreateOnlineReuse(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	first, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true))
+	first, err := e.svc.Create(context.Background(), e.input(true))
 	if err != nil {
 		t.Fatalf("first Create: %v", err)
 	}
-	second, err := e.svc.Create(context.Background(), e.input(PaymentOnline, true))
+	second, err := e.svc.Create(context.Background(), e.input(true))
 	if err != nil {
 		t.Fatalf("second Create: %v", err)
 	}
@@ -393,24 +355,6 @@ func TestCreateOnlineReuse(t *testing.T) {
 	}
 	if o := e.order(t, first.OrderID); o.Status != StatusPending {
 		t.Errorf("Status = %q, want pending", o.Status)
-	}
-}
-
-func TestCreateOnlineNotReusedForCash(t *testing.T) {
-	e := newSvcEnv(t, friday)
-	first, err := e.svc.Create(context.Background(), e.input(PaymentCash, true))
-	if err != nil {
-		t.Fatalf("first Create: %v", err)
-	}
-	second, err := e.svc.Create(context.Background(), e.input(PaymentCash, true))
-	if err != nil {
-		t.Fatalf("second Create: %v", err)
-	}
-	if first.OrderID == second.OrderID {
-		t.Errorf("OrderIDs are both %d, want different", first.OrderID)
-	}
-	if n := e.count(t, `SELECT count(*) FROM orders`); n != 2 {
-		t.Errorf("orders = %d, want 2", n)
 	}
 }
 
@@ -433,13 +377,9 @@ func jsonKeys(t *testing.T, v any) []string {
 }
 
 func TestCreateResultJSON(t *testing.T) {
-	cash := jsonKeys(t, CreateResult{OrderID: 1, RedirectURL: "http://x"})
-	if want := []string{"orderId", "redirectUrl"}; !slices.Equal(cash, want) {
-		t.Errorf("cash keys = %v, want %v", cash, want)
-	}
-	online := jsonKeys(t, CreateResult{OrderID: 1, RedirectURL: "https://pay"})
-	if want := []string{"orderId", "redirectUrl"}; !slices.Equal(online, want) {
-		t.Errorf("online keys = %v, want %v", online, want)
+	got := jsonKeys(t, CreateResult{OrderID: 1, RedirectURL: "https://pay"})
+	if want := []string{"orderId", "redirectUrl"}; !slices.Equal(got, want) {
+		t.Errorf("keys = %v, want %v", got, want)
 	}
 }
 
@@ -476,7 +416,7 @@ func TestCreateFreeDelivery(t *testing.T) {
 		amount int
 		want   money.Kopecks
 	}{{2, 0}, {1, 10000}} {
-		in := e.input(PaymentCash, true)
+		in := e.input(true)
 		in.Address.City = "Белореченск"
 		in.Items = []ItemInput{{ProductID: product, Amount: tt.amount}}
 		res, err := e.svc.Create(context.Background(), in)
@@ -491,7 +431,7 @@ func TestCreateFreeDelivery(t *testing.T) {
 
 func TestCreateDeliveryTime(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	in := e.input(PaymentCash, true)
+	in := e.input(true)
 	in.DeliveryTime = "18:30"
 	res, err := e.svc.Create(context.Background(), in)
 	if err != nil {
@@ -501,7 +441,7 @@ func TestCreateDeliveryTime(t *testing.T) {
 		t.Errorf("DeliveryTime = %q, want 18:30", got)
 	}
 
-	res, err = e.svc.Create(context.Background(), e.input(PaymentCash, true))
+	res, err = e.svc.Create(context.Background(), e.input(true))
 	if err != nil {
 		t.Fatalf("Create without time: %v", err)
 	}
@@ -513,7 +453,7 @@ func TestCreateDeliveryTime(t *testing.T) {
 func TestCreateDuplicateOtherTime(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	create := func(deliveryTime string) int64 {
-		in := e.input(PaymentOnline, true)
+		in := e.input(true)
 		in.DeliveryTime = deliveryTime
 		res, err := e.svc.Create(context.Background(), in)
 		if err != nil {
