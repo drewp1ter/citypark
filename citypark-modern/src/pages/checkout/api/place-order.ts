@@ -84,7 +84,6 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 		phone: `+${phoneDigits(order.data.phone)}`,
 		name: order.data.name,
 		comment,
-		paymentType: 'online',
 		items: priced.items.map((item) => ({ productId: Number(item.dish.externalId), amount: item.quantity })),
 	}
 	if (when === 'scheduled') body.deliveryTime = time

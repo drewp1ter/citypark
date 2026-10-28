@@ -6,7 +6,6 @@ export type CreateOrderBody = {
 	comment: string
 	/** "HH:MM", today. Left out for «как можно скорее». */
 	deliveryTime?: string
-	paymentType: 'online'
 	address?: { city: string; address: string }
 	items: { productId: number; amount: number }[]
 }

@@ -64,3 +64,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Map
 - [x] 30 Yandex map on the home and contacts pages [29]
   - Owner: `/` and `/contacts` are static (revalidate 1m), so `YANDEX_MAPS_API_KEY` is read at build time and refreshed on revalidation: rebuild after changing the key. Coordinates `39.8749086, 44.7596453` come from OpenStreetMap. A dev server behind nginx needs `Upgrade`/`Connection` headers for `/_next/hmr`, or the page does not hydrate.
+
+## Online payment only
+- [x] 31 Stop sending paymentType [26] (needs citypark-go task 65)
+  - Owner: the checkout QA flow ran without `QA_PLACE_ORDER=1` (a real order POSTs to the backend), so the order without `paymentType` was not placed here. Place one order on a backend with task 65 and check that the Moneta page opens.
