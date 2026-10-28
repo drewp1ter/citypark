@@ -6,7 +6,7 @@ export { Button } from './button'
 export { Card, cardClass } from './card'
 export { ClearButton } from './clear-button'
 export { Chip } from './chip'
-export { CheckboxField, TextareaField, TextField, controlClass } from './fields'
+export { CheckboxField, TextareaField, TextField, controlClass, fieldErrorClass, fieldLabelClass } from './fields'
 export { IconButton } from './icon-button'
 export {
 	CartIcon,

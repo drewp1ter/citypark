@@ -37,6 +37,29 @@ out(
 )
 out('remaining alerts', JSON.stringify((await p.getByRole('alert').allInnerTexts()).filter(Boolean)))
 
+// address suggestions: calls DaData through /api/address-suggest, so it only runs with QA_DADATA=1 (and DADATA_API_KEY set)
+if (process.env.QA_DADATA === '1') {
+	// the open list is labelled «Улица и дом» too, so the input is found by its role
+	const street = p.getByRole('combobox', { name: 'Улица и дом' })
+	await street.fill('')
+	await street.pressSequentially('Гоголя', { delay: 60 })
+	await p
+		.getByRole('option')
+		.first()
+		.waitFor({ timeout: 5000 })
+		.catch(() => {})
+	const options = await p.getByRole('option').allInnerTexts()
+	out(
+		'suggestions for «Гоголя»',
+		`${options.length} options, all contain Гоголя: ${options.every((o) => o.includes('Гоголя'))}`
+	)
+	await street.press('ArrowDown')
+	await street.press('Enter')
+	out('ArrowDown + Enter fills the field', await street.inputValue())
+} else {
+	out('address suggestions', 'skipped (set QA_DADATA=1 with DADATA_API_KEY to call DaData)')
+}
+
 // variants: outskirts, pickup, scheduled
 await p.getByRole('button', { name: /Населённый пункт/ }).click()
 const townOptions = p.getByRole('option')

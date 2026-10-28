@@ -1,6 +1,7 @@
 import { connection } from 'next/server'
 import { getDeliveryTowns, getMenu } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
+import { serverEnv } from '@/shared/config'
 import { CheckoutForm } from './checkout-form'
 import { CheckoutHeader } from './checkout-header'
 import { TitleRow } from './title-row'
@@ -19,6 +20,7 @@ export async function CheckoutPage({ paymentFailed = false }: { paymentFailed?: 
 					towns={towns}
 					hours={hours}
 					paymentFailed={paymentFailed}
+					suggestions={Boolean(serverEnv().DADATA_API_KEY)}
 					intro={<TitleRow step={2} title='Оформление' />}
 				/>
 			</main>

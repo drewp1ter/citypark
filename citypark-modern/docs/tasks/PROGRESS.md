@@ -68,3 +68,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Online payment only
 - [x] 31 Stop sending paymentType [26] (needs citypark-go task 65)
   - Owner: the checkout QA flow ran without `QA_PLACE_ORDER=1` (a real order POSTs to the backend), so the order without `paymentType` was not placed here. Place one order on a backend with task 65 and check that the Moneta page opens.
+
+## Address suggestions
+- [x] 32 Address suggestions on checkout [26, 28]
+  - Deviation: `AddressField` lives in `src/pages/checkout/ui/address-field.tsx`, not in a `features/address-suggest` slice. Steiger rejects a slice with one consumer (`fsd/insignificant-slice`) and the conventions forbid overrides.

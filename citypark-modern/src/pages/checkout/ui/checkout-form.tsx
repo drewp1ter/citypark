@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState, type ReactNode } from 'react'
 import { useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
+import { AddressField } from './address-field'
 import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
 import {
 	AppLink,
@@ -31,11 +32,13 @@ type CheckoutFormProps = {
 	hours: WorkingHours
 	/** The customer came back from Moneta after a failed payment. */
 	paymentFailed: boolean
+	/** DaData is configured: «Улица и дом» offers address suggestions. */
+	suggestions: boolean
 	/** Title row of the page (h1 and the steps). */
 	intro: ReactNode
 }
 
-export function CheckoutForm({ dishes, towns, hours, paymentFailed, intro }: CheckoutFormProps) {
+export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions, intro }: CheckoutFormProps) {
 	const [state, formAction, pending] = useActionState(placeOrder, initialState)
 	const errors = state.status === 'error' ? state.errors : {}
 	const values = state.status === 'error' ? state.values : undefined
@@ -147,11 +150,11 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, intro }: Che
 											onValueChange={setCity}
 											error={errors.city}
 										/>
-										<TextField
+										<AddressField
 											label='Улица и дом'
 											name='street'
-											autoComplete='street-address'
-											placeholder='Начните вводить адрес'
+											town={city}
+											suggestions={suggestions}
 											defaultValue={values?.street}
 											error={errors.street}
 											className='md:col-span-2'
