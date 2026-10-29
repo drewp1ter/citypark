@@ -110,3 +110,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Online payment only
 - [x] 65 Online payment only [64] (needed by citypark-admin task 23 and citypark-modern task 31)
+
+## Customer accounts and Telegram Mini App
+- [x] 66 Order ownership migration [65]
+
+Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).
