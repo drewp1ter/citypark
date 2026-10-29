@@ -70,6 +70,7 @@ func (e *readEnv) insert(t *testing.T, customer int64, addr *int64, comment stri
 	}
 	id, err := NewStore(e.db).Insert(context.Background(), InsertParams{
 		CustomerID:    customer,
+		AccountID:     &customer,
 		AddressID:     addr,
 		Comment:       comment,
 		ItemsHash:     comment,

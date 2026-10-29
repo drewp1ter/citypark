@@ -2,6 +2,8 @@ package order
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,6 +15,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/drewp1ter/citypark-go/internal/address"
+	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/catalog"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
@@ -58,12 +61,13 @@ type Payments interface {
 }
 
 type CreateInput struct {
-	Phone        string         `json:"phone" validate:"required,ruphone"`
-	Name         string         `json:"name" validate:"required,max=80"`
-	Comment      string         `json:"comment" validate:"max=8192"`
-	DeliveryTime string         `json:"deliveryTime" validate:"omitempty,hhmm"` // "" = as soon as possible
-	Address      *address.Input `json:"address" validate:"omitempty"`
-	Items        []ItemInput    `json:"items" validate:"required,min=1,dive"`
+	GuestCheckoutID string         `json:"-"`
+	Phone           string         `json:"phone" validate:"required,ruphone"`
+	Name            string         `json:"name" validate:"required,max=80"`
+	Comment         string         `json:"comment" validate:"max=8192"`
+	DeliveryTime    string         `json:"deliveryTime" validate:"omitempty,hhmm"` // "" = as soon as possible
+	Address         *address.Input `json:"address" validate:"omitempty"`
+	Items           []ItemInput    `json:"items" validate:"required,min=1,dive"`
 }
 
 // CreateResult: RedirectURL is the Moneta payment page.
@@ -85,6 +89,25 @@ func NewService(db *sqlx.DB, c clock.Clock, n Notifier, p Payments) *Service {
 
 // Create places an order. in must already be validated.
 func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, error) {
+	var scope DuplicateScope
+	if who, ok := auth.FromContext(ctx); ok {
+		u, err := user.NewStore(s.db).ByID(ctx, who.UserID)
+		if errors.Is(err, store.ErrNotFound) {
+			return CreateResult{}, httpx.Unauthorized()
+		}
+		if err != nil {
+			return CreateResult{}, err
+		}
+		if u.Role != who.Role {
+			return CreateResult{}, httpx.Unauthorized()
+		}
+		if who.Role == auth.RoleUser {
+			scope.AccountID = &who.UserID
+		}
+	} else if in.GuestCheckoutID != "" {
+		hash := sha256.Sum256([]byte(in.GuestCheckoutID))
+		scope.GuestCheckoutHash = hex.EncodeToString(hash[:])
+	}
 	phone, ok := validate.NormalizePhone(in.Phone)
 	if !ok {
 		return CreateResult{}, httpx.BadRequest("Неверный номер телефона.")
@@ -116,7 +139,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if in.Address != nil {
 		dupAddr = &Address{City: in.Address.City, Address: in.Address.Address}
 	}
-	id, dup, err := orders.FindOpenDuplicate(ctx, phone, dupAddr, comment, in.DeliveryTime, hash)
+	id, dup, err := orders.FindOpenDuplicate(ctx, scope, name, phone, dupAddr, comment, in.DeliveryTime, hash)
 	if err != nil {
 		return CreateResult{}, err
 	}
@@ -130,6 +153,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 
 	if !found {
 		id, err := s.save(ctx, saveParams{
+			scope:        scope,
 			name:         name,
 			phone:        phone,
 			comment:      comment,
@@ -224,6 +248,7 @@ func (s *Service) PaymentConfirmed(ctx context.Context, cb PaymentCallback) erro
 }
 
 type saveParams struct {
+	scope                              DuplicateScope
 	name, phone, comment, deliveryTime string
 	address                            *address.Input
 	items                              []ItemInput
@@ -275,20 +300,21 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 			if err != nil {
 				return err
 			}
-			if err := addrStore.LinkUser(ctx, customer.ID, a.ID); err != nil {
-				return err
-			}
 			addressID = &a.ID
 		}
 
 		orderID, err = NewStore(tx).Insert(ctx, InsertParams{
-			CustomerID:    customer.ID,
-			AddressID:     addressID,
-			Comment:       p.comment,
-			DeliveryTime:  p.deliveryTime,
-			ItemsHash:     p.hash,
-			DeliveryPrice: deliveryCost(p.delivery, subtotal),
-			Items:         insertItems,
+			CustomerID:        customer.ID,
+			AccountID:         p.scope.AccountID,
+			GuestCheckoutHash: p.scope.GuestCheckoutHash,
+			ContactName:       &p.name,
+			ContactPhone:      &p.phone,
+			AddressID:         addressID,
+			Comment:           p.comment,
+			DeliveryTime:      p.deliveryTime,
+			ItemsHash:         p.hash,
+			DeliveryPrice:     deliveryCost(p.delivery, subtotal),
+			Items:             insertItems,
 		})
 		return err
 	})

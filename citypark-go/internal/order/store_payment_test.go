@@ -189,7 +189,7 @@ func TestFindOpenDuplicate(t *testing.T) {
 				ph = tt.phone
 			}
 
-			gotID, found, err := NewStore(db).FindOpenDuplicate(context.Background(), ph, tt.addr, comment, dt, hash)
+			gotID, found, err := NewStore(db).FindOpenDuplicate(context.Background(), DuplicateScope{GuestCheckoutHash: "test-guest"}, "Иван", ph, tt.addr, comment, dt, hash)
 			if err != nil {
 				t.Fatalf("FindOpenDuplicate: %v", err)
 			}
@@ -214,7 +214,7 @@ func TestFindOpenDuplicateReturnsHighestID(t *testing.T) {
 	second := insertOrder(t, db, p)
 
 	addr := &Address{City: "Москва", Address: "Тверская, 1"}
-	id, found, err := NewStore(db).FindOpenDuplicate(context.Background(), "+79990000000", addr, p.Comment, p.DeliveryTime, p.ItemsHash)
+	id, found, err := NewStore(db).FindOpenDuplicate(context.Background(), DuplicateScope{GuestCheckoutHash: "test-guest"}, "Иван", "+79990000000", addr, p.Comment, p.DeliveryTime, p.ItemsHash)
 	if err != nil {
 		t.Fatalf("FindOpenDuplicate: %v", err)
 	}

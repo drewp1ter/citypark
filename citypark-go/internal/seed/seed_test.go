@@ -99,9 +99,9 @@ func TestSeedOrdersLoad(t *testing.T) {
 	if err := db.GetContext(context.Background(), &userID, `SELECT id FROM users`); err != nil {
 		t.Fatalf("load user id: %v", err)
 	}
-	orders, total, err := order.NewStore(db).ListByCustomer(context.Background(), userID, 10, 0)
+	orders, total, err := order.NewStore(db).ListByAccount(context.Background(), userID, 10, 0)
 	if err != nil {
-		t.Fatalf("ListByCustomer: %v", err)
+		t.Fatalf("ListByAccount: %v", err)
 	}
 	if total != 2 || len(orders) != 2 {
 		t.Fatalf("total = %d, len = %d, want 2 and 2", total, len(orders))

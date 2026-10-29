@@ -21,7 +21,7 @@ func NewContext(ctx context.Context, id Identity) context.Context {
 	return context.WithValue(ctx, ctxKey{}, id)
 }
 
-// FromContext returns the identity stored by RequireRole.
+// FromContext returns the identity stored by the authentication middleware.
 func FromContext(ctx context.Context) (Identity, bool) {
 	id, ok := ctx.Value(ctxKey{}).(Identity)
 	return id, ok
@@ -60,4 +60,31 @@ func (t *Tokens) RequireRole(role string) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
+}
+
+// Optional authenticates when a header is present; invalid credentials never
+// silently turn an authenticated checkout into a guest checkout.
+func (t *Tokens) Optional(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		headers := r.Header.Values("Authorization")
+		if len(headers) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if len(headers) != 1 {
+			httpx.WriteError(w, r, httpx.Unauthorized())
+			return
+		}
+		token, ok := strings.CutPrefix(headers[0], "Bearer ")
+		if !ok {
+			httpx.WriteError(w, r, httpx.Unauthorized())
+			return
+		}
+		claims, err := t.Parse(token)
+		if err != nil {
+			httpx.WriteError(w, r, httpx.Unauthorized())
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(NewContext(r.Context(), Identity{UserID: claims.UserID, Role: claims.Role})))
+	})
 }

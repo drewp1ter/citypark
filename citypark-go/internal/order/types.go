@@ -43,6 +43,7 @@ type Item struct {
 
 type Order struct {
 	ID            int64         `json:"id"`
+	AccountID     *int64        `json:"-"`
 	CreatedAt     time.Time     `json:"createdAt"`
 	UpdatedAt     time.Time     `json:"updatedAt"`
 	Status        string        `json:"status"`

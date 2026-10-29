@@ -1610,9 +1610,9 @@ The new hours apply to the next `POST /orders` at once. Nothing is saved when a 
 
 #### POST /orders
 
-Places an order. The customer is found by phone number or created. Orders are accepted only during the restaurant's working hours.
+Places an order. A checkout contact is found by phone number or created; existing profiles and saved addresses are never changed. Orders are accepted only during the restaurant's working hours.
 
-- **Role:** public
+- **Role:** public, with optional Bearer authentication. An invalid, expired, empty or repeated Authorization header returns 401; it never becomes a guest checkout. A deleted user or a token whose role no longer matches also returns 401.
 
 **Request body**
 
@@ -1650,6 +1650,7 @@ Places an order. The customer is found by phone number or created. Orders are ac
 
 | Status | When | Message |
 |---|---|---|
+| 401 | invalid optional authentication, deleted account or changed role | `Требуется авторизация` |
 | 400 | the body is not valid JSON | `Некорректный JSON` |
 | 400 | a field is missing or invalid; `errors` lists the fields | `Ошибка валидации, пожалуйста проверьте введенные вами данные` |
 | 400 | `deliveryTime` is not `HH:MM`; `errors.deliveryTime` has the text | `Укажите время в формате ЧЧ:ММ` |
@@ -1663,11 +1664,17 @@ Places an order. The customer is found by phone number or created. Orders are ac
 
 **Notes**
 
-Orders are paid only online. The frontend sends the customer to `redirectUrl`, the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical order (same phone, address, comment, `deliveryTime` and items) while the previous one is still unpaid returns the same `orderId`. `paymentType` is not a field any more: responses do not have it, and a request that still sends it is accepted (the field is ignored). The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
+Orders are paid only online. The frontend sends the customer to `redirectUrl`, the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical order (same checkout name, phone, address, comment, `deliveryTime` and items) while the previous one is still new/pending returns the same `orderId` only within the same authenticated account or the same guest checkout scope. Phone alone never finds an earlier order. `paymentType` is not a field any more: responses do not have it, and a request that still sends it is accepted (the field is ignored). The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
+
+Authentication with a customer Bearer token assigns the order to that account regardless of the checkout phone. Admin checkout remains unowned. Guests never acquire ownership, even when their phone matches an account. Contact names/phones and delivery text are saved as snapshots for order responses, notifications and iiko; later profile/address changes do not rewrite them.
+
+Guest checkout uses the server-issued `citypark_guest_checkout` cookie. A first request (or an invalid/expired cookie) issues `Set-Cookie: citypark_guest_checkout=<signed-proof>; Path=/api/v1/orders; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`. Forward that cookie on retries to reuse an unpaid order; without it each request starts a new scope. The cookie expires absolutely after 24 hours, grants no access to order history/details, and is never returned in JSON. Use HTTPS. A server-side frontend must forward the backend cookie explicitly; this task does not add frontend cookie handling. Guest identifiers are stored only as hashes.
+
+All order HTTP responses, including errors, send `Cache-Control: private, no-store`.
 
 #### GET /orders/my
 
-Lists the signed-in user's orders, newest first.
+Lists orders owned by the signed-in account, newest first. Ownership uses `account_id`, independently of the checkout contact or phone. Guest orders are excluded, even when the phone matches. There is no guest-order claiming.
 
 - **Role:** user
 
@@ -1751,7 +1758,9 @@ Returns one order.
 
 **Notes**
 
-An admin can read any order. For a normal user someone else's order looks the same as a missing one.
+An admin can read any order. A customer can read only an order whose `account_id` matches their authenticated account. Orders owned by another account and unowned guest orders return the same 404 as a missing order, including when their checkout phone matches the customer.
+
+`customer.name`, `customer.phone`, `address.city` and `address.address` are checkout snapshots. `customer.id` is the legacy contact ID, not proof of ownership. Pickup has `address: null`; if the source address was deleted, its snapshot survives with `address.id: 0`. Legacy rows without snapshots fall back to their existing contact/address references. Owner IDs and guest scopes are not exposed. Responses send `Cache-Control: private, no-store`.
 
 #### GET /orders/live
 
@@ -1898,6 +1907,8 @@ The `errors` object of a search 400 lists every invalid field:
 `q` matches the order number, any part of the customer's phone and the customer's name (case-insensitive). `%` and `_` in `q` are matched literally.
 
 `from` and `to` are local dates (`APP_TIMEZONE`), both inclusive. `from` or `to` alone is allowed. An empty parameter (`?status=`) is the same as a missing one.
+
+Search by name/phone uses checkout snapshots, so editing the contact profile does not change historical matches. Response fields retain their existing shape. Responses send `Cache-Control: private, no-store`.
 
 #### POST /orders/{id}/items
 

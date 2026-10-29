@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/testutil"
@@ -39,7 +40,7 @@ var (
 
 func newRouter(e *svcEnv, opts HandlerOptions) http.Handler {
 	r := chi.NewRouter()
-	NewHandler(e.svc, nil, opts).Routes(r)
+	NewHandler(e.svc, auth.NewTokens("secret", time.Hour, e.svc.clock), opts).Routes(r)
 	return r
 }
 

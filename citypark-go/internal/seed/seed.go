@@ -157,6 +157,7 @@ func Run(ctx context.Context, db *sqlx.DB) (Summary, error) {
 		for _, o := range delivery {
 			p := order.InsertParams{
 				CustomerID:    userID,
+				AccountID:     &userID,
 				AddressID:     o.addressID,
 				DeliveryPrice: o.price,
 			}

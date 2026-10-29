@@ -67,10 +67,11 @@ func newSvcEnv(t *testing.T, now time.Time) *svcEnv {
 
 func (e *svcEnv) input(withAddress bool) CreateInput {
 	in := CreateInput{
-		Phone:   "8 (999) 111-22-33",
-		Name:    "  Пётр ",
-		Comment: " без лука ",
-		Items:   []ItemInput{{ProductID: e.productA, Amount: 1}},
+		GuestCheckoutID: "test-checkout",
+		Phone:           "8 (999) 111-22-33",
+		Name:            "  Пётр ",
+		Comment:         " без лука ",
+		Items:           []ItemInput{{ProductID: e.productA, Amount: 1}},
 	}
 	if withAddress {
 		in.Address = &address.Input{City: "Сочи", Address: "Ленина, 1"}
@@ -290,8 +291,8 @@ func TestCreateOnline(t *testing.T) {
 	if len(o.Items) != 1 || o.Items[0].ProductID != e.productA || o.Items[0].Amount != 1 || o.Items[0].OfferedPrice != 59900 {
 		t.Errorf("Items = %+v", o.Items)
 	}
-	if n := e.count(t, `SELECT count(*) FROM user_addresses WHERE user_id = $1`, o.Customer.ID); n != 1 {
-		t.Errorf("user_addresses links = %d, want 1", n)
+	if n := e.count(t, `SELECT count(*) FROM user_addresses WHERE user_id = $1`, o.Customer.ID); n != 0 {
+		t.Errorf("user_addresses links = %d, want 0", n)
 	}
 }
 

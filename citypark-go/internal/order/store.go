@@ -18,9 +18,11 @@ import (
 // Callers append a WHERE clause.
 const selectOrders = `
 SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id,
-       o.delivery_price_kopecks, o.iiko_order_id,
-       u.id AS customer_id, u.name AS customer_name, u.phone AS customer_phone,
-       a.id AS address_id, a.city AS address_city, a.address AS address_text
+       o.delivery_price_kopecks, o.iiko_order_id, o.account_id,
+       u.id AS customer_id, COALESCE(o.contact_name, u.name) AS customer_name,
+       COALESCE(o.contact_phone, u.phone) AS customer_phone,
+       o.address_id, COALESCE(o.delivery_city, a.city) AS address_city,
+       COALESCE(o.delivery_address, a.address) AS address_text
 FROM orders o
 JOIN users u ON u.id = o.customer_id
 LEFT JOIN addresses a ON a.id = o.address_id
@@ -33,13 +35,17 @@ type InsertItem struct {
 }
 
 type InsertParams struct {
-	CustomerID    int64
-	AddressID     *int64
-	Comment       string
-	DeliveryTime  string
-	ItemsHash     string
-	DeliveryPrice money.Kopecks
-	Items         []InsertItem
+	CustomerID        int64
+	AccountID         *int64
+	GuestCheckoutHash string
+	ContactName       *string
+	ContactPhone      *string
+	AddressID         *int64
+	Comment           string
+	DeliveryTime      string
+	ItemsHash         string
+	DeliveryPrice     money.Kopecks
+	Items             []InsertItem
 }
 
 type Store struct{ db store.DBTX }
@@ -51,6 +57,7 @@ func NewStore(db store.DBTX) *Store {
 // orderRow is one flat row of selectOrders.
 type orderRow struct {
 	ID            int64     `db:"id"`
+	AccountID     *int64    `db:"account_id"`
 	CreatedAt     time.Time `db:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at"`
 	Status        string    `db:"status"`
@@ -71,6 +78,7 @@ type orderRow struct {
 func (r orderRow) toOrder() Order {
 	o := Order{
 		ID:            r.ID,
+		AccountID:     r.AccountID,
 		CreatedAt:     r.CreatedAt,
 		UpdatedAt:     r.UpdatedAt,
 		Status:        r.Status,
@@ -83,9 +91,11 @@ func (r orderRow) toOrder() Order {
 		PaymentID:     r.PaymentID,
 		IikoOrderID:   r.IikoOrderID,
 	}
-	if r.AddressID != nil {
-		// city and address are NOT NULL in addresses, so they are set whenever the id is.
-		o.Address = &Address{ID: *r.AddressID, City: *r.AddressCity, Address: *r.AddressText}
+	if r.AddressCity != nil && r.AddressText != nil {
+		o.Address = &Address{City: *r.AddressCity, Address: *r.AddressText}
+		if r.AddressID != nil {
+			o.Address.ID = *r.AddressID
+		}
 	}
 	return o
 }
@@ -95,9 +105,15 @@ func (r orderRow) toOrder() Order {
 func (s *Store) Insert(ctx context.Context, p InsertParams) (int64, error) {
 	var id int64
 	err := s.db.GetContext(ctx, &id,
-		`INSERT INTO orders (customer_id, address_id, comment, delivery_time, items_hash, delivery_price_kopecks)
-		 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-		p.CustomerID, p.AddressID, p.Comment, p.DeliveryTime, p.ItemsHash, int64(p.DeliveryPrice))
+		`INSERT INTO orders (customer_id, address_id, comment, delivery_time, items_hash, delivery_price_kopecks,
+           account_id, guest_checkout_hash, contact_name, contact_phone, delivery_city, delivery_address)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''),
+                COALESCE($9, (SELECT name FROM users WHERE id = $1)),
+                COALESCE($10, (SELECT phone FROM users WHERE id = $1)),
+                (SELECT city FROM addresses WHERE id = $2),
+                (SELECT address FROM addresses WHERE id = $2)) RETURNING id`,
+		p.CustomerID, p.AddressID, p.Comment, p.DeliveryTime, p.ItemsHash, int64(p.DeliveryPrice),
+		p.AccountID, p.GuestCheckoutHash, p.ContactName, p.ContactPhone)
 	if err != nil {
 		return 0, err
 	}
@@ -152,9 +168,9 @@ func (f ListFilter) where() (string, []any) {
 		if digitsOnly.MatchString(q) && len(q) <= 18 {
 			id, _ := strconv.ParseInt(q, 10, 64) // 18 digits always fit in int64
 			args = append(args, id, "%"+q+"%")
-			conds = append(conds, fmt.Sprintf("(o.id = $%d OR u.phone LIKE $%d)", len(args)-1, len(args)))
+			conds = append(conds, fmt.Sprintf("(o.id = $%d OR COALESCE(o.contact_phone, u.phone) LIKE $%d)", len(args)-1, len(args)))
 		} else {
-			add("(u.name ILIKE $%[1]d OR u.phone LIKE $%[1]d)", "%"+likeEscaper.Replace(q)+"%")
+			add("(COALESCE(o.contact_name, u.name) ILIKE $%[1]d OR COALESCE(o.contact_phone, u.phone) LIKE $%[1]d)", "%"+likeEscaper.Replace(q)+"%")
 		}
 	}
 	if f.From != nil {
@@ -195,17 +211,17 @@ func (s *Store) List(ctx context.Context, f ListFilter, limit, offset int) ([]Or
 	return orders, total, nil
 }
 
-// ListByCustomer returns one customer's orders, newest first, and the total count.
-func (s *Store) ListByCustomer(ctx context.Context, customerID int64, limit, offset int) ([]Order, int, error) {
+// ListByAccount returns one account's orders, newest first, and the total count.
+func (s *Store) ListByAccount(ctx context.Context, accountID int64, limit, offset int) ([]Order, int, error) {
 	var total int
-	err := s.db.GetContext(ctx, &total, `SELECT count(*) FROM orders WHERE customer_id = $1`, customerID)
+	err := s.db.GetContext(ctx, &total, `SELECT count(*) FROM orders WHERE account_id = $1`, accountID)
 	if err != nil {
 		return nil, 0, err
 	}
 	var rows []orderRow
 	err = s.db.SelectContext(ctx, &rows,
-		selectOrders+`WHERE o.customer_id = $1 ORDER BY o.id DESC LIMIT $2 OFFSET $3`,
-		customerID, limit, offset)
+		selectOrders+`WHERE o.account_id = $1 ORDER BY o.id DESC LIMIT $2 OFFSET $3`,
+		accountID, limit, offset)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -231,45 +247,27 @@ func (s *Store) withItems(ctx context.Context, rows []orderRow) ([]Order, error)
 	return orders, nil
 }
 
-const (
-	selectDuplicatePickup = `
-SELECT o.id
-FROM orders o
-JOIN users u ON u.id = o.customer_id
-LEFT JOIN addresses a ON a.id = o.address_id
-WHERE o.status IN ('new', 'pending')
-  AND u.phone = $1
-  AND o.comment = $2
-  AND o.items_hash = $3
-  AND o.delivery_time = $4
-  AND o.address_id IS NULL
-ORDER BY o.id DESC
-LIMIT 1`
+// DuplicateScope identifies the authenticated owner or a server-issued guest checkout.
+type DuplicateScope struct {
+	AccountID         *int64
+	GuestCheckoutHash string
+}
 
-	selectDuplicateDelivery = `
-SELECT o.id
-FROM orders o
-JOIN users u ON u.id = o.customer_id
-LEFT JOIN addresses a ON a.id = o.address_id
-WHERE o.status IN ('new', 'pending')
-  AND u.phone = $1
-  AND o.comment = $2
-  AND o.items_hash = $3
-  AND o.delivery_time = $4
-  AND a.city = $5 AND a.address = $6
-ORDER BY o.id DESC
-LIMIT 1`
-)
-
-// FindOpenDuplicate looks for an online order with status new or pending and the same
-// customer phone, address (nil = no address), comment, delivery time and items hash.
-// Only City and Address of addr are used.
-func (s *Store) FindOpenDuplicate(ctx context.Context, phone string, addr *Address, comment, deliveryTime, itemsHash string) (id int64, found bool, err error) {
-	if addr == nil {
-		err = s.db.GetContext(ctx, &id, selectDuplicatePickup, phone, comment, itemsHash, deliveryTime)
-	} else {
-		err = s.db.GetContext(ctx, &id, selectDuplicateDelivery, phone, comment, itemsHash, deliveryTime, addr.City, addr.Address)
+// FindOpenDuplicate never matches by phone alone or an empty guest scope.
+func (s *Store) FindOpenDuplicate(ctx context.Context, scope DuplicateScope, name, phone string, addr *Address, comment, deliveryTime, itemsHash string) (id int64, found bool, err error) {
+	var city, addressText *string
+	if addr != nil {
+		city, addressText = &addr.City, &addr.Address
 	}
+	err = s.db.GetContext(ctx, &id, `SELECT o.id FROM orders o
+ WHERE o.status IN ('new', 'pending')
+ AND (($1::bigint IS NOT NULL AND o.account_id = $1)
+      OR ($1::bigint IS NULL AND o.account_id IS NULL AND $2 <> '' AND o.guest_checkout_hash = $2))
+ AND o.contact_name = $3 AND o.contact_phone = $4 AND o.comment = $5
+ AND o.delivery_time = $6 AND o.items_hash = $7
+ AND o.delivery_city IS NOT DISTINCT FROM $8::text
+ AND o.delivery_address IS NOT DISTINCT FROM $9::text
+ ORDER BY o.id DESC LIMIT 1`, scope.AccountID, scope.GuestCheckoutHash, name, phone, comment, deliveryTime, itemsHash, city, addressText)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, false, nil
 	}

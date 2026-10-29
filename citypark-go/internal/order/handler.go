@@ -41,7 +41,14 @@ func NewHandler(svc *Service, tokens *auth.Tokens, opts HandlerOptions) *Handler
 // Routes registers POST /orders, which is public and limited to the working hours,
 // the read endpoints for users and admins, and the admin routes that change an order.
 func (h *Handler) Routes(r chi.Router) {
-	r.With(WorkingHours(h.svc.clock, h.opts.Hours)).
+	r.Group(func(r chi.Router) {
+		r.Use(privateOrders)
+		h.routes(r)
+	})
+}
+
+func (h *Handler) routes(r chi.Router) {
+	r.With(h.tokens.Optional, WorkingHours(h.svc.clock, h.opts.Hours)).
 		Post("/orders", httpx.Handle(h.create))
 
 	r.Post("/webhooks/moneta", h.moneta)
@@ -98,7 +105,7 @@ func (h *Handler) listMine(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	id, _ := auth.FromContext(r.Context())
-	orders, count, err := NewStore(h.svc.db).ListByCustomer(r.Context(), id.UserID, limit, offset)
+	orders, count, err := NewStore(h.svc.db).ListByAccount(r.Context(), id.UserID, limit, offset)
 	if err != nil {
 		return err
 	}
@@ -187,7 +194,7 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	who, _ := auth.FromContext(r.Context())
-	if who.Role != auth.RoleAdmin && o.Customer.ID != who.UserID {
+	if who.Role != auth.RoleAdmin && (o.AccountID == nil || *o.AccountID != who.UserID) {
 		// do not reveal that someone else's order exists
 		return httpx.NotFound()
 	}
@@ -214,6 +221,25 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) error {
 				workinghours.Display(hours.Start) + " до " + workinghours.Display(hours.End)}
 			return e
 		}
+	}
+	if _, signedIn := auth.FromContext(r.Context()); !signedIn {
+		var guestID string
+		if cookie, err := r.Cookie("citypark_guest_checkout"); err == nil {
+			guestID, _ = h.tokens.GuestCheckoutID(cookie.Value)
+		}
+		if guestID == "" {
+			proof, err := h.tokens.IssueGuestCheckout()
+			if err != nil {
+				return err
+			}
+			guestID, err = h.tokens.GuestCheckoutID(proof)
+			if err != nil {
+				return err
+			}
+			http.SetCookie(w, &http.Cookie{Name: "citypark_guest_checkout", Value: proof,
+				Path: "/api/v1/orders", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode, MaxAge: 86400})
+		}
+		in.GuestCheckoutID = guestID
 	}
 	res, err := h.svc.Create(r.Context(), in)
 	if err != nil {
@@ -300,4 +326,12 @@ func (h *Handler) confirm(w http.ResponseWriter, r *http.Request) error {
 	}
 	httpx.JSON(w, http.StatusOK, o)
 	return nil
+}
+
+// privateOrders also covers authentication failures, before a handler is called.
+func privateOrders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "private, no-store")
+		next.ServeHTTP(w, r)
+	})
 }

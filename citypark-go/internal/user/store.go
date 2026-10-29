@@ -16,8 +16,8 @@ type User struct {
 	Name               string    `db:"name"`
 	Email              *string   `db:"email"`
 	Phone              string    `db:"phone"`
-	PasswordHash       string    `db:"password_hash"`
-	LegacyPasswordHash string    `db:"legacy_password_hash"`
+	PasswordHash       string    `db:"password_hash" json:"-"`
+	LegacyPasswordHash string    `db:"legacy_password_hash" json:"-"`
 	Role               string    `db:"role"`
 }
 
@@ -110,19 +110,15 @@ func (s *Store) SetPasswordHash(ctx context.Context, id int64, hash string) erro
 	return nil
 }
 
-// UpsertCustomer returns the user with this phone, creating it (role "user", no email,
-// no password) when missing. An existing user gets the new name.
+// UpsertCustomer finds or creates a checkout contact without changing an existing
+// profile. A matching phone establishes neither authentication nor ownership.
 func (s *Store) UpsertCustomer(ctx context.Context, name, phone string) (User, error) {
-	var u User
-	err := s.db.GetContext(ctx, &u,
-		`INSERT INTO users (name, phone) VALUES ($1, $2)
-		 ON CONFLICT (phone) DO UPDATE SET name = EXCLUDED.name, updated_at = now()
-		 RETURNING `+columns,
-		name, phone)
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO users (name, phone) VALUES ($1, $2) ON CONFLICT (phone) DO NOTHING`, name, phone)
 	if err != nil {
 		return User{}, err
 	}
-	return u, nil
+	return s.ByPhone(ctx, phone)
 }
 
 // one runs a query that returns at most one user row and maps "no rows" to store.ErrNotFound.

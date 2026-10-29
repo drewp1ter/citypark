@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/go-chi/chi/v5"
@@ -141,5 +142,59 @@ func TestNewContextRoundTrip(t *testing.T) {
 	got, ok := FromContext(NewContext(context.Background(), want))
 	if !ok || got != want {
 		t.Errorf("FromContext = %+v, %v; want %+v, true", got, ok, want)
+	}
+}
+
+func TestOptional(t *testing.T) {
+	tokens := newTokens("secret", t0)
+	user, err := tokens.Issue(42, RoleUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	admin, err := tokens.Issue(7, RoleAdmin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expired, err := newTokens("secret", t0.Add(-48*time.Hour)).Issue(42, RoleUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name    string
+		headers []string
+		status  int
+		userID  int64
+	}{
+		{"absent", nil, 200, 0}, {"empty", []string{""}, 401, 0},
+		{"scheme", []string{"Basic x"}, 401, 0}, {"empty bearer", []string{"Bearer "}, 401, 0},
+		{"garbage", []string{"Bearer bad"}, 401, 0}, {"expired", []string{"Bearer " + expired}, 401, 0},
+		{"repeated", []string{"Bearer " + user, "Bearer " + user}, 401, 0},
+		{"user", []string{"Bearer " + user}, 200, 42}, {"admin", []string{"Bearer " + admin}, 200, 7},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			called := false
+			h := tokens.Optional(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				called = true
+				who, ok := FromContext(r.Context())
+				if who.UserID != tt.userID || ok != (tt.userID != 0) {
+					t.Errorf("identity = %+v, %v", who, ok)
+				}
+				w.WriteHeader(200)
+			}))
+			req := httptest.NewRequest("GET", "/", nil)
+			for _, v := range tt.headers {
+				req.Header.Add("Authorization", v)
+			}
+			rec := httptest.NewRecorder()
+			h.ServeHTTP(rec, req)
+			if tt.status == 401 {
+				checkResponse(t, rec, 401, bodyUnauthorized)
+			} else if rec.Code != 200 {
+				t.Fatal(rec.Code)
+			}
+			if called != (tt.status == 200) {
+				t.Errorf("handler called = %v", called)
+			}
+		})
 	}
 }

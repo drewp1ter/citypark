@@ -41,11 +41,12 @@ func insertOrder(t *testing.T, db *sqlx.DB, p InsertParams) int64 {
 
 func (s seeded) params(withAddress bool) InsertParams {
 	p := InsertParams{
-		CustomerID:    s.userID,
-		Comment:       "позвонить",
-		DeliveryTime:  "18:30",
-		ItemsHash:     ItemsHash([]ItemInput{{ProductID: s.productA, Amount: 2}, {ProductID: s.productB, Amount: 1}}),
-		DeliveryPrice: money.Kopecks(15000),
+		CustomerID:        s.userID,
+		GuestCheckoutHash: "test-guest",
+		Comment:           "позвонить",
+		DeliveryTime:      "18:30",
+		ItemsHash:         ItemsHash([]ItemInput{{ProductID: s.productA, Amount: 2}, {ProductID: s.productB, Amount: 1}}),
+		DeliveryPrice:     money.Kopecks(15000),
 		Items: []InsertItem{
 			{ProductID: s.productA, Amount: 2, OfferedPrice: 59900},
 			{ProductID: s.productB, Amount: 1, OfferedPrice: 10000},

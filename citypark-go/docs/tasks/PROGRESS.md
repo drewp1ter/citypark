@@ -113,5 +113,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Customer accounts and Telegram Mini App
 - [x] 66 Order ownership migration [65]
+- [x] 67 Order contact and ownership safety [66]
 
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).

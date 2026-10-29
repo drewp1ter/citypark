@@ -217,8 +217,8 @@ func TestUpsertCustomer(t *testing.T) {
 	if second.ID != first.ID {
 		t.Errorf("id = %d, want %d", second.ID, first.ID)
 	}
-	if second.Name != "Второй" {
-		t.Errorf("Name = %q, want %q", second.Name, "Второй")
+	if second.Name != "Первый" {
+		t.Errorf("Name = %q, want %q", second.Name, "Первый")
 	}
 	if n := testutil.Count(t, db, `SELECT count(*) FROM users`); n != 1 {
 		t.Errorf("users rows = %d, want 1", n)
