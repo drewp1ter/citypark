@@ -124,7 +124,7 @@ Registers a new customer account.
 
 **Notes**
 
-With customer auth disabled, the response is always `201 {}`, also when the email or phone is already registered. Multiple accounts may omit phone. The server does not reveal whether an account exists, so no token is returned: call `POST /auth/sign-in` afterwards. When customer auth is enabled, this legacy customer registration returns 503 `Вход временно недоступен` until verified registration is introduced. `is_email_confirmed` is not exposed in JSON. Responses use `Cache-Control: private, no-store`.
+With customer auth disabled, the response is always `201 {}`, also when the email or phone is already registered. Multiple accounts may omit phone. The server does not reveal whether an account exists, so no token is returned: call `POST /auth/sign-in` afterwards. When customer auth is enabled, this legacy customer registration returns 503 `Вход временно недоступен` because verified registration uses `/auth/customer/register`. `is_email_confirmed` is not exposed in JSON. Responses use `Cache-Control: private, no-store`.
 
 #### POST /auth/sign-in
 
@@ -160,7 +160,220 @@ Signs a user in and returns a token.
 
 **Notes**
 
-Send the token as `Authorization: Bearer <token>` on later requests. This route keeps issuing staff JWTs. When customer auth is enabled, it stops issuing customer JWTs until the new verified sign-in route is available. Unknown email and wrong password give the same 401. Responses use `Cache-Control: private, no-store`.
+Send the token as `Authorization: Bearer <token>` on later requests. This route keeps issuing staff JWTs. When customer auth is enabled, it stops issuing customer JWTs because verified customers use `/auth/customer/sign-in`. Unknown email and wrong password give the same 401. Responses use `Cache-Control: private, no-store`.
+
+#### POST /auth/customer/register
+
+Creates a pending password account and sends a verification link.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `name` | string | yes | at most 80 characters |
+| `email` | string | yes | valid email; trimmed and lowercased |
+| `phone` | string | no | Russian phone; normalized to `+7XXXXXXXXXX` |
+| `password` | string | yes | 8–64 characters |
+
+```json
+{"name":"Иван","email":"ivan@example.com","password":"example-password"}
+```
+
+**Response 202**
+
+```json
+{"message":"Если адрес доступен, письмо с подтверждением отправлено"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or fields | `Некорректный JSON` or validation message with `errors` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+Duplicates, occupied contact email or phone, failed delivery and send limits return the same 202. Existing credentials are not changed. Verification links open `/account/verify?token=...`; opening the link does not consume the proof. All responses use `Cache-Control: private, no-store`.
+
+#### POST /auth/customer/verification/resend
+
+Sends a new proof to a pending email account; invalidates its previous proof.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `email` | string | yes | valid email; trimmed and lowercased |
+
+```json
+{"email":"ivan@example.com"}
+```
+
+**Response 202**
+
+```json
+{"message":"Если адрес доступен, письмо с подтверждением отправлено"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or email | `Некорректный JSON` or validation message with `errors` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+Unknown, verified, limited and delivery failure cases return the same 202. Send limits are 3 per email and 10 per direct IP per hour. All responses use `Cache-Control: private, no-store`.
+
+#### POST /auth/customer/verification/confirm
+
+Consumes a 24-hour verification proof and enables password sign-in. It does not create a session.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `token` | string | yes | proof from verification email |
+
+```json
+{"token":"<proof>"}
+```
+
+**Response 200**
+
+```json
+{"verified":true}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or missing token | `Некорректный JSON` or validation message with `errors` |
+| 400 | invalid, expired or used proof | `Ссылка недействительна или устарела` |
+| 429 | more than 20 attempts per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+429 includes `Retry-After` in seconds. All responses use `Cache-Control: private, no-store`.
+
+#### POST /auth/customer/sign-in
+
+Checks a verified password credential and creates a 30-day web session.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `email` | string | yes | valid email; trimmed and lowercased |
+| `password` | string | yes | password |
+
+```json
+{"email":"ivan@example.com","password":"example-password"}
+```
+
+**Response 200**
+
+```json
+{"user":{"id":1,"name":"Иван","email":"ivan@example.com","phone":"","role":"user"},"token":"cs_<random>","expiresAt":"2026-11-28T12:00:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or fields | `Некорректный JSON` or validation message with `errors` |
+| 401 | unknown, wrong, unverified or admin credential | `неверный логин или пароль.` |
+| 429 | more than 10 attempts per email or 30 per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+429 includes `Retry-After` seconds. Use `Authorization: Bearer cs_<random>` on later requests. All responses use `Cache-Control: private, no-store`.
+
+#### POST /customer/email/change
+
+Stages a new email for an existing password account and sends a proof. The current email remains usable.
+
+- **Role:** customer web session authenticated within 5 minutes
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `email` | string | yes | valid email; trimmed and lowercased |
+
+```json
+{"email":"new@example.com"}
+```
+
+**Response 202**
+
+```json
+{"message":"Если адрес доступен, письмо с подтверждением отправлено"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or email | `Некорректный JSON` or validation message with `errors` |
+| 401 | missing or invalid session | `Требуется авторизация` |
+| 403 | stale, non-web or ineligible account | `Подтвердите вход повторно` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+An occupied email, send limit and failed delivery give the same 202. Proof links open `/account/email?token=...` and require a separate POST to confirm. All responses use `Cache-Control: private, no-store`.
+
+#### POST /customer/email/confirm
+
+Consumes a change proof, switches the email identity and revokes all other sessions.
+
+- **Role:** same customer web account authenticated within 5 minutes
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `token` | string | yes | proof from change email |
+
+```json
+{"token":"<proof>"}
+```
+
+**Response 200**
+
+```json
+{"verified":true}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or missing token | `Некорректный JSON` or validation message with `errors` |
+| 400 | invalid, expired, used or another account's proof | `Ссылка недействительна или устарела` |
+| 401 | missing or invalid session | `Требуется авторизация` |
+| 403 | stale or non-web session | `Подтвердите вход повторно` |
+| 409 | email was reserved before confirmation | `Способ входа уже используется` |
+| 429 | more than 20 confirmations per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+The 409 transaction rolls back proof consumption, so the user may retry. 429 includes `Retry-After` seconds. All responses use `Cache-Control: private, no-store`.
 
 #### POST /auth/customer/logout
 

@@ -85,7 +85,7 @@ func (s *Service) IssueEmailToken(ctx context.Context, userID int64, purpose, em
 	if err != nil {
 		return "", err
 	}
-	paths := map[string]string{"verify": "/verify-email", "reset": "/reset-password", "change-email": "/change-email"}
+	paths := map[string]string{"verify": "/account/verify", "reset": "/account/reset-password", "change-email": "/account/email"}
 	link := s.publicOrigin + paths[purpose] + "?token=" + url.QueryEscape(raw)
 	// The proof appears only in the delivered message and the return value.
 	subject := map[string]string{"verify": "Подтвердите адрес электронной почты", "reset": "Восстановление пароля", "change-email": "Подтвердите новый адрес электронной почты"}[purpose]

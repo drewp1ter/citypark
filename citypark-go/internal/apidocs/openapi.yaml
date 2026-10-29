@@ -1167,6 +1167,228 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/CustomerDisabled'
+  /auth/customer/register:
+    post:
+      tags: [auth]
+      summary: Create pending password account and send verification proof
+      description: 'Role: public. Collisions, limits and email delivery errors return generic 202. Cache-Control: private, no-store on all responses.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password]
+              properties:
+                name: {type: string, maxLength: 80}
+                email: {type: string, format: email}
+                phone: {type: string, description: Optional normalized Russian phone}
+                password: {type: string, minLength: 8, maxLength: 64}
+            example: {name: Иван, email: 'ivan@example.com', password: 'example-password'}
+      responses:
+        '202':
+          description: 'Generic result, including existing account and mail failure.'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string}
+              example: {message: 'Если адрес доступен, письмо с подтверждением отправлено'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /auth/customer/verification/resend:
+    post:
+      tags: [auth]
+      summary: Resend verification proof to a pending account
+      description: 'Role: public. Generic 202 for unknown, verified, limited or mail failure. Cache-Control: private, no-store.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, format: email}
+            example: {email: 'ivan@example.com'}
+      responses:
+        '202':
+          description: Generic result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string}
+              example: {message: 'Если адрес доступен, письмо с подтверждением отправлено'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /auth/customer/verification/confirm:
+    post:
+      tags: [auth]
+      summary: Confirm a 24-hour email proof
+      description: 'Role: public. No session is issued. Cache-Control: private, no-store.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: {type: string}
+            example: {token: '<proof>'}
+      responses:
+        '200':
+          description: Email confirmed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified: {type: boolean}
+              example: {verified: true}
+        '400':
+          description: 'Bad request or invalid, expired or used proof: Ссылка недействительна или устарела.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: 'Confirmation limit; Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /auth/customer/sign-in:
+    post:
+      tags: [auth]
+      summary: Sign in with a verified password credential
+      description: 'Role: public. Unknown, wrong, unverified and admin credentials all return 401 неверный логин или пароль. Cache-Control: private, no-store.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: {type: string, format: email}
+                password: {type: string}
+            example: {email: 'ivan@example.com', password: 'example-password'}
+      responses:
+        '200':
+          description: Customer session issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user: {$ref: '#/components/schemas/User'}
+                  token: {type: string}
+                  expiresAt: {type: string, format: date-time}
+              example:
+                user: {id: 1, name: Иван, email: 'ivan@example.com', phone: '', role: user}
+                token: 'cs_<random>'
+                expiresAt: '2026-11-28T12:00:00Z'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '429':
+          description: 'Sign-in limit; Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /customer/email/change:
+    post:
+      tags: [auth]
+      summary: Stage a new email and send proof
+      description: 'Role: recent customer web session. Current email stays active. Cache-Control: private, no-store.'
+      security:
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, format: email}
+            example: {email: 'new@example.com'}
+      responses:
+        '202':
+          description: Generic result, including occupied email and mail failure.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string}
+              example: {message: 'Если адрес доступен, письмо с подтверждением отправлено'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: 'Stale or ineligible session: Подтвердите вход повторно.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /customer/email/confirm:
+    post:
+      tags: [auth]
+      summary: Confirm staged email and revoke other sessions
+      description: 'Role: same recent customer web account. Cache-Control: private, no-store.'
+      security:
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: {type: string}
+            example: {token: '<proof>'}
+      responses:
+        '200':
+          description: Email changed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified: {type: boolean}
+              example: {verified: true}
+        '400':
+          description: 'Bad request or invalid proof: Ссылка недействительна или устарела.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: 'Stale or non-web session: Подтвердите вход повторно.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '409':
+          description: 'Email reserved before confirmation: Способ входа уже используется.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: 'Confirmation limit; Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
   /auth/customer/logout:
     post:
       summary: Revoke the current customer session
