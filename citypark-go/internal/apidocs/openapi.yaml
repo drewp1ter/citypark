@@ -1167,6 +1167,56 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/CustomerDisabled'
+  /auth/customer/google/start:
+    post:
+      tags: [auth]
+      summary: Start a Google authorization attempt
+      description: 'Role: public login or recent (five minutes) customer web session link. No sign-in occurs yet. The ten-minute attempt stores hashed state, nonce and browser flow token plus a backend-only PKCE verifier. All responses send Cache-Control: private, no-store.'
+      security:
+        - {}
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [intent]
+              properties:
+                intent: {type: string, enum: [login, link]}
+            example: {intent: login}
+      responses:
+        '200':
+          description: Authorization URL and browser-bound flow token.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, flowToken, expiresAt]
+                properties:
+                  authorizationUrl: {type: string, format: uri}
+                  flowToken: {type: string}
+                  expiresAt: {type: string, format: date-time}
+              example: {authorizationUrl: 'https://accounts.google.com/o/oauth2/v2/auth?client_id=client-id&code_challenge=...&code_challenge_method=S256&nonce=...&redirect_uri=https%3A%2F%2Fsite.example%2Faccount%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=...', flowToken: '<random>', expiresAt: '2026-10-29T12:10:00Z'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: 'Mini session: Откройте сайт для подключения Google. Stale web session: Подтвердите вход повторно.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: '20 starts per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Google or customer auth disabled. Вход через Google недоступен.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
   /auth/customer/register:
     post:
       tags: [auth]

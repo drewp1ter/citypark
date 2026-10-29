@@ -73,6 +73,9 @@ func (l *Limits) Confirm(r *http.Request) (bool, int) {
 func (l *Limits) Reset(r *http.Request) (bool, int) {
 	return l.allow("reset-ip:"+directIP(r), 20, 15*time.Minute)
 }
+func (l *Limits) GoogleStart(r *http.Request) (bool, int) {
+	return l.allow("google-start-ip:"+directIP(r), 20, 15*time.Minute)
+}
 func retryAfter(w http.ResponseWriter, seconds int) {
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
 }

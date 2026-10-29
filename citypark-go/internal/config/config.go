@@ -21,6 +21,7 @@ type Config struct {
 	JWT                  JWT
 	CustomerAuthEnabled  bool
 	CustomerPublicOrigin string
+	Google               Google
 	SMTP                 SMTP
 	Admin                Admin
 	Iiko                 Iiko
@@ -62,6 +63,10 @@ type SMTP struct {
 	Port                              int
 	Username, Password, From, TLSMode string
 	Enabled                           bool
+}
+type Google struct {
+	ClientID, ClientSecret, CallbackURL string
+	Enabled                             bool
 }
 
 // LookupFunc has the signature of os.LookupEnv.
@@ -114,6 +119,14 @@ func Load(lookup LookupFunc) (Config, error) {
 	c.CustomerPublicOrigin = str("CUSTOMER_PUBLIC_ORIGIN", "http://localhost:3001")
 	if err := validateCustomerOrigin(c.CustomerPublicOrigin, c.Env); err != nil {
 		return Config{}, err
+	}
+	c.Google = Google{ClientID: str("GOOGLE_CLIENT_ID", ""), ClientSecret: str("GOOGLE_CLIENT_SECRET", ""), CallbackURL: str("GOOGLE_CALLBACK_URL", "")}
+	c.Google.Enabled = c.Google.ClientID != "" && c.Google.ClientSecret != "" && c.Google.CallbackURL != ""
+	if !c.Google.Enabled && (c.Google.ClientID != "" || c.Google.ClientSecret != "" || c.Google.CallbackURL != "") {
+		return Config{}, errors.New("Google configuration is incomplete")
+	}
+	if c.Google.Enabled && c.Google.CallbackURL != c.CustomerPublicOrigin+"/account/google/callback" {
+		return Config{}, errors.New("GOOGLE_CALLBACK_URL must match CUSTOMER_PUBLIC_ORIGIN/account/google/callback")
 	}
 	c.SMTP = SMTP{Host: str("SMTP_HOST", ""), Username: str("SMTP_USERNAME", ""), Password: str("SMTP_PASSWORD", ""), From: str("SMTP_FROM", ""), TLSMode: str("SMTP_TLS_MODE", "starttls")}
 	if c.SMTP.Port, err = positiveInt("SMTP_PORT", "587"); err != nil || c.SMTP.Port > 65535 {

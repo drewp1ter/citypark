@@ -162,6 +162,44 @@ Signs a user in and returns a token.
 
 Send the token as `Authorization: Bearer <token>` on later requests. This route keeps issuing staff JWTs. When customer auth is enabled, it stops issuing customer JWTs because verified customers use `/auth/customer/sign-in`. Unknown email and wrong password give the same 401. Responses use `Cache-Control: private, no-store`.
 
+#### POST /auth/customer/google/start
+
+Creates a ten-minute Google authorization attempt. It does not sign in or link an account yet.
+
+- **Role:** public login; recent customer web session for linking
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `intent` | string | yes | `login` or `link` |
+
+```json
+{"intent":"login"}
+```
+
+**Response 200**
+
+```json
+{"authorizationUrl":"https://accounts.google.com/o/oauth2/v2/auth?client_id=client-id&code_challenge=...&code_challenge_method=S256&nonce=...&redirect_uri=https%3A%2F%2Fsite.example%2Faccount%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=...","flowToken":"<random>","expiresAt":"2026-10-29T12:10:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | invalid intent | `Некорректный способ входа` |
+| 401 | linking without a valid customer session, or invalid supplied credential | `Требуется авторизация` |
+| 403 | linking from a Mini App session | `Откройте сайт для подключения Google` |
+| 403 | linking with a web session authenticated more than five minutes ago | `Подтвердите вход повторно` |
+| 429 | more than 20 starts per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | Google or customer authentication disabled | `Вход через Google недоступен` |
+
+**Notes**
+
+Store `flowToken` in an HttpOnly same-site cookie on the Next server. The backend stores only its hash. Send the browser to `authorizationUrl`; it requests only `openid email profile`, uses state and nonce, and uses PKCE S256. The callback must match `GOOGLE_CALLBACK_URL` exactly. No login is completed until task 74. All responses, including errors, use `Cache-Control: private, no-store`. 429 includes `Retry-After` in seconds.
+
 #### POST /auth/customer/register
 
 Creates a pending password account and sends a verification link.

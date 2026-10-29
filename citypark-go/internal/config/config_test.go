@@ -51,6 +51,36 @@ func TestLoadDefaults(t *testing.T) {
 	}
 }
 
+func TestGoogleConfig(t *testing.T) {
+	if c, err := Load(lookupMap(nil)); err != nil || c.Google.Enabled {
+		t.Fatalf("absent: %+v %v", c.Google, err)
+	}
+	valid := map[string]string{"CUSTOMER_PUBLIC_ORIGIN": "https://site.example", "GOOGLE_CLIENT_ID": "client", "GOOGLE_CLIENT_SECRET": "secret", "GOOGLE_CALLBACK_URL": "https://site.example/account/google/callback"}
+	if c, err := Load(lookupMap(valid)); err != nil || !c.Google.Enabled {
+		t.Fatalf("valid: %+v %v", c.Google, err)
+	}
+	for _, key := range []string{"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_CALLBACK_URL"} {
+		copy := map[string]string{}
+		for k, v := range valid {
+			copy[k] = v
+		}
+		delete(copy, key)
+		if _, err := Load(lookupMap(copy)); err == nil {
+			t.Errorf("missing %s accepted", key)
+		}
+	}
+	for _, callback := range []string{"http://site.example/account/google/callback", "https://other.example/account/google/callback", "https://site.example/account/google/other", "https://site.example/account/google/callback?next=x"} {
+		copy := map[string]string{}
+		for k, v := range valid {
+			copy[k] = v
+		}
+		copy["GOOGLE_CALLBACK_URL"] = callback
+		if _, err := Load(lookupMap(copy)); err == nil {
+			t.Errorf("unsafe callback accepted: %s", callback)
+		}
+	}
+}
+
 func TestLoadOverrides(t *testing.T) {
 	c, err := Load(lookupMap(map[string]string{
 		"APP_ENV":                              "test",

@@ -120,5 +120,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] [71 Verified email registration and sign-in](71-verified-email-auth.md) [70]
 
 - [x] [72 Customer password recovery](72-customer-password-reset.md) [71]
+- [x] [73 Google authorization start](73-google-authorization.md) [69, 71 (shared rate-limit helper)]
 
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).

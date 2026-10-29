@@ -17,6 +17,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/content"
 	"github.com/drewp1ter/citypark-go/internal/customer"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
+	"github.com/drewp1ter/citypark-go/internal/google"
 	"github.com/drewp1ter/citypark-go/internal/health"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
 	"github.com/drewp1ter/citypark-go/internal/iiko"
@@ -100,6 +101,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		user.NewHandler(users, tokens, adapter.Required(true)).Routes(r)
 		customer.NewHandler(users, sessions, adapter).Routes(r)
 		customer.NewEmailHandler(db, sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
+		google.NewHandler(google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, ""), sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
 		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize).Routes(r)
