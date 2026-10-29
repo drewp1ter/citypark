@@ -27,6 +27,18 @@ const nextConfig: NextConfig = {
 	// blocks the HMR connection and the page never hydrates (buttons like ThemeToggle do nothing).
 	allowedDevOrigins: ['gpubox', '172.19.0.2', '192.168.2.15', '192.168.4.15', 'new.cityparkvip.ru'],
 	images: remotePatterns.length > 0 ? { remotePatterns, dangerouslyAllowLocalIP: true } : undefined,
+	async headers() {
+		return [
+			{
+				// The worker file must never be cached, or a fixed worker would not reach visitors.
+				source: '/sw.js',
+				headers: [
+					{ key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+					{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+				],
+			},
+		]
+	},
 	turbopack: {
 		rules: {
 			'*.css': {

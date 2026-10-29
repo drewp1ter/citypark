@@ -75,3 +75,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 ## Delivery price
 - [x] 33 Free delivery from the town's threshold on checkout [26]
+
+## PWA
+- [x] 34 Installable site with an offline page
+  - Owner: the `menu` and `checkout-and-contacts` flows need the backend on :3000, which was down, so `qa:flows` stopped there; the other flows and `pwa.mjs` pass. Do the manual install check on HTTPS (Android Chrome, iOS Safari). Lighthouse was not run.
