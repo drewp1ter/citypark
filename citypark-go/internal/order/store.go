@@ -20,7 +20,7 @@ const selectOrders = `
 SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id,
        o.delivery_price_kopecks, o.iiko_order_id, o.account_id,
        u.id AS customer_id, COALESCE(o.contact_name, u.name) AS customer_name,
-       COALESCE(o.contact_phone, u.phone) AS customer_phone,
+       COALESCE(o.contact_phone, u.phone, '') AS customer_phone,
        o.address_id, COALESCE(o.delivery_city, a.city) AS address_city,
        COALESCE(o.delivery_address, a.address) AS address_text
 FROM orders o

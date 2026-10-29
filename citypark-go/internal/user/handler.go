@@ -25,6 +25,12 @@ func NewHandler(s *Store, tokens *auth.Tokens) *Handler {
 // Routes registers GET /user and PUT /user, both behind tokens.RequireRole(auth.RoleUser).
 func (h *Handler) Routes(r chi.Router) {
 	r.Group(func(r chi.Router) {
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.Header().Set("Cache-Control", "private, no-store")
+				next.ServeHTTP(w, req)
+			})
+		})
 		r.Use(h.tokens.RequireRole(auth.RoleUser))
 		r.Get("/user", httpx.Handle(h.me))
 		r.Put("/user", httpx.Handle(h.update))
@@ -51,6 +57,7 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) error {
 	if err := httpx.DecodeJSON(w, r, &req); err != nil {
 		return err
 	}
+	req.Email = normalizeEmail(req.Email)
 	if err := validate.Struct(req); err != nil {
 		return err
 	}
@@ -60,10 +67,10 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	params := UpdateParams{Name: req.Name, Phone: u.Phone}
-	if e := normalizeEmail(req.Email); e != "" {
-		params.Email = &e
+	if req.Email != "" && normalizeEmail(req.Email) != emailValue(u.Email) {
+		return httpx.NewError(http.StatusConflict, "Для изменения email подтвердите новый адрес")
 	}
+	params := UpdateParams{Name: req.Name, Phone: u.Phone}
 	if req.Phone != "" {
 		params.Phone, _ = validate.NormalizePhone(req.Phone)
 	}
@@ -80,6 +87,13 @@ func (h *Handler) update(w http.ResponseWriter, r *http.Request) error {
 	}
 	httpx.JSON(w, http.StatusOK, updated.Response())
 	return nil
+}
+
+func emailValue(email *string) string {
+	if email == nil {
+		return ""
+	}
+	return normalizeEmail(*email)
 }
 
 // current loads the user of the request. A token whose user was deleted is a 401.

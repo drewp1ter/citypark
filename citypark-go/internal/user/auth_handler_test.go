@@ -72,6 +72,9 @@ func TestSignUpCreatesUser(t *testing.T) {
 	if got := rec.Body.String(); got != "{}\n" {
 		t.Errorf("body = %q, want {}", got)
 	}
+	if got := rec.Header().Get("Cache-Control"); got != "private, no-store" {
+		t.Errorf("Cache-Control = %q", got)
+	}
 
 	u, err := user.NewStore(e.db).ByEmail(context.Background(), "ivan@example.com")
 	if err != nil {
@@ -107,6 +110,48 @@ func TestSignUpWithoutEmail(t *testing.T) {
 	}
 }
 
+func TestOptionalCustomerPhone(t *testing.T) {
+	e := newAuthEnv(t)
+	for _, email := range []string{"a@example.com", "b@example.com"} {
+		body := signUpBody()
+		body["email"] = email
+		delete(body, "phone")
+		rec := e.post(t, "/auth/sign-up", body)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("signup %s: %d %s", email, rec.Code, rec.Body)
+		}
+		u, err := user.NewStore(e.db).ByEmail(context.Background(), email)
+		if err != nil || u.Phone != "" || u.Response().Phone != "" {
+			t.Fatalf("user %s: %+v, %v", email, u, err)
+		}
+	}
+	if n := testutil.Count(t, e.db, `SELECT count(*) FROM users WHERE phone IS NULL`); n != 2 {
+		t.Errorf("absent phone count = %d", n)
+	}
+	for _, phone := range []string{"123", "+79991234567"} {
+		body := signUpBody()
+		body["email"] = phone + "@example.com"
+		body["phone"] = phone
+		rec := e.post(t, "/auth/sign-up", body)
+		if phone == "123" {
+			if rec.Code != http.StatusBadRequest {
+				t.Errorf("invalid phone status = %d", rec.Code)
+			}
+		} else if rec.Code != http.StatusCreated {
+			t.Errorf("valid phone status = %d", rec.Code)
+		}
+	}
+	body := signUpBody()
+	body["email"] = "another@example.com"
+	body["phone"] = "+79991234567"
+	if rec := e.post(t, "/auth/sign-up", body); rec.Code != http.StatusCreated {
+		t.Errorf("duplicate phone status = %d", rec.Code)
+	}
+	if n := testutil.Count(t, e.db, `SELECT count(*) FROM users WHERE phone='+79991234567'`); n != 1 {
+		t.Errorf("duplicate phone count = %d", n)
+	}
+}
+
 func TestSignUpValidation(t *testing.T) {
 	e := newAuthEnv(t)
 
@@ -118,7 +163,7 @@ func TestSignUpValidation(t *testing.T) {
 	if msg != "Ошибка валидации, пожалуйста проверьте введенные вами данные" {
 		t.Errorf("message = %q", msg)
 	}
-	for _, k := range []string{"name", "email", "phone", "password"} {
+	for _, k := range []string{"name", "email", "password"} {
 		if !keys[k] {
 			t.Errorf("errors has no key %q: %v", k, keys)
 		}
@@ -173,6 +218,9 @@ func TestSignInOK(t *testing.T) {
 	rec := e.post(t, "/auth/sign-in", map[string]any{"email": "ivan@example.com", "password": "secret-pass"})
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body %s", rec.Code, rec.Body)
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "private, no-store" {
+		t.Errorf("Cache-Control = %q", got)
 	}
 	var got struct {
 		ID    int64  `json:"id"`

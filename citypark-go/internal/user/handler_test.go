@@ -105,6 +105,9 @@ func TestMeDeletedUser(t *testing.T) {
 func TestUpdateProfile(t *testing.T) {
 	e := newUserEnv(t)
 	id := testutil.InsertUser(t, e.db, "user", "+79990000001", auth.RoleUser)
+	if _, err := e.db.Exec(`UPDATE users SET email = 'new@example.com' WHERE id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
 
 	rec := e.do(t, http.MethodPut, id, map[string]any{
 		"name":  "Новое имя",
@@ -141,7 +144,7 @@ func TestUpdateKeepsPhone(t *testing.T) {
 	}
 }
 
-func TestUpdateRemovesEmail(t *testing.T) {
+func TestUpdateKeepsEmail(t *testing.T) {
 	e := newUserEnv(t)
 	id := testutil.InsertUser(t, e.db, "user", "+79990000001", auth.RoleUser)
 	if _, err := e.db.Exec(`UPDATE users SET email = 'old@example.com' WHERE id = $1`, id); err != nil {
@@ -153,8 +156,43 @@ func TestUpdateRemovesEmail(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body %s", rec.Code, rec.Body)
 	}
-	if u := e.byID(t, id); u.Email != nil {
-		t.Errorf("email = %q, want NULL", *u.Email)
+	if u := e.byID(t, id); u.Email == nil || *u.Email != "old@example.com" {
+		t.Errorf("email = %v, want old@example.com", u.Email)
+	}
+}
+
+func TestProfileEmailProtection(t *testing.T) {
+	e := newUserEnv(t)
+	id := testutil.InsertUser(t, e.db, "user", "+79990000001", auth.RoleUser)
+	if _, err := e.db.Exec(`UPDATE users SET email='old@example.com', password_hash='hash', legacy_password_hash='legacy', is_email_confirmed=true WHERE id=$1`, id); err != nil {
+		t.Fatal(err)
+	}
+	for _, email := range []string{"", " OLD@EXAMPLE.COM "} {
+		body := map[string]any{"name": "New", "phone": "+79990000002"}
+		if email != "" {
+			body["email"] = email
+		}
+		rec := e.do(t, http.MethodPut, id, body)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("preserved email %q: %d %s", email, rec.Code, rec.Body)
+		}
+	}
+	rec := e.do(t, http.MethodPut, id, map[string]any{"name": "Changed", "email": "new@example.com"})
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("changed email: %d %s", rec.Code, rec.Body)
+	}
+	if msg, _ := errorKeys(t, rec); msg != "Для изменения email подтвердите новый адрес" {
+		t.Errorf("conflict message = %q", msg)
+	}
+	u := e.byID(t, id)
+	if u.Name != "New" || u.Phone != "+79990000002" || u.Email == nil || *u.Email != "old@example.com" || u.PasswordHash != "hash" || u.LegacyPasswordHash != "legacy" || !u.IsEmailConfirmed {
+		t.Errorf("stored user changed credentials: %+v", u)
+	}
+	if rec.Header().Get("Cache-Control") != "private, no-store" {
+		t.Errorf("cache header = %q", rec.Header().Get("Cache-Control"))
+	}
+	if rec := testutil.DoJSON(t, e.router, http.MethodPut, "/user", "", map[string]any{"name": "x"}); rec.Code != http.StatusUnauthorized || rec.Header().Get("Cache-Control") != "private, no-store" {
+		t.Errorf("unauthenticated response: %d %s", rec.Code, rec.Body)
 	}
 }
 

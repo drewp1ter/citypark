@@ -7,7 +7,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
 
-const columns = `id, created_at, updated_at, name, email, phone, password_hash, legacy_password_hash, role`
+const columns = `id, created_at, updated_at, name, email, COALESCE(phone, '') AS phone, password_hash, legacy_password_hash, is_email_confirmed, role`
 
 type User struct {
 	ID                 int64     `db:"id"`
@@ -18,6 +18,7 @@ type User struct {
 	Phone              string    `db:"phone"`
 	PasswordHash       string    `db:"password_hash" json:"-"`
 	LegacyPasswordHash string    `db:"legacy_password_hash" json:"-"`
+	IsEmailConfirmed   bool      `db:"is_email_confirmed" json:"-"`
 	Role               string    `db:"role"`
 }
 
@@ -48,7 +49,6 @@ type CreateParams struct {
 
 type UpdateParams struct {
 	Name  string
-	Email *string // nil = remove the email
 	Phone string
 }
 
@@ -62,7 +62,7 @@ func (s *Store) Create(ctx context.Context, p CreateParams) (User, error) {
 	var u User
 	err := s.db.GetContext(ctx, &u,
 		`INSERT INTO users (name, email, phone, password_hash, role)
-		 VALUES ($1, $2, $3, $4, $5)
+		 VALUES ($1, $2, NULLIF($3, ''), $4, $5)
 		 RETURNING `+columns,
 		p.Name, p.Email, p.Phone, p.PasswordHash, p.Role)
 	if err != nil {
@@ -85,10 +85,10 @@ func (s *Store) ByPhone(ctx context.Context, phone string) (User, error) {
 
 func (s *Store) Update(ctx context.Context, id int64, p UpdateParams) (User, error) {
 	return s.one(ctx,
-		`UPDATE users SET name = $2, email = $3, phone = $4, updated_at = now()
+		`UPDATE users SET name = $2, phone = NULLIF($3, ''), updated_at = now()
 		 WHERE id = $1
 		 RETURNING `+columns,
-		id, p.Name, p.Email, p.Phone)
+		id, p.Name, p.Phone)
 }
 
 // SetPasswordHash stores a bcrypt hash and clears legacy_password_hash.

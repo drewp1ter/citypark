@@ -142,31 +142,31 @@ func TestUpdate(t *testing.T) {
 	}
 
 	updated, err := s.Update(ctx, created.ID, user.UpdateParams{
-		Name: "New", Email: new("new@x.io"), Phone: "+79000000002",
+		Name: "New", Phone: "+79000000002",
 	})
 	if err != nil {
 		t.Fatalf("Update: %v", err)
 	}
-	if updated.Name != "New" || updated.Email == nil || *updated.Email != "new@x.io" || updated.Phone != "+79000000002" {
+	if updated.Name != "New" || updated.Email == nil || *updated.Email != "old@x.io" || updated.Phone != "+79000000002" {
 		t.Errorf("unexpected updated user: %+v", updated)
 	}
 	if updated.UpdatedAt.Before(updated.CreatedAt) {
 		t.Errorf("UpdatedAt %v is before CreatedAt %v", updated.UpdatedAt, updated.CreatedAt)
 	}
 
-	cleared, err := s.Update(ctx, created.ID, user.UpdateParams{Name: "New", Email: nil, Phone: "+79000000002"})
+	cleared, err := s.Update(ctx, created.ID, user.UpdateParams{Name: "New", Phone: "+79000000002"})
 	if err != nil {
 		t.Fatalf("Update without email: %v", err)
 	}
-	if cleared.Email != nil {
-		t.Errorf("Email = %q, want nil", *cleared.Email)
+	if cleared.Email == nil || *cleared.Email != "old@x.io" {
+		t.Errorf("Email = %v, want old@x.io", cleared.Email)
 	}
 	got, err := s.ByID(ctx, created.ID)
 	if err != nil {
 		t.Fatalf("ByID: %v", err)
 	}
-	if got.Email != nil {
-		t.Errorf("stored Email = %q, want nil", *got.Email)
+	if got.Email == nil || *got.Email != "old@x.io" {
+		t.Errorf("stored Email = %v, want old@x.io", got.Email)
 	}
 }
 

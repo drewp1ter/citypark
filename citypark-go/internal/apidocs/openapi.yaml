@@ -1085,6 +1085,7 @@ paths:
       description: >-
         Role: public. The answer is always 201 with an empty object, also when the email or phone
         is already registered. No token is returned: call sign-in afterwards.
+        Responses send Cache-Control: private, no-store.
       tags: [auth]
       requestBody:
         required: true
@@ -1092,7 +1093,7 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, phone, password]
+              required: [name, password]
               properties:
                 name:
                   type: string
@@ -1102,7 +1103,7 @@ paths:
                   format: email
                 phone:
                   type: string
-                  description: A Russian phone number in any common format.
+                  description: Optional Russian phone number. An absent phone is returned as an empty string in profile JSON.
                 password:
                   type: string
                   minLength: 8
@@ -1124,7 +1125,7 @@ paths:
   /auth/sign-in:
     post:
       summary: Sign in and get a token
-      description: 'Role: public. An unknown email and a wrong password give the same 401.'
+      description: 'Role: public. An unknown email and a wrong password give the same 401. Responses send Cache-Control: private, no-store.'
       tags: [auth]
       requestBody:
         required: true
@@ -1155,7 +1156,7 @@ paths:
   /user:
     get:
       summary: Get the signed-in user's profile
-      description: 'Role: user.'
+      description: 'Role: user. Responses send Cache-Control: private, no-store.'
       tags: [user]
       security:
         - bearerAuth: []
@@ -1171,8 +1172,9 @@ paths:
     put:
       summary: Update the signed-in user's profile
       description: >-
-        Role: user. The request replaces the profile: omitting `email` removes the stored email,
-        omitting `phone` keeps the current one.
+        Role: user. Name and phone updates preserve authentication credentials. Omitted or empty
+        email preserves the stored email; a different email returns 409 until verified email changes exist.
+        Omitted or empty phone keeps the current one. Private responses are not cached.
       tags: [user]
       security:
         - bearerAuth: []

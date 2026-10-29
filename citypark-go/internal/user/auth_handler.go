@@ -32,7 +32,7 @@ func (h *AuthHandler) Routes(r chi.Router) {
 type signUpRequest struct {
 	Name     string `json:"name" validate:"required,max=80"`
 	Email    string `json:"email" validate:"omitempty,email"`
-	Phone    string `json:"phone" validate:"required,ruphone"`
+	Phone    string `json:"phone" validate:"omitempty,ruphone"`
 	Password string `json:"password" validate:"required,min=8,max=64"`
 }
 
@@ -47,6 +47,7 @@ type signInResponse struct {
 }
 
 func (h *AuthHandler) signUp(w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
 	var req signUpRequest
 	if err := httpx.DecodeJSON(w, r, &req); err != nil {
 		return err
@@ -55,7 +56,10 @@ func (h *AuthHandler) signUp(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	phone, _ := validate.NormalizePhone(req.Phone)
+	phone := ""
+	if req.Phone != "" {
+		phone, _ = validate.NormalizePhone(req.Phone)
+	}
 	var email *string
 	if e := normalizeEmail(req.Email); e != "" {
 		email = &e
@@ -83,6 +87,7 @@ func (h *AuthHandler) signUp(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *AuthHandler) signIn(w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Cache-Control", "private, no-store")
 	var req signInRequest
 	if err := httpx.DecodeJSON(w, r, &req); err != nil {
 		return err

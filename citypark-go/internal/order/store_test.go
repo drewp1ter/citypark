@@ -125,6 +125,27 @@ func TestInsertAndByID(t *testing.T) {
 	}
 }
 
+func TestOrderReadWithAbsentLegacyPhone(t *testing.T) {
+	db := testutil.NewDB(t)
+	sd := seed(t, db)
+	id := insertOrder(t, db, sd.params(false))
+	if _, err := db.Exec(`UPDATE users SET phone=NULL WHERE id=$1`, sd.userID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE orders SET contact_phone=NULL WHERE id=$1`, id); err != nil {
+		t.Fatal(err)
+	}
+	s := NewStore(db)
+	got, err := s.ByID(context.Background(), id)
+	if err != nil || got.Customer.Phone != "" {
+		t.Fatalf("ByID phone = %q, %v", got.Customer.Phone, err)
+	}
+	list, total, err := s.List(context.Background(), ListFilter{}, 10, 0)
+	if err != nil || total != 1 || len(list) != 1 || list[0].Customer.Phone != "" {
+		t.Fatalf("List = %+v, %d, %v", list, total, err)
+	}
+}
+
 func TestByIDPickup(t *testing.T) {
 	db := testutil.NewDB(t)
 	sd := seed(t, db)

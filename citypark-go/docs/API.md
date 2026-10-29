@@ -102,7 +102,7 @@ Registers a new customer account.
 |---|---|---|---|
 | `name` | string | yes | at most 80 characters |
 | `email` | string | no | a valid email address; stored in lower case |
-| `phone` | string | yes | a Russian phone number in any common format; stored as `+7XXXXXXXXXX` |
+| `phone` | string | no | a Russian phone number in any common format; stored as `+7XXXXXXXXXX`; absent becomes `""` in profile JSON |
 | `password` | string | yes | 8 to 64 characters |
 
 ```json
@@ -124,7 +124,7 @@ Registers a new customer account.
 
 **Notes**
 
-The response is always `201 {}`, also when the email or phone is already registered. The server does not reveal whether an account exists, so no token is returned: call `POST /auth/sign-in` afterwards.
+The response is always `201 {}`, also when the email or phone is already registered. Multiple accounts may omit phone. The server does not reveal whether an account exists, so no token is returned: call `POST /auth/sign-in` afterwards. Existing customer password sign-in remains available until verified registration is introduced; `is_email_confirmed` is not exposed in JSON. Responses use `Cache-Control: private, no-store`.
 
 #### POST /auth/sign-in
 
@@ -159,7 +159,7 @@ Signs a user in and returns a token.
 
 **Notes**
 
-Send the token as `Authorization: Bearer <token>` on later requests. Unknown email and wrong password give the same 401.
+Send the token as `Authorization: Bearer <token>` on later requests. Unknown email and wrong password give the same 401. Responses use `Cache-Control: private, no-store`.
 
 ### User
 
@@ -183,11 +183,11 @@ Returns the signed-in user's profile.
 
 **Notes**
 
-`email` is an empty string when the user has no email.
+`email` and `phone` are empty strings when absent. Authentication email is separate from editable profile details. Responses use `Cache-Control: private, no-store`.
 
 #### PUT /user
 
-Updates the signed-in user's name, email and phone.
+Updates the signed-in user's name and phone. Changing the authentication email requires a future verification flow.
 
 - **Role:** user
 
@@ -196,8 +196,8 @@ Updates the signed-in user's name, email and phone.
 | Field | Type | Required | Rules |
 |---|---|---|---|
 | `name` | string | yes | at most 80 characters |
-| `email` | string | no | a valid email address; stored in lower case; empty removes the email |
-| `phone` | string | no | a Russian phone number in any common format; stored as `+7XXXXXXXXXX`; empty keeps the current phone |
+| `email` | string | no | if supplied, must equal the current email after trimming and lowercasing; empty or omitted preserves it |
+| `phone` | string | no | a Russian phone number in any common format; stored as `+7XXXXXXXXXX`; empty or omitted keeps the current phone |
 
 ```json
 { "name": "Новое имя", "email": "New@Example.com", "phone": "8 999 000 00 02" }
@@ -217,10 +217,11 @@ Updates the signed-in user's name, email and phone.
 | 400 | `name` is missing or a field is invalid | validation message, see `errors` |
 | 401 | no token, invalid token, or the user no longer exists | `Требуется авторизация` |
 | 409 | the email or phone belongs to another user | `email или телефон уже используется` |
+| 409 | supplied email differs from the current email | `Для изменения email подтвердите новый адрес` |
 
 **Notes**
 
-The request replaces the profile: omitting `email` or sending `""` removes the stored email, while omitting `phone` keeps the current one.
+Name and phone updates preserve the stored email, password hashes and email confirmation flag. Omitted email and phone preserve their current values. Responses use `Cache-Control: private, no-store`.
 
 ### Addresses
 
