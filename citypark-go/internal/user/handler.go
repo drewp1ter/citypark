@@ -16,10 +16,15 @@ import (
 type Handler struct {
 	store  *Store
 	tokens *auth.Tokens
+	access func(http.Handler) http.Handler
 }
 
-func NewHandler(s *Store, tokens *auth.Tokens) *Handler {
-	return &Handler{store: s, tokens: tokens}
+func NewHandler(s *Store, tokens *auth.Tokens, access ...func(http.Handler) http.Handler) *Handler {
+	h := &Handler{store: s, tokens: tokens, access: tokens.RequireRole(auth.RoleUser)}
+	if len(access) > 0 {
+		h.access = access[0]
+	}
+	return h
 }
 
 // Routes registers GET /user and PUT /user, both behind tokens.RequireRole(auth.RoleUser).
@@ -31,7 +36,7 @@ func (h *Handler) Routes(r chi.Router) {
 				next.ServeHTTP(w, req)
 			})
 		})
-		r.Use(h.tokens.RequireRole(auth.RoleUser))
+		r.Use(h.access)
 		r.Get("/user", httpx.Handle(h.me))
 		r.Put("/user", httpx.Handle(h.update))
 	})

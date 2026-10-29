@@ -5,7 +5,7 @@ This file describes the endpoints that are implemented. Every task that adds or 
 ## General
 
 - Base path: `/api/v1`. Requests and responses are JSON (`Content-Type: application/json`).
-- Auth: `Authorization: Bearer <token>`. The token comes from `POST /auth/sign-in`.
+- Auth: `Authorization: Bearer <token>`. Staff use JWTs from `POST /auth/sign-in`; customer sessions use `cs_` tokens when `CUSTOMER_AUTH_ENABLED=true`.
 - Roles: `public` (no token), `user` (any signed-in user, admins included), `admin`.
 - Money is in rubles as a JSON number (`599` or `5.99`). Timestamps are RFC 3339.
 - Paged lists take `page` (from 1) and `pageSize` (1–500).
@@ -124,7 +124,7 @@ Registers a new customer account.
 
 **Notes**
 
-The response is always `201 {}`, also when the email or phone is already registered. Multiple accounts may omit phone. The server does not reveal whether an account exists, so no token is returned: call `POST /auth/sign-in` afterwards. Existing customer password sign-in remains available until verified registration is introduced; `is_email_confirmed` is not exposed in JSON. Responses use `Cache-Control: private, no-store`.
+With customer auth disabled, the response is always `201 {}`, also when the email or phone is already registered. Multiple accounts may omit phone. The server does not reveal whether an account exists, so no token is returned: call `POST /auth/sign-in` afterwards. When customer auth is enabled, this legacy customer registration returns 503 `Вход временно недоступен` until verified registration is introduced. `is_email_confirmed` is not exposed in JSON. Responses use `Cache-Control: private, no-store`.
 
 #### POST /auth/sign-in
 
@@ -156,12 +156,95 @@ Signs a user in and returns a token.
 | 400 | malformed JSON | `Некорректный JSON` |
 | 400 | `email` or `password` is missing | validation message, see `errors` |
 | 401 | unknown email or wrong password | `неверный логин или пароль.` |
+| 503 | customer account while customer auth is enabled | `Вход временно недоступен` |
 
 **Notes**
 
-Send the token as `Authorization: Bearer <token>` on later requests. Unknown email and wrong password give the same 401. Responses use `Cache-Control: private, no-store`.
+Send the token as `Authorization: Bearer <token>` on later requests. This route keeps issuing staff JWTs. When customer auth is enabled, it stops issuing customer JWTs until the new verified sign-in route is available. Unknown email and wrong password give the same 401. Responses use `Cache-Control: private, no-store`.
+
+#### POST /auth/customer/logout
+
+Revokes the current customer session.
+
+- **Role:** customer session
+
+**Response 204**
+
+No response body.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | missing, malformed, expired or revoked session | `Требуется авторизация` |
+| 503 | customer authentication is disabled | `Вход временно недоступен` |
+
+**Notes**
+
+Send `Authorization: Bearer cs_<token>`. Tokens have a fixed 30-day lifetime. Responses and errors use `Cache-Control: private, no-store`.
 
 ### User
+
+#### GET /customer/me
+
+Returns the customer profile.
+
+- **Role:** customer session
+
+**Response 200**
+
+```json
+{"id":1,"name":"Иван","email":"","phone":"+79990000001","role":"user"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | missing, malformed, expired or revoked session | `Требуется авторизация` |
+| 503 | customer authentication is disabled | `Вход временно недоступен` |
+
+**Notes**
+
+Email and phone are empty strings when absent. Staff JWTs and legacy customer JWTs are rejected. Responses and errors use `Cache-Control: private, no-store`.
+
+#### PUT /customer/me
+
+Updates the customer name and optional phone without changing authentication credentials.
+
+- **Role:** customer session
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `name` | string | yes | 1–80 characters |
+| `phone` | string | no | Russian phone; normalized to `+7XXXXXXXXXX`; omitted preserves it; empty clears it |
+
+```json
+{"name":"Новое имя","phone":"8 999 000 00 03"}
+```
+
+**Response 200**
+
+```json
+{"id":1,"name":"Новое имя","email":"","phone":"+79990000003","role":"user"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | invalid name or phone | validation message, see `errors` |
+| 400 | email, password, role or another unknown field supplied | `Недопустимые поля профиля` |
+| 401 | missing or invalid session | `Требуется авторизация` |
+| 409 | phone belongs to another user | `Телефон уже используется` |
+| 503 | customer authentication is disabled | `Вход временно недоступен` |
+
+**Notes**
+
+Responses and errors use `Cache-Control: private, no-store`.
 
 #### GET /user
 

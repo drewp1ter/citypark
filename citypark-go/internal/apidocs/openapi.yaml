@@ -27,6 +27,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    customerSession:
+      type: http
+      scheme: bearer
+      description: Opaque cs_ customer token. Enabled by CUSTOMER_AUTH_ENABLED.
   parameters:
     Id:
       name: id
@@ -53,6 +57,12 @@ components:
         minimum: 1
         maximum: 500
   responses:
+    CustomerDisabled:
+      description: Customer authentication is disabled (`Вход временно недоступен`).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     BadRequest:
       description: Malformed JSON, validation failure or another rejected input.
       content:
@@ -1083,8 +1093,8 @@ paths:
     post:
       summary: Register a new customer account
       description: >-
-        Role: public. The answer is always 201 with an empty object, also when the email or phone
-        is already registered. No token is returned: call sign-in afterwards.
+        Role: public. With customer auth disabled the answer is always 201 with an empty object,
+        also when the email or phone is already registered. When enabled, returns 503.
         Responses send Cache-Control: private, no-store.
       tags: [auth]
       requestBody:
@@ -1122,10 +1132,12 @@ paths:
                 type: object
         '400':
           $ref: '#/components/responses/BadRequest'
+        '503':
+          $ref: '#/components/responses/CustomerDisabled'
   /auth/sign-in:
     post:
       summary: Sign in and get a token
-      description: 'Role: public. An unknown email and a wrong password give the same 401. Responses send Cache-Control: private, no-store.'
+      description: 'Role: public. Staff JWT issuance remains; customer sign-in returns 503 when customer auth is enabled. An unknown email and a wrong password give the same 401. Responses send Cache-Control: private, no-store.'
       tags: [auth]
       requestBody:
         required: true
@@ -1153,6 +1165,75 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/CustomerDisabled'
+  /auth/customer/logout:
+    post:
+      summary: Revoke the current customer session
+      description: 'Role: customer session. A subsequent use returns 401. All responses and errors send Cache-Control: private, no-store.'
+      tags: [auth]
+      security:
+        - customerSession: []
+      responses:
+        '204':
+          description: Session revoked; no body.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/CustomerDisabled'
+  /customer/me:
+    get:
+      summary: Get the customer profile
+      description: 'Role: customer session. JWTs are rejected. All responses and errors send Cache-Control: private, no-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      responses:
+        '200':
+          description: Customer profile, with empty strings for missing email and phone.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example: {id: 1, name: Иван, email: '', phone: '+79990000001', role: user}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          $ref: '#/components/responses/CustomerDisabled'
+    put:
+      summary: Update the customer profile
+      description: 'Role: customer session. Email, password, role and unknown fields are rejected. Omitted phone preserves it; empty phone clears it. All responses and errors send Cache-Control: private, no-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [name]
+              properties:
+                name: {type: string, minLength: 1, maxLength: 80}
+                phone: {type: string}
+            example: {name: Новое имя, phone: '8 999 000 00 03'}
+      responses:
+        '200':
+          description: Updated customer profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example: {id: 1, name: Новое имя, email: '', phone: '+79990000003', role: user}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '503':
+          $ref: '#/components/responses/CustomerDisabled'
   /user:
     get:
       summary: Get the signed-in user's profile

@@ -15,6 +15,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/config"
 	"github.com/drewp1ter/citypark-go/internal/content"
+	"github.com/drewp1ter/citypark-go/internal/customer"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
 	"github.com/drewp1ter/citypark-go/internal/health"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
@@ -50,6 +51,8 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	}
 
 	tokens := auth.NewTokens(cfg.JWT.Secret, cfg.JWT.ExpiresIn, c)
+	sessions := customer.NewService(db, c)
+	adapter := &customer.Adapter{Sessions: sessions, Tokens: tokens, Enabled: cfg.CustomerAuthEnabled}
 
 	telegramClient := telegram.NewClient(cfg.Telegram.BaseURL, cfg.Telegram.Token, nil)
 	notifier := NewTelegramNotifier(telegramClient, cfg.Telegram.ChatIDOrderCreated, cfg.Telegram.ChatIDOrderConfirmed, log)
@@ -89,9 +92,10 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	r.Route("/api/v1", func(r chi.Router) {
 		health.Routes(r)
 		apidocs.Routes(r)
-		user.NewAuthHandler(users, tokens).Routes(r)
-		user.NewHandler(users, tokens).Routes(r)
-		address.NewHandler(address.NewStore(db), tokens).Routes(r)
+		user.NewAuthHandler(users, tokens, cfg.CustomerAuthEnabled).Routes(r)
+		user.NewHandler(users, tokens, adapter.Required(true)).Routes(r)
+		customer.NewHandler(users, sessions, adapter).Routes(r)
+		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize).Routes(r)
 		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken, tokens).Routes(r)
@@ -105,7 +109,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			Hours:           hours,
 			DefaultPageSize: cfg.DefaultPageSize,
-		}).Routes(r)
+		}, adapter.Required(true), adapter.Optional).Routes(r)
 		onec.NewHandler(onec.NewClient(cfg.OneC.HotelURL, cfg.OneC.User, cfg.OneC.Password, nil), tokens, c).Routes(r)
 		upload.NewHandler(uploads, tokens).Routes(r)
 	})

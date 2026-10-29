@@ -15,12 +15,17 @@ import (
 
 // AuthHandler serves sign-up and sign-in.
 type AuthHandler struct {
-	store  *Store
-	tokens *auth.Tokens
+	store               *Store
+	tokens              *auth.Tokens
+	customerAuthEnabled bool
 }
 
-func NewAuthHandler(s *Store, tokens *auth.Tokens) *AuthHandler {
-	return &AuthHandler{store: s, tokens: tokens}
+func NewAuthHandler(s *Store, tokens *auth.Tokens, enabled ...bool) *AuthHandler {
+	h := &AuthHandler{store: s, tokens: tokens}
+	if len(enabled) > 0 {
+		h.customerAuthEnabled = enabled[0]
+	}
+	return h
 }
 
 // Routes registers POST /auth/sign-up and POST /auth/sign-in.
@@ -48,6 +53,9 @@ type signInResponse struct {
 
 func (h *AuthHandler) signUp(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Cache-Control", "private, no-store")
+	if h.customerAuthEnabled {
+		return httpx.NewError(http.StatusServiceUnavailable, "Вход временно недоступен")
+	}
 	var req signUpRequest
 	if err := httpx.DecodeJSON(w, r, &req); err != nil {
 		return err
@@ -103,6 +111,9 @@ func (h *AuthHandler) signIn(w http.ResponseWriter, r *http.Request) error {
 	}
 	if err != nil {
 		return err
+	}
+	if h.customerAuthEnabled && u.Role != auth.RoleAdmin {
+		return httpx.NewError(http.StatusServiceUnavailable, "Вход временно недоступен")
 	}
 
 	switch {

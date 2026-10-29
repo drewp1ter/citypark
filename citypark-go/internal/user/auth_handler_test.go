@@ -19,6 +19,41 @@ import (
 
 const wrongCredentialsBody = `{"statusCode":401,"message":"неверный логин или пароль."}`
 
+func TestCustomerAuthGateKeepsStaffSignIn(t *testing.T) {
+	db := testutil.NewDB(t)
+	ctx := context.Background()
+	tokens := auth.NewTokens("secret", time.Hour, clock.Fixed(time.Date(2026, 10, 29, 12, 0, 0, 0, time.UTC)))
+	users := user.NewStore(db)
+	password, err := auth.HashPassword("secret-pass")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ email, role string }{{"customer@example.com", auth.RoleUser}, {"staff@example.com", auth.RoleAdmin}} {
+		email := tc.email
+		if _, err := users.Create(ctx, user.CreateParams{Name: tc.role, Email: &email, PasswordHash: password, Role: tc.role}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := chi.NewRouter()
+	user.NewAuthHandler(users, tokens, true).Routes(r)
+	for _, tc := range []struct {
+		path, email string
+		want        int
+	}{{"/auth/sign-up", "", 503}, {"/auth/sign-in", "customer@example.com", 503}, {"/auth/sign-in", "staff@example.com", 200}} {
+		body := map[string]any{"email": tc.email, "password": "secret-pass"}
+		if tc.path == "/auth/sign-up" {
+			body = signUpBody()
+		}
+		rec := testutil.DoJSON(t, r, http.MethodPost, tc.path, "", body)
+		if rec.Code != tc.want {
+			t.Errorf("%s %s = %d: %s", tc.path, tc.email, rec.Code, rec.Body.String())
+		}
+		if rec.Header().Get("Cache-Control") != "private, no-store" {
+			t.Error("missing no-store")
+		}
+	}
+}
+
 type authEnv struct {
 	db     *sqlx.DB
 	tokens *auth.Tokens

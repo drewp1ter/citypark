@@ -29,13 +29,20 @@ type HandlerOptions struct {
 
 // Handler serves the order endpoints.
 type Handler struct {
-	svc    *Service
-	tokens *auth.Tokens // used by the read and admin routes (tasks 28-30)
-	opts   HandlerOptions
+	svc      *Service
+	tokens   *auth.Tokens // used by the read and admin routes (tasks 28-30)
+	opts     HandlerOptions
+	access   func(http.Handler) http.Handler
+	optional func(http.Handler) http.Handler
 }
 
-func NewHandler(svc *Service, tokens *auth.Tokens, opts HandlerOptions) *Handler {
-	return &Handler{svc: svc, tokens: tokens, opts: opts}
+func NewHandler(svc *Service, tokens *auth.Tokens, opts HandlerOptions, adapters ...func(http.Handler) http.Handler) *Handler {
+	h := &Handler{svc: svc, tokens: tokens, opts: opts, access: tokens.RequireRole(auth.RoleUser), optional: tokens.Optional}
+	if len(adapters) == 2 {
+		h.access = adapters[0]
+		h.optional = adapters[1]
+	}
+	return h
 }
 
 // Routes registers POST /orders, which is public and limited to the working hours,
@@ -48,13 +55,13 @@ func (h *Handler) Routes(r chi.Router) {
 }
 
 func (h *Handler) routes(r chi.Router) {
-	r.With(h.tokens.Optional, WorkingHours(h.svc.clock, h.opts.Hours)).
+	r.With(h.optional, WorkingHours(h.svc.clock, h.opts.Hours)).
 		Post("/orders", httpx.Handle(h.create))
 
 	r.Post("/webhooks/moneta", h.moneta)
 
 	r.Group(func(r chi.Router) {
-		r.Use(h.tokens.RequireRole(auth.RoleUser))
+		r.Use(h.access)
 		r.Get("/orders/my", httpx.Handle(h.listMine))
 		r.Get("/orders/{id}", httpx.Handle(h.get))
 	})

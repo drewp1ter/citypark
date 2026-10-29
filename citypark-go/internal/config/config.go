@@ -10,20 +10,21 @@ import (
 )
 
 type Config struct {
-	Env             string // "development", "production" or "test"
-	Port            int
-	Debug           bool
-	Timezone        *time.Location
-	DefaultPageSize int
-	DatabaseURL     string
-	JWT             JWT
-	Admin           Admin
-	Iiko            Iiko
-	Telegram        Telegram
-	Moneta          Moneta
-	Hotel           Hotel
-	OneC            OneC
-	Upload          Upload
+	Env                 string // "development", "production" or "test"
+	Port                int
+	Debug               bool
+	Timezone            *time.Location
+	DefaultPageSize     int
+	DatabaseURL         string
+	JWT                 JWT
+	CustomerAuthEnabled bool
+	Admin               Admin
+	Iiko                Iiko
+	Telegram            Telegram
+	Moneta              Moneta
+	Hotel               Hotel
+	OneC                OneC
+	Upload              Upload
 }
 
 type JWT struct {
@@ -99,6 +100,7 @@ func Load(lookup LookupFunc) (Config, error) {
 		return Config{}, err
 	}
 	c.DatabaseURL = str("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/citypark_dev?sslmode=disable")
+	c.CustomerAuthEnabled = str("CUSTOMER_AUTH_ENABLED", "false") == "true"
 
 	c.JWT.Secret = str("JWT_SECRET", defaultJWTSecret)
 	expires := str("JWT_EXPIRES_IN", "24h")

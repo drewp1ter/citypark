@@ -15,10 +15,15 @@ import (
 type Handler struct {
 	store  *Store
 	tokens *auth.Tokens
+	access func(http.Handler) http.Handler
 }
 
-func NewHandler(s *Store, tokens *auth.Tokens) *Handler {
-	return &Handler{store: s, tokens: tokens}
+func NewHandler(s *Store, tokens *auth.Tokens, access ...func(http.Handler) http.Handler) *Handler {
+	h := &Handler{store: s, tokens: tokens, access: tokens.RequireRole(auth.RoleUser)}
+	if len(access) > 0 {
+		h.access = access[0]
+	}
+	return h
 }
 
 // Input is exported because the order package reuses it (task 26).
@@ -31,7 +36,7 @@ type Input struct {
 // all behind tokens.RequireRole(auth.RoleUser).
 func (h *Handler) Routes(r chi.Router) {
 	r.Group(func(r chi.Router) {
-		r.Use(h.tokens.RequireRole(auth.RoleUser))
+		r.Use(h.access)
 		r.Get("/addresses", httpx.Handle(h.list))
 		r.Post("/addresses", httpx.Handle(h.create))
 		r.Delete("/addresses/{id}", httpx.Handle(h.remove))
