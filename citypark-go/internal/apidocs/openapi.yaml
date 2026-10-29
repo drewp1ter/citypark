@@ -1262,6 +1262,64 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
         '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /auth/customer/password/forgot:
+    post:
+      tags: [auth]
+      summary: Request password recovery
+      description: 'Role: public. Only verified email/password accounts receive a one-hour link at /account/reset. Unknown, admin, unverified, provider-only, limited and delivery-failure cases return generic 202. Cache-Control: private, no-store.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, format: email}
+            example: {email: 'ivan@example.com'}
+      responses:
+        '202':
+          description: Generic recovery result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message: {type: string}
+              example: {message: 'Если аккаунт найден, письмо для восстановления отправлено'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /auth/customer/password/reset:
+    post:
+      tags: [auth]
+      summary: Consume recovery proof and reset password
+      description: 'Role: public. One-hour single-use proof; revokes all customer sessions and other reset proofs. No session is issued. Cache-Control: private, no-store.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: {type: string}
+                password: {type: string, minLength: 8, maxLength: 64}
+            example: {token: '<proof>', password: 'new-example-password'}
+      responses:
+        '204': {description: Password reset; empty body.}
+        '400':
+          description: 'Invalid fields or proof. Invalid, expired, wrong-purpose, used or changed-credential proof: Ссылка недействительна или устарела.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: 'Reset limit (20/direct IP/15 minutes); Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
   /auth/customer/sign-in:
     post:
       tags: [auth]

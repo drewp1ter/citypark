@@ -119,4 +119,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] [70 SMTP and single-use email tokens](70-customer-email-tokens.md) [69]
 - [x] [71 Verified email registration and sign-in](71-verified-email-auth.md) [70]
 
+- [x] [72 Customer password recovery](72-customer-password-reset.md) [71]
+
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).

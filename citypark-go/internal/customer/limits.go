@@ -70,6 +70,9 @@ func (l *Limits) Send(email string, r *http.Request) bool {
 func (l *Limits) Confirm(r *http.Request) (bool, int) {
 	return l.allow("confirm-ip:"+directIP(r), 20, 15*time.Minute)
 }
+func (l *Limits) Reset(r *http.Request) (bool, int) {
+	return l.allow("reset-ip:"+directIP(r), 20, 15*time.Minute)
+}
 func retryAfter(w http.ResponseWriter, seconds int) {
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
 }

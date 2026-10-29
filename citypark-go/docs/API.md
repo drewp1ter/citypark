@@ -266,6 +266,71 @@ Consumes a 24-hour verification proof and enables password sign-in. It does not 
 
 429 includes `Retry-After` in seconds. All responses use `Cache-Control: private, no-store`.
 
+#### POST /auth/customer/password/forgot
+
+Requests a password recovery link for an existing verified email/password account.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `email` | string | yes | valid email; trimmed and lowercased |
+
+```json
+{"email":"ivan@example.com"}
+```
+
+**Response 202**
+
+```json
+{"message":"Если аккаунт найден, письмо для восстановления отправлено"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or email | `Некорректный JSON` or validation message with `errors` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+Unknown, admin, unverified, provider-only, send-limited and delivery-failure cases return the same 202. Sends share the 3/email/hour and 10/direct-IP/hour budget with registration and verification. The one-hour link opens `/account/reset?token=...`; GET does not consume the proof. All responses use `Cache-Control: private, no-store`.
+
+#### POST /auth/customer/password/reset
+
+Consumes a recovery proof, replaces the password and revokes every customer session. No session is issued.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `token` | string | yes | recovery proof from email |
+| `password` | string | yes | 8–64 characters |
+
+```json
+{"token":"<proof>","password":"new-example-password"}
+```
+
+**Response 204:** empty body.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON or fields | `Некорректный JSON` or validation message with `errors` |
+| 400 | invalid, expired, wrong-purpose or used proof, or changed credential | `Ссылка недействительна или устарела` |
+| 429 | more than 20 attempts per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+429 includes `Retry-After` in seconds. Reset revokes all existing customer sessions, invalidates outstanding reset proofs and requires a new sign-in. All responses use `Cache-Control: private, no-store`.
+
 #### POST /auth/customer/sign-in
 
 Checks a verified password credential and creates a 30-day web session.

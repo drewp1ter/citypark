@@ -40,6 +40,8 @@ func (h *EmailHandler) Routes(r chi.Router) {
 	r.Post("/auth/customer/sign-in", httpx.Handle(h.signIn))
 	r.Post("/customer/email/change", httpx.Handle(h.change))
 	r.Post("/customer/email/confirm", httpx.Handle(h.confirmChange))
+	r.Post("/auth/customer/password/forgot", httpx.Handle(h.forgotPassword))
+	r.Post("/auth/customer/password/reset", httpx.Handle(h.resetPassword))
 }
 func (h *EmailHandler) available(w http.ResponseWriter) error {
 	w.Header().Set("Cache-Control", "private, no-store")
@@ -170,30 +172,34 @@ func (h *EmailHandler) consume(ctx context.Context, raw, purpose string, keepHas
 	now := h.sessions.clock.Now()
 	return store.InTx(ctx, h.db, func(tx *sqlx.Tx) error {
 		s := NewStore(tx)
-		token, e := s.ConsumeEmailToken(ctx, hash, purpose, now)
+		id, e := s.EmailTokenOwner(ctx, hash, purpose, now)
 		if e != nil {
 			return e
 		}
-		if expectedUser != 0 && token.UserID != expectedUser {
+		if expectedUser != 0 && id != expectedUser {
 			return ErrInvalidEmailToken
 		}
-		email, _, role, password, e := s.LockedEmailUser(ctx, token.UserID)
+		email, _, role, password, e := s.LockedEmailUser(ctx, id)
 		if e != nil {
 			return ErrInvalidEmailToken
 		}
 		if role != auth.RoleUser || !password {
 			return ErrInvalidEmailToken
 		}
+		token, e := s.ConsumeEmailToken(ctx, hash, purpose, now)
+		if e != nil {
+			return e
+		}
 		if purpose == "verify" {
 			if strings.ToLower(strings.TrimSpace(email)) != token.Email {
 				return ErrInvalidEmailToken
 			}
-			return s.ConfirmEmail(ctx, token.UserID, token.Email)
+			return s.ConfirmEmail(ctx, id, token.Email)
 		}
 		if email == "" {
 			return ErrInvalidEmailToken
 		}
-		return s.ChangeEmail(ctx, token.UserID, token.Email, now, keepHash)
+		return s.ChangeEmail(ctx, id, token.Email, now, keepHash)
 	})
 }
 func (h *EmailHandler) verify(w http.ResponseWriter, r *http.Request) error {

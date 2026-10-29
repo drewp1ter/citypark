@@ -85,7 +85,7 @@ func (s *Service) IssueEmailToken(ctx context.Context, userID int64, purpose, em
 	if err != nil {
 		return "", err
 	}
-	paths := map[string]string{"verify": "/account/verify", "reset": "/account/reset-password", "change-email": "/account/email"}
+	paths := map[string]string{"verify": "/account/verify", "reset": "/account/reset", "change-email": "/account/email"}
 	link := s.publicOrigin + paths[purpose] + "?token=" + url.QueryEscape(raw)
 	// The proof appears only in the delivered message and the return value.
 	subject := map[string]string{"verify": "Подтвердите адрес электронной почты", "reset": "Восстановление пароля", "change-email": "Подтвердите новый адрес электронной почты"}[purpose]
@@ -123,6 +123,17 @@ func (s *Store) ConsumeEmailToken(ctx context.Context, hash []byte, purpose stri
 		return EmailToken{}, ErrInvalidEmailToken
 	}
 	return token, err
+}
+func (s *Store) EmailTokenOwner(ctx context.Context, hash []byte, purpose string, now time.Time) (int64, error) {
+	var id int64
+	if len(hash) != 32 {
+		return 0, ErrInvalidEmailToken
+	}
+	err := s.db.GetContext(ctx, &id, `SELECT user_id FROM customer_email_tokens WHERE token_hash=$1 AND purpose=$2 AND consumed_at IS NULL AND expires_at>$3`, hash, purpose, now)
+	if errors.Is(store.NotFound(err), store.ErrNotFound) {
+		return 0, ErrInvalidEmailToken
+	}
+	return id, err
 }
 func HashEmailToken(raw string) ([]byte, error) {
 	if len(raw) != 43 {
