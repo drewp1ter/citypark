@@ -64,6 +64,20 @@ if (process.env.QA_DADATA === '1') {
 await p.getByRole('button', { name: /Населённый пункт/ }).click()
 const townOptions = p.getByRole('option')
 out('towns from the backend', JSON.stringify(await townOptions.allInnerTexts()))
+{
+	const label = (await townOptions.first().innerText()).replace(/\s+/g, ' ')
+	const price = Number(label.match(/\+([\d\s]+)\s*₽/)?.[1].replace(/\s/g, ''))
+	const freeFrom = Number(label.match(/бесплатно от ([\d\s]+)\s*₽/)?.[1].replace(/\s/g, '') ?? 0)
+	const rows = await p.locator('aside ul:visible > li:not(:has-text("Доставка")) > span:last-child').allInnerTexts()
+	const subtotal = rows.reduce((sum, row) => sum + Number(row.replace(/\D/g, '')), 0)
+	const expected = freeFrom > 0 && subtotal >= freeFrom ? 0 : price
+	out(
+		'selected town: delivery line + total (expected delivery ' + expected + ', total ' + (subtotal + expected) + ')',
+		(await txt(p.locator('aside li', { hasText: 'Доставка' }))) +
+			' || ' +
+			(await txt(p.locator('aside div:visible', { hasText: /^К оплате/ }).last()))
+	)
+}
 if ((await townOptions.count()) > 1) await townOptions.nth(1).click()
 else await p.keyboard.press('Escape')
 out(

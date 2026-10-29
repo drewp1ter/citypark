@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState, type ReactNode } from 'react'
 import { useCartLines, useCartReady } from '@/entities/cart'
-import { priceLines, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
+import { priceLines, townDeliveryPrice, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
 import { AddressField } from './address-field'
 import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
 import {
@@ -53,7 +53,8 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions,
 	const [consent, setConsent] = useState(false)
 
 	const noDelivery = method === 'delivery' && towns.length === 0
-	const deliveryPrice = method === 'delivery' ? (towns.find((town) => town.name === city)?.price ?? 0) : 0
+	const selectedTown = towns.find((town) => town.name === city)
+	const deliveryPrice = method === 'delivery' && selectedTown ? townDeliveryPrice(selectedTown, priced.subtotal) : 0
 	const total = priced.subtotal + deliveryPrice
 	const canSubmit = cartReady && priced.items.length > 0 && !pending && !noDelivery
 
@@ -143,7 +144,10 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions,
 											name='city'
 											options={towns.map((town) => ({
 												value: town.name,
-												label: `${town.name} (+${formatPrice(town.price)})`,
+												label:
+													town.freeFrom > 0
+														? `${town.name} (+${formatPrice(town.price)}, бесплатно от ${formatPrice(town.freeFrom)})`
+														: `${town.name} (+${formatPrice(town.price)})`,
 												textValue: town.name,
 											}))}
 											value={city}

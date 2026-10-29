@@ -72,3 +72,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Address suggestions
 - [x] 32 Address suggestions on checkout [26, 28]
   - Deviation: `AddressField` lives in `src/pages/checkout/ui/address-field.tsx`, not in a `features/address-suggest` slice. Steiger rejects a slice with one consumer (`fsd/insignificant-slice`) and the conventions forbid overrides.
+
+## Delivery price
+- [x] 33 Free delivery from the town's threshold on checkout [26]

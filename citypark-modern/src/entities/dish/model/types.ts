@@ -38,5 +38,11 @@ export type MenuCategory = {
 
 export type Menu = { categories: readonly MenuCategory[]; dishes: readonly Dish[] }
 
-/** A town the restaurant delivers to, with its flat delivery price (rubles). From GET /delivery-prices. */
-export type DeliveryTown = { name: string; price: number }
+/** A town the restaurant delivers to, with its flat delivery price. From GET /delivery-prices. */
+export type DeliveryTown = {
+	name: string
+	/** Rubles. */
+	price: number
+	/** Order subtotal (rubles, without delivery) from which delivery is free; 0 = never free. */
+	freeFrom: number
+}
