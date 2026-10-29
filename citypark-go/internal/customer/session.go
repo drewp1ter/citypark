@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
+	"github.com/drewp1ter/citypark-go/internal/mailer"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/jmoiron/sqlx"
 )
@@ -47,11 +50,18 @@ func (s *Store) RevokeAllSessions(ctx context.Context, userID int64) error {
 }
 
 type Service struct {
-	store *Store
-	clock clock.Clock
+	store        *Store
+	db           *sqlx.DB
+	clock        clock.Clock
+	random       io.Reader
+	mailer       mailer.Mailer
+	publicOrigin string
+	log          *slog.Logger
 }
 
-func NewService(db *sqlx.DB, c clock.Clock) *Service { return &Service{store: NewStore(db), clock: c} }
+func NewService(db *sqlx.DB, c clock.Clock) *Service {
+	return &Service{store: NewStore(db), db: db, clock: c, random: rand.Reader}
+}
 func (s *Service) CreateSession(ctx context.Context, userID int64, method, surface string) (string, time.Time, error) {
 	if userID <= 0 || !((method == "password" || method == "google") && surface == "web" || method == "telegram" && surface == "mini") {
 		return "", time.Time{}, ErrInvalidSession

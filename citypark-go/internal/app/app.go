@@ -22,6 +22,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/iiko"
 	"github.com/drewp1ter/citypark-go/internal/live"
 	"github.com/drewp1ter/citypark-go/internal/logging"
+	"github.com/drewp1ter/citypark-go/internal/mailer"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/news"
 	"github.com/drewp1ter/citypark-go/internal/onec"
@@ -52,6 +53,9 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 
 	tokens := auth.NewTokens(cfg.JWT.Secret, cfg.JWT.ExpiresIn, c)
 	sessions := customer.NewService(db, c)
+	if cfg.SMTP.Enabled {
+		sessions.ConfigureEmail(mailer.NewSMTP(cfg.SMTP, nil), cfg.CustomerPublicOrigin, nil, log)
+	}
 	adapter := &customer.Adapter{Sessions: sessions, Tokens: tokens, Enabled: cfg.CustomerAuthEnabled}
 
 	telegramClient := telegram.NewClient(cfg.Telegram.BaseURL, cfg.Telegram.Token, nil)

@@ -4,27 +4,31 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/mail"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type Config struct {
-	Env                 string // "development", "production" or "test"
-	Port                int
-	Debug               bool
-	Timezone            *time.Location
-	DefaultPageSize     int
-	DatabaseURL         string
-	JWT                 JWT
-	CustomerAuthEnabled bool
-	Admin               Admin
-	Iiko                Iiko
-	Telegram            Telegram
-	Moneta              Moneta
-	Hotel               Hotel
-	OneC                OneC
-	Upload              Upload
+	Env                  string // "development", "production" or "test"
+	Port                 int
+	Debug                bool
+	Timezone             *time.Location
+	DefaultPageSize      int
+	DatabaseURL          string
+	JWT                  JWT
+	CustomerAuthEnabled  bool
+	CustomerPublicOrigin string
+	SMTP                 SMTP
+	Admin                Admin
+	Iiko                 Iiko
+	Telegram             Telegram
+	Moneta               Moneta
+	Hotel                Hotel
+	OneC                 OneC
+	Upload               Upload
 }
 
 type JWT struct {
@@ -53,6 +57,12 @@ type Moneta struct {
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
 type Upload struct{ Dir, PublicBaseURL string }
+type SMTP struct {
+	Host                              string
+	Port                              int
+	Username, Password, From, TLSMode string
+	Enabled                           bool
+}
 
 // LookupFunc has the signature of os.LookupEnv.
 type LookupFunc func(key string) (string, bool)
@@ -101,6 +111,34 @@ func Load(lookup LookupFunc) (Config, error) {
 	}
 	c.DatabaseURL = str("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/citypark_dev?sslmode=disable")
 	c.CustomerAuthEnabled = str("CUSTOMER_AUTH_ENABLED", "false") == "true"
+	c.CustomerPublicOrigin = str("CUSTOMER_PUBLIC_ORIGIN", "http://localhost:3001")
+	if err := validateCustomerOrigin(c.CustomerPublicOrigin, c.Env); err != nil {
+		return Config{}, err
+	}
+	c.SMTP = SMTP{Host: str("SMTP_HOST", ""), Username: str("SMTP_USERNAME", ""), Password: str("SMTP_PASSWORD", ""), From: str("SMTP_FROM", ""), TLSMode: str("SMTP_TLS_MODE", "starttls")}
+	if c.SMTP.Port, err = positiveInt("SMTP_PORT", "587"); err != nil || c.SMTP.Port > 65535 {
+		return Config{}, errors.New("SMTP_PORT must be between 1 and 65535")
+	}
+	if c.SMTP.TLSMode != "starttls" && c.SMTP.TLSMode != "tls" {
+		return Config{}, errors.New("SMTP_TLS_MODE must be starttls or tls")
+	}
+	c.SMTP.Enabled = c.SMTP.Host != "" && c.SMTP.Username != "" && c.SMTP.Password != "" && c.SMTP.From != ""
+	if c.CustomerAuthEnabled {
+		if c.SMTP.Host == "" || c.SMTP.Username == "" || c.SMTP.Password == "" || c.SMTP.From == "" {
+			return Config{}, errors.New("SMTP configuration is incomplete")
+		}
+	}
+	if c.SMTP.Host != "" || c.SMTP.Username != "" || c.SMTP.From != "" {
+		if strings.ContainsAny(c.SMTP.Host+c.SMTP.From, "\r\n") || strings.ContainsAny(c.SMTP.Username, "\r\n") {
+			return Config{}, errors.New("SMTP headers contain a newline")
+		}
+		if c.SMTP.From != "" {
+			address, e := mail.ParseAddress(c.SMTP.From)
+			if e != nil || address.Address != c.SMTP.From {
+				return Config{}, errors.New("SMTP_FROM must be a single email address")
+			}
+		}
+	}
 
 	c.JWT.Secret = str("JWT_SECRET", defaultJWTSecret)
 	expires := str("JWT_EXPIRES_IN", "24h")
@@ -171,3 +209,17 @@ func Load(lookup LookupFunc) (Config, error) {
 
 func (c Config) IsProduction() bool { return c.Env == "production" }
 func (c Config) IsTest() bool       { return c.Env == "test" }
+
+func validateCustomerOrigin(raw, env string) error {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" || u.User != nil || u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.Opaque != "" {
+		return errors.New("CUSTOMER_PUBLIC_ORIGIN must be an absolute origin")
+	}
+	if u.Scheme == "https" {
+		return nil
+	}
+	if env != "production" && u.Scheme == "http" && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1") {
+		return nil
+	}
+	return errors.New("CUSTOMER_PUBLIC_ORIGIN must use HTTPS")
+}

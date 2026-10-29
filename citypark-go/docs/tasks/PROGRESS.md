@@ -116,5 +116,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] 67 Order contact and ownership safety [66]
 - [x] [68 Customer identities and optional phones](68-customer-identities.md) [67]
 - [x] [69 Opaque customer sessions](69-customer-sessions.md) [68]
+- [x] [70 SMTP and single-use email tokens](70-customer-email-tokens.md) [69]
 
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).

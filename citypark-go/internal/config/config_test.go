@@ -31,6 +31,8 @@ func TestLoadDefaults(t *testing.T) {
 		{"JWT.Secret", c.JWT.Secret, "changeme"},
 		{"JWT.ExpiresIn", c.JWT.ExpiresIn, 24 * time.Hour},
 		{"CustomerAuthEnabled", c.CustomerAuthEnabled, false},
+		{"CustomerPublicOrigin", c.CustomerPublicOrigin, "http://localhost:3001"},
+		{"SMTP", c.SMTP, SMTP{Port: 587, TLSMode: "starttls"}},
 		{"Admin", c.Admin, Admin{"dev@dev.io", "devdevdev", "+79990000000"}},
 		{"Iiko", c.Iiko, Iiko{BaseURL: "https://api-ru.iiko.services/api", PaymentTypeKind: "Card", AddressCity: "Белореченск", AddressStreet: "Гоголя", AddressHouse: "61"}},
 		{"Telegram", c.Telegram, Telegram{BaseURL: "https://api.telegram.org"}},
@@ -60,6 +62,11 @@ func TestLoadOverrides(t *testing.T) {
 		"JWT_SECRET":                           "s3cret",
 		"JWT_EXPIRES_IN":                       "90m",
 		"CUSTOMER_AUTH_ENABLED":                "true",
+		"CUSTOMER_PUBLIC_ORIGIN":               "https://site.example",
+		"SMTP_HOST":                            "smtp.example",
+		"SMTP_USERNAME":                        "user",
+		"SMTP_PASSWORD":                        "secret",
+		"SMTP_FROM":                            "mail@example.com",
 		"ADMIN_EMAIL":                          "a@b.c",
 		"ADMIN_PASSWORD":                       "pw",
 		"ADMIN_PHONE":                          "+70000000000",
@@ -109,6 +116,8 @@ func TestLoadOverrides(t *testing.T) {
 		{"DatabaseURL", c.DatabaseURL, "postgres://x"},
 		{"JWT", c.JWT, JWT{"s3cret", 90 * time.Minute}},
 		{"CustomerAuthEnabled", c.CustomerAuthEnabled, true},
+		{"CustomerPublicOrigin", c.CustomerPublicOrigin, "https://site.example"},
+		{"SMTP", c.SMTP, SMTP{Host: "smtp.example", Port: 587, Username: "user", Password: "secret", From: "mail@example.com", TLSMode: "starttls", Enabled: true}},
 		{"Admin", c.Admin, Admin{"a@b.c", "pw", "+70000000000"}},
 		{"Iiko", c.Iiko, Iiko{"http://iiko", "key", "app", "secret", "org", "menu", "tok", 30 * time.Minute, "tg1", "pt1", "External", "Майкоп", "Мира", "1"}},
 		{"Telegram", c.Telegram, Telegram{"http://tg", "tgtok", "1", "2"}},
@@ -213,16 +222,60 @@ func TestLoadErrors(t *testing.T) {
 }
 
 func TestLoadProductionSecret(t *testing.T) {
-	_, err := Load(lookupMap(map[string]string{"APP_ENV": "production"}))
+	_, err := Load(lookupMap(map[string]string{"APP_ENV": "production", "CUSTOMER_PUBLIC_ORIGIN": "https://site.example"}))
 	if err == nil || err.Error() != "JWT_SECRET must be changed in production" {
 		t.Fatalf("err = %v, want JWT_SECRET must be changed in production", err)
 	}
 
-	c, err := Load(lookupMap(map[string]string{"APP_ENV": "production", "JWT_SECRET": "x"}))
+	c, err := Load(lookupMap(map[string]string{"APP_ENV": "production", "JWT_SECRET": "x", "CUSTOMER_PUBLIC_ORIGIN": "https://site.example"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !c.IsProduction() || c.IsTest() {
 		t.Error("IsProduction/IsTest wrong for env production")
+	}
+}
+
+func TestSMTPConfig(t *testing.T) {
+	valid := map[string]string{"CUSTOMER_AUTH_ENABLED": "true", "CUSTOMER_PUBLIC_ORIGIN": "https://site.example", "SMTP_HOST": "smtp.example", "SMTP_USERNAME": "user", "SMTP_PASSWORD": "secret", "SMTP_FROM": "from@example.com"}
+	copyWith := func(k, v string) map[string]string {
+		m := make(map[string]string, len(valid)+1)
+		for key, value := range valid {
+			m[key] = value
+		}
+		m[k] = v
+		return m
+	}
+	if c, err := Load(lookupMap(valid)); err != nil || !c.SMTP.Enabled || c.SMTP.Port != 587 || c.SMTP.TLSMode != "starttls" {
+		t.Fatalf("valid: %+v %v", c.SMTP, err)
+	}
+	if c, err := Load(lookupMap(copyWith("SMTP_TLS_MODE", "tls"))); err != nil || c.SMTP.TLSMode != "tls" {
+		t.Fatalf("tls: %+v %v", c.SMTP, err)
+	}
+	if c, err := Load(lookupMap(map[string]string{"SMTP_HOST": "smtp.example"})); err != nil || c.SMTP.Enabled {
+		t.Fatalf("disabled partial: %+v %v", c.SMTP, err)
+	}
+	for _, tc := range []struct {
+		name string
+		env  map[string]string
+		want string
+	}{
+		{"missing host", copyWith("SMTP_HOST", ""), "SMTP configuration"}, {"missing user", copyWith("SMTP_USERNAME", ""), "SMTP configuration"}, {"missing password", copyWith("SMTP_PASSWORD", ""), "SMTP configuration"}, {"missing from", copyWith("SMTP_FROM", ""), "SMTP configuration"},
+		{"bad port", copyWith("SMTP_PORT", "65536"), "SMTP_PORT"}, {"bad mode", copyWith("SMTP_TLS_MODE", "plain"), "SMTP_TLS_MODE"}, {"bad sender", copyWith("SMTP_FROM", "Name <from@example.com>"), "SMTP_FROM"}, {"sender newline", copyWith("SMTP_FROM", "from@example.com\r\nBcc: victim@example.com"), "SMTP"},
+		{"origin path", copyWith("CUSTOMER_PUBLIC_ORIGIN", "https://site.example/path"), "CUSTOMER_PUBLIC_ORIGIN"}, {"origin query", copyWith("CUSTOMER_PUBLIC_ORIGIN", "https://site.example?x=1"), "CUSTOMER_PUBLIC_ORIGIN"}, {"origin userinfo", copyWith("CUSTOMER_PUBLIC_ORIGIN", "https://user@site.example"), "CUSTOMER_PUBLIC_ORIGIN"}, {"unsafe http", copyWith("CUSTOMER_PUBLIC_ORIGIN", "http://site.example"), "CUSTOMER_PUBLIC_ORIGIN"}, {"production http", func() map[string]string {
+			m := copyWith("APP_ENV", "production")
+			m["CUSTOMER_PUBLIC_ORIGIN"] = "http://localhost:3001"
+			m["JWT_SECRET"] = "safe"
+			return m
+		}(), "CUSTOMER_PUBLIC_ORIGIN"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, err := Load(lookupMap(tc.env)); err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("error=%v, want %s", err, tc.want)
+			}
+		})
+	}
+	if c, err := Load(lookupMap(map[string]string{"CUSTOMER_PUBLIC_ORIGIN": "http://127.0.0.1:3001"})); err != nil || c.CustomerPublicOrigin != "http://127.0.0.1:3001" {
+		t.Fatalf("localhost: %+v %v", c, err)
 	}
 }
