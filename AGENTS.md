@@ -1,18 +1,18 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with code in this repository.
 
 ## Layout
 
 This folder is not a repository itself. It holds two independent projects for «Сити Парк» (hotel, restaurant and
-food delivery in Белореченск). Each one has its own git repository and its own `CLAUDE.md`, which hold the real rules.
-Read the project's `CLAUDE.md` before you change anything in it, and run git commands inside the project folder.
+food delivery in Белореченск). Each one has its own git repository and its own `AGENTS.md`, which hold the real rules.
+Read the project's `AGENTS.md` before you change anything in it, and run git commands inside the project folder.
 
 | Folder | What it is | Stack | Detailed rules |
 |---|---|---|---|
-| `citypark-go/` | Backend for food ordering: menu synced from the iiko POS, payments through MONETA.RU, staff notifications through Telegram | Go, PostgreSQL 17 (Docker), embedded migrations | `citypark-go/CLAUDE.md`, `docs/tasks/CONVENTIONS.md` |
-| `citypark-modern/` | Public website (in Russian), built from a finished design | Next.js 16 App Router, React 19, TypeScript, Tailwind v4, Feature-Sliced Design | `citypark-modern/CLAUDE.md`, `AGENTS.md`, `docs/PLAN.md` |
-| `citypark-admin/` | Admin panel (in Russian): delivery prices, orders, menu photos and sync, site content, hotel reports | Vite SPA, React 19, HeroUI v3, TanStack Router + Query, types from the backend's OpenAPI | `citypark-admin/CLAUDE.md`, `docs/tasks/CONVENTIONS.md` |
+| `citypark-go/` | Backend for food ordering: menu synced from the iiko POS, payments through MONETA.RU, staff notifications through Telegram | Go, PostgreSQL 17 (Docker), embedded migrations | `citypark-go/AGENTS.md`, `docs/tasks/CONVENTIONS.md` |
+| `citypark-modern/` | Public website (in Russian), built from a finished design | Next.js 16 App Router, React 19, TypeScript, Tailwind v4, Feature-Sliced Design | `citypark-modern/AGENTS.md`, `AGENTS.md`, `docs/PLAN.md` |
+| `citypark-admin/` | Admin panel (in Russian): delivery prices, orders, menu photos and sync, site content, hotel reports | Vite SPA, React 19, HeroUI v3, TanStack Router + Query, types from the backend's OpenAPI | `citypark-admin/AGENTS.md`, `docs/tasks/CONVENTIONS.md` |
 
 Cross-project decisions are in `docs/adr/` (start with `0001-admin-panel.md`) and terms in `GLOSSARY.md`.
 
