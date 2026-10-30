@@ -118,6 +118,23 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    PairingCreated:
+      type: object
+      required: [id, code, expiresAt]
+      properties:
+        id: {type: string}
+        code: {type: string, description: Returned only at creation; keep out of URLs and logs.}
+        expiresAt: {type: string, format: date-time}
+    PairingStatus:
+      type: object
+      required: [id, status, sourceConfirmed, destinationConfirmed, otherName, expiresAt]
+      properties:
+        id: {type: string}
+        status: {type: string, enum: [pending, completed, canceled]}
+        sourceConfirmed: {type: boolean}
+        destinationConfirmed: {type: boolean}
+        otherName: {type: string, description: Peer display name only; no email or phone.}
+        expiresAt: {type: string, format: date-time}
     HotelSalesResponse:
       type: object
       required: [rows, total]
@@ -1626,6 +1643,122 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '503':
           $ref: '#/components/responses/CustomerDisabled'
+  /customer/pairings:
+    post:
+      summary: Create Telegram account pairing code
+      description: 'Recent Telegram mini session, at most five minutes old. Replaces previous pending pairing. No-store on all responses and errors. Limit 5 per user per hour.'
+      tags: [user]
+      security:
+        - customerSession: []
+      responses:
+        '201':
+          description: Single-use five-minute code, returned only once.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PairingCreated'}
+              example: {id: '<22-character-id>', code: '<22-character-code>', expiresAt: '2026-10-30T12:05:00Z'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {description: 'Подтвердите вход повторно or Подтвердите связь в нужном интерфейсе.'}
+        '429': {description: 'Слишком много попыток. Попробуйте позже; Retry-After in seconds.'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /customer/pairings/redeem:
+    post:
+      summary: Redeem a pairing code from the website
+      description: 'Recent web session. Binds the exact session but does not confirm. Limit 10 per direct IP and 5 per user in 15 minutes. No-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: {type: string, description: Put the code only in the POST body.}
+            example: {code: '<22-character-code>'}
+      responses:
+        '200':
+          description: Pending pairing.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PairingStatus'}
+              example: {id: '<22-character-id>', status: pending, sourceConfirmed: false, destinationConfirmed: false, otherName: Mini, expiresAt: '2026-10-30T12:05:00Z'}
+        '400': {description: 'Некорректный JSON or Код недействителен или устарел.'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {description: 'Подтвердите вход повторно or Подтвердите связь в нужном интерфейсе.'}
+        '409': {description: 'Аккаунты уже связаны.'}
+        '429': {description: 'Слишком много попыток. Попробуйте позже; Retry-After in seconds.'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /customer/pairings/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string}
+    get:
+      summary: Inspect a pairing
+      description: 'Only a bound recent session can inspect. Completed destination may inspect after source sessions are revoked. No-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      responses:
+        '200':
+          description: Current pairing state.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PairingStatus'}
+              example: {id: '<22-character-id>', status: pending, sourceConfirmed: false, destinationConfirmed: false, otherName: Website, expiresAt: '2026-10-30T12:05:00Z'}
+        '400': {description: 'Код недействителен или устарел.'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {description: 'Подтвердите вход повторно or Подтвердите связь в нужном интерфейсе.'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+    delete:
+      summary: Cancel a pairing
+      description: 'Bound session. Cancellation is idempotent for canceled and completed pairings. No-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      responses:
+        '204': {description: No body.}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {description: 'Подтвердите связь в нужном интерфейсе.'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /customer/pairings/{id}/confirm:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: {type: string}
+    post:
+      summary: Confirm one side of a pairing
+      description: 'Bound recent session. Both sides must confirm before an atomic merge. Limit 20 per user in 15 minutes. No-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, maxProperties: 0}
+            example: {}
+      responses:
+        '200':
+          description: Pending or completed pairing. Destination retry after completion returns completed.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PairingStatus'}
+              example: {id: '<22-character-id>', status: completed, sourceConfirmed: true, destinationConfirmed: true, otherName: Mini, expiresAt: '2026-10-30T12:05:00Z'}
+        '400': {description: 'Некорректный JSON or Код недействителен или устарел.'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {description: 'Подтвердите вход повторно, Подтвердите связь в нужном интерфейсе, or Объединение аккаунтов недоступно.'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {description: 'Способ входа уже используется.'}
+        '429': {description: 'Слишком много попыток. Попробуйте позже; Retry-After in seconds.'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
   /customer/me:
     get:
       summary: Get the customer profile

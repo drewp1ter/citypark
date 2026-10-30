@@ -587,6 +587,155 @@ Send `Authorization: Bearer cs_<token>`. Tokens have a fixed 30-day lifetime. Re
 
 ### User
 
+#### POST /customer/pairings
+
+Creates a five-minute pairing code from a recently authenticated Telegram Mini App session. Replaces an earlier pending code from this account.
+
+- **Role:** customer mini session with Telegram method, authenticated within five minutes
+
+**Request body:** none.
+
+**Response 201**
+
+```json
+{"id":"<22-character-id>","code":"<22-character-code>","expiresAt":"2026-10-30T12:05:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | absent or invalid session | `Требуется авторизация` |
+| 403 | stale authentication | `Подтвердите вход повторно` |
+| 403 | wrong surface or method | `Подтвердите связь в нужном интерфейсе` |
+| 429 | over five creates per account per hour | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+The code is returned only here. Do not put it in a URL. All pairing responses and errors use `Cache-Control: private, no-store`; 429 includes `Retry-After` seconds.
+
+#### POST /customer/pairings/redeem
+
+Binds an unused code to the website account and the exact web session. Redemption does not confirm either side.
+
+- **Role:** customer web session authenticated within five minutes
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `code` | string | yes | 22-character code from Mini App; send only in POST body |
+
+```json
+{"code":"<22-character-code>"}
+```
+
+**Response 200**
+
+```json
+{"id":"<22-character-id>","status":"pending","sourceConfirmed":false,"destinationConfirmed":false,"otherName":"Mini","expiresAt":"2026-10-30T12:05:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid, expired, canceled or already redeemed code | `Код недействителен или устарел` |
+| 400 | malformed JSON | `Некорректный JSON` |
+| 401 | absent or invalid session | `Требуется авторизация` |
+| 403 | stale authentication | `Подтвердите вход повторно` |
+| 403 | wrong surface | `Подтвердите связь в нужном интерфейсе` |
+| 409 | both sessions belong to one account | `Аккаунты уже связаны` |
+| 429 | over 10 attempts per direct IP or 5 per account in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+#### GET /customer/pairings/{id}
+
+Returns the pending or completed pairing to a bound participant. The ID alone grants no access.
+
+- **Role:** participating recent customer session
+
+**Parameters**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `id` | string | yes | pairing ID from create or redeem |
+
+**Response 200**
+
+```json
+{"id":"<22-character-id>","status":"pending","sourceConfirmed":false,"destinationConfirmed":false,"otherName":"Website","expiresAt":"2026-10-30T12:05:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | expired pairing | `Код недействителен или устарел` |
+| 401 | absent or invalid session | `Требуется авторизация` |
+| 403 | stale authentication | `Подтвердите вход повторно` |
+| 403 | wrong surface | `Подтвердите связь в нужном интерфейсе` |
+| 404 | unknown ID or unrelated session | `Не найдено` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+#### POST /customer/pairings/{id}/confirm
+
+Confirms the calling side. When both sides confirm, ownership and identities move to the website account in one transaction.
+
+- **Role:** participating recent customer session
+
+**Parameters:** `id`, pairing ID from create or redeem.
+
+**Request body**
+
+```json
+{}
+```
+
+**Response 200**
+
+```json
+{"id":"<22-character-id>","status":"completed","sourceConfirmed":true,"destinationConfirmed":true,"otherName":"Mini","expiresAt":"2026-10-30T12:05:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | expired, canceled or unredeemed pairing; bound proof expired or revoked | `Код недействителен или устарел` |
+| 400 | malformed JSON | `Некорректный JSON` |
+| 401 | absent or invalid session | `Требуется авторизация` |
+| 403 | stale authentication | `Подтвердите вход повторно` |
+| 403 | wrong surface or forbidden merge | `Подтвердите связь в нужном интерфейсе` or `Объединение аккаунтов недоступно` |
+| 404 | unknown ID or unrelated session | `Не найдено` |
+| 409 | incompatible credentials or methods | `Способ входа уже используется` |
+| 429 | over 20 confirmations per account in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
+**Notes**
+
+A retry from the valid website session returns `completed` without merging again. The source session is revoked at completion. The Mini App must relaunch through Telegram to see the merged account.
+
+#### DELETE /customer/pairings/{id}
+
+Cancels a pending pairing. Canceling an already canceled or completed pairing is idempotent.
+
+- **Role:** participating customer session
+
+**Parameters:** `id`, pairing ID from create or redeem.
+
+**Response 204:** empty body.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | absent or invalid session | `Требуется авторизация` |
+| 403 | wrong surface | `Подтвердите связь в нужном интерфейсе` |
+| 404 | unknown ID or unrelated session | `Не найдено` |
+| 503 | customer auth disabled | `Вход временно недоступен` |
+
 #### GET /customer/me
 
 Returns the customer profile.

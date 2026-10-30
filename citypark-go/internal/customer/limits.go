@@ -85,3 +85,15 @@ func (l *Limits) Telegram(r *http.Request) (bool, int) {
 func retryAfter(w http.ResponseWriter, seconds int) {
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
 }
+
+func (l *Limits) PairCreate(userID int64) (bool, int) {
+	return l.allow("pair-create:"+strconv.FormatInt(userID, 10), 5, time.Hour)
+}
+func (l *Limits) PairRedeem(userID int64, r *http.Request) (bool, int) {
+	a, x := l.allow("pair-redeem-ip:"+directIP(r), 10, 15*time.Minute)
+	b, y := l.allow("pair-redeem-user:"+strconv.FormatInt(userID, 10), 5, 15*time.Minute)
+	return a && b, max(x, y)
+}
+func (l *Limits) PairConfirm(userID int64) (bool, int) {
+	return l.allow("pair-confirm:"+strconv.FormatInt(userID, 10), 20, 15*time.Minute)
+}

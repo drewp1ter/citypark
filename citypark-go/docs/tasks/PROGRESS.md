@@ -125,4 +125,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] [75 Telegram Mini App authentication](75-telegram-authentication.md) [69, 71 (shared rate-limit helper)]
 - [x] [76 Transactional customer account merge](76-customer-account-merge.md) [68, 69, 75]
 
+- [x] [77 Two-sided Telegram account pairing](77-telegram-account-pairing.md) [76]
+
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).
