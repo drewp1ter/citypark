@@ -1217,6 +1217,72 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
+  /auth/customer/google/complete:
+    post:
+      tags: [auth]
+      summary: Complete Google login or explicit account linking
+      description: 'Role: public login or the same recent customer web session bound at start for linking. Atomically consumes the attempt before the server-side code exchange. Google email never becomes a password credential or an account merge key. All responses, including errors, send Cache-Control: private, no-store.'
+      security:
+        - {}
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state, flowToken]
+              properties:
+                state: {type: string, description: Google callback state}
+                flowToken: {type: string, description: Browser-bound flow token from start}
+                code: {type: string, description: Authorization code; exclusive with error}
+                error: {type: string, enum: [access_denied], description: Cancellation; exclusive with code}
+            example: {state: '<state>', flowToken: '<flowToken>', code: '<authorization-code>'}
+      responses:
+        '200':
+          description: Customer session envelope on login or linked confirmation on link. Existing link retains its session.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SignInResponse'
+                  - type: object
+                    required: [linked]
+                    properties:
+                      linked: {type: boolean, enum: [true]}
+              examples:
+                login:
+                  value: {user: {id: 1, name: 'Google User', email: '', phone: '', role: user}, token: 'cs_<random>', expiresAt: '2026-11-29T12:00:00Z'}
+                link:
+                  value: {linked: true}
+        '400':
+          description: 'Некорректный JSON; Не удалось подтвердить вход через Google (invalid, expired or replayed proof, code or token); Вход через Google отменён (valid cancellation).'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: 'Mini session: Откройте сайт для подключения Google. Stale or different session: Подтвердите вход повторно.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '409':
+          description: 'Google subject conflict: Способ входа уже используется.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: '20 completions per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Google or customer auth disabled, or provider unavailable. Вход через Google недоступен.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
   /auth/customer/register:
     post:
       tags: [auth]

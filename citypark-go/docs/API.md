@@ -198,7 +198,58 @@ Creates a ten-minute Google authorization attempt. It does not sign in or link a
 
 **Notes**
 
-Store `flowToken` in an HttpOnly same-site cookie on the Next server. The backend stores only its hash. Send the browser to `authorizationUrl`; it requests only `openid email profile`, uses state and nonce, and uses PKCE S256. The callback must match `GOOGLE_CALLBACK_URL` exactly. No login is completed until task 74. All responses, including errors, use `Cache-Control: private, no-store`. 429 includes `Retry-After` in seconds.
+Store `flowToken` in an HttpOnly same-site cookie on the Next server. The backend stores only its hash. Send the browser to `authorizationUrl`; it requests only `openid email profile`, uses state and nonce, and uses PKCE S256. The callback must match `GOOGLE_CALLBACK_URL` exactly. Complete the attempt with the endpoint below. All responses, including errors, use `Cache-Control: private, no-store`. 429 includes `Retry-After` in seconds.
+
+#### POST /auth/customer/google/complete
+
+Consumes a browser-bound Google attempt, exchanges the authorization code on the server, validates the ID token and signs in by Google subject. A link attempt attaches the subject only to the account bound at start.
+
+- **Role:** public for login; the same recent customer web session used at start for linking
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `state` | string | yes | State returned by Google, 32 random bytes in base64url |
+| `flowToken` | string | yes | Browser cookie value from start, 32 random bytes in base64url |
+| `code` | string | conditional | Authorization code; exactly one of `code` or `error` |
+| `error` | string | conditional | `access_denied` for cancellation; exactly one of `code` or `error` |
+
+```json
+{"state":"<state>","flowToken":"<flowToken>","code":"<authorization-code>"}
+```
+
+Cancellation: `{"state":"<state>","flowToken":"<flowToken>","error":"access_denied"}`. A valid cancellation consumes the attempt.
+
+**Response 200 (login)**
+
+```json
+{"user":{"id":1,"name":"Google User","email":"","phone":"","role":"user"},"token":"cs_<random>","expiresAt":"2026-11-29T12:00:00Z"}
+```
+
+**Response 200 (link)**
+
+```json
+{"linked":true}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON | `Некорректный JSON` |
+| 400 | invalid, expired or replayed proof, invalid code or ID token | `Не удалось подтвердить вход через Google` |
+| 400 | valid cancellation | `Вход через Google отменён` |
+| 401 | linking without the bound valid customer session, or invalid supplied credential | `Требуется авторизация` |
+| 403 | linking from a Mini App session | `Откройте сайт для подключения Google` |
+| 403 | stale or different web session | `Подтвердите вход повторно` |
+| 409 | Google subject owned by another account, or another Google subject already linked | `Способ входа уже используется` |
+| 429 | more than 20 completions per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | Google or customer authentication disabled, or provider unavailable | `Вход через Google недоступен` |
+
+**Notes**
+
+All responses, including errors, use `Cache-Control: private, no-store`; 429 includes `Retry-After` in seconds. The attempt is consumed before exchange, so failures require a new start. Google email, even when verified, does not become an authentication email or merge key. Keep the login token on the Next server in an HttpOnly same-site cookie; a successful link retains the current session.
 
 #### POST /auth/customer/register
 

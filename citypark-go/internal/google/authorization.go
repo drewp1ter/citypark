@@ -33,13 +33,27 @@ type Service struct {
 	clock                           clock.Clock
 	clientID, callbackURL, endpoint string
 	random                          io.Reader
+	clientSecret, discoveryURL      string
+	httpClient                      *http.Client
+	provider                        providerCache
 }
 
 func NewService(db *sqlx.DB, c clock.Clock, clientID, callbackURL, endpoint string) *Service {
 	if endpoint == "" {
 		endpoint = authorizationEndpoint
 	}
-	return &Service{db: db, clock: c, clientID: clientID, callbackURL: callbackURL, endpoint: endpoint, random: rand.Reader}
+	return &Service{db: db, clock: c, clientID: clientID, callbackURL: callbackURL, endpoint: endpoint, random: rand.Reader, discoveryURL: defaultDiscoveryURL, httpClient: &http.Client{Timeout: 5 * time.Second}}
+}
+
+// ConfigureCompletion supplies the server-only secret and provider discovery endpoint.
+func (s *Service) ConfigureCompletion(secret, discoveryURL string, client *http.Client) {
+	s.clientSecret = secret
+	if discoveryURL != "" {
+		s.discoveryURL = discoveryURL
+	}
+	if client != nil {
+		s.httpClient = client
+	}
 }
 
 func (s *Service) Start(ctx context.Context, intent string, session *customer.Session) (StartResult, error) {
@@ -56,6 +70,9 @@ func (s *Service) Start(ctx context.Context, intent string, session *customer.Se
 		age := s.clock.Now().Sub(session.AuthenticatedAt)
 		if session.UserID <= 0 || len(session.TokenHash) != 32 || age < 0 || age > 5*time.Minute {
 			return StartResult{}, httpx.NewError(403, "Подтвердите вход повторно")
+		}
+		if err := s.validLink(ctx, attempt{UserID: &session.UserID, SessionHash: session.TokenHash}, session); err != nil {
+			return StartResult{}, err
 		}
 	}
 	proof := func() ([]byte, string, error) {
@@ -124,7 +141,10 @@ type Handler struct {
 func NewHandler(service *Service, sessions *customer.Service, limits *customer.Limits, enabled bool) *Handler {
 	return &Handler{service, sessions, limits, enabled}
 }
-func (h *Handler) Routes(r chi.Router) { r.Post("/auth/customer/google/start", httpx.Handle(h.start)) }
+func (h *Handler) Routes(r chi.Router) {
+	r.Post("/auth/customer/google/start", httpx.Handle(h.start))
+	r.Post("/auth/customer/google/complete", httpx.Handle(h.complete))
+}
 func (h *Handler) start(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Cache-Control", "private, no-store")
 	if !h.enabled {

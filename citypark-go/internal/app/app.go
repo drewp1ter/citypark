@@ -91,6 +91,8 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	hub := live.NewHub(log)
 	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders, hub}, payments)
 	hours := workinghours.NewStore(db)
+	googleService := google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, "")
+	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)
 
 	r := chi.NewRouter()
 	r.Use(logging.Recover(log), logging.Requests(log), cors)
@@ -101,7 +103,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		user.NewHandler(users, tokens, adapter.Required(true)).Routes(r)
 		customer.NewHandler(users, sessions, adapter).Routes(r)
 		customer.NewEmailHandler(db, sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
-		google.NewHandler(google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, ""), sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
+		google.NewHandler(googleService, sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
 		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize).Routes(r)
