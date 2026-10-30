@@ -6,6 +6,7 @@ This file describes the endpoints that are implemented. Every task that adds or 
 
 - Base path: `/api/v1`. Requests and responses are JSON (`Content-Type: application/json`).
 - Auth: `Authorization: Bearer <token>`. Staff use JWTs from `POST /auth/sign-in`; customer sessions use `cs_` tokens when `CUSTOMER_AUTH_ENABLED=true`.
+- With customer auth enabled, `/user`, `/addresses`, `/orders/my`, and `/orders/{id}` accept customer sessions; legacy customer JWTs return 401. Existing admin JWT access stays available where it was allowed. `POST /orders` stays open to guests, but any supplied invalid credential returns 401 before an order is written.
 - Roles: `public` (no token), `user` (any signed-in user, admins included), `admin`.
 - Money is in rubles as a JSON number (`599` or `5.99`). Timestamps are RFC 3339.
 - Paged lists take `page` (from 1) and `pageSize` (1–500).

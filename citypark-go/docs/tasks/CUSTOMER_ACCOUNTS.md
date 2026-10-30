@@ -1,8 +1,9 @@
 # Telegram Mini App and customer accounts
 
 This is the release backlog, starting at backend 66 and website 35. Follow one
-task and commit per session. Task 66 is executable now; turn each subsequent
-backlog entry into a task file following TASK_TEMPLATE before starting it.
+task and commit per session. Task files are registered in each project's
+PROGRESS.md. Tasks 66–67 are complete; remaining tasks stay unchecked until
+implemented and verified.
 Do not enable customer authentication until the ownership and credential safety
 tasks are deployed. Existing staff Bearer JWT authentication stays unchanged.
 
@@ -17,9 +18,9 @@ tasks are deployed. Existing staff Bearer JWT authentication stays unchanged.
 | 70 | Configurable SMTP transport, hashed single-use email tokens, delivery failure handling and redacted logs | 69 |
 | 71 | Require email for password registration; verify before enabling password sign-in; 24-hour verification tokens, resend, verified email changes | 70 |
 | 72 | Password recovery/reset, one-hour tokens, generic lookup responses, rate limits, revoke sessions after reset | 71 |
-| 73 | Google OIDC start with state, nonce, PKCE; configurable client credentials and callback; identity scopes only | 69 |
+| 73 | Google OIDC start with state, nonce, PKCE; configurable client credentials and callback; identity scopes only | 69, 71 (rate limits) |
 | 74 | Google callback cancellation/errors, ID-token validation and subject-based sign-in; explicit linking, never merge by matching email | 73 |
-| 75 | Dedicated customer bot configuration and Telegram raw initData validation, five-minute validity, bounded clock tolerance; customer sessions without email/phone | 69 |
+| 75 | Dedicated customer bot configuration and Telegram raw initData validation, five-minute validity, bounded clock tolerance; customer sessions without email/phone | 69, 71 (rate limits) |
 | 76 | Transactional account merge: lock accounts, transfer identities, owned orders and saved addresses into website account; reject admins/conflicting credentials, revoke source sessions, exclude guests | 68, 69, 75 |
 | 77 | Random hashed single-use five-minute pairing code from authenticated Mini App; recent authentication and confirmation in both interfaces; atomic replay protection | 76 |
 | 78 | Linked-method listing and explicit website Google/Telegram linking APIs; concurrent pairing/conflict integration tests | 74, 77 |
