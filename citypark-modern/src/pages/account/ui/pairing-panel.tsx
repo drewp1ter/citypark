@@ -3,8 +3,7 @@
 import { useActionState, useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppLink, Button, TextField, cardClass } from '@/shared/ui'
-import { cancelPairingAction, confirmPairingAction, pairingStatusAction, redeemPairingAction } from '../api/actions'
-import type { PairingState } from '../model/schema'
+import { cancelPairingAction, confirmPairingAction, pairingStatusAction, redeemPairingAction, PairingStatus, type PairingState } from '@/features/account-pairing'
 
 const initial: PairingState = { status: 'idle' }
 
@@ -47,9 +46,7 @@ export function PairingPanel() {
   </form>}
   {state.message && <p role='alert'>{state.message}</p>}
   {pairing && state.status === 'pending' && <div className='flex flex-col gap-3'>
-   <p>Аккаунт Telegram: {pairing.otherName}</p>
-   <p>В Telegram: {pairing.sourceConfirmed ? 'подтверждено' : 'ожидает подтверждения'} · Здесь: {pairing.destinationConfirmed ? 'подтверждено' : 'ожидает подтверждения'}</p>
-   <p>Действует до {new Date(pairing.expiresAt).toLocaleString('ru-RU')}</p>
+   <PairingStatus pairing={pairing} />
    <div className='flex flex-wrap gap-3'>
     {!pairing.destinationConfirmed && <Button type='button' disabled={busy} onClick={() => invoke(confirmPairingAction)}>Подтвердить связь</Button>}
     <Button type='button' variant='outline' disabled={busy} onClick={() => invoke(cancelPairingAction)}>Отменить</Button>

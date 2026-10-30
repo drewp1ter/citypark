@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { CustomerApiError } from '@/shared/customer'
 import { formatDate, formatPrice } from '@/shared/lib'
 import { AppLink, cardClass } from '@/shared/ui'
-import { getMyOrders, orderStatusLabel } from '../api/orders'
+import { getMyOrders, orderStatusLabel } from '@/entities/order'
 
 export async function OrderHistoryPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
  const raw = (await searchParams).page ?? '1'

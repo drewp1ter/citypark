@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { customerAuthorized, type CustomerProfile, type CustomerPairing } from '@/shared/customer'
-import { profileSchema, pairingCodeSchema, type PairingState } from '../model/schema'
+import { customerAuthorized, type CustomerProfile } from '@/shared/customer'
+import { profileSchema } from '../model/schema'
 import { customerRequest, CustomerApiError, customerFallback, clearCustomerSession, getCustomerSessionToken, setCustomerSession } from '@/shared/customer'
 import { emailSchema, registerSchema, signInSchema, resetSchema, type AuthState } from '../model/schema'
 
@@ -137,42 +137,4 @@ export async function changeEmailAction(_previous: AuthState, form: FormData): P
   if (!result) return { status: 'error', message: 'Войдите повторно', values }
   return { status: 'success', message: result.message }
  } catch (error) { return failed(error, values) }
-}
-
-export async function redeemPairingAction(_previous: PairingState, form: FormData): Promise<PairingState> {
- const parsed = pairingCodeSchema.safeParse(String(form.get('code') ?? ''))
- if (!parsed.success) return { status: 'error', message: parsed.error.issues[0].message }
- try {
-  const pairing = await customerAuthorized<CustomerPairing>('/customer/pairings/redeem', { method: 'POST', body: JSON.stringify({ code: parsed.data }) })
-  if (!pairing) return { status: 'error', message: 'Войдите повторно' }
-  return { status: 'pending', pairing }
- } catch (error) { return { status: 'error', message: error instanceof CustomerApiError ? error.message : customerFallback } }
-}
-
-export async function pairingStatusAction(id: string): Promise<PairingState> {
- if (!/^[A-Za-z0-9_-]{22}$/.test(id)) return { status: 'error', message: 'Код недействителен или устарел' }
- try {
-  const pairing = await customerAuthorized<CustomerPairing>(`/customer/pairings/${id}`)
-  if (!pairing) return { status: 'error', message: 'Войдите повторно' }
-  return { status: pairing.status === 'completed' ? 'completed' : 'pending', pairing }
- } catch (error) { return { status: 'error', message: error instanceof CustomerApiError ? error.message : customerFallback } }
-}
-
-export async function confirmPairingAction(id: string): Promise<PairingState> {
- if (!/^[A-Za-z0-9_-]{22}$/.test(id)) return { status: 'error', message: 'Код недействителен или устарел' }
- try {
-  const pairing = await customerAuthorized<CustomerPairing>(`/customer/pairings/${id}/confirm`, { method: 'POST', body: '{}' })
-  if (!pairing) return { status: 'error', message: 'Войдите повторно' }
-  if (pairing.status === 'completed') { revalidatePath('/account'); revalidatePath('/account/orders') }
-  return { status: pairing.status === 'completed' ? 'completed' : 'pending', pairing }
- } catch (error) { return { status: 'error', message: error instanceof CustomerApiError ? error.message : customerFallback } }
-}
-
-export async function cancelPairingAction(id: string): Promise<PairingState> {
- if (!/^[A-Za-z0-9_-]{22}$/.test(id)) return { status: 'error', message: 'Код недействителен или устарел' }
- try {
-  const result = await customerAuthorized<void>(`/customer/pairings/${id}`, { method: 'DELETE' })
-  if (result === undefined && !(await getCustomerSessionToken())) return { status: 'error', message: 'Войдите повторно' }
-  return { status: 'canceled' }
- } catch (error) { return { status: 'error', message: error instanceof CustomerApiError ? error.message : customerFallback } }
 }

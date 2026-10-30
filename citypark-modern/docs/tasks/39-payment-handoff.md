@@ -1,0 +1,9 @@
+# Mini App payment handoff
+
+The Mini App creates an order with its server-held Telegram customer session and opens the backend's unchanged MONETA.RU URL. Immediately before the redirect, the server stores the order ID and trusted Mini App surface in a short-lived, HttpOnly, SameSite=Lax payment cookie. The cookie is bound to the current customer session and expires after 24 hours. Website orders use a separate customer or guest scope.
+
+Moneta still returns to the configured website URLs. Those routes compare `MNT_TRANSACTION_ID` with the bound payment context before sending a Mini App order to `/mini/checkout/done` or `/mini/checkout?payment=failed`. Return parameters never change payment status. The Mini App reads the order through its own customer session; only the backend callback can mark it paid. Unknown context or a lost session shows a neutral message and leaves the cart intact. A verified paid order clears the cart. A pending order gets a few status refreshes; a reload never creates another order.
+
+Set `TELEGRAM_MINI_APP_URL` to the configured bot Mini App link, such as `https://t.me/<bot>/<app>`, so a customer whose embedded view closes during external payment has a safe way to reopen it. A fresh Telegram launch is required if the old source session was revoked after account pairing. Never put a session token, pairing code, or Telegram `initData` in a payment URL. Manual checks on Android and iOS in task 40 must confirm that the provider returns the browser to the same site origin with the Lax cookie intact, and that reopening through the bot link restores the Mini App route.
+
+`telegram-pairing-payment.mjs` runs read-only assertions by default. `QA_MINI_SESSION` enables read-only signed-in screens. Pairing, ordering, provider payments, and cross-app navigation need owner-approved live credentials and manual execution; the script does not simulate backend success.

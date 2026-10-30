@@ -1,7 +1,7 @@
 import 'server-only'
 import { cookies } from 'next/headers'
 import { serverEnv } from '@/shared/config'
-import { createHash } from 'node:crypto'
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 
 const productionName = '__Host-citypark_customer'
 const developmentName = 'citypark_customer_dev'
@@ -11,6 +11,46 @@ const googleName = '__Host-citypark_google_flow'
 const googleDevName = 'citypark_google_flow_dev'
 type GoogleAttempt = { key: string; token: string; intent: 'login' | 'link'; expires: number }
 export const guestCookieName = 'citypark_guest_checkout_scope'
+const paymentName = '__Host-citypark_payment'
+const paymentDevName = 'citypark_payment_dev'
+export type PaymentContext = { orderId: number; surface: 'web' | 'mini'; issuedAt: number }
+
+function paymentCookieName() { return customerCookieName() === productionName ? paymentName : paymentDevName }
+
+async function paymentKey(surface: 'web' | 'mini') {
+ return surface === 'mini' ? getMiniSessionToken() : (await getCustomerSessionToken()) ?? getGuestCheckoutCookie()
+}
+
+export async function setPendingPaymentContext(orderId: number, surface: 'web' | 'mini'): Promise<void> {
+ if (!Number.isSafeInteger(orderId) || orderId < 1) throw new Error('Invalid order id')
+ const key = await paymentKey(surface)
+ if (!key) throw new Error('Missing payment session')
+ const context: PaymentContext = { orderId, surface, issuedAt: Date.now() }
+ const payload = Buffer.from(JSON.stringify(context)).toString('base64url')
+ const signature = createHmac('sha256', key).update(payload).digest('base64url')
+ const name = paymentCookieName()
+ ;(await cookies()).set(name, `${payload}.${signature}`, { httpOnly: true, secure: name === paymentName, sameSite: 'lax', path: '/', maxAge: 86400 })
+}
+
+export async function getPendingPaymentContext(returnedId?: string): Promise<PaymentContext | undefined> {
+ if (!returnedId || !/^[1-9]\d*$/.test(returnedId) || !Number.isSafeInteger(Number(returnedId))) return undefined
+ const raw = (await cookies()).get(paymentCookieName())?.value
+ if (!raw) return undefined
+ const [payload, signature, extra] = raw.split('.')
+ if (!payload || !signature || extra) return undefined
+ let value: unknown
+ try { value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) } catch { return undefined }
+ if (!value || typeof value !== 'object') return undefined
+ const context = value as PaymentContext
+ if ((context.surface !== 'web' && context.surface !== 'mini') || context.orderId !== Number(returnedId) || !Number.isSafeInteger(context.orderId) || typeof context.issuedAt !== 'number' || context.issuedAt > Date.now() || Date.now() - context.issuedAt > 86400_000) return undefined
+ const key = await paymentKey(context.surface)
+ if (!key) return undefined
+ const expected = createHmac('sha256', key).update(payload).digest()
+ let actual: Buffer
+ try { actual = Buffer.from(signature, 'base64url') } catch { return undefined }
+ if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return undefined
+ return context
+}
 
 function customerCookieName() {
 	return process.env.NODE_ENV === 'development' && serverEnv().CUSTOMER_PUBLIC_ORIGIN.startsWith('http://localhost:')

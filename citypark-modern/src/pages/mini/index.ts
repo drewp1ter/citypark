@@ -1,2 +1,6 @@
 export { MiniMenuPage } from './ui/mini-menu-page'
 export { MiniCheckoutPage } from './ui/mini-checkout-page'
+export { MiniAccountPage } from './ui/mini-account-page'
+export { MiniHistoryPage } from './ui/mini-history-page'
+export { MiniOrderPage } from './ui/mini-order-page'
+export { MiniPaymentReturnPage } from './ui/mini-payment-return-page'

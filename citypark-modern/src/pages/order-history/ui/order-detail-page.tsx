@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { CustomerApiError } from '@/shared/customer'
 import { formatDate, formatPrice } from '@/shared/lib'
 import { AppLink, cardClass } from '@/shared/ui'
-import { getMyOrder, orderStatusLabel } from '../api/orders'
+import { getMyOrder, orderStatusLabel } from '@/entities/order'
 
 export async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
  const raw = (await params).id

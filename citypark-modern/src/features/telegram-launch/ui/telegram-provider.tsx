@@ -41,10 +41,17 @@ export function TelegramProvider({ authenticated, children }: { authenticated: b
 		app.expand?.()
 		app.ready()
 		if (authenticated) {
+			attempted.current = true
+			// A session can be revoked after pairing. Record this launch even when its cookie was already present.
+			try {
+				const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(app.initData))
+				const fingerprint = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+				sessionStorage.setItem('citypark-mini-launch', fingerprint)
+			} catch { /* The current session remains usable. */ }
 			setStatus('ready')
 			return
 		}
-		if (attempted.current) return
+		if (attempted.current) { setStatus('invalid'); return }
 		attempted.current = true
 		// A lost response must not cause the same one-time Telegram proof to be posted again on reload.
 		try {
@@ -81,7 +88,7 @@ export function TelegramProvider({ authenticated, children }: { authenticated: b
 		const app = appRef.current
 		if (!app) return
 		const update = () => updateViewport(app)
-		const back = () => router.push('/mini')
+		const back = () => router.push(pathname?.startsWith('/mini/orders/') || pathname === '/mini/checkout/done' ? '/mini/orders' : pathname === '/mini/orders' ? '/mini/account' : '/mini')
 		for (const name of ['viewportChanged', 'safeAreaChanged', 'contentSafeAreaChanged']) app.onEvent?.(name, update)
 		window.visualViewport?.addEventListener('resize', update)
 		if (pathname === '/mini') app.BackButton?.hide()

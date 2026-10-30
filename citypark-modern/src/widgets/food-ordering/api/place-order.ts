@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { getDeliveryTowns, getMenu, priceLines } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { phoneDigits } from '@/shared/lib'
+import { setPendingPaymentContext } from '@/shared/customer'
 import {
 	conditionalErrors,
 	linesSchema,
@@ -109,6 +110,7 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 			return { status: 'error', errors, values }
 		}
 		redirectUrl = result.redirectUrl
+		await setPendingPaymentContext(result.orderId, surface)
 	} catch (error) {
 		console.error(error)
 		errors.form = 'Не удалось отправить заказ. Попробуйте ещё раз через минуту.'

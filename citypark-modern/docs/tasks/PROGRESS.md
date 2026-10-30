@@ -89,5 +89,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - `npm run check`, `npm run build`, and the read-only production flow pass. Live account writes, order fixtures, and two-sided pairing are gated by `QA_CUSTOMER_WRITES=1`; they were not run here.
 - [x] [38 Telegram Mini App entry and ordering](38-telegram-mini-entry.md) [37; backend75]
   - `npm run check`, `npm run build`, and the production-build `telegram-mini.mjs` flow pass. Existing menu and checkout flows pass without order writes. Owner check: with an approved fresh Telegram launch, run `QA_CUSTOMER_WRITES=1 QA_TELEGRAM_INIT_DATA=... node scripts/qa/flows/telegram-mini.mjs` against the configured backend; a real order/payment and device checks remain for task 40.
-- [ ] [39 Mini App pairing, history and payment return](39-telegram-mini-history-payment.md) [38]
+- [x] [39 Mini App pairing, history and payment return](39-telegram-mini-history-payment.md) [38]
+  - `npm run check`, `npm run build`, the production-build `telegram-pairing-payment.mjs` flow, and the existing checkout regression flow passed. Live pairing needs `QA_CUSTOMER_WRITES=1` plus fresh mini and website sessions; provider payment and device handoff remain manual checks for task 40.
 - [ ] [40 Customer accounts and Mini App release checks](40-customer-mini-release-checks.md) [39; backend78]
