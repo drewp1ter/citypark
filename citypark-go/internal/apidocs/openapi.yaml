@@ -2100,6 +2100,47 @@ paths:
                 $ref: '#/components/schemas/Category'
         '404':
           $ref: '#/components/responses/NotFound'
+  /categories/{id}/ordering-hours:
+    put:
+      summary: Set category ordering hours and weekdays
+      tags: [catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startTime, endTime, days]
+              properties:
+                startTime:
+                  type: string
+                  description: H:MM or HH:MM; empty together with endTime removes the time limit.
+                endTime:
+                  type: string
+                  description: Must be later than startTime; 24:00 is allowed.
+                days:
+                  type: string
+                  pattern: '^(?!0000000$)([01]{7})?$'
+                  description: Monday-first weekday mask; empty means every day.
+      responses:
+        '200':
+          description: Updated category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /categories/{id}/products:
     get:
       summary: List the products of one category

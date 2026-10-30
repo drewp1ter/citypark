@@ -9,10 +9,11 @@ type Menu struct {
 }
 
 type ItemsGroup struct {
-	ID       string     `json:"id"`
-	Name     string     `json:"name"`
-	IsHidden bool       `json:"isHidden"`
-	Items    []MenuItem `json:"items"`
+	Description string     `json:"description"`
+	ID          string     `json:"id"`
+	Name        string     `json:"name"`
+	IsHidden    bool       `json:"isHidden"`
+	Items       []MenuItem `json:"items"`
 }
 
 type MenuItem struct {

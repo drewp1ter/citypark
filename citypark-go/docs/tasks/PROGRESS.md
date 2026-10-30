@@ -130,3 +130,6 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
 
 ## Automatic paid orders
 - [x] [79 Automatic paid orders and one staff Telegram chat](79-automatic-paid-orders.md) [62, 64, 65, 78] (needed by citypark-admin task 24)
+
+- [x] [80 Category descriptions and ordering times](80-category-settings.md) [79]
+  - Full Go suite, build, vet and formatting pass. Coverage: catalog 88.8%, iiko 93.7%, app 99.4%, apidocs 100%.

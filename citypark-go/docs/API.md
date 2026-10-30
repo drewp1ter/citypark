@@ -2804,7 +2804,7 @@ Downloads the external menu from iiko and applies it: categories and products. M
 
 The update runs in one transaction and can take a few seconds. The menu is the external menu `IIKO_EXTERNAL_MENU_ID`. Every menu group becomes a category, even a group with nothing for sale. Items without a price are skipped. `totalCategories` and `totalProducts` count the categories and products that are in the menu after the update. Items that disappeared from iiko are hidden, not removed. The `isHidden` flag of a menu group is stored; hidden groups are synced with their products but are not listed by `GET /categories`.
 
-Products take their `description` from the iiko menu item (trimmed; an empty string when iiko has none, and an empty iiko description clears the old one on the next update). The update saves each product's iiko button image as a product image of type `from_iiko` (the first size with an image wins; an image url used twice keeps the last product), and deletes `from_iiko` images that are no longer in the menu. Categories get no images from iiko, so their `from_iiko` images are all deleted. The update does not take tags, nutrition values or sale windows from iiko: nutrition values and sale windows are reset and all tags are removed. Category descriptions are reset to an empty string. Images added by hand stay.
+Products take their `description` from the iiko menu item (trimmed; an empty string when iiko has none, and an empty iiko description clears the old one on the next update). The update saves each product's iiko button image as a product image of type `from_iiko` (the first size with an image wins; an image url used twice keeps the last product), and deletes `from_iiko` images that are no longer in the menu. Categories get no images from iiko, so their `from_iiko` images are all deleted. The update does not take tags, nutrition values or sale windows from iiko: nutrition values and product sale windows are reset and all tags are removed. Category descriptions are copied from iiko with surrounding whitespace trimmed; an empty description clears the old text. Category ordering times and weekdays are managed by admins and survive sync. Images added by hand stay.
 
 #### POST /iiko/sync
 
@@ -2936,3 +2936,21 @@ Content-Type: image/png
 **Notes**
 
 The `url` is what you send as a photo URL to the content endpoints. The server also accepts it back without the origin (`/uploads/2026/10/...`), and accepts photos that ship with the site (`/images/room-vip.jpg`) and an empty string for "no photo"; any other address is rejected by the content endpoints. Files that are never used are not cleaned up. Uploaded files are static files served at `GET /uploads/...`, outside `/api/v1`; they are immutable and cached for a year, so a replaced photo is a new upload with a new URL.
+
+#### PUT /categories/{id}/ordering-hours
+
+Role: admin. Sets ordering hours and weekdays for one category. Settings survive iiko sync. Uses the existing restaurant-local clock for availability; start is inclusive and end exclusive. Overnight windows are not supported. Restaurant working hours still apply.
+
+Path `id`: positive category ID. Required JSON fields:
+
+| Field | Type | Rules |
+|---|---|---|
+| startTime | string | H:MM or HH:MM; empty together with endTime removes the time limit |
+| endTime | string | Later than startTime, up to 24:00 |
+| days | string | Seven 0/1 characters, Monday first; empty = every day; at least one day required |
+
+Example: `{"startTime":"9:00","endTime":"14:00","days":"1111100"}`.
+
+200 returns the updated Category object with `id`, `name`, `description`, `images`, `isAvailableForOrder`, `salesDays`, `startTime`, `endTime`, as in GET /categories/{id}. `salesDays` lists selected weekdays in Russian.
+
+400: `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with field errors: `Укажите время или пустую строку`, `Укажите время в формате ЧЧ:ММ`, `Время окончания должно быть позже начала`, or `Выберите дни недели`. Standard malformed JSON / invalid ID errors also apply. 401: `Требуется авторизация`. 403: `Недостаточно прав`. 404: `Не найдено` for missing or deleted categories.

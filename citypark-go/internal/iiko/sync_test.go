@@ -445,8 +445,8 @@ func TestSyncClearsOldData(t *testing.T) {
 	runSync(t, db, baseMenu())
 
 	c := getCategory(t, db, "g-mangal")
-	if c.Description != "" || c.SaleStart != nil || c.SaleEnd != nil || c.SaleDays != "" {
-		t.Errorf("category = %+v, want description and sale window cleared", c)
+	if c.Description != "" || c.SaleStart == nil || *c.SaleStart != 600 || c.SaleEnd == nil || *c.SaleEnd != 1200 || c.SaleDays != "1111100" {
+		t.Errorf("category = %+v, want description cleared and sale window preserved", c)
 	}
 	p := getProduct(t, db, "p-shashlik")
 	if p.Description != "" || p.Fats != 0 || p.Proteins != 0 || p.Carbs != 0 || p.Calories != 0 ||
@@ -762,5 +762,18 @@ func TestRunEveryStopsWhileWaitingForTick(t *testing.T) {
 	waitDone(t, done)
 	if n := strings.Count(logs.String(), "scheduled menu sync"); n != 1 {
 		t.Errorf("sync log lines = %d, want 1: cancel must not trigger another run", n)
+	}
+}
+
+func TestSyncCategoryDescription(t *testing.T) {
+	db := testutil.NewDB(t)
+	m := baseMenu()
+	for _, description := range []string{"  Обеденное меню  ", "Новое описание", ""} {
+		m.ItemsGroups[0].Description = description
+		runSync(t, db, m)
+		got := getCategory(t, db, m.ItemsGroups[0].ID)
+		if got.Description != strings.TrimSpace(description) {
+			t.Fatalf("description = %q", got.Description)
+		}
 	}
 }

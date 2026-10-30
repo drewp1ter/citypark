@@ -162,3 +162,9 @@ func (s *Store) loadImages(ctx context.Context, table, parentColumn string, ids 
 	}
 	return byParent, nil
 }
+
+// SetCategoryHours saves the admin-managed category schedule.
+func (s *Store) SetCategoryHours(ctx context.Context, id int64, start, end *int, days string) error {
+	var updated int64
+	return store.NotFound(s.db.GetContext(ctx, &updated, `UPDATE categories SET sale_start=$2, sale_end=$3, sale_days=$4, updated_at=now() WHERE id=$1 AND NOT is_deleted RETURNING id`, id, start, end, days))
+}
