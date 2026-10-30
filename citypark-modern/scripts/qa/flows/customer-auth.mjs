@@ -27,7 +27,7 @@ for (const width of [390, 1440]) {
 		out(`${width} ${theme} horizontal overflow`, await page.evaluate(() => document.documentElement.scrollWidth > innerWidth))
 		await page.getByLabel('Email').fill('invalid-email')
 		await page.getByLabel('Пароль').fill('secret-password-for-test')
-		await page.getByRole('button', { name: 'Войти' }).click()
+		await page.getByRole('button', { name: 'Войти', exact: true }).click()
 		assert.equal(await page.getByLabel('Email').inputValue(), 'invalid-email')
 		assert.ok(!(await page.locator('body').innerText()).includes('secret-password-for-test'))
 		assert.equal(writes.length, 0)
@@ -82,7 +82,7 @@ if (process.env.QA_CUSTOMER_WRITES === '1') {
 	await page.goto(`${base}/account/sign-in?returnTo=%2F%2Fevil.example`)
 	await page.getByLabel('Email').fill(email)
 	await page.getByLabel('Пароль').fill(password)
-	await page.getByRole('button', { name: 'Войти' }).click()
+	await page.getByRole('button', { name: 'Войти', exact: true }).click()
 	await page.waitForURL(`${base}/menu`)
 	const session = (await context.cookies()).find((cookie) => cookie.name === '__Host-citypark_customer')
 	assert.ok(session, 'sign-in did not set the customer cookie')
@@ -99,6 +99,7 @@ if (process.env.QA_CUSTOMER_WRITES === '1') {
 	out('registration/resend/confirm/sign-in/logout', 'skipped: set QA_CUSTOMER_WRITES=1 with owner approval and a real test account')
 }
 if (process.env.QA_PLACE_ORDER === '1') {
+	assert.equal(process.env.QA_CUSTOMER_WRITES, '1', 'QA_PLACE_ORDER requires owner approval and QA_CUSTOMER_WRITES=1')
 	const { QA_CUSTOMER_EMAIL: email, QA_CUSTOMER_PASSWORD: password, QA_ORDER_NAME: name, QA_ORDER_PHONE: phone, QA_ORDER_COMMENT: comment, MENU_API_URL: api } = process.env
 	assert.ok(email && password && name && phone && comment && api, 'QA_PLACE_ORDER needs customer credentials, order fields and MENU_API_URL')
 	const cart = await seedCart([1])

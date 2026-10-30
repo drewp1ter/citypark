@@ -170,7 +170,7 @@ try {
 			await check.close()
 		}
 	} else {
-		console.log('Live authentication/replay/order checks: skipped (owner approval and fresh Telegram launch required)')
+		console.log('PENDING: live authentication, replay and order checks need owner approval and fresh Telegram launch')
 	}
 } finally {
 	await browser.close()

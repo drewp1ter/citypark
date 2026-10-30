@@ -40,6 +40,10 @@ The Next.js router is the root `app/` folder (thin re-exports); the stub `pages/
 `BASE_URL` changes the address (default `http://localhost:3111`). Playwright needs its browser once:
 `npx playwright install chromium`.
 
+Customer accounts and Telegram Mini App release checks: [docs/CUSTOMER_ACCOUNTS_RELEASE.md](docs/CUSTOMER_ACCOUNTS_RELEASE.md).
+With the production build serving on :3111 and the configured backend running, set `BASE_URL` and `MENU_API_URL`,
+then run `npm run qa:customer-release`. The runner is read-only by default and reports pending live/device checks.
+
 ## Still needs real data from the owner
 
 Booking engine and room availability · Menu content in the backend (descriptions, weights and photos of the dishes) · delivery tariffs below 500 ₽ and for СОТ/ДНТ · PDF documents and legal texts · text and photos of the

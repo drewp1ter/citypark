@@ -20,7 +20,7 @@ export function MobileQuickActions() {
 	return (
 		<nav
 			aria-label='Быстрые действия'
-			className='to-bg sticky bottom-0 z-10 grid grid-cols-2 gap-2 bg-linear-to-b from-transparent to-35% px-3 pt-2.5 pb-3 md:hidden'
+			className='to-bg sticky bottom-0 z-10 grid grid-cols-2 gap-6 bg-linear-to-b from-transparent to-35% px-3 pt-2.5 pb-3 md:hidden'
 		>
 			{news ? (
 				<Button href='/menu' variant='surface' size='xl'>

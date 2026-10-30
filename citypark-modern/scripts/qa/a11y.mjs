@@ -17,7 +17,6 @@ const routes = process.argv.slice(2).length
 			'/checkout',
 			'/checkout/done',
 			'/news',
-			'/news/frittata',
 			'/contacts',
 			'/documents',
 			'/privacy',

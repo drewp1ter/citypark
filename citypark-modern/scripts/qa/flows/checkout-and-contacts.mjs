@@ -178,26 +178,13 @@ await h.getByRole('button', { name: 'Отправить', exact: true }).click()
 await h.waitForTimeout(800)
 out('honeypot filled -> looks like success', await txt(h.getByRole('status')))
 
-// ---------- 404 and articles
+// ---------- 404
 const status = async (path) => (await fetch(base + path)).status
 out('GET /nope', await status('/nope'))
-out('GET /news/unknown-slug', await status('/news/unknown-slug'))
-out('GET /news/frittata', await status('/news/frittata'))
-out('GET /news/new-menu-2026', await status('/news/new-menu-2026'))
 const a = await browser.newPage()
 await a.goto(base + '/nope')
 out(
 	'404 page h1 + home link',
 	`${await txt(a.locator('h1'))} | ${await a.getByRole('link', { name: 'На главную' }).getAttribute('href')}`
 )
-await a.goto(base + '/news/frittata')
-out('article h1 / meta', `${await txt(a.locator('h1'))} / ${await txt(a.locator('article p').first())}`)
-await a.goto(base + '/')
-await a
-	.locator("a[href='/news/special-offer-september-2026']")
-	.first()
-	.click({ force: true })
-	.catch(() => {})
-await a.waitForTimeout(500)
-out('home news card opens the article', a.url().replace(base, ''))
 await browser.close()

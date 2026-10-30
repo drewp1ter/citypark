@@ -62,7 +62,7 @@ try {
 		await page.getByRole('alert').getByText('Ссылка недействительна или устарела').waitFor()
 		assert.ok(!(await page.locator('body').innerHTML()).includes('qa-secret-password-123'))
 		console.log('Invalid reset and password non-echo: PASS')
-		console.log('Reset, email confirmation, and live Google login require owner-supplied single-use proofs and Google consent.')
+		console.log('PENDING: reset, email confirmation, and live Google login require owner-supplied single-use proofs and Google consent.')
 		if (process.env.QA_GOOGLE_START === '1') {
 			await page.goto(`${base}/account/sign-in`)
 			const provider = page.waitForRequest((request) => request.url().startsWith('https://accounts.google.com/o/oauth2/v2/auth?'))

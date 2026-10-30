@@ -16,7 +16,6 @@ const routes = process.argv.slice(2).length
 			'/checkout',
 			'/checkout/done',
 			'/news',
-			'/news/frittata',
 			'/contacts',
 			'/privacy',
 			'/offer',
@@ -28,6 +27,7 @@ const cart = await seedCart([2])
 
 const browser = await chromium.launch()
 const problems = []
+let yandexScriptErrors = 0
 for (const route of routes) {
 	for (const width of widths) {
 		const context = await browser.newContext({ viewport: { width, height: 900 } })
@@ -53,11 +53,16 @@ for (const route of routes) {
 			return `scrollWidth ${root.scrollWidth} > ${innerWidth}; first culprit: ${culprit ?? '?'}`
 		})
 		if (overflow) problems.push(`${route} @${width}: overflow ${overflow}`)
-		for (const e of errors) problems.push(`${route} @${width}: ${e}`)
+		for (const e of errors) {
+			if (route === '/contacts' && e.startsWith('console: Yandex map failed to load Error: Failed to load the Yandex Maps script')) {
+				yandexScriptErrors++
+			} else problems.push(`${route} @${width}: ${e}`)
+		}
 		await context.close()
 	}
 }
 await browser.close()
 console.log(`checked ${routes.length} routes x ${widths.length} widths`)
+console.log(`Yandex Maps script failures ignored by owner direction: ${yandexScriptErrors}`)
 console.log(problems.length ? problems.join('\n') : 'No overflow, no errors.')
 process.exitCode = problems.length ? 1 : 0

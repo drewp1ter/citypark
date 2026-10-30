@@ -122,7 +122,7 @@ try {
    for (const token of [firstToken, secondToken]) assert.equal((await read(token, `/orders/${guestId}`)).status, 404)
    console.log('Two-account pagination, own detail, foreign 404 and guest exclusion: PASS')
   } else console.log('Two-account isolation and guest exclusion: SKIPPED (provide QA_CUSTOMER_EMAIL_2, QA_CUSTOMER_PASSWORD_2, QA_GUEST_ORDER_ID)')
-  console.log('Real Telegram pairing needs a Mini App code and confirmation on both surfaces; SKIPPED')
+  console.log('PENDING: real Telegram pairing needs a Mini App code and confirmation on both surfaces')
   await context.close()
  } else {
   console.log('Live sign-in, profile writes, pairing, two-account ownership, guest exclusion and order scenarios: SKIPPED (QA_CUSTOMER_WRITES=1 and owner-approved fixtures required)')

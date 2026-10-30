@@ -7,6 +7,9 @@ const browser = await chromium.launch({ headless: true })
 const cart = await seedCart([1])
 
 try {
+ const worker = await (await fetch(`${base}/sw.js`)).text()
+ assert.match(worker, /pathname\.startsWith\('\/mini'\)/)
+ console.log('Service worker excludes private Mini App routes: PASS')
  for (const theme of ['light', 'dark']) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } })
   await context.addInitScript(({ cart, theme }) => { localStorage.setItem('citypark-cart', JSON.stringify(cart)); localStorage.setItem('theme', theme) }, { cart, theme })
@@ -75,7 +78,7 @@ try {
   await webPage.goto(base + '/account/orders')
   await webPage.getByRole('heading', { name: 'История заказов' }).waitFor()
   console.log('Live canceled-code rejection, two confirmations, source reauthentication and website owned history PASS')
-  console.log('Provider payment and cross-app navigation still require manual device checks; no order or payment was created by this flow')
+  console.log('PENDING: provider payment and cross-app navigation require manual device checks; this flow created no order or payment')
   await mini.close()
   await web.close()
  } else console.log('Live stale/conflict/replay, pairing, order and payment writes require QA_CUSTOMER_WRITES=1 and owner-provided sessions')
