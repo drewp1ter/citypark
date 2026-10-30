@@ -96,7 +96,7 @@ func TestProductKeys(t *testing.T) {
 	sort.Strings(keys)
 	want := []string{
 		"calories", "carbohydrates", "categoryId", "description", "endTime", "fats", "flags", "id",
-		"images", "isAvailableForOrder", "measureUnit", "name", "price", "proteins", "salesDays",
+		"images", "isAvailableForOrder", "isOrderBlocked", "measureUnit", "name", "price", "proteins", "salesDays",
 		"startTime", "weight",
 	}
 	if !reflect.DeepEqual(keys, want) {

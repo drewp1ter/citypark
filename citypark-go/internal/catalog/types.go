@@ -29,21 +29,22 @@ type Category struct {
 }
 
 type Product struct {
-	ID            int64         `db:"id"`
-	CategoryID    int64         `db:"category_id"`
-	Name          string        `db:"name"`
-	Description   string        `db:"description"`
-	MeasureUnit   string        `db:"measure_unit"`
-	Weight        float64       `db:"weight"`
-	Proteins      float64       `db:"proteins"`
-	Fats          float64       `db:"fats"`
-	Carbohydrates float64       `db:"carbohydrates"`
-	Calories      float64       `db:"calories"`
-	Flags         int           `db:"flags"`
-	Price         money.Kopecks `db:"price_kopecks"`
-	SaleStart     *int          `db:"sale_start"`
-	SaleEnd       *int          `db:"sale_end"`
-	SaleDays      string        `db:"sale_days"`
+	IsOrderBlocked bool          `db:"is_order_blocked"`
+	ID             int64         `db:"id"`
+	CategoryID     int64         `db:"category_id"`
+	Name           string        `db:"name"`
+	Description    string        `db:"description"`
+	MeasureUnit    string        `db:"measure_unit"`
+	Weight         float64       `db:"weight"`
+	Proteins       float64       `db:"proteins"`
+	Fats           float64       `db:"fats"`
+	Carbohydrates  float64       `db:"carbohydrates"`
+	Calories       float64       `db:"calories"`
+	Flags          int           `db:"flags"`
+	Price          money.Kopecks `db:"price_kopecks"`
+	SaleStart      *int          `db:"sale_start"`
+	SaleEnd        *int          `db:"sale_end"`
+	SaleDays       string        `db:"sale_days"`
 
 	CategoryName      string `db:"category_name"`
 	CategorySaleStart *int   `db:"category_sale_start"`
@@ -67,6 +68,7 @@ type CategoryView struct {
 
 // ProductView is the JSON shape of a product.
 type ProductView struct {
+	IsOrderBlocked      bool          `json:"isOrderBlocked"`
 	ID                  int64         `json:"id"`
 	CategoryID          int64         `json:"categoryId"`
 	Name                string        `json:"name"`
@@ -145,7 +147,8 @@ func (p Product) View(now time.Time) ProductView {
 		Flags:               p.Flags,
 		Price:               p.Price,
 		Images:              images(p.Images),
-		IsAvailableForOrder: open(w, now) && open(p.CategoryWindow(), now),
+		IsOrderBlocked:      p.IsOrderBlocked,
+		IsAvailableForOrder: !p.IsOrderBlocked && open(w, now) && open(p.CategoryWindow(), now),
 		SalesDays:           w.DaysString(),
 		StartTime:           w.StartString(),
 		EndTime:             w.EndString(),

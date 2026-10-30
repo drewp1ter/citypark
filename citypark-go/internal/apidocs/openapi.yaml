@@ -112,7 +112,7 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
     Unavailable:
-      description: The order cannot be accepted now (working hours or sale window).
+      description: The order cannot be accepted now (working hours, sale window or manual dish block).
       content:
         application/json:
           schema:
@@ -361,6 +361,7 @@ components:
         - flags
         - price
         - images
+        - isOrderBlocked
         - isAvailableForOrder
         - salesDays
         - startTime
@@ -399,9 +400,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        isOrderBlocked:
+          type: boolean
+          description: Persistent manual ordering block, preserved during iiko sync.
         isAvailableForOrder:
           type: boolean
-          description: True only when both the product's own window and its category's window are open now.
+          description: True only when not manually blocked and both the product's own window and its category's window are open now.
         salesDays:
           type: string
           description: The product's own sale window. Empty string when it has none.
@@ -2098,6 +2102,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /products/{id}/ordering-block:
+    put:
+      summary: Set persistent dish ordering block
+      tags: [catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [isOrderBlocked]
+              properties:
+                isOrderBlocked:
+                  type: boolean
+      responses:
+        '200':
+          description: Updated product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
   /categories/{id}/ordering-hours:

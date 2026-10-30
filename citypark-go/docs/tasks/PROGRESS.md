@@ -133,3 +133,12 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
 
 - [x] [80 Category descriptions and ordering times](80-category-settings.md) [79]
   - Full Go suite, build, vet and formatting pass. Coverage: catalog 88.8%, iiko 93.7%, app 99.4%, apidocs 100%.
+
+## Dish ordering blocks
+- [x] [81 Persistent dish ordering blocks](81-dish-ordering-blocks.md) [80] (needed by citypark-admin task 26 and citypark-modern task 42)
+  - Add `is_order_blocked` to products (default false); preserve it through iiko syncs. Blocks apply to the whole dish until manually removed.
+  - Expose `isOrderBlocked`; compute `isAvailableForOrder` from the manual block and existing product/category schedules. Unblocking must not override schedules; blocked dishes remain in public menu responses.
+  - Add admin-only `PUT /products/{id}/ordering-block` with required boolean `isOrderBlocked`, returning the updated product; follow existing validation and error conventions.
+  - Reject blocked dishes during order creation, including duplicate-order retries before returning a payment link, with a Russian error identifying the dish. Existing placed orders and payments remain unchanged.
+  - Update OpenAPI and `docs/API.md`. Test block/unblock, sync persistence, schedule interaction, permissions, invalid requests, missing products, direct order rejection and duplicate retries; run required backend checks against the existing database.
+  - Build, vet, formatting and serial full suite pass; catalog 88.3%, order 90.9%, iiko 93.7%, apidocs 100%.

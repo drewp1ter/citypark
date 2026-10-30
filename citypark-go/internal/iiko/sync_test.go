@@ -777,3 +777,21 @@ func TestSyncCategoryDescription(t *testing.T) {
 		}
 	}
 }
+
+func TestSyncPreservesProductOrderingBlock(t *testing.T) {
+	db := testutil.NewDB(t)
+	s := NewSyncer(db, &fakeSource{n: baseMenu()})
+	if _, err := s.Sync(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE products SET is_order_blocked=true WHERE iiko_id='p-shashlik'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Sync(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	var blocked bool
+	if err := db.Get(&blocked, `SELECT is_order_blocked FROM products WHERE iiko_id='p-shashlik'`); err != nil || !blocked {
+		t.Fatalf("blocked=%v err=%v", blocked, err)
+	}
+}

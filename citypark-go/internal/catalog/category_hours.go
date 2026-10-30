@@ -16,6 +16,7 @@ import (
 func (h *Handler) AdminRoutes(r chi.Router, tokens *auth.Tokens) {
 	r.Group(func(r chi.Router) {
 		r.Use(tokens.RequireRole(auth.RoleAdmin))
+		r.Put("/products/{id}/ordering-block", httpx.Handle(h.putProductBlock))
 		r.Put("/categories/{id}/ordering-hours", httpx.Handle(h.putCategoryHours))
 	})
 }

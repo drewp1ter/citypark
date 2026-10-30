@@ -10,7 +10,7 @@ const categoryColumns = `id, name, description, sale_start, sale_end, sale_days,
 
 // productSelect is the base query of every product read. Callers append conditions with AND.
 const productSelect = `
-SELECT p.id, p.category_id, p.name, p.description, p.measure_unit, p.weight, p.proteins, p.fats,
+SELECT p.is_order_blocked, p.id, p.category_id, p.name, p.description, p.measure_unit, p.weight, p.proteins, p.fats,
        p.carbohydrates, p.calories, p.flags, p.price_kopecks, p.sale_start, p.sale_end, p.sale_days,
        c.name AS category_name, c.sale_start AS category_sale_start,
        c.sale_end AS category_sale_end, c.sale_days AS category_sale_days
@@ -167,4 +167,10 @@ func (s *Store) loadImages(ctx context.Context, table, parentColumn string, ids 
 func (s *Store) SetCategoryHours(ctx context.Context, id int64, start, end *int, days string) error {
 	var updated int64
 	return store.NotFound(s.db.GetContext(ctx, &updated, `UPDATE categories SET sale_start=$2, sale_end=$3, sale_days=$4, updated_at=now() WHERE id=$1 AND NOT is_deleted RETURNING id`, id, start, end, days))
+}
+
+// SetProductOrderBlocked saves the admin-managed ordering block.
+func (s *Store) SetProductOrderBlocked(ctx context.Context, id int64, blocked bool) error {
+	var updated int64
+	return store.NotFound(s.db.GetContext(ctx, &updated, `UPDATE products SET is_order_blocked=$2, updated_at=now() WHERE id=$1 AND NOT is_deleted RETURNING id`, id, blocked))
 }

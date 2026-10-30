@@ -143,6 +143,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		return CreateResult{}, err
 	}
 	if dup {
+		ids := make([]int64, len(items))
+		for i, it := range items {
+			ids[i] = it.ProductID
+		}
+		products, err := catalog.NewStore(s.db).ProductsByIDs(ctx, ids)
+		if err != nil {
+			return CreateResult{}, err
+		}
+		for _, pr := range products {
+			if err := checkProductBlock(pr); err != nil {
+				return CreateResult{}, err
+			}
+		}
 		o, err = orders.ByID(ctx, id)
 		if err != nil {
 			return CreateResult{}, err
@@ -331,7 +344,18 @@ func mergeItems(in []ItemInput) []ItemInput {
 }
 
 // checkWindows returns a 503 when the product or its category is closed at now.
+func checkProductBlock(p catalog.Product) error {
+	if p.IsOrderBlocked {
+		return httpx.NewError(http.StatusServiceUnavailable, fmt.Sprintf("Заказ блюда «%s» временно недоступен.", p.Name))
+	}
+	return nil
+}
+
 func checkWindows(p catalog.Product, now time.Time) error {
+	if err := checkProductBlock(p); err != nil {
+		return err
+	}
+
 	if w := p.CategoryWindow(); !w.OpenOnDay(now) {
 		return daysClosed(p.CategoryName, w)
 	} else if !w.OpenAtTime(now) {

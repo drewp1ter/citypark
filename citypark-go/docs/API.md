@@ -1222,7 +1222,21 @@ Returns the products of one category, ordered by sort order and then by `id`. De
 
 **Notes**
 
-An unknown or deleted category gives `200` with `[]`, not `404`. `price` is in rubles. `isAvailableForOrder` is `true` only when both the product's own sale window and its category's window are open now; `salesDays`, `startTime` and `endTime` describe the product's own window and are empty strings when it has none.
+An unknown or deleted category gives `200` with `[]`, not `404`. `price` is in rubles. `isAvailableForOrder` is `true` only when `isOrderBlocked` is false and both the product's own sale window and its category's window are open now; `salesDays`, `startTime` and `endTime` describe the product's own window and are empty strings when it has none.
+
+#### PUT /products/{id}/ordering-block
+
+Role: admin (Bearer JWT). Required path `id`: product ID. Required JSON boolean `isOrderBlocked`; true blocks ordering until manually unblocked, false removes only the manual block.
+
+Request example: `{"isOrderBlocked":true}`.
+
+Success: 200, the updated Product object (same fields as GET /products, including images), with `isOrderBlocked: true` and `isAvailableForOrder: false` when blocked.
+
+Errors: 401 without valid authentication, 403 for a non-admin, 404 (`Не найдено`) for invalid, missing or deleted IDs. Invalid JSON/types return the standard 400 decode error. Missing/null flag returns 400 with message `Ошибка валидации, пожалуйста проверьте введенные вами данные` and `errors.isOrderBlocked` = `Укажите, заблокирован ли заказ блюда`.
+
+Product responses include boolean `isOrderBlocked` (default false). Blocked products remain visible in category and product listings. `isAvailableForOrder` requires both an absent manual block and open product/category schedules. iiko sync preserves the manual block; unblocking never overrides schedules.
+
+POST /orders rejects a blocked product with 503 and `Заказ блюда «<name>» временно недоступен.`, including duplicate retries before returning a payment link. It does not silently omit items or cancel existing orders/payments.
 
 #### GET /products
 

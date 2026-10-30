@@ -467,3 +467,30 @@ func TestCreateDuplicateOtherTime(t *testing.T) {
 		t.Errorf("same time gave order %d, want %d", same, first)
 	}
 }
+
+func TestCreateBlockedProduct(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	if _, err := e.db.Exec(`UPDATE products SET is_order_blocked=true WHERE id=$1`, e.productA); err != nil {
+		t.Fatal(err)
+	}
+	_, err := e.svc.Create(context.Background(), e.input(false))
+	wantHTTPError(t, err, http.StatusServiceUnavailable, "Заказ блюда «Шашлык» временно недоступен.")
+	if n := e.count(t, "SELECT count(*) FROM orders"); n != 0 {
+		t.Fatalf("orders=%d", n)
+	}
+}
+func TestDuplicateBlockedProduct(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	if _, err := e.svc.Create(context.Background(), e.input(false)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.db.Exec(`UPDATE products SET is_order_blocked=true WHERE id=$1`, e.productA); err != nil {
+		t.Fatal(err)
+	}
+	calls := len(e.payments.requests)
+	_, err := e.svc.Create(context.Background(), e.input(false))
+	wantHTTPError(t, err, http.StatusServiceUnavailable, "Заказ блюда «Шашлык» временно недоступен.")
+	if len(e.payments.requests) != calls || e.count(t, "SELECT count(*) FROM orders") != 1 {
+		t.Fatal("retry changed orders/payment")
+	}
+}
