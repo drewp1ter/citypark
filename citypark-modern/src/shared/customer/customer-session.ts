@@ -1,15 +1,52 @@
 import 'server-only'
 import { cookies } from 'next/headers'
 import { serverEnv } from '@/shared/config'
+import { createHash } from 'node:crypto'
 
 const productionName = '__Host-citypark_customer'
 const developmentName = 'citypark_customer_dev'
+const googleName = '__Host-citypark_google_flow'
+const googleDevName = 'citypark_google_flow_dev'
+type GoogleAttempt = { key: string; token: string; intent: 'login' | 'link'; expires: number }
 export const guestCookieName = 'citypark_guest_checkout_scope'
 
 function customerCookieName() {
 	return process.env.NODE_ENV === 'development' && serverEnv().CUSTOMER_PUBLIC_ORIGIN.startsWith('http://localhost:')
 		? developmentName
 		: productionName
+}
+
+function googleCookieName() { return customerCookieName() === productionName ? googleName : googleDevName }
+function stateKey(state: string) { return createHash('sha256').update(state).digest('base64url') }
+function readAttempts(raw?: string): GoogleAttempt[] {
+	try {
+		const value: unknown = JSON.parse(raw ?? '')
+		if (!Array.isArray(value)) return []
+		return value.filter((item): item is GoogleAttempt => typeof item?.key === 'string' && typeof item?.token === 'string' && (item?.intent === 'login' || item?.intent === 'link') && typeof item?.expires === 'number' && item.expires > Date.now()).slice(-3)
+	} catch { return [] }
+}
+
+async function writeAttempts(attempts: GoogleAttempt[]) {
+	const name = googleCookieName()
+	;(await cookies()).set(name, attempts.length ? JSON.stringify(attempts) : '', {
+		httpOnly: true, secure: name === googleName, sameSite: 'lax', path: '/', maxAge: attempts.length ? 600 : 0,
+	})
+}
+
+export async function addGoogleAttempt(state: string, token: string, intent: 'login' | 'link', expiresAt: string) {
+	if (!/^[A-Za-z0-9_-]{32,128}$/.test(state) || !/^[A-Za-z0-9_-]{32,128}$/.test(token)) throw new Error('Invalid Google attempt')
+	const expires = new Date(expiresAt).getTime()
+	if (!Number.isFinite(expires) || expires <= Date.now() || expires > Date.now() + 600_000) throw new Error('Invalid Google attempt expiry')
+	const current = readAttempts((await cookies()).get(googleCookieName())?.value)
+	await writeAttempts([...current.filter((item) => item.key !== stateKey(state)), { key: stateKey(state), token, intent, expires }].slice(-3))
+}
+
+export async function consumeGoogleAttempt(state: string): Promise<GoogleAttempt | undefined> {
+	const current = readAttempts((await cookies()).get(googleCookieName())?.value)
+	const key = stateKey(state)
+	const found = current.find((item) => item.key === key)
+	if (found) await writeAttempts(current.filter((item) => item.key !== key))
+	return found
 }
 
 export async function getCustomerSessionToken(): Promise<string | undefined> {

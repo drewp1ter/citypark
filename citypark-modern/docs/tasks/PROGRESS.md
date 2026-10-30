@@ -83,7 +83,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## Customer accounts and Telegram Mini App
 - [x] [35 Customer sign-in and verification](35-customer-account-auth.md) [34; backend71]
   - Live checks passed: verification, sign-in, logout, expired-session checkout, guest retry and account-history isolation. Test orders 5 and 6 are unpaid and pending; retry reused order 6.
-- [ ] [36 Recovery and Google sign-in](36-customer-recovery-google.md) [35; backend72,74]
+- [x] [36 Recovery and Google sign-in](36-customer-recovery-google.md) [35; backend72,74]
+  - `npm run check`, `npm run build`, and the named production-build flow pass. Write scenarios were gated because backend POSTs need owner approval. Owner check: with configured Google credentials and approved test data, run `QA_CUSTOMER_WRITES=1 QA_GOOGLE_START=1 QA_CUSTOMER_EMAIL=... node scripts/qa/flows/customer-recovery-google.mjs`, then complete a real Google login and a password reset from emailed links.
 - [ ] [37 Account, linked methods and order history](37-customer-account-history.md) [36; backend78]
 - [ ] [38 Telegram Mini App entry and ordering](38-telegram-mini-entry.md) [37; backend75]
 - [ ] [39 Mini App pairing, history and payment return](39-telegram-mini-history-payment.md) [38]

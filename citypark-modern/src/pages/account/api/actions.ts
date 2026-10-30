@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { customerRequest, CustomerApiError, customerFallback, clearCustomerSession, getCustomerSessionToken, setCustomerSession } from '@/shared/customer'
-import { emailSchema, registerSchema, signInSchema, type AuthState } from '../model/schema'
+import { emailSchema, registerSchema, signInSchema, resetSchema, type AuthState } from '../model/schema'
 
 function valuesOf(form: FormData, keys: string[]): Record<string, string> {
 	return Object.fromEntries(keys.map((key) => [key, String(form.get(key) ?? '')]))
@@ -66,6 +66,40 @@ export async function verifyAction(_previous: AuthState, form: FormData): Promis
 		await customerRequest<{ verified: boolean }>('/auth/customer/verification/confirm', { method: 'POST', body: JSON.stringify({ token }) })
 		return { status: 'success', message: 'Email подтверждён. Теперь войдите в аккаунт.' }
 	} catch (error) { return failed(error, {}) }
+}
+
+export async function recoveryAction(_previous: AuthState, form: FormData): Promise<AuthState> {
+	const values = valuesOf(form, ['email'])
+	const parsed = emailSchema.safeParse(values.email)
+	if (!parsed.success) return { status: 'error', fields: { email: parsed.error.issues[0].message }, values }
+	try {
+		const result = await customerRequest<{ message: string }>('/auth/customer/password/forgot', { method: 'POST', body: JSON.stringify({ email: parsed.data }) })
+		return { status: 'success', message: result.message }
+	} catch (error) { return failed(error, values) }
+}
+
+export async function resetAction(_previous: AuthState, form: FormData): Promise<AuthState> {
+	const parsed = resetSchema.safeParse({ token: String(form.get('token') ?? ''), password: String(form.get('password') ?? '') })
+	if (!parsed.success) return { status: 'error', fields: errorsOf(parsed.error), message: parsed.error.issues.some((issue) => issue.path[0] === 'token') ? 'Ссылка недействительна или устарела' : undefined }
+	try {
+		await customerRequest<void>('/auth/customer/password/reset', { method: 'POST', body: JSON.stringify(parsed.data) })
+		await clearCustomerSession()
+		return { status: 'success', message: 'Пароль изменён. Войдите с новым паролем' }
+	} catch (error) { return failed(error, {}) }
+}
+
+export async function confirmEmailAction(_previous: AuthState, form: FormData): Promise<AuthState> {
+	const token = String(form.get('token') ?? '')
+	if (!token || token.length > 512) return { status: 'error', message: 'Ссылка недействительна или устарела' }
+	const session = await getCustomerSessionToken()
+	if (!session) return { status: 'error', message: 'Войдите повторно для подтверждения email' }
+	try {
+		await customerRequest<{ verified: boolean }>('/customer/email/confirm', { method: 'POST', headers: { Authorization: `Bearer ${session}` }, body: JSON.stringify({ token }) })
+		return { status: 'success', message: 'Новый email подтверждён' }
+	} catch (error) {
+		if (error instanceof CustomerApiError && (error.status === 401 || error.status === 403)) return { status: 'error', message: 'Войдите повторно для подтверждения email' }
+		return failed(error, {})
+	}
 }
 
 export async function logoutAction(): Promise<void> {

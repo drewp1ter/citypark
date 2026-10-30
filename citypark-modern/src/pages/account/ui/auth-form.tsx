@@ -22,6 +22,7 @@ export function AuthForm({ mode, returnTo }: { mode: Mode; returnTo?: string }) 
 			{mode === 'sign-in' && <input type='hidden' name='returnTo' value={returnTo ?? ''} />}
 			<Button type='submit' disabled={pending} size='xl'>{mode === 'register' ? 'Зарегистрироваться' : mode === 'resend' ? 'Отправить письмо повторно' : 'Войти'}</Button>
 			{mode === 'sign-in' && <AppLink href='/account/register' className='min-h-11 self-start py-2 font-semibold underline'>Регистрация</AppLink>}
+			{mode === 'sign-in' && <AppLink href='/account/recovery' className='min-h-11 self-start py-2 font-semibold underline'>Забыли пароль?</AppLink>}
 			{mode === 'register' && <AppLink href='/account/sign-in' className='min-h-11 self-start py-2 font-semibold underline'>Уже есть аккаунт? Войти</AppLink>}
 			<AppLink href='/menu' className='min-h-11 self-start py-2 text-text-muted underline'>Продолжить без входа</AppLink>
 		</form>

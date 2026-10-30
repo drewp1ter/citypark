@@ -10,6 +10,7 @@ export const registerSchema = signInSchema.extend({
 	password: z.string().min(8, 'Пароль должен содержать не менее 8 символов').max(64, 'Пароль слишком длинный'),
 	phone: z.string().trim().optional(),
 })
+export const resetSchema = z.object({ token: z.string().min(1).max(512), password: z.string().min(8, 'Пароль должен содержать не менее 8 символов').max(64, 'Пароль слишком длинный') })
 
 export type AuthState = { status: 'idle' | 'error' | 'success'; message?: string; fields?: Record<string, string>; values?: Record<string, string> }
 export const initialAuthState: AuthState = { status: 'idle' }

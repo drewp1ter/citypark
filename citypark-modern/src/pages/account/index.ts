@@ -1,3 +1,6 @@
 export { SignInPage } from './ui/sign-in-page'
 export { RegisterPage } from './ui/register-page'
 export { VerifyPage } from './ui/verify-page'
+export { RecoveryPage } from './ui/recovery-page'
+export { ResetPage } from './ui/reset-page'
+export { EmailPage } from './ui/email-page'
