@@ -22,7 +22,7 @@ function PhotoTile({ href, photo, title, caption, className, priority }: TilePro
 	return (
 		<AppLink
 			href={href}
-			className={`relative block h-[200px] overflow-hidden rounded-md md:min-h-[300px] md:rounded-xl ${className ?? ''}`}
+			className={`relative block h-[200px] overflow-hidden rounded-md md:h-auto md:min-h-[300px] md:rounded-xl ${className ?? ''}`}
 		>
 			{photo && (
 				<Image
