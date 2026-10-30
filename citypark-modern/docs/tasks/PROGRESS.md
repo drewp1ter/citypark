@@ -96,3 +96,12 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 - [x] [41 Category descriptions](41-category-descriptions.md) [40; backend80]
   - `npm run check` and `npm run build` pass. Category text becomes available after backend task 80 is deployed and iiko sync runs.
+
+## Dish ordering blocks
+- [x] [42 Visible blocked dishes and checkout protection](42-dish-ordering-blocks.md) [41] (needs citypark-go task 81)
+  - Keep blocked dishes visible with normal content and no additional availability text or badges. Hide add/increment controls entirely rather than disabling them.
+  - Keep blocked items already in persisted carts visible and removable, without additional availability text or increment controls. Never silently omit them from the submitted order.
+  - Prevent checkout until blocked items are removed; attempted checkout uses the existing form-error mechanism to explain the required removal.
+  - Refresh availability on cart/checkout entry, window focus and every 60 seconds while visible. Check fresh availability on submission and handle backend rejection authoritatively.
+  - Test visible dishes without extra text or controls, persisted carts, removal, checkout rejection, unblock recovery and mobile/desktop behavior; run required frontend checks and relevant QA flows using existing services.
+  - Check/build, existing menu and checkout flows, and the blocked-dish flow pass. The targeted flow covers 390/1440 px and both themes using a temporary admin-owned fixture, then restores its state; no orders are placed. Authenticated Mini App device/payment checks remain manual; it uses the same ordering components and server validation.

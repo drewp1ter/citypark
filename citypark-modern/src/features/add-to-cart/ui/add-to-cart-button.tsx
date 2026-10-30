@@ -6,7 +6,7 @@ import { formatPrice } from '@/shared/lib'
 import { IconButton, MinusIcon, PlusIcon } from '@/shared/ui'
 
 type AddToCartButtonProps = {
-	dish: Pick<Dish, 'id' | 'name' | 'variants' | 'available'>
+	dish: Pick<Dish, 'id' | 'name' | 'variants' | 'available' | 'orderBlocked'>
 	/** Size to add; the first one by default. */
 	variantId?: string
 	/**
@@ -26,6 +26,7 @@ export function AddToCartButton({ dish, variantId, layout = 'icon' }: AddToCartB
 	const key = { dishId: dish.id, variantId: variant.id }
 	const quantity = useCartQuantity(key)
 	const canOrder = dish.available && variant.price !== null
+	if (dish.orderBlocked) return null
 	const addLabel = `Добавить в корзину: ${dish.name.toLocaleLowerCase('ru')}`
 
 	const minus = (

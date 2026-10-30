@@ -66,6 +66,10 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 		errors.form = 'Не удалось проверить меню. Попробуйте ещё раз через минуту.'
 		return { status: 'error', errors, values }
 	}
+	if (lines.data.some((line) => menu.dishes.find((dish) => dish.id === line.dishId)?.orderBlocked)) {
+		errors.form = 'Удалите недоступные блюда из корзины, чтобы оформить заказ.'
+		return { status: 'error', errors, values }
+	}
 	const priced = priceLines(lines.data, menu.dishes)
 	if (priced.items.length !== lines.data.length) {
 		// A dish was removed from the menu, is on the stop-list or has no price since it was put in the cart.

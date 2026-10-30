@@ -1,7 +1,9 @@
 'use client'
 
+import { useMenuRefresh } from '@/shared/lib'
+
 import { useActionState, useMemo, useState, type ReactNode } from 'react'
-import { useCartLines, useCartReady } from '@/entities/cart'
+import { cartActions, useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, townDeliveryPrice, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
 import { AddressField } from './address-field'
 import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
@@ -48,6 +50,7 @@ export function CheckoutForm({
 	intro,
 	mini = false,
 }: CheckoutFormProps) {
+	useMenuRefresh()
 	const [state, formAction, pending] = useActionState(mini ? placeMiniOrder : placeOrder, initialState)
 	const errors = state.status === 'error' ? state.errors : {}
 	const values = state.status === 'error' ? state.values : undefined
@@ -244,6 +247,18 @@ export function CheckoutForm({
 												{item.dish.name} × {item.quantity}
 											</span>
 											<span>{formatPrice(item.total)}</span>
+											{item.dish.orderBlocked && (
+												<button
+													type='button'
+													aria-label={`Удалить из корзины: ${item.dish.name}`}
+													className='min-h-11 min-w-11'
+													onClick={() =>
+														cartActions.setQuantity({ dishId: item.dish.id, variantId: item.variant.id }, 0)
+													}
+												>
+													×
+												</button>
+											)}
 										</li>
 									))}
 								</ul>
@@ -260,6 +275,16 @@ export function CheckoutForm({
 											{item.dish.name} × {item.quantity}
 										</span>
 										<span>{formatPrice(item.total)}</span>
+										{item.dish.orderBlocked && (
+											<button
+												type='button'
+												aria-label={`Удалить из корзины: ${item.dish.name}`}
+												className='min-h-11 min-w-11'
+												onClick={() => cartActions.setQuantity({ dishId: item.dish.id, variantId: item.variant.id }, 0)}
+											>
+												×
+											</button>
+										)}
 									</li>
 								))}
 								<li className='flex justify-between gap-3 py-[9px]'>

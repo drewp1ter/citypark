@@ -77,7 +77,11 @@ export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean 
 				</div>
 				{/* Mobile: one pill with the price */}
 				<div className='mt-1.5 md:hidden'>
-					<AddToCartButton dish={dish} variantId={variant.id} layout='pill' />
+					{dish.orderBlocked ? (
+						<span className='font-semibold'>{price}</span>
+					) : (
+						<AddToCartButton dish={dish} variantId={variant.id} layout='pill' />
+					)}
 				</div>
 			</div>
 		</Card>

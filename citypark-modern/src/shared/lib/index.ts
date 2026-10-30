@@ -8,3 +8,5 @@ export { plural } from './plural'
 export { PLACEHOLDER_PHOTO, type Photo } from './photo'
 export { useToday } from './use-today'
 export { defaultWorkingHours, displayTime, formatHours, hoursError, type WorkingHours } from './working-hours'
+
+export { useMenuRefresh } from './use-menu-refresh'

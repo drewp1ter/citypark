@@ -1,5 +1,7 @@
 'use client'
 
+import { useMenuRefresh } from '@/shared/lib'
+
 import { useRef, useState, type ReactNode } from 'react'
 import type { Dish, MenuCategory } from '@/entities/dish'
 import { ClearButton, SearchIcon } from '@/shared/ui'
@@ -22,6 +24,7 @@ type MenuCatalogProps = {
  * category and the address can be shared. The search runs in the browser and looks through the whole menu.
  */
 export function MenuCatalog({ categories, dishes, categoryId, aside, basePath }: MenuCatalogProps) {
+	useMenuRefresh()
 	const [query, setQuery] = useState('')
 	const searchRef = useRef<HTMLInputElement>(null)
 	const category = categories.find((c) => c.id === categoryId) ?? categories[0]

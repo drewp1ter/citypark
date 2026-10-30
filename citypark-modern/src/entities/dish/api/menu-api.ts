@@ -9,6 +9,7 @@ export type ApiCategory = {
 	isAvailableForOrder: boolean
 }
 export type ApiProduct = {
+	isOrderBlocked: boolean
 	id: number
 	categoryId: number
 	name: string
@@ -23,9 +24,9 @@ export type ApiProduct = {
 
 const PAGE_SIZE = 500
 
-// 60 s: availability depends on the time of day.
+// Availability must be fresh for ordering and manual blocks.
 async function fetchJson<T>(path: string): Promise<T> {
-	const response = await fetch(serverEnv().MENU_API_URL + path, { next: { revalidate: 60 } })
+	const response = await fetch(serverEnv().MENU_API_URL + path, { cache: 'no-store' })
 	if (!response.ok) throw new Error(`GET ${path}: ${response.status}`)
 	return (await response.json()) as T
 }

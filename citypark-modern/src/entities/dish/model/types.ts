@@ -25,6 +25,7 @@ export type Dish = {
 	photo: Photo
 	variants: readonly [DishVariant, ...DishVariant[]]
 	/** False = stop-list. */
+	orderBlocked: boolean
 	available: boolean
 }
 
