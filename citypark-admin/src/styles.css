@@ -12,6 +12,8 @@
 [data-theme='dark'] {
 	--accent: #d6f24a;
 	--accent-foreground: #111111;
+	--field-border-width: 1px;
+	--field-border: var(--border);
 }
 
 @custom-variant dark (&:is(.dark *));
