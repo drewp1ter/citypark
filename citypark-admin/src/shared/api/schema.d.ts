@@ -2033,6 +2033,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/categories/{id}/ordering-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set category ordering hours and weekdays */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description H:MM or HH:MM; empty together with endTime removes the time limit. */
+                        startTime: string;
+                        /** @description Must be later than startTime; 24:00 is allowed. */
+                        endTime: string;
+                        /** @description Monday-first weekday mask; empty means every day. */
+                        days: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated category. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Category"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories/{id}/products": {
         parameters: {
             query?: never;

@@ -36,3 +36,41 @@ test('groups, search and the sync button', async ({ page }) => {
 	})
 	await expect(sync).toBeEnabled()
 })
+
+test('category ordering schedule saves and survives reload', async ({ page }) => {
+	await signIn(page)
+	await page.getByRole('link', { name: 'Меню' }).first().click()
+	const groups = page.getByRole('navigation', { name: 'Категории меню' }).getByRole('button')
+	await expect(groups.nth(1)).toBeVisible()
+	await groups.nth(1).click()
+	const editor = page.getByRole('region', { name: 'Настройки категории' })
+	const start = editor.getByLabel('Начало заказа')
+	const end = editor.getByLabel('Окончание заказа')
+	const boxes = editor.getByRole('checkbox')
+	const originalStart = await start.inputValue()
+	const originalEnd = await end.inputValue()
+	const originalDays = await boxes.evaluateAll((nodes) => nodes.map((node) => (node as HTMLInputElement).checked))
+	async function save() {
+		const response = page.waitForResponse(
+			(response) => response.url().includes('/ordering-hours') && response.request().method() === 'PUT'
+		)
+		await editor.getByRole('button', { name: 'Сохранить расписание' }).click()
+		expect((await response).status()).toBe(200)
+		await expect(page.getByText('Расписание категории сохранено').first()).toBeVisible()
+	}
+	try {
+		await start.fill('10:00')
+		await end.fill('20:00')
+		for (let i = 0; i < 7; i++) await boxes.nth(i).setChecked(i < 5)
+		await save()
+		await page.reload()
+		await expect(start).toHaveValue('10:00')
+		await expect(end).toHaveValue('20:00')
+		for (let i = 0; i < 7; i++) await expect(boxes.nth(i)).toBeChecked({ checked: i < 5 })
+	} finally {
+		await start.fill(originalStart)
+		await end.fill(originalEnd)
+		for (const [i, checked] of originalDays.entries()) await boxes.nth(i).setChecked(checked)
+		await save()
+	}
+})

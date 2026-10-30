@@ -6,6 +6,7 @@ import { PageHeader } from '../../../shared/ui/page-header'
 import { categoriesQuery, productsQuery } from '../api'
 import { filterDishes, findGroup, groupMenu } from '../model/group'
 import type { MenuSearch } from '../model/search'
+import { CategorySettings } from './category-settings'
 import { CategoryList } from './category-list'
 import { DishRow } from './dish-row'
 import { SyncButton } from './sync-button'
@@ -58,6 +59,7 @@ export function MenuPage() {
 		const selected = findGroup(groups, search.category)
 		const pool = selected !== undefined ? selected.dishes : groups.flatMap((g) => g.dishes)
 		const dishes = filterDishes(pool, search.q)
+		const category = categories.data.find((c) => c.id === selected?.id)
 		content = (
 			<div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6'>
 				<div className='lg:w-64 lg:shrink-0'>
@@ -69,6 +71,12 @@ export function MenuPage() {
 					/>
 				</div>
 				<div className='flex min-w-0 flex-1 flex-col gap-3'>
+					{category && (
+						<CategorySettings
+							key={`${category.id}:${category.startTime}:${category.endTime}:${category.salesDays}`}
+							category={category}
+						/>
+					)}
 					<SearchField
 						name='q'
 						value={search.q ?? ''}

@@ -45,3 +45,6 @@ stop if that task is not ticked.
 
 ## Automatic paid orders
 - [x] [24 Remove manual order confirmation](24-remove-order-confirmation.md) [23] (needs citypark-go task 79)
+
+- [x] [25 Category descriptions and ordering schedule](25-category-settings.md) [24; backend80]
+  - `npm run check`, `npm run build`, and `npm run e2e -- e2e/menu.spec.ts` pass against the updated backend. The live flow restores the original category schedule.
