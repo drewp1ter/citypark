@@ -29,6 +29,7 @@ export type Dish = {
 }
 
 export type MenuCategory = {
+	description?: string
 	id: string
 	/** Name on the tab. */
 	name: string

@@ -64,6 +64,9 @@ export function MenuCatalog({ categories, dishes, categoryId, aside, basePath }:
 					<h2 className='font-display mb-3 text-[22px] font-medium md:mb-4 md:text-[30px] md:tracking-[-0.02em]'>
 						{title}
 					</h2>
+					{!needle && category.description && (
+						<p className='text-text-muted mb-4 whitespace-pre-line'>{category.description}</p>
+					)}
 					{visible.length > 0 ? (
 						<div className='grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3'>
 							{visible.map((dish, index) => (

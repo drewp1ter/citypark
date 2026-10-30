@@ -93,3 +93,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - `npm run check`, `npm run build`, the production-build `telegram-pairing-payment.mjs` flow, and the existing checkout regression flow passed. Live pairing needs `QA_CUSTOMER_WRITES=1` plus fresh mini and website sessions; provider payment and device handoff remain manual checks for task 40.
 - [x] [40 Customer accounts and Mini App release checks](40-customer-mini-release-checks.md) [39; backend78]
   - `npm run check`, `npm run build`, and production-build `npm run qa:customer-release` pass (10/10 automated checks). The responsive sweep reports 12 ignored Yandex script failures as directed by the owner. `/news/frittata` is an obsolete chef-blog route removed from page sweeps. Approved live writes and device checks remain pending in the release runbook.
+
+- [x] [41 Category descriptions](41-category-descriptions.md) [40; backend80]
+  - `npm run check` and `npm run build` pass. Category text becomes available after backend task 80 is deployed and iiko sync runs.

@@ -3,7 +3,7 @@ import type { Dish, MenuCategory } from '../model/types'
 import type { ApiCategory, ApiProduct } from './menu-api'
 
 export function toCategory(c: ApiCategory): MenuCategory {
-	return { id: String(c.id), name: c.name }
+	return { id: String(c.id), name: c.name, description: c.description.trim() || undefined }
 }
 
 /** The API sends the weight in kilograms: 0.2 -> "200 г", 1.5 -> "1,5 кг". Empty when the weight is unknown. */
