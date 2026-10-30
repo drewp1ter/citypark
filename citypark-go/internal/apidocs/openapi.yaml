@@ -1283,6 +1283,55 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}
+  /auth/customer/telegram:
+    post:
+      tags: [auth]
+      summary: Validate Telegram Mini App launch and issue a mini session
+      description: 'Role: public. Requires raw encoded initData signed by the dedicated customer bot. The signature field participates in the bot-token HMAC. Proofs are valid for five minutes, with at most 30 seconds future skew, and can be used once. Matching profile data never merges accounts. Cache-Control: private, no-store on every response.'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [initData]
+              properties:
+                initData: {type: string, maxLength: 16384, description: 'Raw Telegram.WebApp.initData, never initDataUnsafe'}
+            example: {initData: 'auth_date=1793361600&query_id=q+%2B+%26%3D+%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82&signature=third-party-signature&user=%7B%22id%22%3A123%2C%22first_name%22%3A%22%D0%A2%D0%B5%D1%81%D1%82%22%7D&hash=b5365ffc37925bd7b51716c98e8167487e8401c2f088ea3c81de1f617faee5b8'}
+      responses:
+        '200':
+          description: Customer mini session issued.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [user, token, expiresAt]
+                properties:
+                  user: {$ref: '#/components/schemas/User'}
+                  token: {type: string}
+                  expiresAt: {type: string, format: date-time}
+              example:
+                user: {id: 1, name: Тест, email: '', phone: '', role: user}
+                token: 'cs_<random>'
+                expiresAt: '2026-11-29T12:00:00Z'
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401':
+          description: 'Invalid, expired or replayed proof. Не удалось подтвердить вход через Telegram.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: '30 requests per direct IP per 15 minutes; Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Customer auth or dedicated bot token disabled. Вход через Telegram недоступен.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
   /auth/customer/register:
     post:
       tags: [auth]

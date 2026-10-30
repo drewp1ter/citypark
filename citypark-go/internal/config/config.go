@@ -12,24 +12,25 @@ import (
 )
 
 type Config struct {
-	Env                  string // "development", "production" or "test"
-	Port                 int
-	Debug                bool
-	Timezone             *time.Location
-	DefaultPageSize      int
-	DatabaseURL          string
-	JWT                  JWT
-	CustomerAuthEnabled  bool
-	CustomerPublicOrigin string
-	Google               Google
-	SMTP                 SMTP
-	Admin                Admin
-	Iiko                 Iiko
-	Telegram             Telegram
-	Moneta               Moneta
-	Hotel                Hotel
-	OneC                 OneC
-	Upload               Upload
+	Env                      string // "development", "production" or "test"
+	Port                     int
+	Debug                    bool
+	Timezone                 *time.Location
+	DefaultPageSize          int
+	DatabaseURL              string
+	JWT                      JWT
+	CustomerAuthEnabled      bool
+	CustomerPublicOrigin     string
+	Google                   Google
+	SMTP                     SMTP
+	Admin                    Admin
+	Iiko                     Iiko
+	Telegram                 Telegram
+	CustomerTelegramBotToken string
+	Moneta                   Moneta
+	Hotel                    Hotel
+	OneC                     OneC
+	Upload                   Upload
 }
 
 type JWT struct {
@@ -198,6 +199,7 @@ func Load(lookup LookupFunc) (Config, error) {
 		ChatIDOrderCreated:   str("TELEGRAM_CHAT_ID_FOR_ORDER_CREATED", ""),
 		ChatIDOrderConfirmed: str("TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED", ""),
 	}
+	c.CustomerTelegramBotToken = str("CUSTOMER_TELEGRAM_BOT_TOKEN", "")
 	c.Moneta = Moneta{
 		ID:         str("MONETA_ID", ""),
 		Secret:     str("MONETA_SECRET", ""),

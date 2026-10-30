@@ -63,25 +63,28 @@ func NewService(db *sqlx.DB, c clock.Clock) *Service {
 	return &Service{store: NewStore(db), db: db, clock: c, random: rand.Reader}
 }
 func (s *Service) CreateSession(ctx context.Context, userID int64, method, surface string) (string, time.Time, error) {
+	return s.createSession(ctx, s.store, userID, method, surface)
+}
+func (s *Service) createSession(ctx context.Context, st *Store, userID int64, method, surface string) (string, time.Time, error) {
 	if userID <= 0 || !((method == "password" || method == "google") && surface == "web" || method == "telegram" && surface == "mini") {
 		return "", time.Time{}, ErrInvalidSession
 	}
 	var role string
-	if err := s.store.db.GetContext(ctx, &role, `SELECT role FROM users WHERE id=$1`, userID); err != nil || role != auth.RoleUser {
+	if err := st.db.GetContext(ctx, &role, `SELECT role FROM users WHERE id=$1`, userID); err != nil || role != auth.RoleUser {
 		if err != nil && !errors.Is(store.NotFound(err), store.ErrNotFound) {
 			return "", time.Time{}, err
 		}
 		return "", time.Time{}, ErrInvalidSession
 	}
 	raw := make([]byte, 32)
-	if _, err := rand.Read(raw); err != nil {
+	if _, err := io.ReadFull(s.random, raw); err != nil {
 		return "", time.Time{}, err
 	}
 	token := "cs_" + base64.RawURLEncoding.EncodeToString(raw)
 	hash := sha256.Sum256(raw)
 	now := s.clock.Now()
 	exp := now.Add(30 * 24 * time.Hour)
-	if err := s.store.insert(ctx, Session{UserID: userID, TokenHash: hash[:], AuthenticatedAt: now, ExpiresAt: exp, Method: method, Surface: surface}); err != nil {
+	if err := st.insert(ctx, Session{UserID: userID, TokenHash: hash[:], AuthenticatedAt: now, ExpiresAt: exp, Method: method, Surface: surface}); err != nil {
 		return "", time.Time{}, err
 	}
 	return token, exp, nil

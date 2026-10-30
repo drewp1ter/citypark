@@ -79,6 +79,9 @@ func (l *Limits) GoogleStart(r *http.Request) (bool, int) {
 func (l *Limits) GoogleComplete(r *http.Request) (bool, int) {
 	return l.allow("google-complete-ip:"+directIP(r), 20, 15*time.Minute)
 }
+func (l *Limits) Telegram(r *http.Request) (bool, int) {
+	return l.allow("telegram-ip:"+directIP(r), 30, 15*time.Minute)
+}
 func retryAfter(w http.ResponseWriter, seconds int) {
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
 }

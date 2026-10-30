@@ -103,6 +103,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		user.NewHandler(users, tokens, adapter.Required(true)).Routes(r)
 		customer.NewHandler(users, sessions, adapter).Routes(r)
 		customer.NewEmailHandler(db, sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
+		customer.NewTelegramHandler(db, sessions, customer.NewLimits(c), cfg.CustomerTelegramBotToken, cfg.CustomerAuthEnabled).Routes(r)
 		google.NewHandler(googleService, sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
 		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)

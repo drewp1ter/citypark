@@ -81,6 +81,17 @@ func TestGoogleConfig(t *testing.T) {
 	}
 }
 
+func TestCustomerTelegramBotConfig(t *testing.T) {
+	c, err := Load(lookupMap(map[string]string{"TELEGRAM_TOKEN": "staff", "CUSTOMER_TELEGRAM_BOT_TOKEN": "customer"}))
+	if err != nil || c.Telegram.Token != "staff" || c.CustomerTelegramBotToken != "customer" {
+		t.Fatalf("separate bot configuration: %+v %v", c, err)
+	}
+	c, err = Load(lookupMap(map[string]string{"TELEGRAM_TOKEN": "staff"}))
+	if err != nil || c.CustomerTelegramBotToken != "" {
+		t.Fatalf("staff token used as fallback: %+v %v", c, err)
+	}
+}
+
 func TestLoadOverrides(t *testing.T) {
 	c, err := Load(lookupMap(map[string]string{
 		"APP_ENV":                              "test",

@@ -456,6 +456,41 @@ Checks a verified password credential and creates a 30-day web session.
 
 429 includes `Retry-After` seconds. Use `Authorization: Bearer cs_<random>` on later requests. All responses use `Cache-Control: private, no-store`.
 
+#### POST /auth/customer/telegram
+
+Validates raw Telegram Mini App `initData` with the dedicated customer bot and issues a 30-day mini session. It never merges accounts based on name, email or phone.
+
+- **Role:** public
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| `initData` | string | yes | raw encoded `Telegram.WebApp.initData`, at most 16 KiB; never `initDataUnsafe` |
+
+```json
+{"initData":"auth_date=1793361600&query_id=q+%2B+%26%3D+%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82&signature=third-party-signature&user=%7B%22id%22%3A123%2C%22first_name%22%3A%22%D0%A2%D0%B5%D1%81%D1%82%22%7D&hash=b5365ffc37925bd7b51716c98e8167487e8401c2f088ea3c81de1f617faee5b8"}
+```
+
+**Response 200**
+
+```json
+{"user":{"id":1,"name":"Тест","email":"","phone":"","role":"user"},"token":"cs_<random>","expiresAt":"2026-11-29T12:00:00Z"}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | malformed JSON or over 16 KiB | `Некорректный JSON` |
+| 401 | invalid, expired or replayed proof | `Не удалось подтвердить вход через Telegram` |
+| 429 | more than 30 attempts per direct IP in 15 minutes | `Слишком много попыток. Попробуйте позже` |
+| 503 | customer auth or dedicated bot token disabled | `Вход через Telegram недоступен` |
+
+**Notes**
+
+Send a fresh launch after a lost response; replaying a proof never issues another session. The `signature` field, when present, is included in the bot-token HMAC. 429 includes `Retry-After` seconds. All responses use `Cache-Control: private, no-store`.
+
 #### POST /customer/email/change
 
 Stages a new email for an existing password account and sends a proof. The current email remains usable.
