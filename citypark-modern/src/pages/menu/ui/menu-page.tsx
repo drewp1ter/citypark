@@ -2,7 +2,7 @@ import { delivery, getMenu } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { formatHours, formatPrice } from '@/shared/lib'
 import { CartPanel } from '@/widgets/cart-summary'
-import { MenuCatalog } from './menu-catalog'
+import { MenuCatalog } from '@/widgets/food-ordering'
 
 const pill = 'rounded-pill border border-border bg-surface px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base'
 

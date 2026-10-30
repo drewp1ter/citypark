@@ -14,13 +14,14 @@ type MenuCatalogProps = {
 	categoryId?: string
 	/** The cart column, shown to the right of the dishes from 1024 px. */
 	aside: ReactNode
+	basePath?: string
 }
 
 /**
  * Search, category tabs and the dish grid. The tabs are links (/menu?category=…), so the server knows the
  * category and the address can be shared. The search runs in the browser and looks through the whole menu.
  */
-export function MenuCatalog({ categories, dishes, categoryId, aside }: MenuCatalogProps) {
+export function MenuCatalog({ categories, dishes, categoryId, aside, basePath }: MenuCatalogProps) {
 	const [query, setQuery] = useState('')
 	const searchRef = useRef<HTMLInputElement>(null)
 	const category = categories.find((c) => c.id === categoryId) ?? categories[0]
@@ -56,7 +57,7 @@ export function MenuCatalog({ categories, dishes, categoryId, aside }: MenuCatal
 				</label>
 			</div>
 
-			<CategoryTabs categories={categories} selectedId={category.id} />
+			<CategoryTabs categories={categories} selectedId={category.id} basePath={basePath} />
 
 			<div className='flex items-start gap-3 pt-3 md:col-span-2 md:pt-4'>
 				<div className='min-w-0 flex-1'>

@@ -87,6 +87,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - `npm run check`, `npm run build`, and the named production-build flow pass. Write scenarios were gated because backend POSTs need owner approval. Owner check: with configured Google credentials and approved test data, run `QA_CUSTOMER_WRITES=1 QA_GOOGLE_START=1 QA_CUSTOMER_EMAIL=... node scripts/qa/flows/customer-recovery-google.mjs`, then complete a real Google login and a password reset from emailed links.
 - [x] [37 Account, linked methods and order history](37-customer-account-history.md) [36; backend78]
   - `npm run check`, `npm run build`, and the read-only production flow pass. Live account writes, order fixtures, and two-sided pairing are gated by `QA_CUSTOMER_WRITES=1`; they were not run here.
-- [ ] [38 Telegram Mini App entry and ordering](38-telegram-mini-entry.md) [37; backend75]
+- [x] [38 Telegram Mini App entry and ordering](38-telegram-mini-entry.md) [37; backend75]
+  - `npm run check`, `npm run build`, and the production-build `telegram-mini.mjs` flow pass. Existing menu and checkout flows pass without order writes. Owner check: with an approved fresh Telegram launch, run `QA_CUSTOMER_WRITES=1 QA_TELEGRAM_INIT_DATA=... node scripts/qa/flows/telegram-mini.mjs` against the configured backend; a real order/payment and device checks remain for task 40.
 - [ ] [39 Mini App pairing, history and payment return](39-telegram-mini-history-payment.md) [38]
 - [ ] [40 Customer accounts and Mini App release checks](40-customer-mini-release-checks.md) [39; backend78]

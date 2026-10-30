@@ -19,7 +19,15 @@ import { createOrder, type CreateOrderBody } from './orders-api'
  * Validates the order, checks the cart against the menu (never trusting the browser's prices) and places it with the
  * backend's `POST /orders`. On success it redirects to the Moneta payment page; the cart is cleared on `/checkout/done`.
  */
-export async function placeOrder(_previous: OrderState, formData: FormData): Promise<OrderState> {
+export async function placeOrder(previous: OrderState, formData: FormData): Promise<OrderState> {
+	return submitOrder('web', previous, formData)
+}
+
+export async function placeMiniOrder(previous: OrderState, formData: FormData): Promise<OrderState> {
+	return submitOrder('mini', previous, formData)
+}
+
+async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formData: FormData): Promise<OrderState> {
 	const values = Object.fromEntries(orderFields.map((field) => [field, String(formData.get(field) ?? '')])) as Record<
 		OrderField,
 		string
@@ -94,7 +102,7 @@ export async function placeOrder(_previous: OrderState, formData: FormData): Pro
 
 	let redirectUrl: string
 	try {
-		const result = await createOrder(body)
+		const result = await createOrder(body, surface)
 		if (!result.ok) {
 			if (result.fields?.deliveryTime) errors.time = result.fields.deliveryTime
 			else errors.form = result.message

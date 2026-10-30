@@ -1,5 +1,10 @@
 import { serverEnv } from '@/shared/config'
-import { getCustomerSessionToken, getGuestCheckoutCookie, saveGuestCheckoutCookie } from '@/shared/customer'
+import {
+	getCustomerSessionToken,
+	getGuestCheckoutCookie,
+	getMiniSessionToken,
+	saveGuestCheckoutCookie,
+} from '@/shared/customer'
 
 export type CreateOrderBody = {
 	phone: string
@@ -17,9 +22,10 @@ export type CreateOrderResult =
 	| { ok: false; message: string; fields?: Record<string, string> }
 
 /** POST /orders. Never cached. A network error or an unexpected status throws. */
-export async function createOrder(body: CreateOrderBody): Promise<CreateOrderResult> {
-	const token = await getCustomerSessionToken()
-	const guest = token ? undefined : await getGuestCheckoutCookie()
+export async function createOrder(body: CreateOrderBody, surface: 'web' | 'mini' = 'web'): Promise<CreateOrderResult> {
+	const token = surface === 'mini' ? await getMiniSessionToken() : await getCustomerSessionToken()
+	if (surface === 'mini' && !token) return { ok: false, message: 'Войдите повторно через Telegram' }
+	const guest = surface === 'web' && !token ? await getGuestCheckoutCookie() : undefined
 	const response = await fetch(serverEnv().MENU_API_URL + '/orders', {
 		method: 'POST',
 		headers: {
@@ -29,7 +35,7 @@ export async function createOrder(body: CreateOrderBody): Promise<CreateOrderRes
 		body: JSON.stringify(body),
 		cache: 'no-store',
 	})
-	if (!token) await saveGuestCheckoutCookie(response.headers.get('set-cookie'))
+	if (surface === 'web' && !token) await saveGuestCheckoutCookie(response.headers.get('set-cookie'))
 	if (response.status === 401) return { ok: false, message: 'Войдите повторно, чтобы продолжить' }
 	if (response.status === 201) {
 		const { orderId, redirectUrl } = (await response.json()) as { orderId: number; redirectUrl: string }

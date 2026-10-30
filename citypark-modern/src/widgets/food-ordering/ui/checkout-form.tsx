@@ -16,7 +16,7 @@ import {
 	TextField,
 	cardClass,
 } from '@/shared/ui'
-import { placeOrder } from '../api/place-order'
+import { placeMiniOrder, placeOrder } from '../api/place-order'
 import type { OrderState } from '../model/schema'
 
 const initialState: OrderState = { status: 'idle' }
@@ -36,10 +36,19 @@ type CheckoutFormProps = {
 	suggestions: boolean
 	/** Title row of the page (h1 and the steps). */
 	intro: ReactNode
+	mini?: boolean
 }
 
-export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions, intro }: CheckoutFormProps) {
-	const [state, formAction, pending] = useActionState(placeOrder, initialState)
+export function CheckoutForm({
+	dishes,
+	towns,
+	hours,
+	paymentFailed,
+	suggestions,
+	intro,
+	mini = false,
+}: CheckoutFormProps) {
+	const [state, formAction, pending] = useActionState(mini ? placeMiniOrder : placeOrder, initialState)
 	const errors = state.status === 'error' ? state.errors : {}
 	const values = state.status === 'error' ? state.values : undefined
 
@@ -66,7 +75,7 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions,
 				<div className={cardClass('surface', 'items-start gap-3 rounded-lg p-6 md:rounded-xl md:p-10')}>
 					<h2 className='heading text-2xl md:text-[32px]'>В корзине пока пусто</h2>
 					<p className='text-text-muted'>Добавьте блюда из меню, чтобы оформить заказ.</p>
-					<Button href='/menu' size='xl' className='mt-2'>
+					<Button href={mini ? '/mini' : '/menu'} size='xl' className='mt-2'>
 						Перейти в меню
 					</Button>
 				</div>
@@ -289,7 +298,9 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions,
 						</aside>
 
 						{/* Mobile: the submit button stays at the bottom of the screen */}
-						<div className='to-bg sticky bottom-0 z-10 -mx-3 bg-linear-to-b from-transparent to-30% px-3 pt-2.5 pb-3 md:hidden'>
+						<div
+							className={`to-bg sticky z-10 -mx-3 bg-linear-to-b from-transparent to-30% px-3 pt-2.5 pb-3 md:hidden ${mini ? 'bottom-[var(--mini-bottom)]' : 'bottom-0'}`}
+						>
 							<Button
 								type='submit'
 								disabled={!canSubmit}

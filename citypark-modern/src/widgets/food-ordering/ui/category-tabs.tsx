@@ -8,6 +8,7 @@ type CategoryTabsProps = {
 	categories: readonly MenuCategory[]
 	/** Id of the current category. */
 	selectedId: string
+	basePath?: string
 }
 
 /** Pixels of tolerance when comparing scroll positions (they can be fractional). */
@@ -17,7 +18,7 @@ const EDGE = 1
  * Category chips as a sticky row. Swiped below 768 px; from 768 px «‹» / «›» scroll it and the chips fade out
  * at an edge with more to scroll. The chips are links (/menu?category=…), so the server knows the category.
  */
-export function CategoryTabs({ categories, selectedId }: CategoryTabsProps) {
+export function CategoryTabs({ categories, selectedId, basePath = '/menu' }: CategoryTabsProps) {
 	const scroller = useRef<HTMLDivElement>(null)
 	const [edges, setEdges] = useState({ left: false, right: false })
 
@@ -73,7 +74,7 @@ export function CategoryTabs({ categories, selectedId }: CategoryTabsProps) {
 					{categories.map((item, index) => (
 						<Chip
 							key={item.id}
-							href={index === 0 ? '/menu' : `/menu?category=${item.id}`}
+							href={index === 0 ? basePath : `${basePath}?category=${item.id}`}
 							scroll={false}
 							selected={item.id === selectedId}
 							className='px-4'

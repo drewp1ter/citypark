@@ -154,3 +154,12 @@
 .legal-list > li::before {
 	content: counters(legal, '.') '. ';
 }
+
+/* Telegram supplies these insets at runtime; browser safe areas cover the first paint. */
+:root {
+  --mini-height: 100dvh;
+  --mini-top: env(safe-area-inset-top, 0px);
+  --mini-right: env(safe-area-inset-right, 0px);
+  --mini-bottom: env(safe-area-inset-bottom, 0px);
+  --mini-left: env(safe-area-inset-left, 0px);
+}

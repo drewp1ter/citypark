@@ -2,7 +2,7 @@ import { connection } from 'next/server'
 import { getDeliveryTowns, getMenu } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { serverEnv } from '@/shared/config'
-import { CheckoutForm } from './checkout-form'
+import { CheckoutForm } from '@/widgets/food-ordering'
 import { CheckoutHeader } from './checkout-header'
 import { TitleRow } from './title-row'
 

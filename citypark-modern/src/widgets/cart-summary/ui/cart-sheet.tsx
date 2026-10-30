@@ -10,6 +10,8 @@ import { usePricedCart } from './use-priced-cart'
 
 type CartSheetProps = {
 	dishes: readonly Dish[]
+	checkoutHref?: string
+	mini?: boolean
 	dialog: RefObject<HTMLDialogElement | null>
 	onClose: () => void
 }
@@ -18,7 +20,7 @@ type CartSheetProps = {
  * The cart as a bottom sheet (below 1024 px), opened from the CartBar.
  * It is a native modal <dialog>, like MobileMenu: Esc, focus trap and an inert page come from the browser.
  */
-export function CartSheet({ dishes, dialog, onClose }: CartSheetProps) {
+export function CartSheet({ dishes, dialog, onClose, checkoutHref = '/checkout', mini = false }: CartSheetProps) {
 	const { items, count, subtotal } = usePricedCart(dishes)
 	const { restaurant } = useSiteSettings().phones
 	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal })
@@ -34,7 +36,7 @@ export function CartSheet({ dishes, dialog, onClose }: CartSheetProps) {
 			aria-labelledby='cart-sheet-title'
 			onClick={closeOnBackdropOrLink}
 			onClose={onClose}
-			className='bg-inverse-bg text-inverse-text backdrop:bg-scrim fixed inset-x-0 top-auto bottom-0 m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl p-5 pb-6 lg:hidden'
+			className={`bg-inverse-bg text-inverse-text backdrop:bg-scrim fixed inset-x-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl p-5 pb-6 lg:hidden ${mini ? 'bottom-[var(--mini-bottom)]' : 'bottom-0'}`}
 		>
 			<div className='flex items-center justify-between gap-3'>
 				<h2 id='cart-sheet-title' className='heading text-2xl'>
@@ -62,7 +64,7 @@ export function CartSheet({ dishes, dialog, onClose }: CartSheetProps) {
 				<span>Итого</span>
 				<span className='font-display text-[30px] font-medium'>{formatPrice(subtotal)}</span>
 			</div>
-			<Button href='/checkout' className='mt-3.5 min-h-[54px] w-full'>
+			<Button href={checkoutHref} className='mt-3.5 min-h-[54px] w-full'>
 				Оформить заказ
 			</Button>
 			<p className='text-inverse-muted mt-3.5 text-center text-[13px]'>

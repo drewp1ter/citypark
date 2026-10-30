@@ -8,7 +8,7 @@ import { CartLine } from './cart-line'
 import { usePricedCart } from './use-priced-cart'
 
 /** Dark cart column next to the menu (from 1024 px). Below that the CartBar is used instead. */
-export function CartPanel({ dishes }: { dishes: readonly Dish[] }) {
+export function CartPanel({ dishes, checkoutHref = '/checkout' }: { dishes: readonly Dish[]; checkoutHref?: string }) {
 	const { items, count, subtotal, ready } = usePricedCart(dishes)
 	const { restaurant } = useSiteSettings().phones
 	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal })
@@ -46,7 +46,7 @@ export function CartPanel({ dishes }: { dishes: readonly Dish[] }) {
 						<span>Итого</span>
 						<span className='font-display text-[30px] font-medium'>{formatPrice(subtotal)}</span>
 					</div>
-					<Button href='/checkout' className='min-h-[54px]'>
+					<Button href={checkoutHref} className='min-h-[54px]'>
 						Оформить заказ
 					</Button>
 				</>

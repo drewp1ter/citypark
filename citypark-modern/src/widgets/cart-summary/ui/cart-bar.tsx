@@ -8,7 +8,15 @@ import { CartSheet } from './cart-sheet'
 import { usePricedCart } from './use-priced-cart'
 
 /** Sticky bar at the bottom of the menu page below 1024 px: number of dishes, total; it opens the cart sheet. */
-export function CartBar({ dishes }: { dishes: readonly Dish[] }) {
+export function CartBar({
+	dishes,
+	checkoutHref = '/checkout',
+	mini = false,
+}: {
+	dishes: readonly Dish[]
+	checkoutHref?: string
+	mini?: boolean
+}) {
 	const { count, subtotal } = usePricedCart(dishes)
 	const [open, setOpen] = useState(false)
 	const dialog = useRef<HTMLDialogElement>(null)
@@ -19,7 +27,7 @@ export function CartBar({ dishes }: { dishes: readonly Dish[] }) {
 		<>
 			<nav
 				aria-label='Корзина'
-				className='to-bg sticky bottom-0 z-10 bg-linear-to-b from-transparent to-35% px-3 pt-2.5 pb-3 lg:hidden'
+				className={`to-bg sticky z-10 bg-linear-to-b from-transparent to-35% px-3 pt-2.5 pb-3 lg:hidden ${mini ? 'bottom-[var(--mini-bottom)]' : 'bottom-0'}`}
 			>
 				<button
 					type='button'
@@ -40,7 +48,13 @@ export function CartBar({ dishes }: { dishes: readonly Dish[] }) {
 					</span>
 				</button>
 			</nav>
-			<CartSheet dishes={dishes} dialog={dialog} onClose={() => setOpen(false)} />
+			<CartSheet
+				dishes={dishes}
+				checkoutHref={checkoutHref}
+				mini={mini}
+				dialog={dialog}
+				onClose={() => setOpen(false)}
+			/>
 		</>
 	)
 }
