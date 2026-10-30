@@ -14,3 +14,11 @@ export const resetSchema = z.object({ token: z.string().min(1).max(512), passwor
 
 export type AuthState = { status: 'idle' | 'error' | 'success'; message?: string; fields?: Record<string, string>; values?: Record<string, string> }
 export const initialAuthState: AuthState = { status: 'idle' }
+
+export const profileSchema = z.object({
+ name: z.string().trim().min(1, 'Введите имя').max(80, 'Имя слишком длинное'),
+ phone: z.string().trim(),
+})
+export const pairingCodeSchema = z.string().trim().regex(/^[A-Za-z0-9_-]{22}$/, 'Введите код из Telegram')
+
+export type PairingState = { status: 'idle' | 'pending' | 'completed' | 'canceled' | 'error'; pairing?: import('@/shared/customer').CustomerPairing; message?: string }

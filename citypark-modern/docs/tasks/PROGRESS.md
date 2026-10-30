@@ -85,7 +85,8 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
   - Live checks passed: verification, sign-in, logout, expired-session checkout, guest retry and account-history isolation. Test orders 5 and 6 are unpaid and pending; retry reused order 6.
 - [x] [36 Recovery and Google sign-in](36-customer-recovery-google.md) [35; backend72,74]
   - `npm run check`, `npm run build`, and the named production-build flow pass. Write scenarios were gated because backend POSTs need owner approval. Owner check: with configured Google credentials and approved test data, run `QA_CUSTOMER_WRITES=1 QA_GOOGLE_START=1 QA_CUSTOMER_EMAIL=... node scripts/qa/flows/customer-recovery-google.mjs`, then complete a real Google login and a password reset from emailed links.
-- [ ] [37 Account, linked methods and order history](37-customer-account-history.md) [36; backend78]
+- [x] [37 Account, linked methods and order history](37-customer-account-history.md) [36; backend78]
+  - `npm run check`, `npm run build`, and the read-only production flow pass. Live account writes, order fixtures, and two-sided pairing are gated by `QA_CUSTOMER_WRITES=1`; they were not run here.
 - [ ] [38 Telegram Mini App entry and ordering](38-telegram-mini-entry.md) [37; backend75]
 - [ ] [39 Mini App pairing, history and payment return](39-telegram-mini-history-payment.md) [38]
 - [ ] [40 Customer accounts and Mini App release checks](40-customer-mini-release-checks.md) [39; backend78]

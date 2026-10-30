@@ -49,7 +49,7 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 				</AppLink>
 				<NavLinks />
 				<div className='flex gap-2'>
-					<Button href='/account/sign-in' variant='ghost'>Личный кабинет</Button>
+					<Button href='/account' variant='ghost'>Личный кабинет</Button>
 					<ThemeToggle />
 					{menuPage ? (
 						<CartPill dishes={cartDishes} />
