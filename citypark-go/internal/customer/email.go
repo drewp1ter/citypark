@@ -77,6 +77,12 @@ func (s *Service) IssueEmailToken(ctx context.Context, userID int64, purpose, em
 	now := s.clock.Now()
 	err = store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
 		tokenStore := NewStore(tx)
+		if err := tokenStore.LockAccount(ctx, userID); err != nil {
+			if errors.Is(err, ErrMergedAccount) || errors.Is(err, store.ErrNotFound) {
+				return ErrInvalidEmailToken
+			}
+			return err
+		}
 		if err := tokenStore.InvalidateEmailTokens(ctx, userID, purpose, now); err != nil {
 			return err
 		}

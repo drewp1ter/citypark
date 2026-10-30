@@ -16,6 +16,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/customer"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
+	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 )
@@ -110,7 +111,25 @@ func (s *Service) Start(ctx context.Context, intent string, session *customer.Se
 	if err != nil {
 		return StartResult{}, err
 	}
-	_, err = s.db.ExecContext(ctx, `INSERT INTO customer_oauth_attempts(state_hash,nonce_hash,flow_hash,pkce_verifier,intent,user_id,session_hash,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, stateHash[:], nonceHash[:], flowHash[:], verifier, intent, userID, sessionHash, expires)
+	err = store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
+		if intent == "link" {
+			if e := customer.NewStore(tx).LockAccount(ctx, session.UserID); e != nil {
+				if errors.Is(e, customer.ErrMergedAccount) || errors.Is(e, store.ErrNotFound) {
+					return httpx.NewError(403, "Подтвердите вход повторно")
+				}
+				return e
+			}
+			var active bool
+			if e := tx.GetContext(ctx, &active, `SELECT EXISTS(SELECT 1 FROM customer_sessions WHERE token_hash=$1 AND user_id=$2 AND revoked_at IS NULL AND expires_at>$3 AND surface='web' AND authenticated_at=$4)`, session.TokenHash, session.UserID, s.clock.Now(), session.AuthenticatedAt); e != nil {
+				return e
+			}
+			if !active {
+				return httpx.NewError(403, "Подтвердите вход повторно")
+			}
+		}
+		_, e := tx.ExecContext(ctx, `INSERT INTO customer_oauth_attempts(state_hash,nonce_hash,flow_hash,pkce_verifier,intent,user_id,session_hash,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, stateHash[:], nonceHash[:], flowHash[:], verifier, intent, userID, sessionHash, expires)
+		return e
+	})
 	if err != nil {
 		return StartResult{}, err
 	}

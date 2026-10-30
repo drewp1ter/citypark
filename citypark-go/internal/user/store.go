@@ -76,7 +76,7 @@ func (s *Store) ByID(ctx context.Context, id int64) (User, error) {
 }
 
 func (s *Store) ByEmail(ctx context.Context, email string) (User, error) {
-	return s.one(ctx, `SELECT `+columns+` FROM users WHERE email = $1`, email)
+	return s.one(ctx, `SELECT `+columns+` FROM users WHERE email = $1 AND merged_into_user_id IS NULL`, email)
 }
 
 func (s *Store) ByPhone(ctx context.Context, phone string) (User, error) {
@@ -86,7 +86,7 @@ func (s *Store) ByPhone(ctx context.Context, phone string) (User, error) {
 func (s *Store) Update(ctx context.Context, id int64, p UpdateParams) (User, error) {
 	return s.one(ctx,
 		`UPDATE users SET name = $2, phone = NULLIF($3, ''), updated_at = now()
-		 WHERE id = $1
+		 WHERE id = $1 AND merged_into_user_id IS NULL
 		 RETURNING `+columns,
 		id, p.Name, p.Phone)
 }
@@ -95,7 +95,7 @@ func (s *Store) Update(ctx context.Context, id int64, p UpdateParams) (User, err
 func (s *Store) SetPasswordHash(ctx context.Context, id int64, hash string) error {
 	res, err := s.db.ExecContext(ctx,
 		`UPDATE users SET password_hash = $2, legacy_password_hash = '', updated_at = now()
-		 WHERE id = $1`,
+		 WHERE id = $1 AND merged_into_user_id IS NULL`,
 		id, hash)
 	if err != nil {
 		return err

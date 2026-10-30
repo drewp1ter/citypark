@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/customer"
+	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/testutil"
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
@@ -153,6 +155,48 @@ func TestGoogleCompletion(t *testing.T) {
 	otherToken, _, _ := customer.NewService(f.db, clock.Fixed(completionTime)).CreateSession(context.Background(), other, "password", "web")
 	state, flow = f.start(t, "link", otherToken)
 	f.complete(t, state, flow, otherToken, map[string]string{"code": "code"}, 409)
+}
+
+func TestGoogleLinkCannotSurviveMerge(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	source := testutil.InsertUser(t, f.db, "Source", "+79990000001", "user")
+	destination := testutil.InsertUser(t, f.db, "Website", "+79990000002", "user")
+	sessions := customer.NewService(f.db, clock.Fixed(completionTime))
+	token, _, err := sessions.CreateSession(ctx, source, "password", "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	session, err := sessions.Authenticate(ctx, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tx, err := f.db.BeginTxx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sessions.MergeAccountsInTx(ctx, tx, source, destination); err != nil {
+		t.Fatal(err)
+	}
+	ready := make(chan struct{})
+	result := make(chan error, 1)
+	go func() { close(ready); _, e := f.svc.Start(ctx, "link", &session); result <- e }()
+	<-ready
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-result:
+		var public *httpx.Error
+		if !errors.As(err, &public) || public.Status != 403 {
+			t.Fatalf("stale link: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("Google link deadlocked")
+	}
+	if testutil.Count(t, f.db, `SELECT count(*) FROM customer_oauth_attempts WHERE user_id=$1 AND consumed_at IS NULL`, source) != 0 {
+		t.Fatal("stale link proof")
+	}
 }
 func TestGoogleFlowProofs(t *testing.T) {
 	f := fixture(t)

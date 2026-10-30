@@ -63,11 +63,27 @@ func NewService(db *sqlx.DB, c clock.Clock) *Service {
 	return &Service{store: NewStore(db), db: db, clock: c, random: rand.Reader}
 }
 func (s *Service) CreateSession(ctx context.Context, userID int64, method, surface string) (string, time.Time, error) {
-	return s.createSession(ctx, s.store, userID, method, surface)
+	var token string
+	var exp time.Time
+	err := store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
+		var e error
+		token, exp, e = s.createSession(ctx, NewStore(tx), userID, method, surface)
+		return e
+	})
+	if err != nil {
+		return "", time.Time{}, err
+	}
+	return token, exp, err
 }
 func (s *Service) createSession(ctx context.Context, st *Store, userID int64, method, surface string) (string, time.Time, error) {
 	if userID <= 0 || !((method == "password" || method == "google") && surface == "web" || method == "telegram" && surface == "mini") {
 		return "", time.Time{}, ErrInvalidSession
+	}
+	if err := st.LockAccount(ctx, userID); err != nil {
+		if errors.Is(err, ErrMergedAccount) || errors.Is(err, store.ErrNotFound) {
+			return "", time.Time{}, ErrInvalidSession
+		}
+		return "", time.Time{}, err
 	}
 	var role string
 	if err := st.db.GetContext(ctx, &role, `SELECT role FROM users WHERE id=$1`, userID); err != nil || role != auth.RoleUser {
@@ -113,7 +129,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Session, erro
 		return Session{}, err
 	}
 	var role string
-	if err := s.store.db.GetContext(ctx, &role, `SELECT role FROM users WHERE id=$1`, v.UserID); err != nil || role != auth.RoleUser {
+	if err := s.store.db.GetContext(ctx, &role, `SELECT role FROM users WHERE id=$1 AND merged_into_user_id IS NULL`, v.UserID); err != nil || role != auth.RoleUser {
 		if err != nil && !errors.Is(store.NotFound(err), store.ErrNotFound) {
 			return Session{}, err
 		}

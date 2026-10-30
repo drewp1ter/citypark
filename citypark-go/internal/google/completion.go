@@ -85,7 +85,7 @@ func (s *Service) validLink(ctx context.Context, a attempt, session *customer.Se
 		return httpx.NewError(403, "Подтвердите вход повторно")
 	}
 	var count int
-	err := s.db.GetContext(ctx, &count, `SELECT count(*) FROM customer_sessions cs JOIN users u ON u.id=cs.user_id WHERE cs.token_hash=$1 AND cs.user_id=$2 AND cs.revoked_at IS NULL AND cs.expires_at>$3 AND cs.surface='web' AND cs.authenticated_at=$4 AND u.role='user'`, a.SessionHash, *a.UserID, s.clock.Now(), session.AuthenticatedAt)
+	err := s.db.GetContext(ctx, &count, `SELECT count(*) FROM customer_sessions cs JOIN users u ON u.id=cs.user_id WHERE cs.token_hash=$1 AND cs.user_id=$2 AND cs.revoked_at IS NULL AND cs.expires_at>$3 AND cs.surface='web' AND cs.authenticated_at=$4 AND u.role='user' AND u.merged_into_user_id IS NULL`, a.SessionHash, *a.UserID, s.clock.Now(), session.AuthenticatedAt)
 	if err != nil {
 		return err
 	}
@@ -143,8 +143,14 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 			if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "google:"+claims.Subject); e != nil {
 				return e
 			}
+			if e := customer.NewStore(tx).LockAccount(ctx, *a.UserID); e != nil {
+				if errors.Is(e, customer.ErrMergedAccount) || errors.Is(e, store.ErrNotFound) {
+					return httpx.NewError(403, "Подтвердите вход повторно")
+				}
+				return e
+			}
 			var userID int64
-			e := tx.GetContext(ctx, &userID, `SELECT cs.user_id FROM customer_sessions cs JOIN users u ON u.id=cs.user_id WHERE cs.token_hash=$1 AND cs.user_id=$2 AND cs.revoked_at IS NULL AND cs.expires_at>$3 AND cs.surface='web' AND cs.authenticated_at=$4 AND u.role='user' FOR UPDATE OF cs,u`, a.SessionHash, *a.UserID, s.clock.Now(), session.AuthenticatedAt)
+			e := tx.GetContext(ctx, &userID, `SELECT cs.user_id FROM customer_sessions cs JOIN users u ON u.id=cs.user_id WHERE cs.token_hash=$1 AND cs.user_id=$2 AND cs.revoked_at IS NULL AND cs.expires_at>$3 AND cs.surface='web' AND cs.authenticated_at=$4 AND u.role='user' AND u.merged_into_user_id IS NULL FOR UPDATE OF cs`, a.SessionHash, *a.UserID, s.clock.Now(), session.AuthenticatedAt)
 			if errors.Is(store.NotFound(e), store.ErrNotFound) {
 				return httpx.NewError(403, "Подтвердите вход повторно")
 			}

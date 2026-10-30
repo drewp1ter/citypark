@@ -29,6 +29,12 @@ Keep endpoint changes accompanied by `docs/API.md` and
 types if the shared contract changes. Keep private responses uncached. Complete
 task 67 before exposing the new customer-session authentication in 69.
 
+Task 76 merges are one-way data migrations: identities, owned orders and saved
+addresses move to the website account in one transaction. Guest orders and
+checkout contact snapshots stay as they were. The source user remains as a
+historical contact with revoked sessions and proofs; rolling back the schema
+marker cannot restore the previous ownership.
+
 ## Website sequence
 
 | Task | Scope | Depends on |

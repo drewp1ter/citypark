@@ -123,5 +123,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] [73 Google authorization start](73-google-authorization.md) [69, 71 (shared rate-limit helper)]
 - [x] [74 Google completion and explicit linking](74-google-completion.md) [73]
 - [x] [75 Telegram Mini App authentication](75-telegram-authentication.md) [69, 71 (shared rate-limit helper)]
+- [x] [76 Transactional customer account merge](76-customer-account-merge.md) [68, 69, 75]
 
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).

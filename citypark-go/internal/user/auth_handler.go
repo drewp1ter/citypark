@@ -131,6 +131,9 @@ func (h *AuthHandler) signIn(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 		if err := h.store.SetPasswordHash(ctx, u.ID, hash); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				return errBadCredentials()
+			}
 			return err
 		}
 	default:
