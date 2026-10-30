@@ -18,6 +18,7 @@ function product(id: number, categoryId: number, name = `Блюдо ${id}`): Api
 	return {
 		id,
 		categoryId,
+		isOrderBlocked: false,
 		name,
 		description: '',
 		measureUnit: '',

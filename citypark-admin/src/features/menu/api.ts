@@ -44,3 +44,15 @@ export function useSaveCategoryHours(id: number) {
 		},
 	})
 }
+
+export function useSaveProductBlock(id: number) {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: (isOrderBlocked: boolean) =>
+			unwrap(api.PUT('/products/{id}/ordering-block', { params: { path: { id } }, body: { isOrderBlocked } })),
+		onSuccess: () => {
+			toastSuccess('Настройки заказа блюда сохранены')
+			return queryClient.invalidateQueries({ queryKey: ['menu'] })
+		},
+	})
+}

@@ -48,3 +48,10 @@ stop if that task is not ticked.
 
 - [x] [25 Category descriptions and ordering schedule](25-category-settings.md) [24; backend80]
   - `npm run check`, `npm run build`, and `npm run e2e -- e2e/menu.spec.ts` pass against the updated backend. The live flow restores the original category schedule.
+
+## Dish ordering blocks
+- [x] [26 Admin dish ordering switch](26-dish-ordering-switch.md) [25] (needs citypark-go task 81)
+  - Regenerate API types and add a labelled “Заблокировать заказ” switch to each dish row using `PUT /products/{id}/ordering-block`.
+  - Show the persistent manual block separately from schedule-based unavailability. Disable the switch while saving, report success/failure and refresh menu data after success.
+  - Test block/unblock, failed saves and state refresh on mobile and desktop; run required admin checks and the menu flow against the updated backend.
+  - API types regenerated; check (274 unit tests), build and menu e2e pass, including save failure and restored block/unblock fixtures. Optional QA_PUBLIC_BASE_URL runs the public blocked-dish flow while the fixture is blocked.

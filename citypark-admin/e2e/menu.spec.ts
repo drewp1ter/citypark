@@ -1,3 +1,5 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 import { signIn } from './helpers'
 
@@ -73,4 +75,65 @@ test('category ordering schedule saves and survives reload', async ({ page }) =>
 		for (const [i, checked] of originalDays.entries()) await boxes.nth(i).setChecked(checked)
 		await save()
 	}
+})
+
+test('dish ordering block persists and can be restored', async ({ page }) => {
+	test.setTimeout(120000)
+	await signIn(page)
+	await page.getByRole('link', { name: 'Меню' }).first().click()
+	const control = page.getByRole('switch', { name: 'Заблокировать заказ' }).first()
+	await expect(control).toBeVisible()
+	const original = await control.isChecked()
+	try {
+		await control.click()
+		await expect(control).toBeChecked({ checked: !original })
+		await expect(control).toBeEnabled()
+		await page.reload()
+		await expect(control).toBeChecked({ checked: !original })
+		if (process.env.QA_PUBLIC_BASE_URL && !original) {
+			const envText = readFileSync('../citypark-modern/.env', 'utf8')
+			const menuUrl = envText
+				.match(/^MENU_API_URL=(.*)$/m)?.[1]
+				?.trim()
+				.replace(/^['"]|['"]$/g, '')
+			execFileSync(process.execPath, ['scripts/qa/flows/dish-ordering-blocks.mjs'], {
+				cwd: '../citypark-modern',
+				env: {
+					...process.env,
+					MENU_API_URL: menuUrl,
+					QA_REQUIRE_BLOCKED_DISH: '1',
+					BASE_URL: process.env.QA_PUBLIC_BASE_URL,
+				},
+				stdio: 'inherit',
+				timeout: 90000,
+			})
+		}
+	} finally {
+		if ((await control.isChecked()) !== original) await control.click()
+		await expect(control).toBeChecked({ checked: original })
+		await expect(control).toBeEnabled()
+	}
+})
+
+test('failed dish block preserves saved state', async ({ page }) => {
+	await signIn(page)
+	await page.getByRole('link', { name: 'Меню' }).first().click()
+	const control = page.getByRole('switch', { name: 'Заблокировать заказ' }).first()
+	await expect(control).toBeVisible()
+	const original = await control.isChecked()
+	await page.route('**/products/*/ordering-block', (route) =>
+		route.fulfill({
+			status: 400,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				statusCode: 400,
+				message: 'Не удалось сохранить блокировку',
+				errors: { isOrderBlocked: 'Проверьте настройку' },
+			}),
+		})
+	)
+	await control.click()
+	await expect(control).toBeEnabled()
+	await expect(control).toBeChecked({ checked: original })
+	await expect(page.getByText('Проверьте настройку')).toBeVisible()
 })
