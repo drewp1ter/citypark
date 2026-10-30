@@ -2460,7 +2460,6 @@ Every message is a text frame with one JSON object. `order` has the same shape a
 | `hello` | right after the connection is open; has no `order` |
 | `order.pending` | an order was created and waits for payment |
 | `order.paid` | an order was paid |
-| `order.confirmed` | an admin confirmed an order |
 
 `hello`:
 
@@ -2478,12 +2477,6 @@ Every message is a text frame with one JSON object. `order` has the same shape a
 
 ```json
 {"type":"order.paid","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "paid", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
-```
-
-`order.confirmed`:
-
-```json
-{"type":"order.confirmed","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "confirmed", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
 ```
 
 **Notes**
@@ -2693,53 +2686,6 @@ No body.
 
 The answer is 204 also when the order does not exist, so the request can be repeated safely. The customer and the address are not deleted.
 
-#### POST /orders/{id}/confirm
-
-Sets the order status to `confirmed` and notifies the staff.
-
-- **Role:** admin
-
-**Parameters**
-
-| Field | Type | Required | Rules |
-|---|---|---|---|
-| `id` | integer | yes | path parameter, the order id |
-
-**Response 200**
-
-The updated order, in the same format as `GET /orders/{id}`, with `"status": "confirmed"`.
-
-```json
-{
-  "id": 2,
-  "createdAt": "2024-05-24T12:00:00Z",
-  "updatedAt": "2024-05-24T12:00:00Z",
-  "status": "confirmed",
-  "comment": "",
-  "deliveryTime": "",
-  "total": 799,
-  "deliveryPrice": 150,
-  "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
-  "address": { "id": 1, "city": "Сочи", "address": "ул. Ленина, 1" },
-  "items": [
-    { "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 },
-    { "productId": 2, "name": "Лаваш", "categoryName": "Мангал", "amount": 2, "offeredPrice": 100 }
-  ]
-}
-```
-
-**Errors**
-
-| Status | When | Message |
-|---|---|---|
-| 401 | no token or invalid token | `Требуется авторизация` |
-| 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
-| 404 | the order does not exist or `id` is not a valid id | `Не найдено` |
-
-**Notes**
-
-The status is set whatever it was before, and every call notifies the staff again.
-
 ### Reports
 
 The data comes from 1C (the hotel database). The server holds the 1C credentials; the admin panel never calls 1C. 502 means 1C did not answer within 30 s or returned an error. Dates are local (`APP_TIMEZONE`), both inclusive.
@@ -2940,7 +2886,7 @@ The body is always the plain text `FAIL`. Moneta repeats the call later after an
 
 **Notes**
 
-A valid callback sets the order to `paid` and notifies the staff once. Repeated callbacks, and callbacks for an order that is already `paid`, `confirmed` or `canceled`, answer `SUCCESS` and change nothing. The signature is checked before the order is looked up, so an unsigned request gets 403 even for an unknown order. The route has no working-hours limit.
+A valid callback sets the order to `paid`, submits it to iiko, and notifies the single staff chat once (order details followed by a separate phone message). The `confirmed` status remains readable for historical orders only. Repeated callbacks, and callbacks for an order that is already `paid`, `confirmed` or `canceled`, answer `SUCCESS` and change nothing. The signature is checked before the order is looked up, so an unsigned request gets 403 even for an unknown order. The route has no working-hours limit.
 
 ### Uploads
 

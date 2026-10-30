@@ -71,7 +71,6 @@ func (h *Handler) routes(r chi.Router) {
 		r.Post("/orders/{id}/items", httpx.Handle(h.addItem))
 		r.Delete("/orders/{id}/items/{productId}", httpx.Handle(h.removeItem))
 		r.Delete("/orders/{id}", httpx.Handle(h.delete))
-		r.Post("/orders/{id}/confirm", httpx.Handle(h.confirm))
 	})
 }
 
@@ -87,7 +86,7 @@ func (h *Handler) moneta(w http.ResponseWriter, r *http.Request) {
 	slog.Default().Info("moneta callback", "order_id", cb.TransactionID, "operation_id", cb.OperationID)
 
 	status, body := http.StatusOK, "SUCCESS"
-	if err := h.svc.PaymentConfirmed(r.Context(), cb); err != nil && cb.TransactionID != "" && cb.OperationID != "" {
+	if err := h.svc.PaymentConfirmed(r.Context(), cb); err != nil {
 		status, body = http.StatusInternalServerError, "FAIL"
 		var he *httpx.Error
 		if errors.As(err, &he) {
@@ -319,19 +318,6 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 	httpx.NoContent(w)
-	return nil
-}
-
-func (h *Handler) confirm(w http.ResponseWriter, r *http.Request) error {
-	id, err := httpx.PathID(r, "id")
-	if err != nil {
-		return err
-	}
-	o, err := h.svc.Confirm(r.Context(), id)
-	if err != nil {
-		return err
-	}
-	httpx.JSON(w, http.StatusOK, o)
 	return nil
 }
 

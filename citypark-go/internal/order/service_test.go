@@ -19,13 +19,10 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/testutil"
 )
 
-type fakeNotifier struct{ pending, paid, confirmed []Order }
+type fakeNotifier struct{ pending, paid []Order }
 
 func (f *fakeNotifier) OrderPending(_ context.Context, o Order) { f.pending = append(f.pending, o) }
 func (f *fakeNotifier) OrderPaid(_ context.Context, o Order)    { f.paid = append(f.paid, o) }
-func (f *fakeNotifier) OrderConfirmed(_ context.Context, o Order) {
-	f.confirmed = append(f.confirmed, o)
-}
 
 type fakePayments struct {
 	requests []PaymentRequest

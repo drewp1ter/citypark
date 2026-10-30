@@ -47,7 +47,7 @@ type Iiko struct {
 	// Placeholder address of the iiko order: iiko's legacy address needs a street and a house of its own.
 	AddressCity, AddressStreet, AddressHouse string
 }
-type Telegram struct{ BaseURL, Token, ChatIDOrderCreated, ChatIDOrderConfirmed string }
+type Telegram struct{ BaseURL, Token, StaffChatID string }
 type Moneta struct {
 	ID         string // shop id, sent to Moneta as MNT_ID
 	Secret     string // integrity code from the Moneta cabinet
@@ -194,10 +194,9 @@ func Load(lookup LookupFunc) (Config, error) {
 	}
 
 	c.Telegram = Telegram{
-		BaseURL:              str("TELEGRAM_BASE_URL", "https://api.telegram.org"),
-		Token:                str("TELEGRAM_TOKEN", ""),
-		ChatIDOrderCreated:   str("TELEGRAM_CHAT_ID_FOR_ORDER_CREATED", ""),
-		ChatIDOrderConfirmed: str("TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED", ""),
+		BaseURL:     str("TELEGRAM_BASE_URL", "https://api.telegram.org"),
+		Token:       str("TELEGRAM_TOKEN", ""),
+		StaffChatID: str("TELEGRAM_STAFF_CHAT_ID", ""),
 	}
 	c.CustomerTelegramBotToken = str("CUSTOMER_TELEGRAM_BOT_TOKEN", "")
 	c.Moneta = Moneta{

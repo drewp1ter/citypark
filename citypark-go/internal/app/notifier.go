@@ -21,17 +21,16 @@ type MessageSender interface {
 
 // TelegramNotifier implements order.Notifier. Every method returns at once and sends in a goroutine.
 type TelegramNotifier struct {
-	sender        MessageSender
-	chatCreated   string
-	chatConfirmed string
-	log           *slog.Logger
-	wg            sync.WaitGroup
+	sender      MessageSender
+	staffChatID string
+	log         *slog.Logger
+	wg          sync.WaitGroup
 }
 
 var _ order.Notifier = (*TelegramNotifier)(nil)
 
-func NewTelegramNotifier(sender MessageSender, chatCreated, chatConfirmed string, log *slog.Logger) *TelegramNotifier {
-	return &TelegramNotifier{sender: sender, chatCreated: chatCreated, chatConfirmed: chatConfirmed, log: log}
+func NewTelegramNotifier(sender MessageSender, staffChatID string, log *slog.Logger) *TelegramNotifier {
+	return &TelegramNotifier{sender: sender, staffChatID: staffChatID, log: log}
 }
 
 // Wait blocks until all sends that were started have finished. Used on shutdown and in tests.
@@ -41,14 +40,10 @@ func (n *TelegramNotifier) Wait() { n.wg.Wait() }
 func (n *TelegramNotifier) OrderPending(ctx context.Context, o order.Order) {}
 
 func (n *TelegramNotifier) OrderPaid(ctx context.Context, o order.Order) {
-	n.send(ctx, o, n.chatConfirmed)
+	n.send(ctx, o, n.staffChatID)
 }
 
-func (n *TelegramNotifier) OrderConfirmed(ctx context.Context, o order.Order) {
-	n.send(ctx, o, n.chatConfirmed)
-}
-
-// send delivers the formatted order to chatID and then the customer's phone to the "created" chat.
+// send delivers the formatted order to staff chat and then the customer's phone to the same chat.
 // The phone goes second as its own message so staff can copy it.
 func (n *TelegramNotifier) send(ctx context.Context, o order.Order, chatID string) {
 	if chatID == "" {
@@ -68,7 +63,7 @@ func (n *TelegramNotifier) send(ctx context.Context, o order.Order, chatID strin
 			n.log.Error("telegram send failed", "order_id", o.ID, "error", err)
 			return
 		}
-		if err := n.sender.SendMessage(ctx, n.chatCreated, o.Customer.Phone); err != nil {
+		if err := n.sender.SendMessage(ctx, chatID, o.Customer.Phone); err != nil {
 			n.log.Error("telegram send failed", "order_id", o.ID, "error", err)
 		}
 	}()

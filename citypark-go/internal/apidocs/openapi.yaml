@@ -470,7 +470,7 @@ components:
       properties:
         type:
           type: string
-          enum: [hello, order.pending, order.paid, order.confirmed]
+          enum: [hello, order.pending, order.paid]
         order:
           $ref: '#/components/schemas/Order'
     Order:
@@ -2833,30 +2833,6 @@ paths:
       responses:
         '204':
           description: Removed.
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-  /orders/{id}/confirm:
-    post:
-      summary: Confirm an order and notify the staff
-      description: >-
-        Role: admin. The status is set whatever it was before, and every call notifies the staff
-        again.
-      tags: [orders]
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '#/components/parameters/Id'
-      responses:
-        '200':
-          description: The updated order with status `confirmed`.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Order'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

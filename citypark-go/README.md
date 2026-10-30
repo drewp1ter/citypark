@@ -57,8 +57,7 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `IIKO_ADDRESS_HOUSE` | `61` | House of the placeholder address |
 | `TELEGRAM_BASE_URL` | `https://api.telegram.org` | Telegram Bot API base URL |
 | `TELEGRAM_TOKEN` | empty | Bot token |
-| `TELEGRAM_CHAT_ID_FOR_ORDER_CREATED` | empty | Chat that receives new orders |
-| `TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED` | empty | Chat that receives paid orders |
+| `TELEGRAM_STAFF_CHAT_ID` | empty | Staff chat for paid orders and iiko alerts |
 | `MONETA_ID` | empty | Moneta shop id (`MNT_ID`) |
 | `MONETA_SECRET` | empty | Moneta integrity code |
 | `MONETA_TEST_MODE` | `false` | `true` marks payments as test payments |
@@ -99,9 +98,9 @@ Frontend developers: see [`docs/API.md`](docs/API.md).
 ## External services
 
 - **iiko**: `POST /api/v1/iiko/update-products` with the header `X-Update-Token` equal to `IIKO_UPDATE_TOKEN` syncs categories, products and images.
-- **Orders in iiko**: when Moneta confirms a payment, the order is created in iiko in the background (up to 3 attempts, 30 s and 2 min apart) and its iiko id is saved in `orders.iiko_order_id`. If iiko does not create the order, the `TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED` chat gets an alert and staff enter the order in iikoFront by hand. The iiko address is a fixed placeholder (`IIKO_ADDRESS_*`); the real address, the delivery time and the delivery fee are written in the comment. Get the ids with a token from `v2/access_token`: `POST /api/1/terminal_groups` and `POST /api/1/payment_types` with `{"organizationIds": ["<IIKO_ORGANIZATION_ID>"]}`; take the payment type the restaurant uses for online payments, and put its `paymentTypeKind` in `IIKO_PAYMENT_TYPE_KIND`.
+- **Orders in iiko**: when Moneta confirms a payment, the order is created in iiko in the background (up to 3 attempts, 30 s and 2 min apart) and its iiko id is saved in `orders.iiko_order_id`. If iiko does not create the order, the `TELEGRAM_STAFF_CHAT_ID` chat gets an alert and staff enter the order in iikoFront by hand. The iiko address is a fixed placeholder (`IIKO_ADDRESS_*`); the real address, the delivery time and the delivery fee are written in the comment. Get the ids with a token from `v2/access_token`: `POST /api/1/terminal_groups` and `POST /api/1/payment_types` with `{"organizationIds": ["<IIKO_ORGANIZATION_ID>"]}`; take the payment type the restaurant uses for online payments, and put its `paymentTypeKind` in `IIKO_PAYMENT_TYPE_KIND`.
 - **Moneta**: in the shop settings set "Pay URL" to `/api/v1/webhooks/moneta` (full public URL) with method POST. The integrity code in the Moneta cabinet must equal `MONETA_SECRET`. The server builds the payment URL (`MONETA_URL`: demo or production assistant). Turn on «Можно переопределять настройки в URL» in the shop settings so `MONETA_SUCCESS_URL` and `MONETA_FAIL_URL` are used. The demo and production shops have different `MONETA_ID`.
-- **Telegram**: add the bot to the staff chats and put the chat ids in `TELEGRAM_CHAT_ID_FOR_ORDER_CREATED` and `TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED`.
+- **Telegram**: add the bot to the staff chat and set `TELEGRAM_STAFF_CHAT_ID` to its id. Before deploying, replace the two old chat variables with this one and restart the backend. A paid order sends its details followed by a separate phone message.
 
 ## Deployment
 

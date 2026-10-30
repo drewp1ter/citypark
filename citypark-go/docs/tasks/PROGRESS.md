@@ -127,3 +127,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] [78 Linked methods and linking integration](78-customer-linked-methods.md) [74, 77]
 
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).
+
+## Automatic paid orders
+- [x] [79 Automatic paid orders and one staff Telegram chat](79-automatic-paid-orders.md) [62, 64, 65, 78] (needed by citypark-admin task 24)

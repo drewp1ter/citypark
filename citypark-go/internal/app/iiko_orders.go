@@ -62,8 +62,6 @@ func (n *IikoOrders) Wait() { n.wg.Wait() }
 // OrderPending does nothing: an order is sent to iiko when it is paid.
 func (n *IikoOrders) OrderPending(ctx context.Context, o order.Order) {}
 
-func (n *IikoOrders) OrderConfirmed(ctx context.Context, o order.Order) {}
-
 func (n *IikoOrders) OrderPaid(ctx context.Context, o order.Order) {
 	if !n.configured() {
 		return
@@ -145,12 +143,6 @@ func (ns Notifiers) OrderPending(ctx context.Context, o order.Order) {
 func (ns Notifiers) OrderPaid(ctx context.Context, o order.Order) {
 	for _, n := range ns {
 		n.OrderPaid(ctx, o)
-	}
-}
-
-func (ns Notifiers) OrderConfirmed(ctx context.Context, o order.Order) {
-	for _, n := range ns {
-		n.OrderConfirmed(ctx, o)
 	}
 }
 

@@ -349,7 +349,6 @@ func TestIikoOrdersIgnoresOtherEvents(t *testing.T) {
 	creator := &fakeCreator{}
 	n := app.NewIikoOrders(creator, db, &fakeSender{}, alertChat, iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	n.OrderPending(context.Background(), o)
-	n.OrderConfirmed(context.Background(), o)
 	n.Wait()
 	if len(creator.calls()) != 0 {
 		t.Errorf("calls = %d, want 0", len(creator.calls()))
@@ -367,19 +366,14 @@ func (r recordingNotifier) OrderPending(context.Context, order.Order) {
 func (r recordingNotifier) OrderPaid(context.Context, order.Order) {
 	*r.log = append(*r.log, r.name+":paid")
 }
-func (r recordingNotifier) OrderConfirmed(context.Context, order.Order) {
-	*r.log = append(*r.log, r.name+":confirmed")
-}
-
 func TestNotifiersFanOut(t *testing.T) {
 	var log []string
 	ns := app.Notifiers{recordingNotifier{"a", &log}, recordingNotifier{"b", &log}}
 	ctx, o := context.Background(), order.Order{}
 	ns.OrderPending(ctx, o)
 	ns.OrderPaid(ctx, o)
-	ns.OrderConfirmed(ctx, o)
 
-	want := []string{"a:pending", "b:pending", "a:paid", "b:paid", "a:confirmed", "b:confirmed"}
+	want := []string{"a:pending", "b:pending", "a:paid", "b:paid"}
 	if len(log) != len(want) {
 		t.Fatalf("log = %v, want %v", log, want)
 	}

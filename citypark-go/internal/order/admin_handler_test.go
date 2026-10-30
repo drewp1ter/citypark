@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -250,41 +251,19 @@ func TestDeleteOrderForbidden(t *testing.T) {
 	}
 }
 
-func TestConfirm(t *testing.T) {
+func TestConfirmRouteRemoved(t *testing.T) {
 	e := newAdminEnv(t)
-	code, body := e.do(t, http.MethodPost, fmt.Sprintf("/orders/%d/confirm", e.orderID), e.adminToken, nil)
-	if code != http.StatusOK {
-		t.Fatalf("status = %d, want 200; body %v", code, body)
-	}
-	if body["status"] != StatusConfirmed {
-		t.Errorf("body status = %v, want confirmed", body["status"])
-	}
-	if got := e.order(t, e.orderID).Status; got != StatusConfirmed {
-		t.Errorf("stored status = %q, want confirmed", got)
-	}
-	if len(e.notifier.confirmed) != 1 || e.notifier.confirmed[0].ID != e.orderID {
-		t.Errorf("OrderConfirmed calls = %v, want one for order %d", e.notifier.confirmed, e.orderID)
-	}
-}
-
-func TestConfirmMissing(t *testing.T) {
-	e := newAdminEnv(t)
-	code, _ := e.do(t, http.MethodPost, "/orders/999/confirm", e.adminToken, nil)
-	if code != http.StatusNotFound {
-		t.Errorf("status = %d, want 404", code)
-	}
-	if len(e.notifier.confirmed) != 0 {
-		t.Errorf("OrderConfirmed was called %d times, want 0", len(e.notifier.confirmed))
-	}
-}
-
-func TestConfirmForbidden(t *testing.T) {
-	e := newAdminEnv(t)
-	code, _ := e.do(t, http.MethodPost, fmt.Sprintf("/orders/%d/confirm", e.orderID), e.userToken, nil)
-	if code != http.StatusForbidden {
-		t.Errorf("status = %d, want 403", code)
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/orders/%d/confirm", e.orderID), nil)
+	req.Header.Set("Authorization", "Bearer "+e.adminToken)
+	rec := httptest.NewRecorder()
+	e.router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("status = %d, want 404", rec.Code)
 	}
 	if got := e.order(t, e.orderID).Status; got != StatusNew {
 		t.Errorf("status = %q, want unchanged new", got)
+	}
+	if len(e.notifier.paid) != 0 {
+		t.Errorf("paid notifications = %d, want 0", len(e.notifier.paid))
 	}
 }

@@ -14,7 +14,7 @@ const subscriberBuffer = 16
 
 // Event is one message sent to a client.
 type Event struct {
-	Type  string       `json:"type"` // "hello" | "order.pending" | "order.paid" | "order.confirmed"
+	Type  string       `json:"type"` // "hello" | "order.pending" | "order.paid"
 	Order *order.Order `json:"order,omitempty"`
 }
 
@@ -83,9 +83,8 @@ func (h *Hub) publish(typ string, o order.Order) {
 	}
 }
 
-func (h *Hub) OrderPending(_ context.Context, o order.Order)   { h.publish("order.pending", o) }
-func (h *Hub) OrderPaid(_ context.Context, o order.Order)      { h.publish("order.paid", o) }
-func (h *Hub) OrderConfirmed(_ context.Context, o order.Order) { h.publish("order.confirmed", o) }
+func (h *Hub) OrderPending(_ context.Context, o order.Order) { h.publish("order.pending", o) }
+func (h *Hub) OrderPaid(_ context.Context, o order.Order)    { h.publish("order.paid", o) }
 
 // subscribers is the number of registered subscribers. Used in tests.
 func (h *Hub) subscribers() int {

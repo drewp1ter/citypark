@@ -29,9 +29,8 @@ import (
 
 // Notifier tells staff about orders. Implementations must not block for long and must not fail the request.
 type Notifier interface {
-	OrderPending(ctx context.Context, o Order)   // an order was created and waits for payment
-	OrderPaid(ctx context.Context, o Order)      // an order was paid
-	OrderConfirmed(ctx context.Context, o Order) // an admin confirmed an order
+	OrderPending(ctx context.Context, o Order) // an order was created and waits for payment
+	OrderPaid(ctx context.Context, o Order)    // an order was paid
 }
 
 type PaymentRequest struct {
@@ -181,22 +180,6 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		s.notifier.OrderPending(ctx, o)
 	}
 	return CreateResult{OrderID: o.ID, RedirectURL: form.URL}, nil
-}
-
-// Confirm sets status "confirmed" and notifies staff. Returns the updated order.
-func (s *Service) Confirm(ctx context.Context, id int64) (Order, error) {
-	orders := NewStore(s.db)
-	if err := orders.SetStatus(ctx, id, StatusConfirmed); errors.Is(err, store.ErrNotFound) {
-		return Order{}, httpx.NotFound()
-	} else if err != nil {
-		return Order{}, err
-	}
-	o, err := orders.ByID(ctx, id)
-	if err != nil {
-		return Order{}, err
-	}
-	s.notifier.OrderConfirmed(ctx, o)
-	return o, nil
 }
 
 // PaymentConfirmed checks a payment callback and marks the order as paid.

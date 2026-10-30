@@ -57,9 +57,8 @@ func TestHubEventTypes(t *testing.T) {
 
 	h.OrderPending(ctx, o)
 	h.OrderPaid(ctx, o)
-	h.OrderConfirmed(ctx, o)
 
-	for _, want := range []string{"order.pending", "order.paid", "order.confirmed"} {
+	for _, want := range []string{"order.pending", "order.paid"} {
 		if got := recv(t, ch).Type; got != want {
 			t.Errorf("type = %q, want %q", got, want)
 		}

@@ -33,8 +33,7 @@ import (
 )
 
 const (
-	chatCreated   = "111"
-	chatConfirmed = "222"
+	staffChat = "222"
 )
 
 type sentMessage struct{ ChatID, Text string }
@@ -88,7 +87,7 @@ func testOrderText() string {
 
 func newNotifier(sender app.MessageSender, buf *bytes.Buffer) *app.TelegramNotifier {
 	log := slog.New(slog.NewTextHandler(buf, nil))
-	return app.NewTelegramNotifier(sender, chatCreated, chatConfirmed, log)
+	return app.NewTelegramNotifier(sender, staffChat, log)
 }
 
 func TestNotifierPaid(t *testing.T) {
@@ -100,20 +99,9 @@ func TestNotifierPaid(t *testing.T) {
 	n.Wait()
 
 	want := []sentMessage{
-		{chatConfirmed, testOrderText()},
-		{chatCreated, "+79991234567"},
+		{staffChat, testOrderText()},
+		{staffChat, "+79991234567"},
 	}
-	assertSent(t, sender.calls(), want)
-}
-
-func TestNotifierConfirmed(t *testing.T) {
-	sender := &fakeSender{}
-	n := newNotifier(sender, &bytes.Buffer{})
-
-	n.OrderConfirmed(context.Background(), testOrder())
-	n.Wait()
-
-	want := []sentMessage{{chatConfirmed, testOrderText()}, {chatCreated, "+79991234567"}}
 	assertSent(t, sender.calls(), want)
 }
 
@@ -166,15 +154,14 @@ func (f *failSecond) SendMessage(ctx context.Context, chatID, text string) error
 func TestNotifierEmptyChat(t *testing.T) {
 	sender := &fakeSender{}
 	var buf bytes.Buffer
-	n := app.NewTelegramNotifier(sender, "", "", slog.New(slog.NewTextHandler(&buf, nil)))
+	n := app.NewTelegramNotifier(sender, "", slog.New(slog.NewTextHandler(&buf, nil)))
 
 	n.OrderPaid(context.Background(), testOrder())
-	n.OrderConfirmed(context.Background(), testOrder())
 	n.Wait()
 
 	assertSent(t, sender.calls(), nil)
-	if got := strings.Count(buf.String(), "level=WARN"); got != 2 {
-		t.Errorf("got %d warnings, want 2: %q", got, buf.String())
+	if got := strings.Count(buf.String(), "level=WARN"); got != 1 {
+		t.Errorf("got %d warnings, want 1: %q", got, buf.String())
 	}
 }
 
@@ -264,11 +251,10 @@ func (f *fakeTelegram) sentChats() []string {
 func newApp(t *testing.T, db *sqlx.DB, tg *fakeTelegram, env map[string]string) *app.App {
 	t.Helper()
 	merged := map[string]string{
-		"IIKO_BASE_URL":                        tg.URL,
-		"TELEGRAM_BASE_URL":                    tg.URL,
-		"TELEGRAM_TOKEN":                       "tok",
-		"TELEGRAM_CHAT_ID_FOR_ORDER_CREATED":   chatCreated,
-		"TELEGRAM_CHAT_ID_FOR_ORDER_CONFIRMED": chatConfirmed,
+		"IIKO_BASE_URL":          tg.URL,
+		"TELEGRAM_BASE_URL":      tg.URL,
+		"TELEGRAM_TOKEN":         "tok",
+		"TELEGRAM_STAFF_CHAT_ID": staffChat,
 	}
 	for k, v := range env {
 		merged[k] = v
@@ -408,8 +394,8 @@ func TestAppOnlineFlow(t *testing.T) {
 
 	a.Notifier.Wait()
 	got := tg.sentChats()
-	if len(got) != 2 || got[0] != chatConfirmed || got[1] != chatCreated {
-		t.Errorf("telegram chats = %v, want [%s %s]", got, chatConfirmed, chatCreated)
+	if len(got) != 2 || got[0] != staffChat || got[1] != staffChat {
+		t.Errorf("telegram chats = %v, want [%s %s]", got, staffChat, staffChat)
 	}
 
 	rec = callback(strings.Repeat("0", 32))
