@@ -51,6 +51,7 @@ export function MobileMenu() {
 						</AppLink>
 					))}
 				</nav>
+					<AppLink href='/account/sign-in' className='mx-6 flex min-h-11 items-center font-semibold'>Личный кабинет</AppLink>
 
 				<div className='mt-auto flex flex-col gap-4 px-6 pt-8 pb-6'>
 					<ul className='flex flex-col'>

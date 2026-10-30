@@ -79,3 +79,12 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 ## PWA
 - [x] 34 Installable site with an offline page
   - Owner: the `menu` and `checkout-and-contacts` flows need the backend on :3000, which was down, so `qa:flows` stopped there; the other flows and `pwa.mjs` pass. Do the manual install check on HTTPS (Android Chrome, iOS Safari). Lighthouse was not run.
+
+## Customer accounts and Telegram Mini App
+- [x] [35 Customer sign-in and verification](35-customer-account-auth.md) [34; backend71]
+  - Live checks passed: verification, sign-in, logout, expired-session checkout, guest retry and account-history isolation. Test orders 5 and 6 are unpaid and pending; retry reused order 6.
+- [ ] [36 Recovery and Google sign-in](36-customer-recovery-google.md) [35; backend72,74]
+- [ ] [37 Account, linked methods and order history](37-customer-account-history.md) [36; backend78]
+- [ ] [38 Telegram Mini App entry and ordering](38-telegram-mini-entry.md) [37; backend75]
+- [ ] [39 Mini App pairing, history and payment return](39-telegram-mini-history-payment.md) [38]
+- [ ] [40 Customer accounts and Mini App release checks](40-customer-mini-release-checks.md) [39; backend78]

@@ -28,5 +28,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
 	if (event.request.mode !== 'navigate') return
+	if (new URL(event.request.url).pathname.startsWith('/account/')) return
 	event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)))
 })

@@ -47,10 +47,10 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions,
 	const cartReady = useCartReady()
 	const priced = useMemo(() => priceLines(lines, dishes), [lines, dishes])
 
-	const [method, setMethod] = useState<DeliveryMethod>('delivery')
-	const [city, setCity] = useState(towns[0]?.name ?? '')
-	const [when, setWhen] = useState('asap')
-	const [consent, setConsent] = useState(false)
+	const [method, setMethod] = useState<DeliveryMethod>(values?.method === 'pickup' ? 'pickup' : 'delivery')
+	const [city, setCity] = useState(values?.city || towns[0]?.name || '')
+	const [when, setWhen] = useState(values?.when || 'asap')
+	const [consent, setConsent] = useState(values?.consent === 'on')
 
 	const noDelivery = method === 'delivery' && towns.length === 0
 	const selectedTown = towns.find((town) => town.name === city)
@@ -88,6 +88,7 @@ export function CheckoutForm({ dishes, towns, hours, paymentFailed, suggestions,
 					<form
 						id='checkout'
 						action={formAction}
+						onReset={(event) => event.preventDefault()}
 						noValidate
 						className='grid gap-2 md:grid-cols-3 md:items-start md:gap-3'
 					>

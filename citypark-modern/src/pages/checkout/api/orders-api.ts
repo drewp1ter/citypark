@@ -1,4 +1,5 @@
 import { serverEnv } from '@/shared/config'
+import { getCustomerSessionToken, getGuestCheckoutCookie, saveGuestCheckoutCookie } from '@/shared/customer'
 
 export type CreateOrderBody = {
 	phone: string
@@ -17,12 +18,19 @@ export type CreateOrderResult =
 
 /** POST /orders. Never cached. A network error or an unexpected status throws. */
 export async function createOrder(body: CreateOrderBody): Promise<CreateOrderResult> {
+	const token = await getCustomerSessionToken()
+	const guest = token ? undefined : await getGuestCheckoutCookie()
 	const response = await fetch(serverEnv().MENU_API_URL + '/orders', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Content-Type': 'application/json',
+			...(token ? { Authorization: `Bearer ${token}` } : guest ? { Cookie: `citypark_guest_checkout=${guest}` } : {}),
+		},
 		body: JSON.stringify(body),
 		cache: 'no-store',
 	})
+	if (!token) await saveGuestCheckoutCookie(response.headers.get('set-cookie'))
+	if (response.status === 401) return { ok: false, message: 'Войдите повторно, чтобы продолжить' }
 	if (response.status === 201) {
 		const { orderId, redirectUrl } = (await response.json()) as { orderId: number; redirectUrl: string }
 		return { ok: true, orderId, redirectUrl }

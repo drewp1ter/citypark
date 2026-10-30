@@ -30,6 +30,13 @@ const nextConfig: NextConfig = {
 	async headers() {
 		return [
 			{
+				source: '/account/:path*',
+				headers: [
+					{ key: 'Cache-Control', value: 'private, no-store' },
+					{ key: 'Referrer-Policy', value: 'no-referrer' },
+				],
+			},
+			{
 				// The worker file must never be cached, or a fixed worker would not reach visitors.
 				source: '/sw.js',
 				headers: [
