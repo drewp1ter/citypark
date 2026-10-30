@@ -45,6 +45,7 @@ src/
   shared/lib/                 formatting and other pure helpers
 e2e/                          Playwright flows
 ```
+
 A feature imports only from `shared` and never from another feature. Routes import features.
 
 ## Rules
@@ -67,6 +68,7 @@ npm run api:gen      # regenerate src/shared/api/schema.d.ts from ../citypark-go
 npm run build        # static files in dist/
 npm run e2e          # Playwright flows; needs the backend running at VITE_API_URL
 ```
+
 Do not start the backend or its database yourself (no `make db-up`, `make run`, `docker`). If the backend does not
 answer at `VITE_API_URL`, stop and ask the user to start it.
 The backend is reachable at the URL in `.env` (`VITE_API_URL`), which may be another host, not `localhost`. Read it

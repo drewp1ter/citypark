@@ -3,7 +3,7 @@ import type { components } from '../../../shared/api/schema'
 export type LiveOrderEvent = components['schemas']['LiveOrderEvent']
 export type LiveStatus = 'connecting' | 'online' | 'offline'
 
-const EVENT_TYPES: readonly string[] = ['hello', 'order.pending', 'order.paid', 'order.confirmed']
+const EVENT_TYPES: readonly string[] = ['hello', 'order.pending', 'order.paid']
 
 /** 'http://h/api/v1' → 'ws://h/api/v1/orders/live'; https becomes wss. */
 export function liveUrl(apiUrl: string): string {

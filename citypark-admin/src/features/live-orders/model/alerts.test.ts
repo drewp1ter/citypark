@@ -5,7 +5,7 @@ import type { LiveOrder } from './board'
 describe('isPaidAlert', () => {
 	it('is true only for order.paid', () => {
 		expect(isPaidAlert({ type: 'order.paid' })).toBe(true)
-		for (const type of ['hello', 'order.pending', 'order.confirmed'] as const) {
+		for (const type of ['hello', 'order.pending'] as const) {
 			expect(isPaidAlert({ type })).toBe(false)
 		}
 	})

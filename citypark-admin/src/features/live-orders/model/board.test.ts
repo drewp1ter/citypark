@@ -31,8 +31,8 @@ describe('applyEvent', () => {
 		const paid = order(1, { status: 'paid', updatedAt: '2026-10-28T09:05:00Z' })
 		const result = applyEvent([order(1)], { type: 'order.paid', order: paid }, today)
 		expect(result).toEqual([paid])
-		const again = order(1, { status: 'confirmed', updatedAt: '2026-10-28T09:05:00Z' })
-		expect(applyEvent(result, { type: 'order.confirmed', order: again }, today)).toEqual([again])
+		const again = order(1, { status: 'paid', updatedAt: '2026-10-28T09:05:00Z' })
+		expect(applyEvent(result, { type: 'order.paid', order: again }, today)).toEqual([again])
 	})
 
 	it('ignores an older event', () => {
@@ -58,7 +58,7 @@ describe('applyEvent', () => {
 })
 
 describe('groupOrders', () => {
-	it('puts each status in its column and drops canceled', () => {
+	it('puts current statuses in two columns and drops canceled and historical confirmed', () => {
 		const board = groupOrders([
 			order(1, { status: 'pending' }),
 			order(2, { status: 'new' }),
@@ -68,7 +68,6 @@ describe('groupOrders', () => {
 		])
 		expect(board.pending.map((o) => o.id)).toEqual([1])
 		expect(board.fresh.map((o) => o.id).sort()).toEqual([2, 3])
-		expect(board.confirmed.map((o) => o.id)).toEqual([4])
 	})
 
 	it('sorts every column newest first', () => {

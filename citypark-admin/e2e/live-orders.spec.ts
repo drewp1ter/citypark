@@ -23,6 +23,9 @@ test('new orders appear without a reload and open their details', async ({ page,
 	await signIn(page)
 	await page.getByRole('link', { name: 'Заказы онлайн' }).click()
 	await expect(page.getByRole('heading', { name: 'Заказы онлайн' })).toBeVisible()
+	await expect(page.getByRole('region', { name: 'Ждут оплаты' })).toBeVisible()
+	await expect(page.getByRole('region', { name: 'Новые' })).toBeVisible()
+	await expect(page.getByRole('region', { name: 'Подтверждены' })).toHaveCount(0)
 	await expect(page.getByText('Онлайн', { exact: true })).toBeVisible()
 
 	const name = `Тест ${Date.now()}`

@@ -57,7 +57,7 @@ export interface paths {
         put?: never;
         /**
          * Register a new customer account
-         * @description Role: public. The answer is always 201 with an empty object, also when the email or phone is already registered. No token is returned: call sign-in afterwards.
+         * @description Role: public. With customer auth disabled the answer is always 201 with an empty object, also when the email or phone is already registered. When enabled, returns 503. Responses send Cache-Control: private, no-store.
          */
         post: {
             parameters: {
@@ -80,8 +80,8 @@ export interface paths {
                         name: string;
                         /** Format: email */
                         email?: string;
-                        /** @description A Russian phone number in any common format. */
-                        phone: string;
+                        /** @description Optional Russian phone number. An absent phone is returned as an empty string in profile JSON. */
+                        phone?: string;
                         password: string;
                     };
                 };
@@ -97,6 +97,7 @@ export interface paths {
                     };
                 };
                 400: components["responses"]["BadRequest"];
+                503: components["responses"]["CustomerDisabled"];
             };
         };
         delete?: never;
@@ -116,7 +117,7 @@ export interface paths {
         put?: never;
         /**
          * Sign in and get a token
-         * @description Role: public. An unknown email and a wrong password give the same 401.
+         * @description Role: public. Staff JWT issuance remains; customer sign-in returns 503 when customer auth is enabled. An unknown email and a wrong password give the same 401. Responses send Cache-Control: private, no-store.
          */
         post: {
             parameters: {
@@ -151,8 +152,1445 @@ export interface paths {
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                503: components["responses"]["CustomerDisabled"];
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/google/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a Google authorization attempt
+         * @description Role: public login or recent (five minutes) customer web session link. No sign-in occurs yet. The ten-minute attempt stores hashed state, nonce and browser flow token plus a backend-only PKCE verifier. All responses send Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "intent": "login"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        intent: "login" | "link";
+                    };
+                };
+            };
+            responses: {
+                /** @description Authorization URL and browser-bound flow token. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth?client_id=client-id&code_challenge=...&code_challenge_method=S256&nonce=...&redirect_uri=https%3A%2F%2Fsite.example%2Faccount%2Fgoogle%2Fcallback&response_type=code&scope=openid+email+profile&state=...",
+                         *       "flowToken": "<random>",
+                         *       "expiresAt": "2026-10-29T12:10:00Z"
+                         *     }
+                         */
+                        "application/json": {
+                            /** Format: uri */
+                            authorizationUrl: string;
+                            flowToken: string;
+                            /** Format: date-time */
+                            expiresAt: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                /** @description Mini session: Откройте сайт для подключения Google. Stale web session: Подтвердите вход повторно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description 20 starts per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Google or customer auth disabled. Вход через Google недоступен. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/google/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Google login or explicit account linking
+         * @description Role: public login or the same recent customer web session bound at start for linking. Atomically consumes the attempt before the server-side code exchange. Google email never becomes a password credential or an account merge key. All responses, including errors, send Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "<state>",
+                     *       "flowToken": "<flowToken>",
+                     *       "code": "<authorization-code>"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Google callback state */
+                        state: string;
+                        /** @description Browser-bound flow token from start */
+                        flowToken: string;
+                        /** @description Authorization code; exclusive with error */
+                        code?: string;
+                        /**
+                         * @description Cancellation; exclusive with code
+                         * @enum {string}
+                         */
+                        error?: "access_denied";
+                    };
+                };
+            };
+            responses: {
+                /** @description Customer session envelope on login or linked confirmation on link. Existing link retains its session. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SignInResponse"] | {
+                            /** @enum {boolean} */
+                            linked: true;
+                        };
+                    };
+                };
+                /** @description Некорректный JSON; Не удалось подтвердить вход через Google (invalid, expired or replayed proof, code or token); Вход через Google отменён (valid cancellation). */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Mini session: Откройте сайт для подключения Google. Stale or different session: Подтвердите вход повторно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Google subject conflict: Способ входа уже используется. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description 20 completions per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Google or customer auth disabled, or provider unavailable. Вход через Google недоступен. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/telegram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Telegram Mini App launch and issue a mini session
+         * @description Role: public. Requires raw encoded initData signed by the dedicated customer bot. The signature field participates in the bot-token HMAC. Proofs are valid for five minutes, with at most 30 seconds future skew, and can be used once. Matching profile data never merges accounts. Cache-Control: private, no-store on every response.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "initData": "auth_date=1793361600&query_id=q+%2B+%26%3D+%D0%BF%D1%80%D0%B8%D0%B2%D0%B5%D1%82&signature=third-party-signature&user=%7B%22id%22%3A123%2C%22first_name%22%3A%22%D0%A2%D0%B5%D1%81%D1%82%22%7D&hash=b5365ffc37925bd7b51716c98e8167487e8401c2f088ea3c81de1f617faee5b8"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Raw Telegram.WebApp.initData, never initDataUnsafe */
+                        initData: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Customer mini session issued. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "user": {
+                         *         "id": 1,
+                         *         "name": "Тест",
+                         *         "email": "",
+                         *         "phone": "",
+                         *         "role": "user"
+                         *       },
+                         *       "token": "cs_<random>",
+                         *       "expiresAt": "2026-11-29T12:00:00Z"
+                         *     }
+                         */
+                        "application/json": {
+                            user: components["schemas"]["User"];
+                            token: string;
+                            /** Format: date-time */
+                            expiresAt: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                /** @description Invalid, expired or replayed proof. Не удалось подтвердить вход через Telegram. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description 30 requests per direct IP per 15 minutes; Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Customer auth or dedicated bot token disabled. Вход через Telegram недоступен. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create pending password account and send verification proof
+         * @description Role: public. Collisions, limits and email delivery errors return generic 202. Cache-Control: private, no-store on all responses.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Иван",
+                     *       "email": "ivan@example.com",
+                     *       "password": "example-password"
+                     *     }
+                     */
+                    "application/json": {
+                        name: string;
+                        /** Format: email */
+                        email: string;
+                        /** @description Optional normalized Russian phone */
+                        phone?: string;
+                        password: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Generic result, including existing account and mail failure. */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Если адрес доступен, письмо с подтверждением отправлено"
+                         *     }
+                         */
+                        "application/json": {
+                            message?: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/verification/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend verification proof to a pending account
+         * @description Role: public. Generic 202 for unknown, verified, limited or mail failure. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "email": "ivan@example.com"
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Generic result. */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Если адрес доступен, письмо с подтверждением отправлено"
+                         *     }
+                         */
+                        "application/json": {
+                            message?: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/verification/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm a 24-hour email proof
+         * @description Role: public. No session is issued. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "token": "<proof>"
+                     *     }
+                     */
+                    "application/json": {
+                        token: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Email confirmed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "verified": true
+                         *     }
+                         */
+                        "application/json": {
+                            verified?: boolean;
+                        };
+                    };
+                };
+                /** @description Bad request or invalid, expired or used proof: Ссылка недействительна или устарела. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Confirmation limit; Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request password recovery
+         * @description Role: public. Only verified email/password accounts receive a one-hour link at /account/reset. Unknown, admin, unverified, provider-only, limited and delivery-failure cases return generic 202. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "email": "ivan@example.com"
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Generic recovery result. */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Если аккаунт найден, письмо для восстановления отправлено"
+                         *     }
+                         */
+                        "application/json": {
+                            message?: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Consume recovery proof and reset password
+         * @description Role: public. One-hour single-use proof; revokes all customer sessions and other reset proofs. No session is issued. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "token": "<proof>",
+                     *       "password": "new-example-password"
+                     *     }
+                     */
+                    "application/json": {
+                        token: string;
+                        password: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Password reset; empty body. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid fields or proof. Invalid, expired, wrong-purpose, used or changed-credential proof: Ссылка недействительна или устарела. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Reset limit (20/direct IP/15 minutes); Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in with a verified password credential
+         * @description Role: public. Unknown, wrong, unverified and admin credentials all return 401 неверный логин или пароль. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "email": "ivan@example.com",
+                     *       "password": "example-password"
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                        password: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Customer session issued. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "user": {
+                         *         "id": 1,
+                         *         "name": "Иван",
+                         *         "email": "ivan@example.com",
+                         *         "phone": "",
+                         *         "role": "user"
+                         *       },
+                         *       "token": "cs_<random>",
+                         *       "expiresAt": "2026-11-28T12:00:00Z"
+                         *     }
+                         */
+                        "application/json": {
+                            user?: components["schemas"]["User"];
+                            token?: string;
+                            /** Format: date-time */
+                            expiresAt?: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                /** @description Sign-in limit; Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/email/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stage a new email and send proof
+         * @description Role: recent customer web session. Current email stays active. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "email": "new@example.com"
+                     *     }
+                     */
+                    "application/json": {
+                        /** Format: email */
+                        email: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Generic result, including occupied email and mail failure. */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "message": "Если адрес доступен, письмо с подтверждением отправлено"
+                         *     }
+                         */
+                        "application/json": {
+                            message?: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                /** @description Stale or ineligible session: Подтвердите вход повторно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/email/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm staged email and revoke other sessions
+         * @description Role: same recent customer web account. Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "token": "<proof>"
+                     *     }
+                     */
+                    "application/json": {
+                        token: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Email changed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "verified": true
+                         *     }
+                         */
+                        "application/json": {
+                            verified?: boolean;
+                        };
+                    };
+                };
+                /** @description Bad request or invalid proof: Ссылка недействительна или устарела. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Stale or non-web session: Подтвердите вход повторно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Email reserved before confirmation: Способ входа уже используется. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Confirmation limit; Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke the current customer session
+         * @description Role: customer session. A subsequent use returns 401. All responses and errors send Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Session revoked; no body. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/pairings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Telegram account pairing code
+         * @description Recent Telegram mini session, at most five minutes old. Replaces previous pending pairing. No-store on all responses and errors. Limit 5 per user per hour.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Single-use five-minute code, returned only once. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": "<22-character-id>",
+                         *       "code": "<22-character-code>",
+                         *       "expiresAt": "2026-10-30T12:05:00Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PairingCreated"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Подтвердите вход повторно or Подтвердите связь в нужном интерфейсе. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Слишком много попыток. Попробуйте позже; Retry-After in seconds. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/pairings/redeem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem a pairing code from the website
+         * @description Recent web session. Binds the exact session but does not confirm. Limit 10 per direct IP and 5 per user in 15 minutes. No-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "<22-character-code>"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Put the code only in the POST body. */
+                        code: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Pending pairing. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": "<22-character-id>",
+                         *       "status": "pending",
+                         *       "sourceConfirmed": false,
+                         *       "destinationConfirmed": false,
+                         *       "otherName": "Mini",
+                         *       "expiresAt": "2026-10-30T12:05:00Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PairingStatus"];
+                    };
+                };
+                /** @description Некорректный JSON or Код недействителен или устарел. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Подтвердите вход повторно or Подтвердите связь в нужном интерфейсе. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Аккаунты уже связаны. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Слишком много попыток. Попробуйте позже; Retry-After in seconds. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/pairings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Inspect a pairing
+         * @description Only a bound recent session can inspect. Completed destination may inspect after source sessions are revoked. No-store.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current pairing state. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": "<22-character-id>",
+                         *       "status": "pending",
+                         *       "sourceConfirmed": false,
+                         *       "destinationConfirmed": false,
+                         *       "otherName": "Website",
+                         *       "expiresAt": "2026-10-30T12:05:00Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PairingStatus"];
+                    };
+                };
+                /** @description Код недействителен или устарел. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Подтвердите вход повторно or Подтвердите связь в нужном интерфейсе. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a pairing
+         * @description Bound session. Cancellation is idempotent for canceled and completed pairings. No-store.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No body. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Подтвердите связь в нужном интерфейсе. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/pairings/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm one side of a pairing
+         * @description Bound recent session. Both sides must confirm before an atomic merge. Limit 20 per user in 15 minutes. No-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /** @example {} */
+                    "application/json": Record<string, never>;
+                };
+            };
+            responses: {
+                /** @description Pending or completed pairing. Destination retry after completion returns completed. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": "<22-character-id>",
+                         *       "status": "completed",
+                         *       "sourceConfirmed": true,
+                         *       "destinationConfirmed": true,
+                         *       "otherName": "Mini",
+                         *       "expiresAt": "2026-10-30T12:05:00Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PairingStatus"];
+                    };
+                };
+                /** @description Некорректный JSON or Код недействителен или устарел. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Подтвердите вход повторно, Подтвердите связь в нужном интерфейсе, or Объединение аккаунтов недоступно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                404: components["responses"]["NotFound"];
+                /** @description Способ входа уже используется. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Слишком много попыток. Попробуйте позже; Retry-After in seconds. */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List linked customer login methods
+         * @description Role: customer session. Read-only, ordered email, Google, Telegram. Unlinked providers are omitted. Email verification follows account confirmation. No provider subject, address, ID or token is returned. Google link uses intent=link in the Google start/callback flow; Telegram link uses two-sided pairings. All responses and errors send Cache-Control: private, no-store.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Linked methods; empty array when none. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "methods": [
+                         *         {
+                         *           "provider": "email",
+                         *           "verified": true
+                         *         },
+                         *         {
+                         *           "provider": "telegram",
+                         *           "verified": true
+                         *         }
+                         *       ]
+                         *     }
+                         */
+                        "application/json": {
+                            methods: components["schemas"]["CustomerMethod"][];
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Staff JWT is not a customer session (`Недостаточно прав`). */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the customer profile
+         * @description Role: customer session. JWTs are rejected. All responses and errors send Cache-Control: private, no-store.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Customer profile, with empty strings for missing email and phone. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": 1,
+                         *       "name": "Иван",
+                         *       "email": "",
+                         *       "phone": "+79990000001",
+                         *       "role": "user"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["User"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        /**
+         * Update the customer profile
+         * @description Role: customer session. Email, password, role and unknown fields are rejected. Omitted phone preserves it; empty phone clears it. All responses and errors send Cache-Control: private, no-store.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Новое имя",
+                     *       "phone": "8 999 000 00 03"
+                     *     }
+                     */
+                    "application/json": {
+                        name: string;
+                        phone?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated customer profile. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": 1,
+                         *       "name": "Новое имя",
+                         *       "email": "",
+                         *       "phone": "+79990000003",
+                         *       "role": "user"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["User"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                409: components["responses"]["Conflict"];
+                503: components["responses"]["CustomerDisabled"];
+            };
+        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -168,7 +1606,7 @@ export interface paths {
         };
         /**
          * Get the signed-in user's profile
-         * @description Role: user.
+         * @description Role: user. Responses send Cache-Control: private, no-store.
          */
         get: {
             parameters: {
@@ -193,7 +1631,7 @@ export interface paths {
         };
         /**
          * Update the signed-in user's profile
-         * @description Role: user. The request replaces the profile: omitting `email` removes the stored email, omitting `phone` keeps the current one.
+         * @description Role: user. Name and phone updates preserve authentication credentials. Omitted or empty email preserves the stored email; a different email returns 409 until verified email changes exist. Omitted or empty phone keeps the current one. Private responses are not cached.
          */
         put: {
             parameters: {
@@ -1363,7 +2801,7 @@ export interface paths {
         };
         /**
          * List all orders
-         * @description Role: admin. Newest first. All filters are optional and combine with AND; an empty parameter is the same as a missing one. `count` is the number of matching orders.
+         * @description Role: admin. Newest first. All filters are optional and combine with AND; an empty parameter is the same as a missing one. `count` is the number of matching orders. Name/phone search uses checkout snapshots. Responses send Cache-Control: private, no-store.
          */
         get: {
             parameters: {
@@ -1402,14 +2840,17 @@ export interface paths {
         put?: never;
         /**
          * Place an order
-         * @description Role: public. The customer is found by phone number or created. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
+         * @description Role: public with optional Bearer authentication. Invalid, expired, empty or repeated Authorization headers return 401; deleted accounts and changed roles also return 401. A customer token assigns account ownership independently of checkout phone. Admin and guest orders remain unowned. Existing contact profiles and saved addresses are unchanged. Contacts and delivery text are immutable checkout snapshots. Duplicate lookup requires the same authenticated account or the same server-issued guest checkout cookie, and the same name, phone, address, comment, deliveryTime and items in new/pending status. A missing/invalid/expired cookie starts a new scope; phone alone never reuses an order. Cookie: citypark_guest_checkout, HttpOnly, Secure, SameSite=Lax, Path=/api/v1/orders, Max-Age=86400 with absolute 24-hour validity. Server-side clients must forward it on retries; it grants no order-read access. Use HTTPS. Responses send Cache-Control: private, no-store. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
          */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path?: never;
-                cookie?: never;
+                cookie?: {
+                    /** @description Server-issued signed guest scope for retry deduplication; never an authentication credential. */
+                    citypark_guest_checkout?: string;
+                };
             };
             requestBody: {
                 content: {
@@ -1435,9 +2876,12 @@ export interface paths {
                 };
             };
             responses: {
-                /** @description The order is created. */
+                /** @description The order is created or an unpaid duplicate in the same scope is reused. */
                 201: {
                     headers: {
+                        /** @description Issued for guest requests without a valid guest cookie; HttpOnly, Secure, SameSite=Lax, Path=/api/v1/orders, Max-Age=86400. */
+                        "Set-Cookie"?: string;
+                        "Cache-Control"?: string;
                         [name: string]: unknown;
                     };
                     content: {
@@ -1445,6 +2889,7 @@ export interface paths {
                     };
                 };
                 400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
                 503: components["responses"]["Unavailable"];
             };
         };
@@ -1463,7 +2908,7 @@ export interface paths {
         };
         /**
          * List the signed-in user's orders
-         * @description Role: user. Newest first.
+         * @description Role: user. Lists only orders with account_id matching the authenticated account, newest first. Guest orders are excluded even when checkout phone matches. No guest claims. Responses send Cache-Control: private, no-store.
          */
         get: {
             parameters: {
@@ -1549,7 +2994,7 @@ export interface paths {
         };
         /**
          * Get one order
-         * @description Role: user. An admin can read any order. For a normal user someone else's order looks the same as a missing one.
+         * @description Role: user. An admin can read any order. For a normal user someone else's order looks the same as a missing one. Customers must match account_id; checkout contact IDs/phones never establish ownership and unowned guests are inaccessible. Responses send Cache-Control: private, no-store.
          */
         get: {
             parameters: {
@@ -1696,50 +3141,6 @@ export interface paths {
                 404: components["responses"]["NotFound"];
             };
         };
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/orders/{id}/confirm": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Confirm an order and notify the staff
-         * @description Role: admin. The status is set whatever it was before, and every call notifies the staff again.
-         */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: components["parameters"]["Id"];
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The updated order with status `confirmed`. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["Order"];
-                    };
-                };
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
-        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2069,6 +3470,29 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CustomerMethod: {
+            /** @enum {string} */
+            provider: "email" | "google" | "telegram";
+            verified: boolean;
+        };
+        PairingCreated: {
+            id: string;
+            /** @description Returned only at creation; keep out of URLs and logs. */
+            code: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        PairingStatus: {
+            id: string;
+            /** @enum {string} */
+            status: "pending" | "completed" | "canceled";
+            sourceConfirmed: boolean;
+            destinationConfirmed: boolean;
+            /** @description Peer display name only; no email or phone. */
+            otherName: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
         HotelSalesResponse: {
             rows: {
                 /** @example ООО «Олимп» */
@@ -2294,7 +3718,7 @@ export interface components {
         };
         LiveOrderEvent: {
             /** @enum {string} */
-            type: "hello" | "order.pending" | "order.paid" | "order.confirmed";
+            type: "hello" | "order.pending" | "order.paid";
             order?: components["schemas"]["Order"];
         };
         Order: {
@@ -2319,12 +3743,13 @@ export interface components {
             total: number;
             /** @example 150 */
             deliveryPrice: number;
+            /** @description Checkout name/phone snapshots; id is a legacy contact ID, not account ownership. */
             customer: {
                 id: number;
                 name: string;
                 phone: string;
             };
-            /** @description Null for a pickup order. */
+            /** @description Checkout address snapshot, null for pickup. The id is 0 if its source address was deleted. Legacy NULL snapshots fall back to source references. */
             address: {
                 id: number;
                 city: string;
@@ -2720,6 +4145,15 @@ export interface components {
         };
     };
     responses: {
+        /** @description Customer authentication is disabled (`Вход временно недоступен`). */
+        CustomerDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Malformed JSON, validation failure or another rejected input. */
         BadRequest: {
             headers: {

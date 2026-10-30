@@ -42,3 +42,6 @@ stop if that task is not ticked.
 
 ## Online payment only
 - [x] 23 Online payment only [22] (needs citypark-go task 65)
+
+## Automatic paid orders
+- [x] [24 Remove manual order confirmation](24-remove-order-confirmation.md) [23] (needs citypark-go task 79)

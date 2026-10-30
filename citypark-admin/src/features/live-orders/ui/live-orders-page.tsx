@@ -90,8 +90,8 @@ export function LiveOrdersPage() {
 	let content
 	if (isLoading) {
 		content = (
-			<div className='grid gap-4 lg:grid-cols-3' aria-busy='true' aria-label='Загрузка'>
-				{[0, 1, 2].map((n) => (
+			<div className='grid gap-4 lg:grid-cols-2' aria-busy='true' aria-label='Загрузка'>
+				{[0, 1].map((n) => (
 					<Skeleton key={n} className='h-64 w-full rounded-2xl' />
 				))}
 			</div>
@@ -107,10 +107,9 @@ export function LiveOrdersPage() {
 		)
 	} else {
 		content = (
-			<div className='grid items-start gap-4 lg:grid-cols-3'>
+			<div className='grid items-start gap-4 lg:grid-cols-2'>
 				<OrderColumn title='Ждут оплаты' orders={board.pending} freshIds={freshIds} />
 				<OrderColumn title='Новые' orders={board.fresh} freshIds={freshIds} />
-				<OrderColumn title='Подтверждены' orders={board.confirmed} freshIds={freshIds} />
 			</div>
 		)
 	}
