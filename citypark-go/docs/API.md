@@ -736,6 +736,36 @@ Cancels a pending pairing. Canceling an already canceled or completed pairing is
 | 404 | unknown ID or unrelated session | `Не найдено` |
 | 503 | customer auth disabled | `Вход временно недоступен` |
 
+#### GET /customer/methods
+
+Lists the current customer's linked login methods in email, Google, Telegram order. Unlinked methods are omitted. This read-only endpoint does not link or unlink accounts. Google linking uses `POST /auth/customer/google/start` with `intent: "link"` and its callback; Telegram linking uses the two-sided `/customer/pairings` flow. Provider email, subject, IDs and tokens are never returned.
+
+- **Role:** customer session
+- **Request:** no parameters or body
+
+```http
+GET /api/v1/customer/methods
+Authorization: Bearer cs_<customer-session>
+```
+
+**Response 200**
+
+```json
+{"methods":[{"provider":"email","verified":true},{"provider":"telegram","verified":true}]}
+```
+
+An account without identities returns `{"methods":[]}`. The email flag reflects email confirmation; linked Google and Telegram proofs are verified when attached.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | missing, invalid, expired or revoked session | `Требуется авторизация` |
+| 403 | staff JWT | `Недостаточно прав` |
+| 503 | customer authentication is disabled | `Вход временно недоступен` |
+
+Success and errors use `Cache-Control: private, no-store`.
+
 #### GET /customer/me
 
 Returns the customer profile.

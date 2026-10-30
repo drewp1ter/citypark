@@ -101,7 +101,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		apidocs.Routes(r)
 		user.NewAuthHandler(users, tokens, cfg.CustomerAuthEnabled).Routes(r)
 		user.NewHandler(users, tokens, adapter.Required(true)).Routes(r)
-		customer.NewHandler(users, sessions, adapter).Routes(r)
+		customer.NewHandler(users, customer.NewStore(db), sessions, adapter).Routes(r)
 		customer.NewPairingHandler(sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
 		customer.NewEmailHandler(db, sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
 		customer.NewTelegramHandler(db, sessions, customer.NewLimits(c), cfg.CustomerTelegramBotToken, cfg.CustomerAuthEnabled).Routes(r)

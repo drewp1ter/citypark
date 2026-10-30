@@ -42,7 +42,11 @@ func TestGoogleIDTokenValidation(t *testing.T) {
 		})
 	}
 	raw := f.signed(t, nil)
-	raw = raw[:len(raw)-8] + "x" + raw[len(raw)-7:]
+	replacement := byte('x')
+	if raw[len(raw)-8] == replacement {
+		replacement = 'y'
+	}
+	raw = raw[:len(raw)-8] + string(replacement) + raw[len(raw)-7:]
 	if _, err := f.svc.validateIDToken(context.Background(), raw, hash); err == nil {
 		t.Fatal("accepted tampering")
 	}

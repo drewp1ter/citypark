@@ -39,7 +39,7 @@ func TestCustomerAuthenticationRoutes(t *testing.T) {
 	}
 	adapter := &customer.Adapter{Sessions: sessions, Tokens: tokens, Enabled: true}
 	r := chi.NewRouter()
-	customer.NewHandler(user.NewStore(db), sessions, adapter).Routes(r)
+	customer.NewHandler(user.NewStore(db), customer.NewStore(db), sessions, adapter).Routes(r)
 	user.NewHandler(user.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 	address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 	for _, tc := range []struct {
@@ -96,7 +96,7 @@ func TestCustomerProfile(t *testing.T) {
 	}
 	adapter := &customer.Adapter{Sessions: sessions, Tokens: tokens, Enabled: true}
 	r := chi.NewRouter()
-	customer.NewHandler(user.NewStore(db), sessions, adapter).Routes(r)
+	customer.NewHandler(user.NewStore(db), customer.NewStore(db), sessions, adapter).Routes(r)
 	get := testutil.DoJSON(t, r, http.MethodGet, "/customer/me", token, nil)
 	want := fmt.Sprintf(`{"id":%d,"name":"Иван","email":"","phone":"+79990000001","role":"user"}`, id)
 	if strings.TrimSpace(get.Body.String()) != want {

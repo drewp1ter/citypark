@@ -126,5 +126,6 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 - [x] [76 Transactional customer account merge](76-customer-account-merge.md) [68, 69, 75]
 
 - [x] [77 Two-sided Telegram account pairing](77-telegram-account-pairing.md) [76]
+- [x] [78 Linked methods and linking integration](78-customer-linked-methods.md) [74, 77]
 
 Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCOUNTS.md).

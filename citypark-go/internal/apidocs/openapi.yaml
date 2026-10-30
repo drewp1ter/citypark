@@ -118,6 +118,12 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    CustomerMethod:
+      type: object
+      required: [provider, verified]
+      properties:
+        provider: {type: string, enum: [email, google, telegram]}
+        verified: {type: boolean}
     PairingCreated:
       type: object
       required: [id, code, expiresAt]
@@ -1758,6 +1764,33 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
         '409': {description: 'Способ входа уже используется.'}
         '429': {description: 'Слишком много попыток. Попробуйте позже; Retry-After in seconds.'}
+        '503': {$ref: '#/components/responses/CustomerDisabled'}
+  /customer/methods:
+    get:
+      summary: List linked customer login methods
+      description: 'Role: customer session. Read-only, ordered email, Google, Telegram. Unlinked providers are omitted. Email verification follows account confirmation. No provider subject, address, ID or token is returned. Google link uses intent=link in the Google start/callback flow; Telegram link uses two-sided pairings. All responses and errors send Cache-Control: private, no-store.'
+      tags: [user]
+      security:
+        - customerSession: []
+      responses:
+        '200':
+          description: Linked methods; empty array when none.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [methods]
+                properties:
+                  methods:
+                    type: array
+                    items: {$ref: '#/components/schemas/CustomerMethod'}
+              example: {methods: [{provider: email, verified: true}, {provider: telegram, verified: true}]}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: Staff JWT is not a customer session (`Недостаточно прав`).
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
         '503': {$ref: '#/components/responses/CustomerDisabled'}
   /customer/me:
     get:

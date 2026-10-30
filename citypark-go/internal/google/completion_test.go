@@ -273,6 +273,74 @@ func TestGoogleConcurrentClaimAndExpiry(t *testing.T) {
 	f.complete(t, state, flow, "", map[string]string{"code": "code"}, 400)
 }
 
+func TestGoogleLinkWithConcurrentPairing(t *testing.T) {
+	f := fixture(t)
+	ctx := context.Background()
+	sessions := customer.NewService(f.db, clock.Fixed(completionTime))
+	source := testutil.InsertUser(t, f.db, "Mini", "+79990000001", "user")
+	destination := testutil.InsertUser(t, f.db, "Website", "+79990000002", "user")
+	if _, err := f.db.Exec(`INSERT INTO customer_identities(user_id,provider,subject) VALUES($1,'telegram','tg-101'),($2,'email','site@example.com')`, source, destination); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.Exec(`UPDATE users SET email='site@example.com',is_email_confirmed=true WHERE id=$1`, destination); err != nil {
+		t.Fatal(err)
+	}
+	miniToken, _, err := sessions.CreateSession(ctx, source, "telegram", "mini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	webToken, _, err := sessions.CreateSession(ctx, destination, "password", "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mini, err := sessions.Authenticate(ctx, miniToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	web, err := sessions.Authenticate(ctx, webToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, flow := f.start(t, "link", webToken)
+	pair, err := sessions.CreatePairing(ctx, mini)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sessions.RedeemPairing(ctx, pair.Code, web); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := sessions.ConfirmPairing(ctx, pair.ID, mini); err != nil {
+		t.Fatal(err)
+	}
+	ready := make(chan struct{})
+	googleResult := make(chan error, 1)
+	go func() {
+		<-ready
+		_, err := f.svc.Complete(ctx, state, flow, "code", "", &web)
+		googleResult <- err
+	}()
+	close(ready)
+	status, pairingErr := sessions.ConfirmPairing(ctx, pair.ID, web)
+	if err := <-googleResult; err != nil || pairingErr != nil || status.Status != "completed" {
+		t.Fatalf("Google link %v, pairing %v, status %+v", err, pairingErr, status)
+	}
+	methods, err := customer.NewStore(f.db).Methods(ctx, destination)
+	if err != nil || len(methods) != 3 || methods[0].Provider != "email" || methods[1].Provider != "google" || methods[2].Provider != "telegram" {
+		t.Fatalf("methods after race: %+v %v", methods, err)
+	}
+	f.complete(t, state, flow, webToken, map[string]string{"code": "code"}, 400)
+	if _, err := sessions.Authenticate(ctx, miniToken); err == nil {
+		t.Fatal("source session survived pairing")
+	}
+	other := testutil.InsertUser(t, f.db, "Other", "+79990000003", "user")
+	otherToken, _, err := sessions.CreateSession(ctx, other, "password", "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, flow = f.start(t, "link", otherToken)
+	f.complete(t, state, flow, otherToken, map[string]string{"code": "code"}, 409)
+}
+
 func TestGoogleProviderTimeout(t *testing.T) {
 	for _, path := range []string{"/token", "/jwks"} {
 		t.Run(path, func(t *testing.T) {

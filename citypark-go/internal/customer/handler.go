@@ -15,30 +15,54 @@ import (
 
 type Handler struct {
 	users    *user.Store
+	methods  *Store
 	sessions *Service
 	adapter  *Adapter
 }
 
-func NewHandler(users *user.Store, sessions *Service, adapter *Adapter) *Handler {
-	return &Handler{users: users, sessions: sessions, adapter: adapter}
+func NewHandler(users *user.Store, methods *Store, sessions *Service, adapter *Adapter) *Handler {
+	return &Handler{users: users, methods: methods, sessions: sessions, adapter: adapter}
 }
 func (h *Handler) Routes(r chi.Router) {
-	r.Group(func(r chi.Router) {
-		r.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Cache-Control", "private, no-store")
-				if !h.adapter.Enabled {
-					httpx.WriteError(w, r, httpx.NewError(http.StatusServiceUnavailable, "Вход временно недоступен"))
-					return
-				}
-				next.ServeHTTP(w, r)
-			})
+	availability := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Cache-Control", "private, no-store")
+			if !h.adapter.Enabled {
+				httpx.WriteError(w, r, httpx.NewError(http.StatusServiceUnavailable, "Вход временно недоступен"))
+				return
+			}
+			next.ServeHTTP(w, r)
 		})
+	}
+	r.Group(func(r chi.Router) {
+		r.Use(availability)
 		r.Use(h.adapter.Required(false))
 		r.Get("/customer/me", httpx.Handle(h.me))
 		r.Put("/customer/me", httpx.Handle(h.update))
 		r.Post("/auth/customer/logout", httpx.Handle(h.logout))
 	})
+	r.Group(func(r chi.Router) {
+		r.Use(availability)
+		r.Use(h.adapter.Required(true))
+		r.Get("/customer/methods", httpx.Handle(h.linkedMethods))
+	})
+}
+func (h *Handler) linkedMethods(w http.ResponseWriter, r *http.Request) error {
+	id, ok := auth.FromContext(r.Context())
+	if !ok {
+		return httpx.Unauthorized()
+	}
+	if id.Role != auth.RoleUser {
+		return httpx.Forbidden()
+	}
+	methods, err := h.methods.Methods(r.Context(), id.UserID)
+	if err != nil {
+		return err
+	}
+	httpx.JSON(w, http.StatusOK, struct {
+		Methods []Method `json:"methods"`
+	}{methods})
+	return nil
 }
 func (h *Handler) current(r *http.Request) (user.User, error) {
 	id, ok := auth.FromContext(r.Context())
