@@ -87,7 +87,7 @@ func (h *Handler) moneta(w http.ResponseWriter, r *http.Request) {
 	slog.Default().Info("moneta callback", "order_id", cb.TransactionID, "operation_id", cb.OperationID)
 
 	status, body := http.StatusOK, "SUCCESS"
-	if err := h.svc.PaymentConfirmed(r.Context(), cb); err != nil {
+	if err := h.svc.PaymentConfirmed(r.Context(), cb); err != nil && cb.TransactionID != "" && cb.OperationID != "" {
 		status, body = http.StatusInternalServerError, "FAIL"
 		var he *httpx.Error
 		if errors.As(err, &he) {
