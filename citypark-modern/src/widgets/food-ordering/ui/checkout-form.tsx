@@ -2,7 +2,7 @@
 
 import { useMenuRefresh } from '@/shared/lib'
 
-import { useActionState, useMemo, useState, type ReactNode } from 'react'
+import { useActionState, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { cartActions, useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, townDeliveryPrice, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
 import { AddressField } from './address-field'
@@ -23,6 +23,7 @@ import type { OrderState } from '../model/schema'
 import { useCheckoutQuote } from '../model/use-checkout-quote'
 import { PromoCodeField } from './promo-code-field'
 import { formatQuotePrice } from '../model/quote-price'
+import { useCheckoutLocation } from '../model/use-checkout-location'
 
 const initialState: OrderState = { status: 'idle' }
 
@@ -40,6 +41,7 @@ type CheckoutFormProps = {
 	paymentFailed: boolean
 	/** DaData is configured: «Улица и дом» offers address suggestions. */
 	suggestions: boolean
+	locationEnabled: boolean
 	/** Title row of the page (h1 and the steps). */
 	intro: ReactNode
 	mini?: boolean
@@ -52,6 +54,7 @@ export function CheckoutForm({
 	promoCodesEnabled,
 	paymentFailed,
 	suggestions,
+	locationEnabled,
 	intro,
 	mini = false,
 }: CheckoutFormProps) {
@@ -65,16 +68,42 @@ export function CheckoutForm({
 	const priced = useMemo(() => priceLines(lines, dishes), [lines, dishes])
 
 	const [method, setMethod] = useState<DeliveryMethod>(values?.method === 'pickup' ? 'pickup' : 'delivery')
-	const [city, setCity] = useState(values?.city || towns[0]?.name || '')
+	const [city, setCity] = useState(values?.city || '')
+	const [street, setStreet] = useState(values?.street || '')
 	const [when, setWhen] = useState(values?.when || 'asap')
 	const [consent, setConsent] = useState(values?.consent === 'on')
+	const submittedValues = values ? JSON.stringify([values.method, values.city, values.street]) : ''
+	useEffect(() => {
+		if (!submittedValues) return
+		queueMicrotask(() => {
+			const [restoredMethod, restoredCity, restoredStreet] = JSON.parse(submittedValues) as [
+				DeliveryMethod,
+				string,
+				string,
+			]
+			setMethod(restoredMethod)
+			setCity(restoredCity)
+			setStreet(restoredStreet)
+		})
+	}, [submittedValues])
+	const onDetected = useCallback((town: string, detectedStreet: string) => {
+		setCity(town)
+		setStreet(detectedStreet)
+	}, [])
+	const location = useCheckoutLocation({
+		enabled: method === 'delivery' && cartReady && priced.items.length > 0,
+		configured: locationEnabled,
+		initialTown: values?.city || '',
+		initialStreet: values?.street || '',
+		onDetected,
+	})
 
 	const noDelivery = method === 'delivery' && towns.length === 0
 	const selectedTown = towns.find((town) => town.name === city)
 	const pricing = useCheckoutQuote(
 		{ lines, method, city, menu: dishes.map((dish) => [dish.id, dish.available, dish.orderBlocked, dish.variants]) },
-		cartReady && priced.items.length > 0 && !noDelivery,
-		state.status === 'error' ? state.refreshQuote : undefined,
+		cartReady && priced.items.length > 0 && !noDelivery && (method === 'pickup' || Boolean(selectedTown)),
+		state.status === 'error' ? (state.refreshQuote ?? JSON.stringify(state.values)) : undefined,
 		mini ? 'mini' : 'web',
 		promoCodesEnabled
 	)
@@ -137,7 +166,10 @@ export function CheckoutForm({
 								legend='Способ получения'
 								variant='segmented'
 								value={method}
-								onValueChange={(value) => setMethod(value as DeliveryMethod)}
+								onValueChange={(value) => {
+									setMethod(value as DeliveryMethod)
+									if (value === 'pickup') location.pickup()
+								}}
 								options={[
 									{ value: 'delivery', label: 'Доставка' },
 									{ value: 'pickup', label: 'Самовывоз' },
@@ -146,6 +178,11 @@ export function CheckoutForm({
 							{noDelivery && (
 								<p role='alert' className='text-danger'>
 									Доставка сейчас недоступна, выберите самовывоз.
+								</p>
+							)}
+							{method === 'delivery' && location.status && (
+								<p role='status' className='text-text-muted'>
+									{location.status}
 								</p>
 							)}
 							<div className='grid gap-3 md:grid-cols-2'>
@@ -176,16 +213,23 @@ export function CheckoutForm({
 										<Select
 											label='Населённый пункт'
 											name='city'
-											options={towns.map((town) => ({
-												value: town.name,
-												label:
-													town.freeFrom > 0
-														? `${town.name} (+${formatPrice(town.price)}, бесплатно от ${formatPrice(town.freeFrom)})`
-														: `${town.name} (+${formatPrice(town.price)})`,
-												textValue: town.name,
-											}))}
+											options={[
+												{ value: '', label: 'Выберите населённый пункт', textValue: 'Выберите населённый пункт' },
+												...towns.map((town) => ({
+													value: town.name,
+													label:
+														town.freeFrom > 0
+															? `${town.name} (+${formatPrice(town.price)}, бесплатно от ${formatPrice(town.freeFrom)})`
+															: `${town.name} (+${formatPrice(town.price)})`,
+													textValue: town.name,
+												})),
+											]}
 											value={city}
-											onValueChange={setCity}
+											onValueChange={(value) => {
+												location.takeOver()
+												setCity(value)
+												setStreet('')
+											}}
 											error={errors.city}
 										/>
 										<AddressField
@@ -193,7 +237,9 @@ export function CheckoutForm({
 											name='street'
 											town={city}
 											suggestions={suggestions}
-											defaultValue={values?.street}
+											value={street}
+											onValueChange={setStreet}
+											onManualEdit={location.takeOver}
 											error={errors.street}
 											className='md:col-span-2'
 										/>
@@ -309,15 +355,19 @@ export function CheckoutForm({
 									</li>
 								))}
 							</ul>
-							{promoCodesEnabled && <PromoCodeField
-								text={pricing.text}
-								onChange={pricing.setText}
-								onRemove={pricing.remove}
-								pending={pricing.pending}
-								error={pricing.promoError || (!pricing.ready ? errors.promoCode : undefined)}
-								disabled={pending}
-							/>}
-							{(pricing.error || (!pricing.ready && errors.expectedPayableTotal) || (!promoCodesEnabled && errors.promoCode)) && (
+							{promoCodesEnabled && (
+								<PromoCodeField
+									text={pricing.text}
+									onChange={pricing.setText}
+									onRemove={pricing.remove}
+									pending={pricing.pending}
+									error={pricing.promoError || (!pricing.ready ? errors.promoCode : undefined)}
+									disabled={pending}
+								/>
+							)}
+							{(pricing.error ||
+								(!pricing.ready && errors.expectedPayableTotal) ||
+								(!promoCodesEnabled && errors.promoCode)) && (
 								<p role='alert' className='bg-surface text-danger rounded-sm p-3 text-sm'>
 									{pricing.error || errors.expectedPayableTotal || errors.promoCode}
 								</p>

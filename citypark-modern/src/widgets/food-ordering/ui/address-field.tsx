@@ -26,6 +26,9 @@ type AddressFieldProps = {
 	suggestions: boolean
 	/** The value after a server error. */
 	defaultValue?: string
+	value: string
+	onValueChange: (value: string) => void
+	onManualEdit: () => void
 	error?: string
 	className?: string
 }
@@ -62,7 +65,17 @@ function OpenWhenReady({ count, input }: { count: number; input: { current: HTML
 }
 
 /** «Улица и дом» with up to 5 DaData suggestions (through our own route). Any typed text is still accepted. */
-export function AddressField({ label, name, town, suggestions, defaultValue, error, className }: AddressFieldProps) {
+export function AddressField({
+	label,
+	name,
+	town,
+	suggestions,
+	value,
+	onValueChange,
+	onManualEdit,
+	error,
+	className,
+}: AddressFieldProps) {
 	if (!suggestions) {
 		return (
 			<TextField
@@ -70,7 +83,11 @@ export function AddressField({ label, name, town, suggestions, defaultValue, err
 				name={name}
 				autoComplete='street-address'
 				placeholder='Начните вводить адрес'
-				defaultValue={defaultValue}
+				value={value}
+				onChange={(event) => {
+					onManualEdit()
+					onValueChange(event.target.value)
+				}}
 				error={error}
 				className={className}
 			/>
@@ -81,7 +98,9 @@ export function AddressField({ label, name, town, suggestions, defaultValue, err
 			label={label}
 			name={name}
 			town={town}
-			defaultValue={defaultValue}
+			value={value}
+			onValueChange={onValueChange}
+			onManualEdit={onManualEdit}
 			error={error}
 			className={className}
 		/>
@@ -92,30 +111,20 @@ function SuggestingField({
 	label,
 	name,
 	town,
-	defaultValue = '',
+	value,
+	onValueChange,
+	onManualEdit,
 	error,
 	className,
 }: Omit<AddressFieldProps, 'suggestions'>) {
-	const [text, setText] = useState(defaultValue)
 	const [items, setItems] = useState<string[]>([])
 	const inputRef = useRef<HTMLInputElement>(null)
-	const firstTown = useRef(true)
 	// Set when the text comes from a chosen item, so picking it does not fetch suggestions again.
 	const picked = useRef(false)
 
-	// A street from another town is wrong: clear it, but not on the first render, so `defaultValue` survives.
 	useEffect(() => {
-		if (firstTown.current) {
-			firstTown.current = false
-			return
-		}
-		setText('')
-		setItems([])
-	}, [town])
-
-	useEffect(() => {
-		const query = text.trim()
-		if (picked.current || query.length < MIN_QUERY) {
+		const query = value.trim()
+		if (picked.current || !town || query.length < MIN_QUERY) {
 			picked.current = false
 			setItems([])
 			return
@@ -137,7 +146,7 @@ function SuggestingField({
 			clearTimeout(timer)
 			controller.abort()
 		}
-	}, [text, town])
+	}, [value, town])
 
 	return (
 		<ComboBox
@@ -146,14 +155,15 @@ function SuggestingField({
 			menuTrigger='input'
 			// DaData already matched the query; a local "contains" filter would hide «ул Гоголя, д 6» for «Гоголя 6».
 			defaultFilter={() => true}
-			inputValue={text}
-			// React resets the form after a failed order; the ComboBox restores this value on that reset.
-			defaultInputValue={defaultValue}
-			onInputChange={setText}
+			inputValue={value}
+			onInputChange={(next) => {
+				onManualEdit()
+				onValueChange(next)
+			}}
 			onSelectionChange={(key) => {
 				if (key === null) return
 				picked.current = true
-				setText(String(key))
+				onValueChange(String(key))
 				setItems([])
 				// Caret to the end, so the customer can add «, корп. 2».
 				requestAnimationFrame(() => {
@@ -203,7 +213,7 @@ function SuggestingField({
 							)}
 						>
 							<span>
-								<Highlighted text={item.id} query={text} />
+								<Highlighted text={item.id} query={value} />
 							</span>
 						</ListBoxItem>
 					)}

@@ -119,3 +119,9 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [45 Promo-code visibility and automatic recalculation](45-promo-switch-and-debounce.md) [Backend task 90 and website task 44]
   - Check, build, checkout-and-contacts and promo-checkout flows pass. Website QA covers 390/1440 px, both themes, switch changes, debounce, cart/town changes, stale responses, transport errors and an authorized validation-only 409. Temporary campaigns were disabled and the original switch state restored. Authenticated Mini App checks remain pending a supplied QA_MINI_SESSION; run the promo flow with that session and approved temporary campaign/settings writes.
+
+## Checkout location
+
+- [x] [46 Automatic checkout location with DaData](46-checkout-geolocation.md) [website45]
+  - Website and Telegram Mini App: automatic location request, editable address autofill, supported-town matching and manual fallback. Reuses DaData credentials; no backend or admin task required.
+  - `npm run check`, `npm run build`, `checkout-geolocation.mjs`, `checkout-and-contacts.mjs`, `promo-checkout.mjs` with temporary campaigns, and `telegram-mini.mjs` pass. Campaigns were disabled by QA cleanup; no orders or payments were created. Authenticated Telegram Mini App geolocation and promo checks remain pending supplied session/device access.

@@ -8,14 +8,25 @@ import { CheckoutForm } from '@/widgets/food-ordering'
 import { CheckoutHeader } from './checkout-header'
 import { TitleRow } from './title-row'
 
-export async function CheckoutPage({ paymentFailed = false, returnedOrderId }: { paymentFailed?: boolean; returnedOrderId?: string }) {
+export async function CheckoutPage({
+	paymentFailed = false,
+	returnedOrderId,
+}: {
+	paymentFailed?: boolean
+	returnedOrderId?: string
+}) {
 	if (paymentFailed) {
 		const context = await getPendingPaymentContext(returnedOrderId)
 		if (context?.surface === 'mini') redirect(`/mini/checkout?payment=failed&MNT_TRANSACTION_ID=${context.orderId}`)
 	}
 	// Rendered per request: a build must not need the backend, and a backend failure must reach error.tsx.
 	await connection()
-	const [menu, towns, hours, settings] = await Promise.all([getMenu(), getDeliveryTowns(), getWorkingHours(), getSiteSettings()])
+	const [menu, towns, hours, settings] = await Promise.all([
+		getMenu(),
+		getDeliveryTowns(),
+		getWorkingHours(),
+		getSiteSettings(),
+	])
 
 	return (
 		<>
@@ -28,6 +39,7 @@ export async function CheckoutPage({ paymentFailed = false, returnedOrderId }: {
 					promoCodesEnabled={settings.promoCodesEnabled}
 					paymentFailed={paymentFailed}
 					suggestions={Boolean(serverEnv().DADATA_API_KEY)}
+					locationEnabled={Boolean(serverEnv().DADATA_API_KEY)}
 					intro={<TitleRow step={2} title='Оформление' />}
 				/>
 			</main>

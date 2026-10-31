@@ -11,7 +11,7 @@ type QuoteState = { key: string; result: Awaited<ReturnType<typeof quoteOrder>> 
 export function useCheckoutQuote(
 	input: Request,
 	enabled: boolean,
-	refresh: number | undefined,
+	refresh: number | string | undefined,
 	surface: 'web' | 'mini',
 	promoEnabled: boolean
 ) {
@@ -39,14 +39,17 @@ export function useCheckoutQuote(
 			setRestored(true)
 		})
 	}, [storageKey, promoEnabled])
-	const remember = useCallback((value: string) => {
-		try {
-			if (value) sessionStorage.setItem(storageKey, value)
-			else sessionStorage.removeItem(storageKey)
-		} catch {
-			/* Pricing still works without persistence. */
-		}
-	}, [storageKey])
+	const remember = useCallback(
+		(value: string) => {
+			try {
+				if (value) sessionStorage.setItem(storageKey, value)
+				else sessionStorage.removeItem(storageKey)
+			} catch {
+				/* Pricing still works without persistence. */
+			}
+		},
+		[storageKey]
+	)
 	useEffect(() => {
 		if (!promoEnabled || !editing) return
 		const timer = window.setTimeout(() => {
@@ -57,7 +60,12 @@ export function useCheckoutQuote(
 		}, 1000)
 		return () => window.clearTimeout(timer)
 	}, [text, normalized, editing, promoEnabled, remember])
-	const request = JSON.stringify({ lines: input.lines, method: input.method, city: input.city, promoCode: promoEnabled ? code : '' })
+	const request = JSON.stringify({
+		lines: input.lines,
+		method: input.method,
+		city: input.city,
+		promoCode: promoEnabled ? code : '',
+	})
 	const key = JSON.stringify([request, input.menu, revision, refresh])
 	useEffect(() => {
 		if (!enabled || !restored || dirty) return
@@ -73,7 +81,7 @@ export function useCheckoutQuote(
 			current = false
 		}
 	}, [request, key, enabled, dirty, restored])
-	
+
 	const result = enabled && restored && !dirty && state?.key === key ? state.result : undefined
 	const quote: OrderQuote | undefined = result?.ok ? result.quote : undefined
 	return {

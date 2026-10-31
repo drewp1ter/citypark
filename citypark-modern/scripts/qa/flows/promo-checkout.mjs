@@ -212,6 +212,8 @@ try {
 				}
 				await page.reload()
 				await expect(promoField).toHaveValue(codes.apply)
+				await page.getByRole('button', { name: /Населённый пункт/ }).click()
+				await page.getByRole('option', { name: townOption(town.name) }).click()
 				await checkTotals(page, await quote(codes.apply))
 				if (process.env.QA_PROMO_SETTINGS === '1' && width === 390 && theme === 'light' && !surface.session) {
 					await backend('/settings', { ...originalSettings, promoCodesEnabled: false }, 'PUT')

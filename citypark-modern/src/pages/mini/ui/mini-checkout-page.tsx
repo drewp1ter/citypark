@@ -7,11 +7,19 @@ import { AppLink } from '@/shared/ui'
 import { MiniPaymentReturnPage } from './mini-payment-return-page'
 import { CheckoutForm } from '@/widgets/food-ordering'
 
-export async function MiniCheckoutPage({ searchParams }: { searchParams?: Promise<{ payment?: string; MNT_TRANSACTION_ID?: string }> } = {}) {
+export async function MiniCheckoutPage({
+	searchParams,
+}: { searchParams?: Promise<{ payment?: string; MNT_TRANSACTION_ID?: string }> } = {}) {
 	await connection()
 	if (!(await getMiniProfile())) return null
-	if (searchParams && (await searchParams).payment === 'failed') return <MiniPaymentReturnPage searchParams={searchParams} failed />
-	const [menu, towns, hours, settings] = await Promise.all([getMenu(), getDeliveryTowns(), getWorkingHours(), getSiteSettings()])
+	if (searchParams && (await searchParams).payment === 'failed')
+		return <MiniPaymentReturnPage searchParams={searchParams} failed />
+	const [menu, towns, hours, settings] = await Promise.all([
+		getMenu(),
+		getDeliveryTowns(),
+		getWorkingHours(),
+		getSiteSettings(),
+	])
 	return (
 		<div className='min-h-[var(--mini-height,100dvh)] pt-[var(--mini-top,env(safe-area-inset-top))] pr-[var(--mini-right,env(safe-area-inset-right))] pb-[var(--mini-bottom,env(safe-area-inset-bottom))] pl-[var(--mini-left,env(safe-area-inset-left))]'>
 			<header className='border-border flex min-h-14 items-center gap-3 border-b px-4'>
@@ -29,6 +37,7 @@ export async function MiniCheckoutPage({ searchParams }: { searchParams?: Promis
 					promoCodesEnabled={settings.promoCodesEnabled}
 					paymentFailed={false}
 					suggestions={Boolean(serverEnv().DADATA_API_KEY)}
+					locationEnabled={Boolean(serverEnv().DADATA_API_KEY)}
 					intro={<h1 className='heading mb-4 text-3xl'>Оформление заказа</h1>}
 				/>
 			</main>

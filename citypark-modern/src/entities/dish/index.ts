@@ -1,4 +1,5 @@
 export { getDeliveryTowns } from './api/get-delivery-prices'
+export { matchDeliveryTown, normalizeLocality } from './lib/match-delivery-town'
 export { getDishesByIds, getMenu } from './api/get-menu'
 export { priceLines, type PricedCart, type PricedLine } from './lib/price-lines'
 export { quoteDelivery, type DeliveryMethod, type DeliveryQuote, type DeliveryZone } from './lib/quote-delivery'
