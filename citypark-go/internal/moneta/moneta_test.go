@@ -72,7 +72,7 @@ func TestVerifyCallback(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.signer.VerifyCallback(tt.transaction, tt.operation, tt.amount, tt.signature)
+			got := tt.signer.VerifyNotification(Notification{MerchantID: tt.signer.id, Currency: Currency, TestMode: tt.signer.testMode, TransactionID: tt.transaction, OperationID: tt.operation, Amount: tt.amount, Signature: tt.signature})
 			if got != tt.want {
 				t.Errorf("VerifyCallback = %v, want %v", got, tt.want)
 			}
@@ -81,7 +81,7 @@ func TestVerifyCallback(t *testing.T) {
 }
 
 func TestPaymentURL(t *testing.T) {
-	const base = "https://assistant.demo.moneta.ru/"
+	const base = "https://demo.moneta.ru/assistant.htm"
 	tests := []struct {
 		name          string
 		testMode      bool
@@ -123,5 +123,63 @@ func TestPaymentURL(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCheckProtocol(t *testing.T) {
+	s := New("54600817", "QWERTY", false)
+	n := Notification{Command: "CHECK", MerchantID: "54600817", TransactionID: "FF790ABCD", Amount: "120.25", Currency: "RUB", TestMode: "0", Signature: "ea2d49048bdf11857f1b50270aedbc8d"}
+	if !s.VerifyNotification(n) {
+		t.Fatal("published request rejected")
+	}
+	r := s.CheckResponse(n.TransactionID, "402", "120.25")
+	if r.Signature != "5ebb58862cf8781b62bcc2cc8d66913e" {
+		t.Fatalf("response signature %s", r.Signature)
+	}
+	for _, field := range []string{"merchant", "currency", "mode", "subscriber", "command", "amount", "empty transaction", "empty signature"} {
+		bad := n
+		switch field {
+		case "merchant":
+			bad.MerchantID = "other"
+		case "currency":
+			bad.Currency = "USD"
+		case "mode":
+			bad.TestMode = "1"
+		case "subscriber":
+			bad.SubscriberID = "user"
+		case "command":
+			bad.Command = "PAY"
+		case "amount":
+			bad.Amount = "120.2"
+		case "empty transaction":
+			bad.TransactionID = ""
+		case "empty signature":
+			bad.Signature = ""
+		}
+		if s.VerifyNotification(bad) {
+			t.Errorf("accepted %s", field)
+		}
+	}
+}
+
+func TestOptionalCheckFields(t *testing.T) {
+	s := New("100", "secret", false)
+	for _, subscriber := range []string{"", "customer"} {
+		n := Notification{Command: "CHECK", MerchantID: "100", TransactionID: "15", Currency: "RUB", TestMode: "0", SubscriberID: subscriber}
+		n.Signature = s.sum("CHECK10015RUB" + subscriber + "0secret")
+		if !s.VerifyNotification(n) {
+			t.Fatal("optional fields rejected")
+		}
+	}
+}
+
+func TestPaymentURLExistingQuery(t *testing.T) {
+	s := New("100", "secret", false)
+	u, err := url.Parse(s.PaymentURL("https://demo.moneta.ru/assistant.htm?moneta.locale=ru#form", 15, "790.00", "", ""))
+	if err != nil || u.Query().Get("moneta.locale") != "ru" || u.Query().Get("MNT_AMOUNT") != "790.00" || u.Fragment != "form" {
+		t.Fatalf("url %v, %v", u, err)
+	}
+	if s.PaymentURL("://%", 15, "790.00", "", "") != "" {
+		t.Fatal("invalid URL accepted")
 	}
 }

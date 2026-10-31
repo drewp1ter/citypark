@@ -61,7 +61,7 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `MONETA_ID` | empty | Moneta shop id (`MNT_ID`) |
 | `MONETA_SECRET` | empty | Moneta integrity code |
 | `MONETA_TEST_MODE` | `false` | `true` marks payments as test payments |
-| `MONETA_URL` | `https://assistant.demo.moneta.ru/` | MONETA.Assistant address (production: `https://www.payanyway.ru/assistant.htm`) |
+| `MONETA_URL` | `https://demo.moneta.ru/assistant.htm` | MONETA.Assistant address (production: `https://www.payanyway.ru/assistant.htm`) |
 | `MONETA_SUCCESS_URL` | `http://localhost:3001/checkout/done` | `MNT_SUCCESS_URL`; empty = not sent |
 | `MONETA_FAIL_URL` | `http://localhost:3001/checkout?payment=failed` | `MNT_FAIL_URL`; empty = not sent |
 
@@ -99,7 +99,7 @@ Frontend developers: see [`docs/API.md`](docs/API.md).
 
 - **iiko**: `POST /api/v1/iiko/update-products` with the header `X-Update-Token` equal to `IIKO_UPDATE_TOKEN` syncs categories, products and images.
 - **Orders in iiko**: when Moneta confirms a payment, the order is created in iiko in the background (up to 3 attempts, 30 s and 2 min apart) and its iiko id is saved in `orders.iiko_order_id`. If iiko does not create the order, the `TELEGRAM_STAFF_CHAT_ID` chat gets an alert and staff enter the order in iikoFront by hand. The iiko address is a fixed placeholder (`IIKO_ADDRESS_*`); the real address, the delivery time and the delivery fee are written in the comment. Get the ids with a token from `v2/access_token`: `POST /api/1/terminal_groups` and `POST /api/1/payment_types` with `{"organizationIds": ["<IIKO_ORGANIZATION_ID>"]}`; take the payment type the restaurant uses for online payments, and put its `paymentTypeKind` in `IIKO_PAYMENT_TYPE_KIND`.
-- **Moneta**: in the shop settings set "Pay URL" to `/api/v1/webhooks/moneta` (full public URL) with method POST. The integrity code in the Moneta cabinet must equal `MONETA_SECRET`. The server builds the payment URL (`MONETA_URL`: demo or production assistant). Turn on «Можно переопределять настройки в URL» in the shop settings so `MONETA_SUCCESS_URL` and `MONETA_FAIL_URL` are used. The demo and production shops have different `MONETA_ID`.
+- **Moneta**: in the shop settings set "Pay URL" to `/api/v1/webhooks/moneta` (full public URL) with method GET or POST. Set "Check URL" to the full public URL ending in `/api/v1/webhooks/moneta/check`. Enable mandatory payment-form signatures. The integrity code in the Moneta cabinet must equal `MONETA_SECRET`. The server builds the payment URL (`MONETA_URL`: demo or production assistant). Turn on «Можно переопределять настройки в URL» in the shop settings so `MONETA_SUCCESS_URL` and `MONETA_FAIL_URL` are used. Success/Fail redirects do not confirm payment; only a verified Pay URL notification does. Replace the old `https://assistant.demo.moneta.ru/` URL in local environment files with `https://demo.moneta.ru/assistant.htm`. Keep account test mode consistent with `MONETA_TEST_MODE`. The demo and production shops have different `MONETA_ID`.
 - **Telegram**: add the bot to the staff chat and set `TELEGRAM_STAFF_CHAT_ID` to its id. Before deploying, replace the two old chat variables with this one and restart the backend. A paid order sends its details followed by a separate phone message.
 
 ## Deployment
@@ -114,3 +114,25 @@ To run the app with Compose: `docker compose --profile app up --build`.
 
 Do all unchecked tasks:
 CLAUDE_FLAGS="--dangerously-skip-permissions" scripts/run-tasks.sh
+### Simulate a MONETA Pay URL notification
+
+With the backend running, Python 3.9+ can send a signed notification for an existing order:
+
+```bash
+python3 scripts/simulate_moneta.py 16
+```
+
+The script reads literal values from the backend's `.env` (no shell expansion); exported environment variables override them. It requires `MONETA_ID` and `MONETA_SECRET`, with `MONETA_TEST_MODE` matching the running backend.
+
+It first calls the signed Check URL to obtain the order total including delivery, then posts the signed Pay URL notification. This can mark the order paid and trigger iiko and Telegram processing; it does not transfer money.
+
+Options:
+- `--base-url http://localhost:3000`: backend origin.
+- `--env-file .env.development`: choose a different credentials file.
+- `--amount 790.00`: supply the amount manually and bypass Check URL.
+- `--operation-id 555`: override the default simulated operation ID `simulated-16`.
+- `--dry-run`: check the order and print its amount without sending the payment notification. With `--amount`, makes no HTTP requests.
+
+No packages need installing. The simulator exits with an error on a failed request, invalid signed Check response, nonpayable order, or response other than `SUCCESS`. It does not follow HTTP redirects.
+
+Run its isolated tests with `python3 -m unittest discover -s scripts -p 'test_*.py'`.

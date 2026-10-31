@@ -36,7 +36,7 @@ func TestLoadDefaults(t *testing.T) {
 		{"Admin", c.Admin, Admin{"dev@dev.io", "devdevdev", "+79990000000"}},
 		{"Iiko", c.Iiko, Iiko{BaseURL: "https://api-ru.iiko.services/api", PaymentTypeKind: "Card", AddressCity: "Белореченск", AddressStreet: "Гоголя", AddressHouse: "61"}},
 		{"Telegram", c.Telegram, Telegram{BaseURL: "https://api.telegram.org"}},
-		{"Moneta", c.Moneta, Moneta{URL: "https://assistant.demo.moneta.ru/", SuccessURL: "http://localhost:3001/checkout/done", FailURL: "http://localhost:3001/checkout?payment=failed"}},
+		{"Moneta", c.Moneta, Moneta{URL: "https://demo.moneta.ru/assistant.htm", SuccessURL: "http://localhost:3001/checkout/done", FailURL: "http://localhost:3001/checkout?payment=failed"}},
 		{"Hotel", c.Hotel, Hotel{}},
 		{"OneC", c.OneC, OneC{}},
 		{"Upload", c.Upload, Upload{"./uploads", "http://localhost:3000"}},

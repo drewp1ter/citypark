@@ -2871,13 +2871,17 @@ Form fields (`Content-Type: application/x-www-form-urlencoded`), not JSON:
 | `MNT_TRANSACTION_ID` | string | yes | our order id, a whole number from 1 |
 | `MNT_OPERATION_ID` | string | yes | Moneta's id of the payment; stored as the order's payment id |
 | `MNT_AMOUNT` | string | yes | rubles with two decimals; must equal the order total plus delivery |
+| `MNT_ID` | string | yes | configured merchant account |
+| `MNT_CURRENCY_CODE` | string | yes | RUB |
+| `MNT_TEST_MODE` | string | yes | configured mode: 0 or 1 |
+| `MNT_SUBSCRIBER_ID` | string | no | included in signature; omitted means empty |
 | `MNT_SIGNATURE` | string | yes | checked with the shop secret |
 
 ```
 MNT_ID=100&MNT_TRANSACTION_ID=15&MNT_OPERATION_ID=555&MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_TEST_MODE=0&MNT_SIGNATURE=998b6268fe3a6c7f4eeb8ccec65a9566
 ```
 
-The other `MNT_*` fields are ignored: the shop id, the currency and the test mode come from the server configuration.
+Merchant ID, currency and test mode are signed as received and must match configuration. Subscriber ID is signed as received (empty when omitted). Duplicate MNT fields and malformed forms are rejected with 400. MNT_COMMAND must be absent on Pay URL.
 
 **Response 200**
 
@@ -2901,6 +2905,41 @@ The body is always the plain text `FAIL`. Moneta repeats the call later after an
 **Notes**
 
 A valid callback sets the order to `paid`, submits it to iiko, and notifies the single staff chat once (order details followed by a separate phone message). The `confirmed` status remains readable for historical orders only. Repeated callbacks, and callbacks for an order that is already `paid`, `confirmed` or `canceled`, answer `SUCCESS` and change nothing. The signature is checked before the order is looked up, so an unsigned request gets 403 even for an unknown order. The route has no working-hours limit.
+
+#### GET /webhooks/moneta
+
+Same role, fields, responses and errors as POST /webhooks/moneta; fields are query parameters.
+
+#### POST /webhooks/moneta/check
+
+MONETA Check URL, public and authenticated by its signature. Accepts URL-encoded form data.
+
+Required fields: MNT_COMMAND=CHECK, MNT_ID, MNT_TRANSACTION_ID, MNT_CURRENCY_CODE=RUB, MNT_TEST_MODE and MNT_SIGNATURE. Merchant and mode must match configuration. Optional signed fields: MNT_OPERATION_ID, MNT_AMOUNT (two decimals), MNT_SUBSCRIBER_ID. Missing optional fields contribute empty strings to the signature.
+
+Example request (MONETA documentation test vector; account 54600817, integrity code QWERTY):
+
+```text
+MNT_COMMAND=CHECK&MNT_ID=54600817&MNT_TRANSACTION_ID=FF790ABCD&MNT_AMOUNT=120.25&MNT_CURRENCY_CODE=RUB&MNT_TEST_MODE=0&MNT_SIGNATURE=ea2d49048bdf11857f1b50270aedbc8d
+```
+
+This application's order IDs are positive integers, so the illustrative external ID above produces result code 500.
+
+**Response 200:** signed UTF-8 XML, Content-Type application/xml; charset=utf-8:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<MNT_RESPONSE><MNT_ID>54600817</MNT_ID><MNT_TRANSACTION_ID>FF790ABCD</MNT_TRANSACTION_ID><MNT_RESULT_CODE>500</MNT_RESULT_CODE><MNT_SIGNATURE>373cc5df0d19d0e98eb4ebfceaa9cd38</MNT_SIGNATURE></MNT_RESPONSE>
+```
+
+Result codes: 100 = payable order with omitted request amount; 402 = payable order with matching amount; 200 = recorded payment; 500 = missing, canceled, nonpayable order or amount mismatch. Existing orders include MNT_AMOUNT as the stored total plus delivery. Canceled status takes precedence over a recorded payment. No new expiry policy is introduced.
+
+Response signature is MD5(result code + merchant ID + transaction ID + integrity code). Check requests never update orders or send notifications.
+
+**Errors:** 400 for malformed forms, duplicate MNT fields or a command other than CHECK; 403 for invalid signature or merchant/currency/mode mismatch; 500 for database errors. Error bodies are plain text FAIL followed by a newline.
+
+#### GET /webhooks/moneta/check
+
+Same contract as POST /webhooks/moneta/check; fields are query parameters.
 
 ### Uploads
 

@@ -20,6 +20,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
+	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/money"
 	"github.com/drewp1ter/citypark-go/internal/salewindow"
 	"github.com/drewp1ter/citypark-go/internal/store"
@@ -46,17 +47,13 @@ type PaymentForm struct {
 }
 
 // PaymentCallback is what Moneta sends after a payment (used in task 30).
-type PaymentCallback struct {
-	TransactionID string // our order id, as text
-	OperationID   string // Moneta's id of the payment
-	Amount        string
-	Signature     string
-}
+type PaymentCallback = moneta.Notification
 
 // Payments signs payment forms and checks payment callbacks. It makes no network calls.
 type Payments interface {
 	Form(r PaymentRequest) PaymentForm
 	Verify(c PaymentCallback) bool
+	CheckResponse(transactionID, code, amount string) moneta.CheckResponse
 }
 
 type CreateInput struct {
@@ -377,4 +374,34 @@ func daysClosed(name string, w salewindow.Window) *httpx.Error {
 func timeClosed(name string, w salewindow.Window) *httpx.Error {
 	return httpx.NewError(http.StatusServiceUnavailable,
 		fmt.Sprintf(`Время заказа "%s" ограничено с %s до %s.`, name, w.StartString(), w.EndString()))
+}
+
+// PaymentCheck reads persisted order state without confirming payment.
+func (s *Service) PaymentCheck(ctx context.Context, cb PaymentCallback) (moneta.CheckResponse, error) {
+	if !s.payments.Verify(cb) {
+		return moneta.CheckResponse{}, httpx.NewError(http.StatusForbidden, "Неверная подпись")
+	}
+	code, amount := "500", ""
+	id, err := strconv.ParseInt(cb.TransactionID, 10, 64)
+	if err == nil && id > 0 {
+		o, err := NewStore(s.db).ByID(ctx, id)
+		if err != nil && !errors.Is(err, store.ErrNotFound) {
+			return moneta.CheckResponse{}, err
+		}
+		if err == nil {
+			amount = moneta.FormatAmount(o.Total + o.DeliveryPrice)
+			switch {
+			case o.Status == StatusCanceled:
+			case o.PaymentID != "":
+				code = "200"
+			case o.Status == StatusNew || o.Status == StatusPending:
+				if cb.Amount == "" {
+					code = "100"
+				} else if cb.Amount == amount {
+					code = "402"
+				}
+			}
+		}
+	}
+	return s.payments.CheckResponse(cb.TransactionID, code, amount), nil
 }

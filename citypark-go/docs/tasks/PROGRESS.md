@@ -142,3 +142,8 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
   - Reject blocked dishes during order creation, including duplicate-order retries before returning a payment link, with a Russian error identifying the dish. Existing placed orders and payments remain unchanged.
   - Update OpenAPI and `docs/API.md`. Test block/unblock, sync persistence, schedule interaction, permissions, invalid requests, missing products, direct order rejection and duplicate retries; run required backend checks against the existing database.
   - Build, vet, formatting and serial full suite pass; catalog 88.3%, order 90.9%, iiko 93.7%, apidocs 100%.
+
+## MONETA Assistant correction
+- [ ] [82 Correct MONETA Assistant integration](82-moneta-assistant.md) [81]
+  - Implementation and protocol tests added; validation blocked: TEST_DB_DSN from .env.development refuses connections at host.docker.internal:5433 (2026-10-31). Per AGENTS.md, stopped without starting a database, ticking this task or committing. Moneta and config tests pass; database-dependent tests, coverage and real demo payment remain unverified.
+  - Added requested Python Pay URL simulator with order-ID CLI, signed amount lookup, explicit amount override and dry run; six isolated Python tests pass. No real payment callback was sent. Existing backend database-validation block remains.

@@ -203,7 +203,7 @@ func TestPaymentsAdapter(t *testing.T) {
 		t.Errorf("Form.URL = %q", form.URL)
 	}
 
-	good := order.PaymentCallback{TransactionID: "15", OperationID: "555", Amount: "790.00", Signature: "998b6268fe3a6c7f4eeb8ccec65a9566"}
+	good := order.PaymentCallback{MerchantID: "100", Currency: "RUB", TestMode: "0", TransactionID: "15", OperationID: "555", Amount: "790.00", Signature: "998b6268fe3a6c7f4eeb8ccec65a9566"}
 	if !p.Verify(good) {
 		t.Error("Verify rejected a correct callback")
 	}
@@ -368,6 +368,7 @@ func TestAppOnlineFlow(t *testing.T) {
 	sum := md5.Sum([]byte("100" + id + "555" + "790.00" + "RUB" + "0" + "secret"))
 	callback := func(signature string) *httptest.ResponseRecorder {
 		form := url.Values{
+			"MNT_ID": {"100"}, "MNT_CURRENCY_CODE": {"RUB"}, "MNT_TEST_MODE": {"0"},
 			"MNT_TRANSACTION_ID": {id},
 			"MNT_OPERATION_ID":   {"555"},
 			"MNT_AMOUNT":         {"790.00"},

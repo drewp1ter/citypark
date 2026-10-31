@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -47,7 +48,11 @@ func (s *Signer) RequestSignature(orderID int64, amount string) string {
 // MNT_ID, MNT_AMOUNT, MNT_TRANSACTION_ID, MNT_CURRENCY_CODE, MNT_TEST_MODE, MNT_SIGNATURE and,
 // when not empty, MNT_SUCCESS_URL and MNT_FAIL_URL. amount comes from FormatAmount.
 func (s *Signer) PaymentURL(base string, orderID int64, amount, successURL, failURL string) string {
-	q := url.Values{}
+	u, err := url.Parse(base)
+	if err != nil {
+		return ""
+	}
+	q := u.Query()
 	q.Set("MNT_ID", s.id)
 	q.Set("MNT_AMOUNT", amount)
 	q.Set("MNT_TRANSACTION_ID", strconv.FormatInt(orderID, 10))
@@ -60,16 +65,52 @@ func (s *Signer) PaymentURL(base string, orderID int64, amount, successURL, fail
 	if failURL != "" {
 		q.Set("MNT_FAIL_URL", failURL)
 	}
-	return base + "?" + q.Encode()
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
-// VerifyCallback reports whether signature is the right one for a payment callback.
-func (s *Signer) VerifyCallback(transactionID, operationID, amount, signature string) bool {
-	if transactionID == "" || operationID == "" || amount == "" || signature == "" {
+// Notification contains the signed fields of a Pay or Check request.
+type Notification struct {
+	MerchantID, TransactionID, OperationID, Amount, Currency, SubscriberID, TestMode, Command, Signature string
+}
+
+// ValidAmount accepts the protocol's canonical nonnegative two-decimal amounts.
+func ValidAmount(amount string) bool {
+	return regexp.MustCompile(`^[0-9]+\.[0-9]{2}$`).MatchString(amount)
+}
+
+// VerifyNotification verifies received fields before enforcing the shop configuration.
+func (s *Signer) VerifyNotification(n Notification) bool {
+	if n.TransactionID == "" || n.Signature == "" {
 		return false
 	}
-	want := s.sum(s.id + transactionID + operationID + amount + Currency + s.testMode + s.secret)
-	return subtle.ConstantTimeCompare([]byte(want), []byte(strings.ToLower(signature))) == 1
+	if n.Command != "" && n.Command != "CHECK" {
+		return false
+	}
+	if n.Command == "" && (n.OperationID == "" || !ValidAmount(n.Amount)) {
+		return false
+	}
+	if n.Amount != "" && !ValidAmount(n.Amount) {
+		return false
+	}
+	want := s.sum(n.Command + n.MerchantID + n.TransactionID + n.OperationID + n.Amount + n.Currency + n.SubscriberID + n.TestMode + s.secret)
+	return subtle.ConstantTimeCompare([]byte(want), []byte(strings.ToLower(n.Signature))) == 1 &&
+		n.MerchantID == s.id && n.Currency == Currency && n.TestMode == s.testMode
+}
+
+// CheckResponse is the signed XML response required by MONETA.
+type CheckResponse struct {
+	XMLName       struct{} `xml:"MNT_RESPONSE"`
+	MerchantID    string   `xml:"MNT_ID"`
+	TransactionID string   `xml:"MNT_TRANSACTION_ID"`
+	ResultCode    string   `xml:"MNT_RESULT_CODE"`
+	Amount        string   `xml:"MNT_AMOUNT,omitempty"`
+	Signature     string   `xml:"MNT_SIGNATURE"`
+}
+
+func (s *Signer) CheckResponse(transactionID, code, amount string) CheckResponse {
+	return CheckResponse{MerchantID: s.id, TransactionID: transactionID, ResultCode: code, Amount: amount,
+		Signature: s.sum(code + s.id + transactionID + s.secret)}
 }
 
 // sum returns the lowercase hex MD5 of data.

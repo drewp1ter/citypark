@@ -203,7 +203,7 @@ func Load(lookup LookupFunc) (Config, error) {
 		ID:         str("MONETA_ID", ""),
 		Secret:     str("MONETA_SECRET", ""),
 		TestMode:   str("MONETA_TEST_MODE", "false") == "true",
-		URL:        str("MONETA_URL", "https://assistant.demo.moneta.ru/"),
+		URL:        str("MONETA_URL", "https://demo.moneta.ru/assistant.htm"),
 		SuccessURL: str("MONETA_SUCCESS_URL", "http://localhost:3001/checkout/done"),
 		FailURL:    str("MONETA_FAIL_URL", "http://localhost:3001/checkout?payment=failed"),
 	}

@@ -1,7 +1,9 @@
 package order
 
 import (
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -59,6 +61,9 @@ func (h *Handler) routes(r chi.Router) {
 		Post("/orders", httpx.Handle(h.create))
 
 	r.Post("/webhooks/moneta", h.moneta)
+	r.Get("/webhooks/moneta", h.moneta)
+	r.Post("/webhooks/moneta/check", h.monetaCheck)
+	r.Get("/webhooks/moneta/check", h.monetaCheck)
 
 	r.Group(func(r chi.Router) {
 		r.Use(h.access)
@@ -77,12 +82,14 @@ func (h *Handler) routes(r chi.Router) {
 // moneta answers the payment callback. Moneta expects the plain text SUCCESS;
 // any other answer makes it repeat the call, so this route does not use httpx.Handle.
 func (h *Handler) moneta(w http.ResponseWriter, r *http.Request) {
-	cb := PaymentCallback{
-		TransactionID: r.FormValue("MNT_TRANSACTION_ID"),
-		OperationID:   r.FormValue("MNT_OPERATION_ID"),
-		Amount:        r.FormValue("MNT_AMOUNT"),
-		Signature:     r.FormValue("MNT_SIGNATURE"),
+	cb, err := parseMoneta(w, r)
+	if err != nil || cb.Command != "" {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = io.WriteString(w, "FAIL")
+		return
 	}
+
 	slog.Default().Info("moneta callback", "order_id", cb.TransactionID, "operation_id", cb.OperationID)
 
 	status, body := http.StatusOK, "SUCCESS"
@@ -327,4 +334,43 @@ func privateOrders(next http.Handler) http.Handler {
 		w.Header().Set("Cache-Control", "private, no-store")
 		next.ServeHTTP(w, r)
 	})
+}
+
+func parseMoneta(w http.ResponseWriter, r *http.Request) (PaymentCallback, error) {
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	if err := r.ParseForm(); err != nil {
+		return PaymentCallback{}, err
+	}
+	for key, values := range r.Form {
+		if strings.HasPrefix(key, "MNT_") && len(values) != 1 {
+			return PaymentCallback{}, fmt.Errorf("duplicate Moneta field")
+		}
+	}
+	return PaymentCallback{
+		MerchantID: r.Form.Get("MNT_ID"), TransactionID: r.Form.Get("MNT_TRANSACTION_ID"),
+		OperationID: r.Form.Get("MNT_OPERATION_ID"), Amount: r.Form.Get("MNT_AMOUNT"),
+		Currency: r.Form.Get("MNT_CURRENCY_CODE"), SubscriberID: r.Form.Get("MNT_SUBSCRIBER_ID"),
+		TestMode: r.Form.Get("MNT_TEST_MODE"), Command: r.Form.Get("MNT_COMMAND"), Signature: r.Form.Get("MNT_SIGNATURE"),
+	}, nil
+}
+
+func (h *Handler) monetaCheck(w http.ResponseWriter, r *http.Request) {
+	cb, err := parseMoneta(w, r)
+	if err != nil || cb.Command != "CHECK" {
+		http.Error(w, "FAIL", http.StatusBadRequest)
+		return
+	}
+	response, err := h.svc.PaymentCheck(r.Context(), cb)
+	if err != nil {
+		status := http.StatusInternalServerError
+		var he *httpx.Error
+		if errors.As(err, &he) {
+			status = he.Status
+		}
+		http.Error(w, "FAIL", status)
+		return
+	}
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	_, _ = io.WriteString(w, xml.Header)
+	_ = xml.NewEncoder(w).Encode(response)
 }

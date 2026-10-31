@@ -15,6 +15,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
+	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/money"
 	"github.com/drewp1ter/citypark-go/internal/testutil"
 )
@@ -493,4 +494,8 @@ func TestDuplicateBlockedProduct(t *testing.T) {
 	if len(e.payments.requests) != calls || e.count(t, "SELECT count(*) FROM orders") != 1 {
 		t.Fatal("retry changed orders/payment")
 	}
+}
+
+func (f *fakePayments) CheckResponse(id, code, amount string) moneta.CheckResponse {
+	return moneta.New("100", "secret", false).CheckResponse(id, code, amount)
 }

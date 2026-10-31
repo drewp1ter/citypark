@@ -30,5 +30,9 @@ func (p *MonetaPayments) Form(r order.PaymentRequest) order.PaymentForm {
 }
 
 func (p *MonetaPayments) Verify(c order.PaymentCallback) bool {
-	return p.signer.VerifyCallback(c.TransactionID, c.OperationID, c.Amount, c.Signature)
+	return p.signer.VerifyNotification(c)
+}
+
+func (p *MonetaPayments) CheckResponse(transactionID, code, amount string) moneta.CheckResponse {
+	return p.signer.CheckResponse(transactionID, code, amount)
 }
