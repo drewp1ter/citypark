@@ -8,6 +8,11 @@ const oneOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(va
 
 export const orderSchema = z.object({
 	method: oneOf(methods),
+	promoCode: z
+		.string()
+		.trim()
+		.max(32, 'Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.'),
+	expectedPayableTotal: z.string(),
 	when: oneOf(whens),
 	time: z.string(),
 	city: z.string().trim().max(80),
@@ -33,6 +38,13 @@ export function conditionalErrors(
 	hours: WorkingHours
 ): Partial<Record<OrderField, string>> {
 	const errors: Partial<Record<OrderField, string>> = {}
+	if (
+		order.promoCode &&
+		(!order.expectedPayableTotal.trim() ||
+			!Number.isFinite(Number(order.expectedPayableTotal)) ||
+			Number(order.expectedPayableTotal) <= 0)
+	)
+		errors.expectedPayableTotal = 'Подтвердите итоговую сумму заказа.'
 	if (order.method === 'delivery') {
 		if (order.city.trim() === '') errors.city = 'Выберите населённый пункт'
 		if (order.street.trim().length < 3) errors.street = 'Укажите улицу и дом'
@@ -57,4 +69,9 @@ export const orderFields = Object.keys(orderSchema.shape) as OrderField[]
 /** What the form shows after a submit. On an error the typed values come back, so nothing is lost. */
 export type OrderState =
 	| { status: 'idle' }
-	| { status: 'error'; errors: Partial<Record<OrderErrorKey, string>>; values: Record<OrderField, string> }
+	| {
+			status: 'error'
+			errors: Partial<Record<OrderErrorKey, string>>
+			values: Record<OrderField, string>
+			refreshQuote?: number
+	  }

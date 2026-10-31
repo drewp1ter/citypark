@@ -1,6 +1,7 @@
 // Flow check: checkout-and-contacts. Drives the real pages in a browser and prints what happened next to what is expected.
 // Usage: node scripts/qa/flows/checkout-and-contacts.mjs   (server must run on BASE_URL, default http://localhost:3111)
 import { chromium } from 'playwright'
+import { expect } from 'playwright/test'
 import { seedCart } from '../menu-cart.mjs'
 const base = process.env.BASE_URL ?? 'http://localhost:3111'
 const browser = await chromium.launch()
@@ -73,29 +74,36 @@ out('towns from the backend', JSON.stringify(await townOptions.allInnerTexts()))
 	const expected = freeFrom > 0 && subtotal >= freeFrom ? 0 : price
 	out(
 		'selected town: delivery line + total (expected delivery ' + expected + ', total ' + (subtotal + expected) + ')',
-		(await txt(p.locator('aside li', { hasText: 'Доставка' }))) +
+		(await txt(p.locator('dl[aria-label="Расчёт заказа"] > div', { hasText: 'Доставка' }))) +
 			' || ' +
-			(await txt(p.locator('aside div:visible', { hasText: /^К оплате/ }).last()))
+			(await txt(p.locator('dl[aria-label="Расчёт заказа"] > div', { hasText: 'Итого' })))
 	)
 }
 if ((await townOptions.count()) > 1) await townOptions.nth(1).click()
 else await p.keyboard.press('Escape')
+await expect(p.getByRole('button', { name: 'Оплатить заказ' })).toBeEnabled()
 out(
 	'second town: delivery line + total',
-	(await txt(p.locator('aside li', { hasText: 'Доставка' }))) + ' || ' + (await txt(p.getByText('К оплате')))
+	(await txt(p.locator('dl[aria-label="Расчёт заказа"] > div', { hasText: 'Доставка' }))) +
+		' || ' +
+		(await txt(p.locator('dl[aria-label="Расчёт заказа"] > div', { hasText: 'Итого' })))
 )
 await p.getByRole('button', { name: /Когда/ }).click()
 await p.getByRole('option', { name: /Ко времени/ }).click()
 await p.getByLabel('Время', { exact: true }).fill('23:45')
 await p.getByRole('button', { name: 'Оплатить заказ' }).click()
 await p.waitForTimeout(700)
-out('scheduled 23:45 -> error', JSON.stringify((await p.getByRole('alert').allInnerTexts()).filter(Boolean)))
+out(
+	'scheduled 23:45 -> validation (depends on working hours)',
+	JSON.stringify((await p.getByRole('alert').allInnerTexts()).filter(Boolean))
+)
 await p.getByText('Самовывоз').click()
+await expect(p.getByRole('button', { name: 'Оплатить заказ' })).toBeEnabled()
 out(
 	'pickup: address fields hidden',
 	String((await p.getByLabel('Улица и дом').count()) === 0 && (await p.getByLabel('Населённый пункт').count()) === 0)
 )
-out('pickup: delivery line', await txt(p.locator('aside li', { hasText: 'Доставка' })))
+out('pickup: delivery line', await txt(p.locator('dl[aria-label="Расчёт заказа"] > div', { hasText: 'Доставка' })))
 
 // tampered cart -> server refuses
 const t = await pageWithCart([{ dishId: 'ghost-dish', variantId: 'x', quantity: 1 }])

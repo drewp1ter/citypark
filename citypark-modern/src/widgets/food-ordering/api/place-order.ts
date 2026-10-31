@@ -97,6 +97,10 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 		phone: `+${phoneDigits(order.data.phone)}`,
 		name: order.data.name,
 		comment,
+		...(order.data.promoCode ? { promoCode: order.data.promoCode } : {}),
+		...(Number(order.data.expectedPayableTotal) > 0 && Number.isFinite(Number(order.data.expectedPayableTotal))
+			? { expectedPayableTotal: Number(order.data.expectedPayableTotal) }
+			: {}),
 		items: priced.items.map((item) => ({ productId: Number(item.dish.externalId), amount: item.quantity })),
 	}
 	if (when === 'scheduled') body.deliveryTime = time
@@ -110,8 +114,14 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 		const result = await createOrder(body, surface)
 		if (!result.ok) {
 			if (result.fields?.deliveryTime) errors.time = result.fields.deliveryTime
-			else errors.form = result.message
-			return { status: 'error', errors, values }
+			if (result.fields?.promoCode) errors.promoCode = result.fields.promoCode
+			errors.form = result.message
+			return {
+				status: 'error',
+				errors,
+				values,
+				...(result.status === 409 || result.fields?.promoCode ? { refreshQuote: Date.now() } : {}),
+			}
 		}
 		redirectUrl = result.redirectUrl
 		await setPendingPaymentContext(result.orderId, surface)

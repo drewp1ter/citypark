@@ -20,6 +20,9 @@ import {
 } from '@/shared/ui'
 import { placeMiniOrder, placeOrder } from '../api/place-order'
 import type { OrderState } from '../model/schema'
+import { useCheckoutQuote } from '../model/use-checkout-quote'
+import { PromoCodeField } from './promo-code-field'
+import { formatQuotePrice } from '../model/quote-price'
 
 const initialState: OrderState = { status: 'idle' }
 
@@ -66,9 +69,22 @@ export function CheckoutForm({
 
 	const noDelivery = method === 'delivery' && towns.length === 0
 	const selectedTown = towns.find((town) => town.name === city)
-	const deliveryPrice = method === 'delivery' && selectedTown ? townDeliveryPrice(selectedTown, priced.subtotal) : 0
-	const total = priced.subtotal + deliveryPrice
-	const canSubmit = cartReady && priced.items.length > 0 && !pending && !noDelivery
+	const pricing = useCheckoutQuote(
+		{ lines, method, city, menu: dishes.map((dish) => [dish.id, dish.available, dish.orderBlocked, dish.variants]) },
+		cartReady && priced.items.length > 0 && !noDelivery,
+		state.status === 'error' ? state.refreshQuote : undefined,
+		mini ? 'mini' : 'web'
+	)
+	const quote = pricing.quote
+	const deliveryPrice = quote?.deliveryPrice
+	const total = quote?.payableTotal
+	const displayMoney = (amount: number | undefined) => (amount === undefined ? '—' : formatQuotePrice(amount))
+	const deliveryBecamePaid =
+		!!quote?.promoCode &&
+		quote.deliveryPrice > 0 &&
+		!!selectedTown &&
+		townDeliveryPrice(selectedTown, quote.subtotal) === 0
+	const canSubmit = cartReady && priced.items.length > 0 && !pending && !noDelivery && pricing.ready
 
 	return (
 		<div className='max-w-narrow-page mx-auto w-full px-3 pt-2 pb-4 md:px-6 md:pt-10 md:pb-10'>
@@ -105,6 +121,8 @@ export function CheckoutForm({
 						className='grid gap-2 md:grid-cols-3 md:items-start md:gap-3'
 					>
 						<input type='hidden' name='lines' value={JSON.stringify(lines)} />
+						<input type='hidden' name='promoCode' value={pricing.code} />
+						<input type='hidden' name='expectedPayableTotal' value={quote?.payableTotal ?? ''} />
 
 						{/* Получение */}
 						<section
@@ -237,7 +255,7 @@ export function CheckoutForm({
 										Заказ · {priced.count} {dishWord(priced.count)}
 									</span>
 									<span className='text-accent'>
-										{method === 'delivery' ? `доставка ${formatPrice(deliveryPrice)}` : 'самовывоз'}
+										{method === 'delivery' ? `доставка ${displayMoney(deliveryPrice)}` : 'самовывоз'}
 									</span>
 								</summary>
 								<ul className='mb-3 text-[15px]'>
@@ -287,15 +305,44 @@ export function CheckoutForm({
 										)}
 									</li>
 								))}
-								<li className='flex justify-between gap-3 py-[9px]'>
-									<span className='text-inverse-muted'>Доставка</span>
-									<span className='text-accent font-semibold'>{formatPrice(deliveryPrice)}</span>
-								</li>
 							</ul>
-							<div className='hidden items-baseline justify-between md:flex'>
-								<span>К оплате</span>
-								<span className='font-display text-[32px] font-medium'>{formatPrice(total)}</span>
-							</div>
+							<PromoCodeField
+								text={pricing.text}
+								onChange={pricing.setText}
+								onApply={pricing.apply}
+								onRemove={pricing.remove}
+								pending={pricing.pending}
+								error={pricing.error || (!pricing.ready ? errors.promoCode || errors.expectedPayableTotal : undefined)}
+								disabled={pending}
+							/>
+							<dl
+								aria-label='Расчёт заказа'
+								className='bg-inverse-bg text-inverse-text flex flex-col gap-2 rounded-lg p-4 md:p-0'
+							>
+								<div className='flex justify-between gap-2'>
+									<dt>Блюда</dt>
+									<dd>{displayMoney(quote?.subtotal)}</dd>
+								</div>
+								{quote?.promoCode && (
+									<div className='flex justify-between gap-2'>
+										<dt>Скидка по промокоду</dt>
+										<dd>{formatQuotePrice(0 - quote.discount)}</dd>
+									</div>
+								)}
+								<div className='flex justify-between gap-2'>
+									<dt>Доставка</dt>
+									<dd>{displayMoney(deliveryPrice)}</dd>
+								</div>
+								<div className='flex items-baseline justify-between gap-2 font-semibold'>
+									<dt>Итого</dt>
+									<dd className='md:font-display md:text-[32px] md:font-medium'>{displayMoney(total)}</dd>
+								</div>
+							</dl>
+							{deliveryBecamePaid && (
+								<p role='status' className='bg-surface text-text rounded-sm p-3 text-sm'>
+									После скидки доставка стала платной
+								</p>
+							)}
 							<CheckboxField
 								name='consent'
 								checked={consent}
@@ -332,7 +379,7 @@ export function CheckoutForm({
 								className='min-h-[58px] w-full justify-between px-6 text-[17px]'
 							>
 								<span>{pending ? 'Переходим к оплате…' : 'Оплатить'}</span>
-								<span className='font-display font-medium'>{formatPrice(total)}</span>
+								<span className='font-display font-medium'>{displayMoney(total)}</span>
 							</Button>
 						</div>
 					</form>

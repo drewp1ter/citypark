@@ -110,5 +110,7 @@ Take the first unchecked task. Tick it only when every "Done when" command passe
 
 Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md). Planned only; existing blockers remain unchanged.
 
-- [ ] [43 Promo codes in shared checkout](43-promo-checkout.md) [website42; backend89]
+- [x] [43 Promo codes in shared checkout](43-promo-checkout.md) [website42; backend89]
+  - Added server-only authoritative quotes, apply/replace/remove, current-context pricing guards, kopeck totals, delivery-fee warnings and 409 quote refresh requiring another submission. Applied codes survive payment-return reloads; ownership/payment helpers are preserved. Check/build and production-build promo-checkout, checkout-and-contacts and telegram-mini regressions pass. Promo QA covers 390/1440 px, both themes, town/cart changes, overlap/cap, invalid/expired/minimum codes, delayed responses, failed transport and authorized validation-only 409s. Temporary campaigns are disabled; no orders, payments or iiko writes were made.
+  - Owner will run authenticated Mini App checks (explicit handoff, 2026-10-31): supply an existing QA_MINI_SESSION and run QA_PROMO_WRITES=1 MENU_API_URL=<configured backend> node scripts/qa/flows/promo-checkout.mjs against the production build. Existing account-session checks can additionally use QA_CUSTOMER_SESSION. No provider authentication or payment is performed by this flow.
 - [ ] [44 Promo history and cross-surface QA](44-promo-history-qa.md) [website43; admin28]
