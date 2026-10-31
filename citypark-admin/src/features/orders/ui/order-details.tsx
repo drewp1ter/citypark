@@ -19,6 +19,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function OrderBody({ order }: { order: Order }) {
+	const hasPromo = order.promoCode !== null
 	return (
 		<div className='flex flex-col gap-4'>
 			<div className='flex flex-wrap items-center gap-2'>
@@ -43,7 +44,8 @@ function OrderBody({ order }: { order: Order }) {
 							<Table.Column>Категория</Table.Column>
 							<Table.Column>Кол-во</Table.Column>
 							<Table.Column>Цена</Table.Column>
-							<Table.Column>Сумма</Table.Column>
+							<Table.Column>{hasPromo ? 'До скидки' : 'Сумма'}</Table.Column>
+							{hasPromo && <Table.Column>Скидка по промокоду</Table.Column>}
 						</Table.Header>
 						<Table.Body>
 							{order.items.map((item) => (
@@ -53,13 +55,34 @@ function OrderBody({ order }: { order: Order }) {
 									<Table.Cell>{item.amount}</Table.Cell>
 									<Table.Cell>{formatRub(item.offeredPrice)}</Table.Cell>
 									<Table.Cell>{formatRub(item.offeredPrice * item.amount)}</Table.Cell>
+									{hasPromo && <Table.Cell>{formatRub(0 - item.discount)}</Table.Cell>}
 								</Table.Row>
 							))}
 						</Table.Body>
 					</Table.Content>
 				</Table.ScrollContainer>
 			</Table>
-			<dl className='flex flex-col gap-1 text-right'>
+			<dl aria-label='Итоги заказа' className='flex flex-col gap-1 text-right'>
+				{hasPromo && (
+					<>
+						<div>
+							<dt className='inline text-muted'>Блюда до скидки: </dt>
+							<dd className='inline'>{formatRub(order.subtotal)}</dd>
+						</div>
+						<div>
+							<dt className='inline text-muted'>Промокод: </dt>
+							<dd className='inline wrap-anywhere'>{order.promoCode}</dd>
+						</div>
+						<div>
+							<dt className='inline text-muted'>Скидка по промокоду: </dt>
+							<dd className='inline'>{formatRub(0 - order.discount)}</dd>
+						</div>
+						<div>
+							<dt className='inline text-muted'>Блюда со скидкой: </dt>
+							<dd className='inline'>{formatRub(order.total)}</dd>
+						</div>
+					</>
+				)}
 				<div>
 					<dt className='inline text-muted'>Доставка: </dt>
 					<dd className='inline'>{formatRub(order.deliveryPrice)}</dd>
