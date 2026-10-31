@@ -251,7 +251,8 @@ func TestOrderJSON(t *testing.T) {
 	}
 	sort.Strings(keys)
 	want := []string{"address", "comment", "createdAt", "customer", "deliveryPrice", "deliveryTime", "id", "items",
-		"status", "total", "updatedAt"}
+		"status", "total", "updatedAt", "subtotal", "discount", "promoCode"}
+	sort.Strings(want)
 	if len(keys) != len(want) {
 		t.Fatalf("keys = %v, want %v", keys, want)
 	}

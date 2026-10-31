@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/money"
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
@@ -18,7 +19,7 @@ import (
 // Callers append a WHERE clause.
 const selectOrders = `
 SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id,
-       o.delivery_price_kopecks, o.iiko_order_id, o.account_id,
+       o.delivery_price_kopecks, o.iiko_order_id, o.account_id, o.subtotal_kopecks, o.discount_kopecks, o.promo_code, o.promo_code_id, o.promo_percentage,
        u.id AS customer_id, COALESCE(o.contact_name, u.name) AS customer_name,
        COALESCE(o.contact_phone, u.phone, '') AS customer_phone,
        o.address_id, COALESCE(o.delivery_city, a.city) AS address_city,
@@ -29,12 +30,18 @@ LEFT JOIN addresses a ON a.id = o.address_id
 `
 
 type InsertItem struct {
-	ProductID    int64
-	Amount       int
-	OfferedPrice money.Kopecks
+	Discount      money.Kopecks
+	PromoEligible bool
+	ProductID     int64
+	Amount        int
+	OfferedPrice  money.Kopecks
 }
 
 type InsertParams struct {
+	PromoCodeID       *int64
+	PromoCode         *string
+	PromoPercentage   *int
+	Discount          money.Kopecks
 	CustomerID        int64
 	AccountID         *int64
 	GuestCheckoutHash string
@@ -56,27 +63,33 @@ func NewStore(db store.DBTX) *Store {
 
 // orderRow is one flat row of selectOrders.
 type orderRow struct {
-	ID            int64     `db:"id"`
-	AccountID     *int64    `db:"account_id"`
-	CreatedAt     time.Time `db:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at"`
-	Status        string    `db:"status"`
-	Comment       string    `db:"comment"`
-	DeliveryTime  string    `db:"delivery_time"`
-	ItemsHash     string    `db:"items_hash"`
-	PaymentID     string    `db:"payment_id"`
-	DeliveryPrice int64     `db:"delivery_price_kopecks"`
-	IikoOrderID   string    `db:"iiko_order_id"`
-	CustomerID    int64     `db:"customer_id"`
-	CustomerName  string    `db:"customer_name"`
-	CustomerPhone string    `db:"customer_phone"`
-	AddressID     *int64    `db:"address_id"`
-	AddressCity   *string   `db:"address_city"`
-	AddressText   *string   `db:"address_text"`
+	Subtotal        money.Kopecks `db:"subtotal_kopecks"`
+	Discount        money.Kopecks `db:"discount_kopecks"`
+	PromoCode       *string       `db:"promo_code"`
+	PromoCodeID     *int64        `db:"promo_code_id"`
+	PromoPercentage *int          `db:"promo_percentage"`
+	ID              int64         `db:"id"`
+	AccountID       *int64        `db:"account_id"`
+	CreatedAt       time.Time     `db:"created_at"`
+	UpdatedAt       time.Time     `db:"updated_at"`
+	Status          string        `db:"status"`
+	Comment         string        `db:"comment"`
+	DeliveryTime    string        `db:"delivery_time"`
+	ItemsHash       string        `db:"items_hash"`
+	PaymentID       string        `db:"payment_id"`
+	DeliveryPrice   int64         `db:"delivery_price_kopecks"`
+	IikoOrderID     string        `db:"iiko_order_id"`
+	CustomerID      int64         `db:"customer_id"`
+	CustomerName    string        `db:"customer_name"`
+	CustomerPhone   string        `db:"customer_phone"`
+	AddressID       *int64        `db:"address_id"`
+	AddressCity     *string       `db:"address_city"`
+	AddressText     *string       `db:"address_text"`
 }
 
 func (r orderRow) toOrder() Order {
 	o := Order{
+		Subtotal: r.Subtotal, Discount: r.Discount, PromoCode: r.PromoCode, PromoCodeID: r.PromoCodeID, PromoPercentage: r.PromoPercentage, Total: r.Subtotal - r.Discount,
 		ID:            r.ID,
 		AccountID:     r.AccountID,
 		CreatedAt:     r.CreatedAt,
@@ -119,14 +132,15 @@ func (s *Store) Insert(ctx context.Context, p InsertParams) (int64, error) {
 	}
 	for _, it := range p.Items {
 		_, err := s.db.ExecContext(ctx,
-			`INSERT INTO order_items (order_id, product_id, amount, offered_price_kopecks)
-			 VALUES ($1, $2, $3, $4)`,
-			id, it.ProductID, it.Amount, int64(it.OfferedPrice))
+			`INSERT INTO order_items (order_id, product_id, amount, offered_price_kopecks, discount_kopecks, promo_eligible)
+			 VALUES ($1, $2, $3, $4, $5, $6)`,
+			id, it.ProductID, it.Amount, int64(it.OfferedPrice), it.Discount, it.PromoEligible)
 		if err != nil {
 			return 0, err
 		}
 	}
-	return id, nil
+	_, err = s.db.ExecContext(ctx, `UPDATE orders SET subtotal_kopecks=COALESCE((SELECT sum(offered_price_kopecks*amount) FROM order_items WHERE order_id=$1),0),discount_kopecks=$2,promo_code_id=$3,promo_code=$4,promo_percentage=$5,updated_at=now() WHERE id=$1`, id, p.Discount, p.PromoCodeID, p.PromoCode, p.PromoPercentage)
+	return id, err
 }
 
 // ByID returns store.ErrNotFound when missing.
@@ -254,7 +268,11 @@ type DuplicateScope struct {
 }
 
 // FindOpenDuplicate never matches by phone alone or an empty guest scope.
-func (s *Store) FindOpenDuplicate(ctx context.Context, scope DuplicateScope, name, phone string, addr *Address, comment, deliveryTime, itemsHash string) (id int64, found bool, err error) {
+func (s *Store) FindOpenDuplicate(ctx context.Context, scope DuplicateScope, name, phone string, addr *Address, comment, deliveryTime, itemsHash string, promoCodes ...string) (id int64, found bool, err error) {
+	code := ""
+	if len(promoCodes) > 0 {
+		code = promoCodes[0]
+	}
 	var city, addressText *string
 	if addr != nil {
 		city, addressText = &addr.City, &addr.Address
@@ -267,7 +285,8 @@ func (s *Store) FindOpenDuplicate(ctx context.Context, scope DuplicateScope, nam
  AND o.delivery_time = $6 AND o.items_hash = $7
  AND o.delivery_city IS NOT DISTINCT FROM $8::text
  AND o.delivery_address IS NOT DISTINCT FROM $9::text
- ORDER BY o.id DESC LIMIT 1`, scope.AccountID, scope.GuestCheckoutHash, name, phone, comment, deliveryTime, itemsHash, city, addressText)
+ AND COALESCE(o.promo_code,'') = $10
+ ORDER BY o.id DESC LIMIT 1`, scope.AccountID, scope.GuestCheckoutHash, name, phone, comment, deliveryTime, itemsHash, city, addressText, code)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, false, nil
 	}
@@ -334,18 +353,30 @@ func (s *Store) MarkPaid(ctx context.Context, id int64, paymentID string) (chang
 // UpsertItem adds a product to the order. If the order already has the product,
 // only its amount is replaced (the stored offered price is kept).
 func (s *Store) UpsertItem(ctx context.Context, orderID int64, it InsertItem) error {
+	if err := s.allowComposition(ctx, orderID); err != nil {
+		return err
+	}
 	_, err := s.db.ExecContext(ctx,
 		`INSERT INTO order_items (order_id, product_id, amount, offered_price_kopecks) VALUES ($1, $2, $3, $4)
 		 ON CONFLICT (order_id, product_id) DO UPDATE SET amount = EXCLUDED.amount`,
 		orderID, it.ProductID, it.Amount, int64(it.OfferedPrice))
-	return err
+	if err != nil {
+		return err
+	}
+	return s.refreshSubtotal(ctx, orderID)
 }
 
 // RemoveItem deletes one item. No error when it does not exist.
 func (s *Store) RemoveItem(ctx context.Context, orderID, productID int64) error {
+	if err := s.allowComposition(ctx, orderID); err != nil {
+		return err
+	}
 	_, err := s.db.ExecContext(ctx,
 		`DELETE FROM order_items WHERE order_id = $1 AND product_id = $2`, orderID, productID)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.refreshSubtotal(ctx, orderID)
 }
 
 // Delete removes the order; its items go with it (ON DELETE CASCADE). No error when it does not exist.
@@ -359,12 +390,16 @@ func (s *Store) loadItems(ctx context.Context, orders []Order) error {
 	ids := make([]int64, len(orders))
 	index := make(map[int64]int, len(orders))
 	for i, o := range orders {
+		if o.PromoCode == nil {
+			orders[i].Total = 0
+			orders[i].Subtotal = 0
+		}
 		ids[i] = o.ID
 		index[o.ID] = i
 	}
 	var items []Item
 	err := s.db.SelectContext(ctx, &items,
-		`SELECT oi.order_id, oi.product_id, p.name, c.name AS category_name, oi.amount, oi.offered_price_kopecks,
+		`SELECT oi.order_id, oi.product_id, p.name, c.name AS category_name, oi.amount, oi.offered_price_kopecks, oi.discount_kopecks, oi.promo_eligible,
 		        COALESCE(p.iiko_id, '') AS iiko_id
 		 FROM order_items oi
 		 JOIN products p ON p.id = oi.product_id
@@ -378,7 +413,25 @@ func (s *Store) loadItems(ctx context.Context, orders []Order) error {
 	for _, it := range items {
 		o := &orders[index[it.OrderID]]
 		o.Items = append(o.Items, it)
-		o.Total += it.OfferedPrice.Mul(it.Amount)
+		if o.PromoCode == nil {
+			o.Total += it.OfferedPrice.Mul(it.Amount)
+			o.Subtotal += it.OfferedPrice.Mul(it.Amount)
+		}
 	}
 	return nil
+}
+
+func (s *Store) allowComposition(ctx context.Context, id int64) error {
+	var blocked bool
+	if err := s.db.GetContext(ctx, &blocked, `SELECT EXISTS(SELECT 1 FROM orders WHERE id=$1 AND promo_code IS NOT NULL)`, id); err != nil {
+		return err
+	}
+	if blocked {
+		return httpx.NewError(409, "Нельзя изменять состав заказа с промокодом.")
+	}
+	return nil
+}
+func (s *Store) refreshSubtotal(ctx context.Context, id int64) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE orders SET subtotal_kopecks=COALESCE((SELECT sum(offered_price_kopecks*amount) FROM order_items WHERE order_id=$1),0),updated_at=now() WHERE id=$1`, id)
+	return err
 }

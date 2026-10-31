@@ -1,6 +1,8 @@
 package order
 
 import (
+	"bytes"
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
@@ -17,6 +19,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/catalog"
 	"github.com/drewp1ter/citypark-go/internal/httpx"
+	"github.com/drewp1ter/citypark-go/internal/money"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/validate"
 	"github.com/drewp1ter/citypark-go/internal/workinghours"
@@ -217,9 +220,20 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) error {
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) error {
-	var in CreateInput
-	if err := httpx.DecodeJSON(w, r, &in); err != nil {
+	var req struct {
+		CreateInput
+		Expected json.RawMessage `json:"expectedPayableTotal"`
+	}
+	if err := httpx.DecodeJSON(w, r, &req); err != nil {
 		return err
+	}
+	in := req.CreateInput
+	if len(req.Expected) > 0 && !bytes.Equal(bytes.TrimSpace(req.Expected), []byte("null")) {
+		var amount money.Kopecks
+		if err := json.Unmarshal(req.Expected, &amount); err != nil {
+			return expectedTotalError()
+		}
+		in.ExpectedPayableTotal = &amount
 	}
 	if err := validate.Struct(in); err != nil {
 		return err
@@ -277,10 +291,12 @@ func (h *Handler) addItem(w http.ResponseWriter, r *http.Request) error {
 	}
 	ctx := r.Context()
 	orders := NewStore(h.svc.db)
-	if _, err := orders.ByID(ctx, id); errors.Is(err, store.ErrNotFound) {
+	if o, err := orders.ByID(ctx, id); errors.Is(err, store.ErrNotFound) {
 		return httpx.NotFound()
 	} else if err != nil {
 		return err
+	} else if o.PromoCode != nil {
+		return httpx.NewError(409, "Нельзя изменять состав заказа с промокодом.")
 	}
 	products, err := catalog.NewStore(h.svc.db).ProductsByIDs(ctx, []int64{in.ProductID})
 	if err != nil {

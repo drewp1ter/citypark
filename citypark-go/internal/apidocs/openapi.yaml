@@ -524,6 +524,14 @@ components:
       type: object
       required: [phone, name, items]
       properties:
+        promoCode:
+          type: string
+          description: Optional normalized promo code. Empty means no code; format [A-Z0-9_-]{3,32} after trimming and ASCII uppercase.
+        expectedPayableTotal:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: Required for promo orders. Confirmed discounted food plus delivery; compares with saved total on duplicate retries.
         phone:
           type: string
           description: A valid Russian phone number. It is stored as +7XXXXXXXXXX.
@@ -574,8 +582,18 @@ components:
           $ref: '#/components/schemas/Order'
     Order:
       type: object
-      required: [id, createdAt, updatedAt, status, comment, deliveryTime, total, deliveryPrice, customer, address, items]
+      required: [id, createdAt, updatedAt, status, comment, deliveryTime, subtotal, discount, promoCode, total, deliveryPrice, customer, address, items]
       properties:
+        subtotal:
+          type: number
+          description: Original food subtotal, in rubles.
+        discount:
+          type: number
+          description: Persisted food discount, zero for historical/no-code orders.
+        promoCode:
+          type: string
+          nullable: true
+          description: Saved normalized code, null without promo.
         id:
           type: integer
           example: 2
@@ -596,7 +614,7 @@ components:
           example: '18:30'
         total:
           type: number
-          description: Sum of the items without delivery, in rubles.
+          description: Saved discounted food (subtotal minus discount), excluding delivery.
           example: 599
         deliveryPrice:
           type: number
@@ -628,7 +646,7 @@ components:
           type: array
           items:
             type: object
-            required: [productId, name, categoryName, amount, offeredPrice]
+            required: [productId, name, categoryName, amount, offeredPrice, discount]
             properties:
               productId:
                 type: integer
@@ -638,6 +656,9 @@ components:
                 type: string
               amount:
                 type: integer
+              discount:
+                type: number
+                description: Saved line discount in rubles, not a unit price reduction.
               offeredPrice:
                 type: number
                 description: Rubles. The price the item was ordered at.
@@ -2763,6 +2784,10 @@ paths:
         `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the
         Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the
         town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
+        Promo code participates in duplicate matching. Same-code retries retain saved pricing even
+        when the campaign changes or expires; product block safety remains. A fresh promo order requires
+        expectedPayableTotal; mismatch returns 409 before any customer/order writes. Obtain a fresh quote
+        and require a new submission. Payments use saved discounted food plus saved delivery.
       tags: [orders]
       security:
         - {}
@@ -2808,7 +2833,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateOrderResult'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: >-
+            Standard validation/JSON errors. errors.expectedPayableTotal: Подтвердите итоговую сумму заказа.
+            errors.promoCode: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.
+            Or Промокод недействителен. / В корзине нет блюд для этого промокода. /
+            Недостаточная сумма подходящих блюд для промокода.
+            Quantity overflow: Некорректное количество.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Сумма заказа изменилась. Проверьте итог и повторите оформление.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '503':
@@ -2986,6 +3032,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Нельзя изменять состав заказа с промокодом.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /orders/{id}/items/{productId}:
     delete:
       summary: Remove one product from an order
@@ -3012,6 +3065,13 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Нельзя изменять состав заказа с промокодом.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /reports/hotel/sales:
     get:
       summary: Hotel revenue by room

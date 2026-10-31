@@ -32,31 +32,38 @@ type Address struct {
 }
 
 type Item struct {
-	OrderID      int64         `db:"order_id" json:"-"`
-	ProductID    int64         `db:"product_id" json:"productId"`
-	Name         string        `db:"name" json:"name"`
-	CategoryName string        `db:"category_name" json:"categoryName"`
-	Amount       int           `db:"amount" json:"amount"`
-	OfferedPrice money.Kopecks `db:"offered_price_kopecks" json:"offeredPrice"`
-	IikoID       string        `db:"iiko_id" json:"-"`
+	Discount      money.Kopecks `db:"discount_kopecks" json:"discount"`
+	PromoEligible bool          `db:"promo_eligible" json:"-"`
+	OrderID       int64         `db:"order_id" json:"-"`
+	ProductID     int64         `db:"product_id" json:"productId"`
+	Name          string        `db:"name" json:"name"`
+	CategoryName  string        `db:"category_name" json:"categoryName"`
+	Amount        int           `db:"amount" json:"amount"`
+	OfferedPrice  money.Kopecks `db:"offered_price_kopecks" json:"offeredPrice"`
+	IikoID        string        `db:"iiko_id" json:"-"`
 }
 
 type Order struct {
-	ID            int64         `json:"id"`
-	AccountID     *int64        `json:"-"`
-	CreatedAt     time.Time     `json:"createdAt"`
-	UpdatedAt     time.Time     `json:"updatedAt"`
-	Status        string        `json:"status"`
-	Comment       string        `json:"comment"`
-	DeliveryTime  string        `json:"deliveryTime"` // "HH:MM"; "" = as soon as possible
-	Total         money.Kopecks `json:"total"`        // sum of OfferedPrice * Amount, without delivery
-	DeliveryPrice money.Kopecks `json:"deliveryPrice"`
-	Customer      Customer      `json:"customer"`
-	Address       *Address      `json:"address"` // nil = pickup, JSON null
-	Items         []Item        `json:"items"`   // never nil
-	ItemsHash     string        `json:"-"`
-	PaymentID     string        `json:"-"`
-	IikoOrderID   string        `json:"-"`
+	Subtotal        money.Kopecks `json:"subtotal"`
+	Discount        money.Kopecks `json:"discount"`
+	PromoCode       *string       `json:"promoCode"`
+	PromoCodeID     *int64        `json:"-"`
+	PromoPercentage *int          `json:"-"`
+	ID              int64         `json:"id"`
+	AccountID       *int64        `json:"-"`
+	CreatedAt       time.Time     `json:"createdAt"`
+	UpdatedAt       time.Time     `json:"updatedAt"`
+	Status          string        `json:"status"`
+	Comment         string        `json:"comment"`
+	DeliveryTime    string        `json:"deliveryTime"` // "HH:MM"; "" = as soon as possible
+	Total           money.Kopecks `json:"total"`        // discounted food, without delivery
+	DeliveryPrice   money.Kopecks `json:"deliveryPrice"`
+	Customer        Customer      `json:"customer"`
+	Address         *Address      `json:"address"` // nil = pickup, JSON null
+	Items           []Item        `json:"items"`   // never nil
+	ItemsHash       string        `json:"-"`
+	PaymentID       string        `json:"-"`
+	IikoOrderID     string        `json:"-"`
 }
 
 type ItemInput struct {

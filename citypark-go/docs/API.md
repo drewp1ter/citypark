@@ -2294,10 +2294,14 @@ Places an order. A checkout contact is found by phone number or created; existin
 
 - **Role:** public, with optional Bearer authentication. An invalid, expired, empty or repeated Authorization header returns 401; it never becomes a guest checkout. A deleted user or a token whose role no longer matches also returns 401.
 
+Promo orders require a confirmed quote total. A mismatch returns 409 before any customer/address/order writes. Fetch a fresh quote, show the changed total and require a new submission; do not redirect automatically.
+
 **Request body**
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
+| `promoCode` | string | no | Trimmed, ASCII uppercase `[A-Z0-9_-]{3,32}`; empty means no code |
+| `expectedPayableTotal` | number | required with promoCode | Positive rubles; must equal current discounted food + delivery, or the saved amount on duplicate retries |
 | `phone` | string | yes | a valid Russian phone number; it is stored as `+7XXXXXXXXXX` |
 | `name` | string | yes | at most 80 characters |
 | `comment` | string | no | at most 8192 characters |
@@ -2338,6 +2342,14 @@ Places an order. A checkout contact is found by phone number or created; existin
 | 400 | the phone number cannot be normalized | `Неверный номер телефона.` |
 | 400 | `address.city` is not a known delivery city | `Указано не существующее имя населенного пункта.` |
 | 400 | a product does not exist or is deleted | `Продукт не найден.` |
+| 400 | Missing/nonpositive expectedPayableTotal on promo order; errors.expectedPayableTotal | `Подтвердите итоговую сумму заказа.` |
+| 400 | Invalid promo code format; errors.promoCode | `Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.` |
+| 400 | Unknown/disabled/future/expired code on a fresh order; errors.promoCode | `Промокод недействителен.` |
+| 400 | No eligible positive spend; errors.promoCode | `В корзине нет блюд для этого промокода.` |
+| 400 | Eligible spend below minimum; errors.promoCode | `Недостаточная сумма подходящих блюд для промокода.` |
+| 400 | Invalid or overflowing merged quantity | `Некорректное количество.` |
+| 409 | Current or saved payable amount differs from confirmation | `Сумма заказа изменилась. Проверьте итог и повторите оформление.` |
+| 500 | Database error or monetary overflow | `Внутренняя ошибка сервера` |
 | 503 | the current time is outside the working hours | `Извините, но мы не можем принять ваш заказ.` followed by a newline and `Заказы принимаются с 9:00 до 22:00` (the hours from `GET /working-hours`) |
 | 503 | the product's or its category's weekday limit excludes today | `Возможность заказа "<name>" доступна только в следующие дни недели: Пн, Вт, Ср, Чт, Пт` |
 | 503 | the product's or its category's time limit excludes now | `Время заказа "<name>" ограничено с 9:00 до 21:00.` |
@@ -2351,6 +2363,12 @@ Authentication with a customer Bearer token assigns the order to that account re
 Guest checkout uses the server-issued `citypark_guest_checkout` cookie. A first request (or an invalid/expired cookie) issues `Set-Cookie: citypark_guest_checkout=<signed-proof>; Path=/api/v1/orders; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`. Forward that cookie on retries to reuse an unpaid order; without it each request starts a new scope. The cookie expires absolutely after 24 hours, grants no access to order history/details, and is never returned in JSON. Use HTTPS. A server-side frontend must forward the backend cookie explicitly; this task does not add frontend cookie handling. Guest identifiers are stored only as hashes.
 
 All order HTTP responses, including errors, send `Cache-Control: private, no-store`.
+
+Promo code is part of duplicate matching, alongside all existing scope/contact/address/item criteria. Same-code pending retries retain original prices, campaign snapshots and delivery even after campaign edits, disabling or expiry. Different codes and no code are separate orders. Retries check product blocks before returning a payment URL; supplied expectedPayableTotal is compared with the saved amount. New orders use current catalog data and a campaign snapshot locked against admin replacement. No-code callers may omit expectedPayableTotal; if supplied it must match.
+
+All order reads, lists and live events expose subtotal (original food), discount (food discount), promoCode (normalized code or null), total (subtotal minus discount) and per-item discount. Original offeredPrice and quantity are preserved. Historical/no-code orders have zero discount and null promoCode. Promo eligibility is an internal saved boolean, including eligible lines with zero allocation; it is never reconstructed from current campaign targets.
+
+Payment URLs, signed Check responses and Pay amount validation use saved discounted food total plus saved delivery. Duplicate callbacks remain idempotent. Delivery is never discounted; free-delivery thresholds use food after discount.
 
 #### GET /orders/my
 
@@ -2379,9 +2397,29 @@ Lists orders owned by the signed-in account, newest first. Ownership uses `accou
       "deliveryTime": "",
       "total": 599,
       "deliveryPrice": 150,
-      "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
-      "address": { "id": 1, "city": "Сочи", "address": "ул. Ленина, 1" },
-      "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }]
+      "customer": {
+        "id": 2,
+        "name": "Иван",
+        "phone": "+79991234567"
+      },
+      "address": {
+        "id": 1,
+        "city": "Сочи",
+        "address": "ул. Ленина, 1"
+      },
+      "items": [
+        {
+          "productId": 1,
+          "name": "Шашлык",
+          "categoryName": "Мангал",
+          "amount": 1,
+          "offeredPrice": 599,
+          "discount": 0
+        }
+      ],
+      "subtotal": 599,
+      "discount": 0,
+      "promoCode": null
     }
   ],
   "count": 12
@@ -2397,7 +2435,7 @@ Lists orders owned by the signed-in account, newest first. Ownership uses `accou
 
 **Notes**
 
-`count` is the total number of the user's orders, not the size of the page. `orders` is `[]` when there are none. `address` is `null` for a pickup order. `total` is the sum of the items without delivery; add `deliveryPrice` for the amount to pay.
+`count` is the total number of the user's orders, not the size of the page. `orders` is `[]` when there are none. `address` is `null` for a pickup order. `subtotal` is original food and `total` is `subtotal - discount`, without delivery; add `deliveryPrice` for the amount to pay.
 
 #### GET /orders/{id}
 
@@ -2423,9 +2461,29 @@ Returns one order.
   "deliveryTime": "",
   "total": 599,
   "deliveryPrice": 150,
-  "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
-  "address": { "id": 1, "city": "Сочи", "address": "ул. Ленина, 1" },
-  "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }]
+  "customer": {
+    "id": 2,
+    "name": "Иван",
+    "phone": "+79991234567"
+  },
+  "address": {
+    "id": 1,
+    "city": "Сочи",
+    "address": "ул. Ленина, 1"
+  },
+  "items": [
+    {
+      "productId": 1,
+      "name": "Шашлык",
+      "categoryName": "Мангал",
+      "amount": 1,
+      "offeredPrice": 599,
+      "discount": 0
+    }
+  ],
+  "subtotal": 599,
+  "discount": 0,
+  "promoCode": null
 }
 ```
 
@@ -2441,6 +2499,52 @@ Returns one order.
 An admin can read any order. A customer can read only an order whose `account_id` matches their authenticated account. Orders owned by another account and unowned guest orders return the same 404 as a missing order, including when their checkout phone matches the customer.
 
 `customer.name`, `customer.phone`, `address.city` and `address.address` are checkout snapshots. `customer.id` is the legacy contact ID, not proof of ownership. Pickup has `address: null`; if the source address was deleted, its snapshot survives with `address.id: 0`. Legacy rows without snapshots fall back to their existing contact/address references. Owner IDs and guest scopes are not exposed. Responses send `Cache-Control: private, no-store`.
+
+**Promo snapshot response example** (captured from TestPromoOrderSnapshot):
+
+```json
+{
+  "subtotal": 699,
+  "discount": 69.9,
+  "promoCode": "SAVE10",
+  "id": 1,
+  "createdAt": "2026-10-31T12:29:09.237788Z",
+  "updatedAt": "2026-10-31T12:29:09.245628Z",
+  "status": "pending",
+  "comment": "без лука",
+  "deliveryTime": "",
+  "total": 629.1,
+  "deliveryPrice": 150,
+  "customer": {
+    "id": 1,
+    "name": "Пётр",
+    "phone": "+79991112233"
+  },
+  "address": {
+    "id": 1,
+    "city": "Сочи",
+    "address": "Ленина, 1"
+  },
+  "items": [
+    {
+      "discount": 59.9,
+      "productId": 1,
+      "name": "Шашлык",
+      "categoryName": "Мангал",
+      "amount": 1,
+      "offeredPrice": 599
+    },
+    {
+      "discount": 10,
+      "productId": 2,
+      "name": "Лаваш",
+      "categoryName": "Мангал",
+      "amount": 1,
+      "offeredPrice": 100
+    }
+  ]
+}
+```
 
 #### GET /orders/live
 
@@ -2484,13 +2588,83 @@ Every message is a text frame with one JSON object. `order` has the same shape a
 `order.pending`:
 
 ```json
-{"type":"order.pending","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "pending", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+{
+  "type": "order.pending",
+  "order": {
+    "id": 2,
+    "createdAt": "2024-05-24T12:00:00Z",
+    "updatedAt": "2024-05-24T12:00:00Z",
+    "status": "pending",
+    "comment": "",
+    "deliveryTime": "",
+    "total": 599,
+    "deliveryPrice": 150,
+    "customer": {
+      "id": 2,
+      "name": "Иван",
+      "phone": "+79991234567"
+    },
+    "address": {
+      "id": 1,
+      "city": "Сочи",
+      "address": "ул. Ленина, 1"
+    },
+    "items": [
+      {
+        "productId": 1,
+        "name": "Шашлык",
+        "categoryName": "Мангал",
+        "amount": 1,
+        "offeredPrice": 599,
+        "discount": 0
+      }
+    ],
+    "subtotal": 599,
+    "discount": 0,
+    "promoCode": null
+  }
+}
 ```
 
 `order.paid`:
 
 ```json
-{"type":"order.paid","order":{"id": 2, "createdAt": "2024-05-24T12:00:00Z", "updatedAt": "2024-05-24T12:00:00Z", "status": "paid", "comment": "", "deliveryTime": "", "total": 599, "deliveryPrice": 150, "customer": {"id": 2, "name": "Иван", "phone": "+79991234567" }, "address": {"id": 1, "city": "Сочи", "address": "ул. Ленина, 1" }, "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }] }}
+{
+  "type": "order.paid",
+  "order": {
+    "id": 2,
+    "createdAt": "2024-05-24T12:00:00Z",
+    "updatedAt": "2024-05-24T12:00:00Z",
+    "status": "paid",
+    "comment": "",
+    "deliveryTime": "",
+    "total": 599,
+    "deliveryPrice": 150,
+    "customer": {
+      "id": 2,
+      "name": "Иван",
+      "phone": "+79991234567"
+    },
+    "address": {
+      "id": 1,
+      "city": "Сочи",
+      "address": "ул. Ленина, 1"
+    },
+    "items": [
+      {
+        "productId": 1,
+        "name": "Шашлык",
+        "categoryName": "Мангал",
+        "amount": 1,
+        "offeredPrice": 599,
+        "discount": 0
+      }
+    ],
+    "subtotal": 599,
+    "discount": 0,
+    "promoCode": null
+  }
+}
 ```
 
 **Notes**
@@ -2535,9 +2709,29 @@ Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&s
       "deliveryTime": "",
       "total": 599,
       "deliveryPrice": 150,
-      "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
-      "address": { "id": 1, "city": "Сочи", "address": "ул. Ленина, 1" },
-      "items": [{ "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 }]
+      "customer": {
+        "id": 2,
+        "name": "Иван",
+        "phone": "+79991234567"
+      },
+      "address": {
+        "id": 1,
+        "city": "Сочи",
+        "address": "ул. Ленина, 1"
+      },
+      "items": [
+        {
+          "productId": 1,
+          "name": "Шашлык",
+          "categoryName": "Мангал",
+          "amount": 1,
+          "offeredPrice": 599,
+          "discount": 0
+        }
+      ],
+      "subtotal": 599,
+      "discount": 0,
+      "promoCode": null
     }
   ],
   "count": 12
@@ -2620,12 +2814,37 @@ The updated order, in the same format as `GET /orders/{id}`.
   "deliveryTime": "",
   "total": 799,
   "deliveryPrice": 150,
-  "customer": { "id": 2, "name": "Иван", "phone": "+79991234567" },
-  "address": { "id": 1, "city": "Сочи", "address": "ул. Ленина, 1" },
+  "customer": {
+    "id": 2,
+    "name": "Иван",
+    "phone": "+79991234567"
+  },
+  "address": {
+    "id": 1,
+    "city": "Сочи",
+    "address": "ул. Ленина, 1"
+  },
   "items": [
-    { "productId": 1, "name": "Шашлык", "categoryName": "Мангал", "amount": 1, "offeredPrice": 599 },
-    { "productId": 2, "name": "Лаваш", "categoryName": "Мангал", "amount": 2, "offeredPrice": 100 }
-  ]
+    {
+      "productId": 1,
+      "name": "Шашлык",
+      "categoryName": "Мангал",
+      "amount": 1,
+      "offeredPrice": 599,
+      "discount": 0
+    },
+    {
+      "productId": 2,
+      "name": "Лаваш",
+      "categoryName": "Мангал",
+      "amount": 2,
+      "offeredPrice": 100,
+      "discount": 0
+    }
+  ],
+  "subtotal": 799,
+  "discount": 0,
+  "promoCode": null
 }
 ```
 
@@ -2642,6 +2861,8 @@ The updated order, in the same format as `GET /orders/{id}`.
 **Notes**
 
 A new item is stored with the product's current price. When the product is already in the order, only `amount` is replaced and the price the item was ordered at (`offeredPrice`) stays as it was. Sale windows are not checked.
+
+Promo orders reject composition changes with HTTP 409 and `Нельзя изменять состав заказа с промокодом.`; no item or monetary snapshot is changed. This also applies to a promo whose allocated discount is zero.
 
 #### DELETE /orders/{id}/items/{productId}
 
@@ -2671,6 +2892,8 @@ No body.
 **Notes**
 
 The answer is 204 also when the order or the item does not exist, so the request can be repeated safely. The order stays in place even when its last item is removed.
+
+Promo orders reject composition changes with HTTP 409 and `Нельзя изменять состав заказа с промокодом.`; no item or monetary snapshot is changed. This also applies to a promo whose allocated discount is zero.
 
 #### DELETE /orders/{id}
 

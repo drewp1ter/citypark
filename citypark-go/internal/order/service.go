@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -22,6 +24,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/money"
+	"github.com/drewp1ter/citypark-go/internal/promo"
 	"github.com/drewp1ter/citypark-go/internal/salewindow"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/user"
@@ -57,13 +60,15 @@ type Payments interface {
 }
 
 type CreateInput struct {
-	GuestCheckoutID string         `json:"-"`
-	Phone           string         `json:"phone" validate:"required,ruphone"`
-	Name            string         `json:"name" validate:"required,max=80"`
-	Comment         string         `json:"comment" validate:"max=8192"`
-	DeliveryTime    string         `json:"deliveryTime" validate:"omitempty,hhmm"` // "" = as soon as possible
-	Address         *address.Input `json:"address" validate:"omitempty"`
-	Items           []ItemInput    `json:"items" validate:"required,min=1,dive"`
+	PromoCode            string         `json:"promoCode"`
+	ExpectedPayableTotal *money.Kopecks `json:"expectedPayableTotal"`
+	GuestCheckoutID      string         `json:"-"`
+	Phone                string         `json:"phone" validate:"required,ruphone"`
+	Name                 string         `json:"name" validate:"required,max=80"`
+	Comment              string         `json:"comment" validate:"max=8192"`
+	DeliveryTime         string         `json:"deliveryTime" validate:"omitempty,hhmm"` // "" = as soon as possible
+	Address              *address.Input `json:"address" validate:"omitempty"`
+	Items                []ItemInput    `json:"items" validate:"required,min=1,dive"`
 }
 
 // CreateResult: RedirectURL is the Moneta payment page.
@@ -110,19 +115,38 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	}
 	name := strings.TrimSpace(in.Name)
 	comment := strings.TrimSpace(in.Comment)
+	counts := map[int64]int{}
+	for _, it := range in.Items {
+		if it.Amount <= 0 || counts[it.ProductID] > math.MaxInt-it.Amount {
+			return CreateResult{}, httpx.BadRequest("Некорректное количество.")
+		}
+		counts[it.ProductID] += it.Amount
+	}
 	items := mergeItems(in.Items)
 	hash := ItemsHash(items)
 
-	var delivery deliveryprice.DeliveryPrice
-	if in.Address != nil {
-		dp, err := deliveryprice.NewStore(s.db).ByName(ctx, in.Address.City)
-		if errors.Is(err, store.ErrNotFound) {
-			return CreateResult{}, httpx.BadRequest("Указано не существующее имя населенного пункта.")
+	if in.ExpectedPayableTotal != nil && *in.ExpectedPayableTotal <= 0 {
+		return CreateResult{}, expectedTotalError()
+	}
+	code := strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' {
+			return r - 32
 		}
-		if err != nil {
-			return CreateResult{}, err
+		return r
+	}, strings.TrimSpace(in.PromoCode))
+	if code != "" {
+		valid := len(code) >= 3 && len(code) <= 32
+		for _, c := range code {
+			if !(c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_' || c == '-') {
+				valid = false
+			}
 		}
-		delivery = dp
+		if !valid {
+			return CreateResult{}, quoteCodeError("Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.")
+		}
+		if in.ExpectedPayableTotal == nil || *in.ExpectedPayableTotal <= 0 {
+			return CreateResult{}, expectedTotalError()
+		}
 	}
 
 	orders := NewStore(s.db)
@@ -135,7 +159,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if in.Address != nil {
 		dupAddr = &Address{City: in.Address.City, Address: in.Address.Address}
 	}
-	id, dup, err := orders.FindOpenDuplicate(ctx, scope, name, phone, dupAddr, comment, in.DeliveryTime, hash)
+	id, dup, err := orders.FindOpenDuplicate(ctx, scope, name, phone, dupAddr, comment, in.DeliveryTime, hash, code)
 	if err != nil {
 		return CreateResult{}, err
 	}
@@ -170,7 +194,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 			address:      in.Address,
 			items:        items,
 			hash:         hash,
-			delivery:     delivery,
+			promoCode:    code, expected: in.ExpectedPayableTotal,
 		})
 		if err != nil {
 			return CreateResult{}, err
@@ -181,6 +205,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		}
 	}
 
+	if in.ExpectedPayableTotal != nil && *in.ExpectedPayableTotal != o.Total+o.DeliveryPrice {
+		return CreateResult{}, changedTotalError()
+	}
 	form := s.payments.Form(PaymentRequest{OrderID: o.ID, Amount: o.Total + o.DeliveryPrice})
 	if o.Status == StatusNew {
 		if err := orders.SetStatus(ctx, o.ID, StatusPending); err != nil {
@@ -246,13 +273,26 @@ type saveParams struct {
 	address                            *address.Input
 	items                              []ItemInput
 	hash                               string
-	delivery                           deliveryprice.DeliveryPrice
+	promoCode                          string
+	expected                           *money.Kopecks
 }
 
 // save checks the products and writes the customer, the address and the order in one transaction.
 func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 	var orderID int64
 	err := store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
+		var campaign *promo.Campaign
+		if p.promoCode != "" {
+			c, e := promo.NewStore(tx).ByCode(ctx, p.promoCode)
+			if errors.Is(e, store.ErrNotFound) {
+				return quoteCodeError("Промокод недействителен.")
+			}
+			if e != nil {
+				return e
+			}
+			campaign = &c
+		}
+
 		ids := make([]int64, len(p.items))
 		for i, it := range p.items {
 			ids[i] = it.ProductID
@@ -272,13 +312,64 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 		now := s.clock.Now()
 		insertItems := make([]InsertItem, 0, len(p.items))
 		var subtotal money.Kopecks
+		lines := make([]promo.Line, 0, len(p.items))
 		for _, it := range p.items {
 			pr := byID[it.ProductID]
 			if err := checkWindows(pr, now); err != nil {
 				return err
 			}
 			insertItems = append(insertItems, InsertItem{ProductID: pr.ID, Amount: it.Amount, OfferedPrice: pr.Price})
+			if it.Amount <= 0 || pr.Price < 0 || int64(pr.Price) > math.MaxInt64/int64(it.Amount) || subtotal > money.Kopecks(math.MaxInt64)-pr.Price.Mul(it.Amount) {
+				return fmt.Errorf("order pricing overflow")
+			}
 			subtotal += pr.Price.Mul(it.Amount)
+			lines = append(lines, promo.Line{ProductID: pr.ID, CategoryID: pr.CategoryID, Amount: it.Amount, UnitPrice: pr.Price})
+		}
+
+		var discount money.Kopecks
+		if campaign != nil {
+			pricing, e := promo.Calculate(*campaign, lines, now)
+			if e != nil {
+				var v *promo.ValidationError
+				if errors.As(e, &v) {
+					messages := map[string]string{"unavailable": "Промокод недействителен.", "no eligible items": "В корзине нет блюд для этого промокода.", "minimum": "Недостаточная сумма подходящих блюд для промокода."}
+					return quoteCodeError(messages[v.Message])
+				}
+				return e
+			}
+			discount = pricing.Discount
+			for i := range insertItems {
+				it := &insertItems[i]
+				it.Discount = pricing.LineDiscounts[it.ProductID]
+				pr := byID[it.ProductID]
+				it.PromoEligible = campaign.Target == "all" || slices.Contains(campaign.ProductIDs, pr.ID) || slices.Contains(campaign.CategoryIDs, pr.CategoryID)
+			}
+		}
+		var dp deliveryprice.DeliveryPrice
+		if p.address != nil {
+			var e error
+			dp, e = deliveryprice.NewStore(tx).ByName(ctx, p.address.City)
+			if errors.Is(e, store.ErrNotFound) {
+				return httpx.BadRequest("Указано не существующее имя населенного пункта.")
+			}
+			if e != nil {
+				return e
+			}
+		}
+		delivery := deliveryCost(dp, subtotal-discount)
+		if subtotal-discount > money.Kopecks(math.MaxInt64)-delivery {
+			return fmt.Errorf("order pricing overflow")
+		}
+		if p.expected != nil && *p.expected != subtotal-discount+delivery {
+			return changedTotalError()
+		}
+		var campaignID *int64
+		var campaignCode *string
+		var percentage *int
+		if campaign != nil {
+			campaignID = &campaign.ID
+			campaignCode = &campaign.Code
+			percentage = &campaign.Percentage
 		}
 
 		customer, err := user.NewStore(tx).UpsertCustomer(ctx, p.name, p.phone)
@@ -306,8 +397,8 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 			Comment:           p.comment,
 			DeliveryTime:      p.deliveryTime,
 			ItemsHash:         p.hash,
-			DeliveryPrice:     deliveryCost(p.delivery, subtotal),
-			Items:             insertItems,
+			DeliveryPrice:     delivery, PromoCodeID: campaignID, PromoCode: campaignCode, PromoPercentage: percentage, Discount: discount,
+			Items: insertItems,
 		})
 		return err
 	})
@@ -404,4 +495,13 @@ func (s *Service) PaymentCheck(ctx context.Context, cb PaymentCallback) (moneta.
 		}
 	}
 	return s.payments.CheckResponse(cb.TransactionID, code, amount), nil
+}
+
+func expectedTotalError() error {
+	e := httpx.NewError(400, validationMessage)
+	e.Fields = map[string]string{"expectedPayableTotal": "Подтвердите итоговую сумму заказа."}
+	return e
+}
+func changedTotalError() error {
+	return httpx.NewError(409, "Сумма заказа изменилась. Проверьте итог и повторите оформление.")
 }
