@@ -1,8 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 import { CustomerApiError } from '@/shared/customer'
-import { formatDate, formatPrice } from '@/shared/lib'
+import { formatDate } from '@/shared/lib'
 import { AppLink, cardClass } from '@/shared/ui'
-import { getMyOrder, orderStatusLabel } from '@/entities/order'
+import { getMyOrder, OrderBreakdown, orderStatusLabel } from '@/entities/order'
 
 export async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
  const raw = (await params).id
@@ -25,9 +25,7 @@ export async function OrderDetailPage({ params }: { params: Promise<{ id: string
    {order.deliveryTime && <p>Время доставки: {order.deliveryTime}</p>}
    {order.comment && <p>Комментарий: {order.comment}</p>}
    <h2 className='font-display text-xl'>Состав заказа</h2>
-   <ul className='flex flex-col gap-2'>{order.items.map((item, index) => <li key={`${item.productId}-${index}`} className='flex justify-between gap-3'><span>{item.name} × {item.amount}</span><span>{formatPrice(item.offeredPrice * item.amount)}</span></li>)}</ul>
-   <p>Товары: {formatPrice(order.total)}</p><p>Доставка: {formatPrice(order.deliveryPrice)}</p>
-   <p className='font-semibold'>Итого: {formatPrice(order.total + order.deliveryPrice)}</p>
+   <OrderBreakdown order={order} />
   </div>
  </div></main>
 }

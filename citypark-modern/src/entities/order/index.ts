@@ -1,3 +1,5 @@
 export { getMyOrders, getMyOrder, orderStatusLabel } from './api/orders'
 export type { OrderSurface } from './api/orders'
 export type { Order } from './model/types'
+export { OrderBreakdown } from './ui/order-breakdown'
+export { formatOrderPrice, orderPayable } from './model/money'

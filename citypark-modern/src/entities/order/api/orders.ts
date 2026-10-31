@@ -10,6 +10,7 @@ export async function getMyOrders(page: number, surface: OrderSurface = 'web') {
  return customerRequest<{ orders: Order[]; count: number }>(`/orders/my?page=${page}&pageSize=10`, { headers: { Authorization: `Bearer ${token}` } })
 }
 
+/** Keep backend snapshots verbatim; historical reads never use current campaigns or menu prices. */
 export async function getMyOrder(id: number, surface: OrderSurface = 'web') {
  const token = surface === 'mini' ? await getMiniSessionToken() : await getCustomerSessionToken()
  if (!token) return undefined

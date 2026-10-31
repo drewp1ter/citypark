@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
 import { CustomerApiError } from '@/shared/customer'
-import { formatDate, formatPrice } from '@/shared/lib'
+import { formatDate } from '@/shared/lib'
 import { AppLink, cardClass } from '@/shared/ui'
-import { getMyOrders, orderStatusLabel } from '@/entities/order'
+import { getMyOrders, formatOrderPrice, orderPayable, orderStatusLabel } from '@/entities/order'
 
 export async function OrderHistoryPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
  const raw = (await searchParams).page ?? '1'
@@ -22,7 +22,7 @@ export async function OrderHistoryPage({ searchParams }: { searchParams: Promise
    <ul className='flex flex-col gap-3'>{result.orders.map(order => <li key={order.id} className={cardClass('surface', 'gap-2 rounded-lg p-5')}>
     <AppLink href={`/account/orders/${order.id}`} className='min-h-11 font-semibold underline'>Заказ № {order.id}</AppLink>
     <span>{formatDate(order.createdAt)} · {orderStatusLabel(order.status)}</span>
-    <span>Товары: {formatPrice(order.total)} · Доставка: {formatPrice(order.deliveryPrice)} · Итого: {formatPrice(order.total + order.deliveryPrice)}</span>
+    <span>Товары: {formatOrderPrice(order, order.total)} · Доставка: {formatOrderPrice(order, order.deliveryPrice)} · Итого: {formatOrderPrice(order, orderPayable(order))}</span>
    </li>)}</ul>
    <nav aria-label='Страницы заказов' className='flex flex-wrap gap-3'>
     {page > 1 && <AppLink className='min-h-11 py-2 underline' href={`/account/orders?page=${page - 1}`}>Предыдущая</AppLink>}
