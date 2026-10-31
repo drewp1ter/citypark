@@ -3007,3 +3007,155 @@ Example: `{"startTime":"9:00","endTime":"14:00","days":"1111100"}`.
 200 returns the updated Category object with `id`, `name`, `description`, `images`, `isAvailableForOrder`, `salesDays`, `startTime`, `endTime`, as in GET /categories/{id}. `salesDays` lists selected weekdays in Russian.
 
 400: `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with field errors: `Укажите время или пустую строку`, `Укажите время в формате ЧЧ:ММ`, `Время окончания должно быть позже начала`, or `Выберите дни недели`. Standard malformed JSON / invalid ID errors also apply. 401: `Требуется авторизация`. 403: `Недостаточно прав`. 404: `Не найдено` for missing or deleted categories.
+
+### Promo codes
+
+#### GET /promo-codes
+
+- **Role:** admin.
+
+Returns every campaign, including disabled campaigns, ordered by descending id. Empty result is `[]`.
+
+**Request example:** `GET /api/v1/promo-codes` with `Authorization: Bearer <admin-token>`. No body.
+
+**Response 200** (captured campaign from the admin CRUD test)
+
+```json
+[{"id": 1, "code": "TEST_10", "percentage": 10, "enabled": true, "target": "all", "productIds": [], "categoryIds": [], "minimumEligibleSubtotal": null, "maximumDiscount": null, "startsAt": null, "endsAt": null}]
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | Missing/invalid token | `Требуется авторизация` |
+| 403 | Non-admin credential | `Недостаточно прав` |
+| 500 | Unexpected database error | `Внутренняя ошибка сервера` |
+
+#### GET /promo-codes/{id}
+
+- **Role:** admin.
+
+Returns the full campaign configuration.
+
+**Path parameters:** id — positive integer campaign ID.
+
+**Request example:** `GET /api/v1/promo-codes/1` with `Authorization: Bearer <admin-token>`. No body.
+
+**Response 200** (captured campaign from the admin CRUD test)
+
+```json
+{"id": 1, "code": "TEST_10", "percentage": 10, "enabled": true, "target": "all", "productIds": [], "categoryIds": [], "minimumEligibleSubtotal": null, "maximumDiscount": null, "startsAt": null, "endsAt": null}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | Missing/invalid token | `Требуется авторизация` |
+| 403 | Non-admin credential | `Недостаточно прав` |
+| 500 | Unexpected database error | `Внутренняя ошибка сервера` |
+| 404 | Missing campaign | `Промокод не найден.` |
+| 404 | Invalid path ID | `Не найдено` |
+
+#### POST /promo-codes
+
+- **Role:** admin.
+
+Returns the full campaign configuration.
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| code | string | yes | Trim, uppercase ASCII; `[A-Z0-9_-]{3,32}`; permanently unique and immutable |
+| percentage | integer | yes | 1–99 |
+| enabled | boolean | no | Defaults false when omitted |
+| target | string | yes | all or selected |
+| productIds / categoryIds | integer arrays | no | Existing IDs; sorted/deduplicated; union targeting. all requires empty arrays; selected requires at least one ID |
+| minimumEligibleSubtotal / maximumDiscount | number or null | no | Positive rubles when set; omitted means null |
+| startsAt / endsAt | RFC3339 string or null | no | End must follow start when both supplied; omitted means null |
+
+```json
+{"code": "TEST_10", "percentage": 10, "enabled": true, "target": "all", "productIds": [], "categoryIds": [], "minimumEligibleSubtotal": null, "maximumDiscount": null, "startsAt": null, "endsAt": null}
+```
+
+Writes are transactional. PUT fully replaces writable configuration; code cannot change.
+
+**Response 201** (captured campaign from the admin CRUD test)
+
+```json
+{"id": 1, "code": "TEST_10", "percentage": 10, "enabled": true, "target": "all", "productIds": [], "categoryIds": [], "minimumEligibleSubtotal": null, "maximumDiscount": null, "startsAt": null, "endsAt": null}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | Missing/invalid token | `Требуется авторизация` |
+| 403 | Non-admin credential | `Недостаточно прав` |
+| 500 | Unexpected database error | `Внутренняя ошибка сервера` |
+| 400 | Malformed JSON, wrong JSON types or invalid timestamp | `Некорректный JSON` |
+| 400 | code | `Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.` |
+| 400 | percentage | `Укажите целый процент от 1 до 99.` |
+| 400 | minimumEligibleSubtotal / maximumDiscount | `Укажите положительную сумму.` |
+| 400 | endsAt | `Дата окончания должна быть позже даты начала.` |
+| 400 | target | `Выберите все блюда или укажите блюда и категории.` |
+| 400 | productIds / categoryIds | `Выбранное блюдо или категория не найдены.` |
+| 409 | Duplicate normalized code | `Такой промокод уже существует.` |
+
+Validation uses message `Ошибка валидации, пожалуйста проверьте введенные вами данные` and the indicated key in `errors`. Wrong JSON types are malformed JSON errors.
+
+#### PUT /promo-codes/{id}
+
+- **Role:** admin.
+
+Returns the full campaign configuration.
+
+**Path parameters:** id — positive integer campaign ID.
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| code | string | yes | Trim, uppercase ASCII; `[A-Z0-9_-]{3,32}`; permanently unique and immutable |
+| percentage | integer | yes | 1–99 |
+| enabled | boolean | no | Defaults false when omitted |
+| target | string | yes | all or selected |
+| productIds / categoryIds | integer arrays | no | Existing IDs; sorted/deduplicated; union targeting. all requires empty arrays; selected requires at least one ID |
+| minimumEligibleSubtotal / maximumDiscount | number or null | no | Positive rubles when set; omitted means null |
+| startsAt / endsAt | RFC3339 string or null | no | End must follow start when both supplied; omitted means null |
+
+```json
+{"code": "TEST_10", "percentage": 10, "enabled": true, "target": "all", "productIds": [], "categoryIds": [], "minimumEligibleSubtotal": null, "maximumDiscount": null, "startsAt": null, "endsAt": null}
+```
+
+Writes are transactional. PUT fully replaces writable configuration; code cannot change.
+
+**Response 200** (captured campaign from the admin CRUD test)
+
+```json
+{"id": 1, "code": "TEST_10", "percentage": 10, "enabled": true, "target": "all", "productIds": [], "categoryIds": [], "minimumEligibleSubtotal": null, "maximumDiscount": null, "startsAt": null, "endsAt": null}
+```
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 401 | Missing/invalid token | `Требуется авторизация` |
+| 403 | Non-admin credential | `Недостаточно прав` |
+| 500 | Unexpected database error | `Внутренняя ошибка сервера` |
+| 404 | Missing campaign | `Промокод не найден.` |
+| 404 | Invalid path ID | `Не найдено` |
+| 400 | Malformed JSON, wrong JSON types or invalid timestamp | `Некорректный JSON` |
+| 400 | code | `Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.` |
+| 400 | percentage | `Укажите целый процент от 1 до 99.` |
+| 400 | minimumEligibleSubtotal / maximumDiscount | `Укажите положительную сумму.` |
+| 400 | endsAt | `Дата окончания должна быть позже даты начала.` |
+| 400 | target | `Выберите все блюда или укажите блюда и категории.` |
+| 400 | productIds / categoryIds | `Выбранное блюдо или категория не найдены.` |
+| 409 | Duplicate normalized code | `Такой промокод уже существует.` |
+
+Validation uses message `Ошибка валидации, пожалуйста проверьте введенные вами данные` and the indicated key in `errors`. Wrong JSON types are malformed JSON errors.
+
+Attempting to edit code returns 409: `Код нельзя изменить после создания.`

@@ -28,6 +28,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/news"
 	"github.com/drewp1ter/citypark-go/internal/onec"
 	"github.com/drewp1ter/citypark-go/internal/order"
+	"github.com/drewp1ter/citypark-go/internal/promo"
 	"github.com/drewp1ter/citypark-go/internal/room"
 	"github.com/drewp1ter/citypark-go/internal/settings"
 	"github.com/drewp1ter/citypark-go/internal/telegram"
@@ -108,6 +109,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		google.NewHandler(googleService, sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
 		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)
+		promo.NewHandler(db, tokens).Routes(r)
 		catalogHandler := catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize)
 		catalogHandler.Routes(r)
 		catalogHandler.AdminRoutes(r, tokens)
