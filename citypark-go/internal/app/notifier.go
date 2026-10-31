@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -51,6 +52,9 @@ func (n *TelegramNotifier) send(ctx context.Context, o order.Order, chatID strin
 		return
 	}
 	text := telegram.FormatOrder(orderMessage(o))
+	if o.PromoCode != nil {
+		text += fmt.Sprintf("\n```\nПромокод: %s\nСкидка по промокоду: %s ₽\nИтого к оплате: %s ₽\n```", *o.PromoCode, o.Discount.String(), (o.Total + o.DeliveryPrice).String())
+	}
 
 	n.wg.Add(1)
 	go func() {

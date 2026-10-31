@@ -78,10 +78,11 @@ type CreateResult struct {
 }
 
 type Service struct {
-	db       *sqlx.DB
-	clock    clock.Clock
-	notifier Notifier
-	payments Payments
+	promoDiscountTypeID string
+	db                  *sqlx.DB
+	clock               clock.Clock
+	notifier            Notifier
+	payments            Payments
 }
 
 func NewService(db *sqlx.DB, c clock.Clock, n Notifier, p Payments) *Service {
@@ -184,6 +185,9 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		found = true
 	}
 
+	if !found && code != "" && s.promoDiscountTypeID == "" {
+		return CreateResult{}, httpx.NewError(503, "Заказы с промокодом временно недоступны.")
+	}
 	if !found {
 		id, err := s.save(ctx, saveParams{
 			scope:        scope,
@@ -505,3 +509,7 @@ func expectedTotalError() error {
 func changedTotalError() error {
 	return httpx.NewError(409, "Сумма заказа изменилась. Проверьте итог и повторите оформление.")
 }
+
+// ConfigurePromo sets the deployment's RMS discount ID before serving requests.
+// Empty disables new promo orders; saved pending retries still use their snapshots.
+func (s *Service) ConfigurePromo(discountTypeID string) { s.promoDiscountTypeID = discountTypeID }

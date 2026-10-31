@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/mail"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -39,6 +40,7 @@ type JWT struct {
 }
 type Admin struct{ Email, Password, Phone string }
 type Iiko struct {
+	PromoDiscountTypeID                                                               string
 	BaseURL, APIKey, AppID, ClientSecret, OrganizationID, ExternalMenuID, UpdateToken string
 	SyncInterval                                                                      time.Duration // 0 = no scheduled sync
 
@@ -170,13 +172,14 @@ func Load(lookup LookupFunc) (Config, error) {
 	}
 
 	c.Iiko = Iiko{
-		BaseURL:        str("IIKO_BASE_URL", "https://api-ru.iiko.services/api"),
-		APIKey:         str("IIKO_API_KEY", ""),
-		AppID:          str("IIKO_APP_ID", ""),
-		ClientSecret:   str("IIKO_CLIENT_SECRET", ""),
-		OrganizationID: str("IIKO_ORGANIZATION_ID", ""),
-		ExternalMenuID: str("IIKO_EXTERNAL_MENU_ID", ""),
-		UpdateToken:    str("IIKO_UPDATE_TOKEN", ""),
+		PromoDiscountTypeID: str("IIKO_PROMO_DISCOUNT_TYPE_ID", ""),
+		BaseURL:             str("IIKO_BASE_URL", "https://api-ru.iiko.services/api"),
+		APIKey:              str("IIKO_API_KEY", ""),
+		AppID:               str("IIKO_APP_ID", ""),
+		ClientSecret:        str("IIKO_CLIENT_SECRET", ""),
+		OrganizationID:      str("IIKO_ORGANIZATION_ID", ""),
+		ExternalMenuID:      str("IIKO_EXTERNAL_MENU_ID", ""),
+		UpdateToken:         str("IIKO_UPDATE_TOKEN", ""),
 
 		TerminalGroupID: str("IIKO_TERMINAL_GROUP_ID", ""),
 		PaymentTypeID:   str("IIKO_PAYMENT_TYPE_ID", ""),
@@ -184,6 +187,9 @@ func Load(lookup LookupFunc) (Config, error) {
 		AddressCity:     str("IIKO_ADDRESS_CITY", "Белореченск"),
 		AddressStreet:   str("IIKO_ADDRESS_STREET", "Гоголя"),
 		AddressHouse:    str("IIKO_ADDRESS_HOUSE", "61"),
+	}
+	if id := c.Iiko.PromoDiscountTypeID; id != "" && (!regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`).MatchString(id) || id == "00000000-0000-0000-0000-000000000000") {
+		return Config{}, fmt.Errorf("IIKO_PROMO_DISCOUNT_TYPE_ID must be a nonzero UUID")
 	}
 	syncInterval := str("IIKO_SYNC_INTERVAL", "0")
 	if c.Iiko.SyncInterval, err = time.ParseDuration(syncInterval); err != nil {

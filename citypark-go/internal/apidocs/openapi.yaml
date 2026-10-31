@@ -2858,7 +2858,14 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
         '503':
-          $ref: '#/components/responses/Unavailable'
+          description: >-
+            Existing working-hours/product availability errors, or Заказы с промокодом временно недоступны.
+            when a new promo order lacks RMS discount/terminal/payment configuration.
+            Rejected before writes/payment links; existing pending retries keep saved pricing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
       summary: List all orders
       description: >-

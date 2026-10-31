@@ -26,6 +26,7 @@ type DeliveryCreator interface {
 }
 
 type IikoOrderSettings struct {
+	PromoDiscountTypeID                             string
 	TerminalGroupID, PaymentTypeID, PaymentTypeKind string
 	City, Street, House                             string          // placeholder iiko address
 	Delays                                          []time.Duration // waits before each retry
@@ -63,13 +64,18 @@ func (n *IikoOrders) Wait() { n.wg.Wait() }
 func (n *IikoOrders) OrderPending(ctx context.Context, o order.Order) {}
 
 func (n *IikoOrders) OrderPaid(ctx context.Context, o order.Order) {
-	if !n.configured() {
+	if !n.configured() && o.PromoCode == nil {
 		return
 	}
 	n.wg.Add(1)
 	go func() {
 		defer n.wg.Done()
-		n.send(context.WithoutCancel(ctx), o)
+		ctx = context.WithoutCancel(ctx)
+		if !n.configured() {
+			n.fail(ctx, o, fmt.Errorf("iiko orders are not configured"))
+			return
+		}
+		n.send(ctx, o)
 	}()
 }
 
@@ -182,13 +188,26 @@ func deliveryOrder(o order.Order, s IikoOrderSettings, id string) (iiko.Delivery
 	}
 	d.Comment = strings.Join(lines, "\n")
 
+	positions := []string{}
 	for _, it := range o.Items {
 		if it.IikoID == "" {
 			return iiko.DeliveryOrder{}, fmt.Errorf("product %d has no iiko id", it.ProductID)
 		}
 		d.Items = append(d.Items, iiko.DeliveryItem{
-			Type: "Product", ProductID: it.IikoID, Amount: float64(it.Amount), Price: it.OfferedPrice.Rubles(),
+			PositionID: newUUID(), Type: "Product", ProductID: it.IikoID, Amount: float64(it.Amount), Price: it.OfferedPrice.Rubles(),
 		})
+		if it.PromoEligible {
+			positions = append(positions, d.Items[len(d.Items)-1].PositionID)
+		}
+	}
+	if o.Discount > 0 {
+		if o.PromoCode == nil || s.PromoDiscountTypeID == "" {
+			return iiko.DeliveryOrder{}, fmt.Errorf("promo RMS discount is not configured")
+		}
+		if len(positions) == 0 {
+			return iiko.DeliveryOrder{}, fmt.Errorf("promo order has no saved eligible positions")
+		}
+		d.DiscountsInfo = &iiko.DeliveryDiscountsInfo{Discounts: []iiko.DeliveryRMSDiscount{{Type: "RMS", DiscountTypeID: s.PromoDiscountTypeID, Sum: o.Discount.Rubles(), SelectivePositions: positions}}}
 	}
 	d.Payments = []iiko.DeliveryPayment{{
 		PaymentTypeKind:       s.PaymentTypeKind,

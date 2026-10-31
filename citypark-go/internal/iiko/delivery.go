@@ -18,15 +18,16 @@ const (
 
 // DeliveryOrder is the "order" object of deliveries/create.
 type DeliveryOrder struct {
-	ID               string            `json:"id"`                       // GUID, made by the caller
-	ExternalNumber   string            `json:"externalNumber,omitempty"` // our order id
-	Phone            string            `json:"phone"`
-	OrderServiceType string            `json:"orderServiceType"`
-	DeliveryPoint    *DeliveryPoint    `json:"deliveryPoint,omitempty"` // nil for pickup
-	Comment          string            `json:"comment,omitempty"`
-	Customer         DeliveryCustomer  `json:"customer"`
-	Items            []DeliveryItem    `json:"items"`
-	Payments         []DeliveryPayment `json:"payments"`
+	DiscountsInfo    *DeliveryDiscountsInfo `json:"discountsInfo,omitempty"`
+	ID               string                 `json:"id"`                       // GUID, made by the caller
+	ExternalNumber   string                 `json:"externalNumber,omitempty"` // our order id
+	Phone            string                 `json:"phone"`
+	OrderServiceType string                 `json:"orderServiceType"`
+	DeliveryPoint    *DeliveryPoint         `json:"deliveryPoint,omitempty"` // nil for pickup
+	Comment          string                 `json:"comment,omitempty"`
+	Customer         DeliveryCustomer       `json:"customer"`
+	Items            []DeliveryItem         `json:"items"`
+	Payments         []DeliveryPayment      `json:"payments"`
 }
 
 type DeliveryCustomer struct {
@@ -50,11 +51,22 @@ type DeliveryStreet struct {
 	City string `json:"city"`
 }
 
+type DeliveryDiscountsInfo struct {
+	Discounts []DeliveryRMSDiscount `json:"discounts"`
+}
+type DeliveryRMSDiscount struct {
+	Type               string   `json:"type"`
+	DiscountTypeID     string   `json:"discountTypeId"`
+	Sum                float64  `json:"sum"`
+	SelectivePositions []string `json:"selectivePositions"`
+}
+
 type DeliveryItem struct {
-	Type      string  `json:"type"` // "Product"
-	ProductID string  `json:"productId"`
-	Amount    float64 `json:"amount"`
-	Price     float64 `json:"price"` // rubles per unit
+	PositionID string  `json:"positionId,omitempty"`
+	Type       string  `json:"type"` // "Product"
+	ProductID  string  `json:"productId"`
+	Amount     float64 `json:"amount"`
+	Price      float64 `json:"price"` // rubles per unit
 }
 
 type DeliveryPayment struct {

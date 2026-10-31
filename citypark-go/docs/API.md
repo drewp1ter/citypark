@@ -2350,6 +2350,7 @@ Promo orders require a confirmed quote total. A mismatch returns 409 before any 
 | 400 | Invalid or overflowing merged quantity | `Некорректное количество.` |
 | 409 | Current or saved payable amount differs from confirmation | `Сумма заказа изменилась. Проверьте итог и повторите оформление.` |
 | 500 | Database error or monetary overflow | `Внутренняя ошибка сервера` |
+| 503 | New promo order with missing RMS/terminal/payment configuration | `Заказы с промокодом временно недоступны.` |
 | 503 | the current time is outside the working hours | `Извините, но мы не можем принять ваш заказ.` followed by a newline and `Заказы принимаются с 9:00 до 22:00` (the hours from `GET /working-hours`) |
 | 503 | the product's or its category's weekday limit excludes today | `Возможность заказа "<name>" доступна только в следующие дни недели: Пн, Вт, Ср, Чт, Пт` |
 | 503 | the product's or its category's time limit excludes now | `Время заказа "<name>" ограничено с 9:00 до 21:00.` |
@@ -2369,6 +2370,8 @@ Promo code is part of duplicate matching, alongside all existing scope/contact/a
 All order reads, lists and live events expose subtotal (original food), discount (food discount), promoCode (normalized code or null), total (subtotal minus discount) and per-item discount. Original offeredPrice and quantity are preserved. Historical/no-code orders have zero discount and null promoCode. Promo eligibility is an internal saved boolean, including eligible lines with zero allocation; it is never reconstructed from current campaign targets.
 
 Payment URLs, signed Check responses and Pay amount validation use saved discounted food total plus saved delivery. Duplicate callbacks remain idempotent. Delivery is never discounted; free-delivery thresholds use food after discount.
+
+New promo orders require configured RMS integration. Missing configuration returns 503 before writes/payment links; no-code orders and existing pending same-code retries remain usable with saved pricing.
 
 #### GET /orders/my
 

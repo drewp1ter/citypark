@@ -159,7 +159,7 @@ func TestLoadOverrides(t *testing.T) {
 		{"CustomerPublicOrigin", c.CustomerPublicOrigin, "https://site.example"},
 		{"SMTP", c.SMTP, SMTP{Host: "smtp.example", Port: 587, Username: "user", Password: "secret", From: "mail@example.com", TLSMode: "starttls", Enabled: true}},
 		{"Admin", c.Admin, Admin{"a@b.c", "pw", "+70000000000"}},
-		{"Iiko", c.Iiko, Iiko{"http://iiko", "key", "app", "secret", "org", "menu", "tok", 30 * time.Minute, "tg1", "pt1", "External", "Майкоп", "Мира", "1"}},
+		{"Iiko", c.Iiko, Iiko{"", "http://iiko", "key", "app", "secret", "org", "menu", "tok", 30 * time.Minute, "tg1", "pt1", "External", "Майкоп", "Мира", "1"}},
 		{"Telegram", c.Telegram, Telegram{"http://tg", "tgtok", "2"}},
 		{"Moneta", c.Moneta, Moneta{"100", "s", true, "https://pay.example/", "https://site/ok", "https://site/fail"}},
 		{"Hotel", c.Hotel, Hotel{"hotel"}},
@@ -317,5 +317,21 @@ func TestSMTPConfig(t *testing.T) {
 	}
 	if c, err := Load(lookupMap(map[string]string{"CUSTOMER_PUBLIC_ORIGIN": "http://127.0.0.1:3001"})); err != nil || c.CustomerPublicOrigin != "http://127.0.0.1:3001" {
 		t.Fatalf("localhost: %+v %v", c, err)
+	}
+}
+
+func TestPromoConfiguration(t *testing.T) {
+	for _, id := range []string{"", "01234567-89ab-4def-8123-456789abcdef", "01234567-89AB-4DEF-8123-456789ABCDEF", "bad", "00000000-0000-0000-0000-000000000000", "01234567-89ab-4def-8123-456789abcdefx"} {
+		c, err := Load(lookupMap(map[string]string{"IIKO_PROMO_DISCOUNT_TYPE_ID": id}))
+		valid := id == "" || id == "01234567-89ab-4def-8123-456789abcdef" || id == "01234567-89AB-4DEF-8123-456789ABCDEF"
+		if (err == nil) != valid {
+			t.Fatalf("%q: %v", id, err)
+		}
+		if valid && c.Iiko.PromoDiscountTypeID != id {
+			t.Fatal(c.Iiko)
+		}
+		if !valid && !strings.Contains(err.Error(), "IIKO_PROMO_DISCOUNT_TYPE_ID") {
+			t.Fatal(err)
+		}
 	}
 }

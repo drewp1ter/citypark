@@ -80,17 +80,21 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	uploads := upload.NewStorage(cfg.Upload.Dir, cfg.Upload.PublicBaseURL)
 
 	iikoOrders := NewIikoOrders(iikoClient, db, telegramClient, cfg.Telegram.StaffChatID, IikoOrderSettings{
-		TerminalGroupID: cfg.Iiko.TerminalGroupID,
-		PaymentTypeID:   cfg.Iiko.PaymentTypeID,
-		PaymentTypeKind: cfg.Iiko.PaymentTypeKind,
-		City:            cfg.Iiko.AddressCity,
-		Street:          cfg.Iiko.AddressStreet,
-		House:           cfg.Iiko.AddressHouse,
-		Delays:          []time.Duration{30 * time.Second, 2 * time.Minute},
+		PromoDiscountTypeID: cfg.Iiko.PromoDiscountTypeID,
+		TerminalGroupID:     cfg.Iiko.TerminalGroupID,
+		PaymentTypeID:       cfg.Iiko.PaymentTypeID,
+		PaymentTypeKind:     cfg.Iiko.PaymentTypeKind,
+		City:                cfg.Iiko.AddressCity,
+		Street:              cfg.Iiko.AddressStreet,
+		House:               cfg.Iiko.AddressHouse,
+		Delays:              []time.Duration{30 * time.Second, 2 * time.Minute},
 	}, log)
 
 	hub := live.NewHub(log)
 	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders, hub}, payments)
+	if cfg.Iiko.TerminalGroupID != "" && cfg.Iiko.PaymentTypeID != "" {
+		orders.ConfigurePromo(cfg.Iiko.PromoDiscountTypeID)
+	}
 	hours := workinghours.NewStore(db)
 	googleService := google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, "")
 	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)

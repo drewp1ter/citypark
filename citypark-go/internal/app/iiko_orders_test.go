@@ -156,6 +156,10 @@ func assertDeliveryOrder(t *testing.T, got, want iiko.DeliveryOrder) {
 		t.Fatalf("items = %+v, want %+v", got.Items, want.Items)
 	}
 	for i := range got.Items {
+		if !uuidV4.MatchString(got.Items[i].PositionID) {
+			t.Errorf("invalid position UUID: %q", got.Items[i].PositionID)
+		}
+		got.Items[i].PositionID = ""
 		if got.Items[i] != want.Items[i] {
 			t.Errorf("item %d = %+v, want %+v", i, got.Items[i], want.Items[i])
 		}

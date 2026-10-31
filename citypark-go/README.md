@@ -50,6 +50,7 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `IIKO_EXTERNAL_MENU_ID` | empty | iiko external menu id |
 | `IIKO_UPDATE_TOKEN` | empty | Secret for the `X-Update-Token` header of the sync endpoint |
 | `IIKO_TERMINAL_GROUP_ID` | empty | iiko terminal group that receives paid orders; empty = orders are not sent |
+| `IIKO_PROMO_DISCOUNT_TYPE_ID` | empty | Optional nonzero UUID of the RMS FlexibleSum discount; missing blocks new promo orders |
 | `IIKO_PAYMENT_TYPE_ID` | empty | iiko payment type for online payments; empty = orders are not sent |
 | `IIKO_PAYMENT_TYPE_KIND` | `Card` | `paymentTypeKind` of that payment type |
 | `IIKO_ADDRESS_CITY` | `Белореченск` | City of the placeholder address in iiko orders |
@@ -136,3 +137,12 @@ Options:
 No packages need installing. The simulator exits with an error on a failed request, invalid signed Check response, nonpayable order, or response other than `SUCCESS`. It does not follow HTTP redirects.
 
 Run its isolated tests with `python3 -m unittest discover -s scripts -p 'test_*.py'`.
+
+
+### Promo RMS deployment
+
+Set `IIKO_PROMO_DISCOUNT_TYPE_ID` to a real discount returned by `POST /api/1/discounts` for the configured organization. The restaurant must configure assign amount (`FlexibleSum`) and selective application (`canBeAppliedSelectively=true`). Confirm activation, manual/nonautomatic use, no category/time/minimum-spend/automatic-discount/tax settings change the required result, and compatibility with the configured external payment type and terminal group (payment processing External or Both).
+
+New promo orders require the discount ID plus terminal group and payment type settings; otherwise POST /orders returns 503 `Заказы с промокодом временно недоступны.` before customer/order writes or payment links. No-code orders and existing pending retries keep their existing behavior. An already-paid dispatch with missing/incompatible settings must alert staff; it never retries without the discount.
+
+Keep campaigns disabled until an explicitly authorized deployment acceptance verifies both pickup and courier orders: original unit prices/quantities, all saved eligible positions (including lines with zero backend allocation), no ineligible positions, exact total RMS discount and exact discounted food payment. iiko may distribute that total differently across eligible lines. Delivery stays a paid-delivery comment; MONETA collects discounted food plus delivery. Check command completion and the resulting iikoFront order. See [the verified RMS contract](docs/tasks/IIKO_PROMOCODES.md). Automated tests use local fakes and do not send live orders, payments or Telegram messages.
