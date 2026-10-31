@@ -87,6 +87,9 @@ func (n *IikoOrders) send(ctx context.Context, o order.Order) {
 			time.Sleep(n.settings.Delays[i-1])
 		}
 		res, err := n.attempt(ctx, d)
+		if err != nil {
+			n.log.Error("iiko delivery attempt failed", "order_id", o.ID, "iiko_order_id", d.ID, "error", err)
+		}
 		switch {
 		case err == nil:
 			if err := order.NewStore(n.db).SetIikoOrderID(ctx, o.ID, res.ID); err != nil {

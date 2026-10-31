@@ -144,6 +144,11 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
   - Build, vet, formatting and serial full suite pass; catalog 88.3%, order 90.9%, iiko 93.7%, apidocs 100%.
 
 ## MONETA Assistant correction
-- [ ] [82 Correct MONETA Assistant integration](82-moneta-assistant.md) [81]
+- [x] [82 Correct MONETA Assistant integration](82-moneta-assistant.md) [81]
   - Implementation and protocol tests added; validation blocked: TEST_DB_DSN from .env.development refuses connections at host.docker.internal:5433 (2026-10-31). Per AGENTS.md, stopped without starting a database, ticking this task or committing. Moneta and config tests pass; database-dependent tests, coverage and real demo payment remain unverified.
   - Added requested Python Pay URL simulator with order-ID CLI, signed amount lookup, explicit amount override and dry run; six isolated Python tests pass. No real payment callback was sent. Existing backend database-validation block remains.
+
+## iiko order diagnostics
+- [ ] [83 iiko order error diagnostics](83-iiko-order-error-diagnostics.md) [62, 79]
+  - Implemented exception-message fallback and structured failed-attempt diagnostics; pickup/courier mapping and retry behavior are unchanged. Build, vet, formatting, package tests and coverage pass: iiko 94.1%, app 98.8%.
+  - Completion blocked (2026-10-31): the serial full suite fails at the unchanged `internal/order/check_test.go:TestPayGET` (expects 200 SUCCESS and a paid order, receives 400 FAIL with missing operation ID/amount). Reproduces in isolation; the order package does not depend on the changed iiko/app packages. Left task 82 untouched, task 83 unchecked, and changes uncommitted until the required full suite passes. No real iiko request or replay of order 16 was made.

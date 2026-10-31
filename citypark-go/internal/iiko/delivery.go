@@ -2,9 +2,12 @@ package iiko
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -73,6 +76,43 @@ var ErrDeliveryPending = errors.New("iiko: delivery creation not confirmed")
 
 const unknownReason = "unknown error"
 
+// deliveryRequestError preserves error matching and the staff-facing message while
+// exposing request identifiers to structured logging. Never log the order payload.
+type deliveryRequestError struct {
+	err                              error
+	endpoint, correlationID, orderID string
+}
+
+func (e *deliveryRequestError) Error() string { return e.err.Error() }
+func (e *deliveryRequestError) Unwrap() error { return e.err }
+func (e *deliveryRequestError) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.String("message", e.err.Error()),
+		slog.String("endpoint", e.endpoint),
+		slog.String("correlation_id", e.correlationID),
+		slog.String("iiko_order_id", e.orderID),
+	)
+}
+
+// commandErrorReason only extracts a message; arbitrary exception data may contain
+// customer details and must not be dumped into logs or Telegram notifications.
+func commandErrorReason(reason string, exception json.RawMessage) string {
+	if reason = strings.TrimSpace(reason); reason != "" {
+		return reason
+	}
+	var message string
+	if json.Unmarshal(exception, &message) == nil && strings.TrimSpace(message) != "" {
+		return strings.TrimSpace(message)
+	}
+	var detail struct {
+		Message string `json:"message"`
+	}
+	if json.Unmarshal(exception, &detail) == nil && strings.TrimSpace(detail.Message) != "" {
+		return strings.TrimSpace(detail.Message)
+	}
+	return unknownReason
+}
+
 // Permanent reports whether err cannot be fixed by sending the same request again:
 // a *DeliveryError, or a *StatusError with status 400.
 func Permanent(err error) bool {
@@ -85,8 +125,14 @@ func Permanent(err error) bool {
 }
 
 // CreateDelivery sends the order to deliveries/create on the given terminal group and waits until it is created.
-func (c *Client) CreateDelivery(ctx context.Context, terminalGroupID string, o DeliveryOrder) (DeliveryResult, error) {
+func (c *Client) CreateDelivery(ctx context.Context, terminalGroupID string, o DeliveryOrder) (result DeliveryResult, err error) {
 	const endpoint = "1/deliveries/create"
+	stage, correlationID := endpoint, ""
+	defer func() {
+		if err != nil {
+			err = &deliveryRequestError{err: err, endpoint: stage, correlationID: correlationID, orderID: o.ID}
+		}
+	}()
 	body := map[string]any{
 		"organizationId":      c.organizationID,
 		"terminalGroupId":     terminalGroupID,
@@ -105,12 +151,13 @@ func (c *Client) CreateDelivery(ctx context.Context, terminalGroupID string, o D
 			} `json:"errorInfo"`
 		} `json:"orderInfo"`
 	}
-	err := c.withToken(ctx, func(token string) error {
+	err = c.withToken(ctx, func(token string) error {
 		return c.post(ctx, endpoint, token, body, &resp)
 	})
 	if err != nil {
 		return DeliveryResult{}, err
 	}
+	correlationID = resp.CorrelationID
 
 	switch resp.OrderInfo.CreationStatus {
 	case "Success":
@@ -127,6 +174,7 @@ func (c *Client) CreateDelivery(ctx context.Context, terminalGroupID string, o D
 		}
 		return DeliveryResult{}, &DeliveryError{Reason: reason}
 	case "InProgress":
+		stage = "1/commands/status"
 		return c.waitDelivery(ctx, resp.CorrelationID, resp.OrderInfo.ID)
 	default:
 		return DeliveryResult{}, fmt.Errorf("iiko: %s: unknown creationStatus %q", endpoint, resp.OrderInfo.CreationStatus)
@@ -147,8 +195,9 @@ func (c *Client) waitDelivery(ctx context.Context, correlationID, orderID string
 		}
 
 		var st struct {
-			State       string `json:"state"`
-			ErrorReason string `json:"errorReason"`
+			State       string          `json:"state"`
+			ErrorReason string          `json:"errorReason"`
+			Exception   json.RawMessage `json:"exception"`
 		}
 		err := c.withToken(ctx, func(token string) error {
 			return c.post(ctx, endpoint, token, body, &st)
@@ -161,11 +210,7 @@ func (c *Client) waitDelivery(ctx context.Context, correlationID, orderID string
 		case "Success":
 			return DeliveryResult{ID: orderID}, nil
 		case "Error":
-			reason := st.ErrorReason
-			if reason == "" {
-				reason = unknownReason
-			}
-			return DeliveryResult{}, &DeliveryError{Reason: reason}
+			return DeliveryResult{}, &DeliveryError{Reason: commandErrorReason(st.ErrorReason, st.Exception)}
 		case "InProgress":
 		default:
 			return DeliveryResult{}, fmt.Errorf("iiko: %s: unknown state %q", endpoint, st.State)

@@ -1,7 +1,9 @@
 package app_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -274,6 +276,30 @@ func TestIikoOrdersPermanent(t *testing.T) {
 	}
 	want := []sentMessage{{alertChat, "Заказ №" + strconv.FormatInt(o.ID, 10) + " не создан в iiko: iiko: delivery not created: Product not found. Внесите его в iikoFront вручную."}}
 	assertSent(t, sender.calls(), want)
+}
+
+func TestIikoOrdersLogsFailedAttempt(t *testing.T) {
+	creator := &fakeCreator{answers: []error{&iiko.DeliveryError{Reason: "Rejected"}}}
+	var buf bytes.Buffer
+	n := app.NewIikoOrders(creator, nil, &fakeSender{}, "", iikoSettings(), slog.New(slog.NewJSONHandler(&buf, nil)))
+	n.OrderPaid(context.Background(), fullOrder())
+	n.Wait()
+	calls := creator.calls()
+	if len(calls) != 1 {
+		t.Fatalf("attempts = %d, want 1", len(calls))
+	}
+	var entry struct {
+		Message string `json:"msg"`
+		OrderID int64  `json:"order_id"`
+		IikoID  string `json:"iiko_order_id"`
+		Error   string `json:"error"`
+	}
+	if err := json.NewDecoder(&buf).Decode(&entry); err != nil {
+		t.Fatal(err)
+	}
+	if entry.Message != "iiko delivery attempt failed" || entry.OrderID != 7 || entry.IikoID != calls[0].ID || entry.Error != "iiko: delivery not created: Rejected" {
+		t.Fatalf("log = %+v", entry)
+	}
 }
 
 func TestIikoOrdersPending(t *testing.T) {

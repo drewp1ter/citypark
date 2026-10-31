@@ -1,9 +1,11 @@
 package iiko
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"sync"
@@ -230,6 +232,76 @@ func TestCreateDeliveryPollErrorWithoutReason(t *testing.T) {
 	var de *DeliveryError
 	if !errors.As(err, &de) || de.Reason != "unknown error" {
 		t.Fatalf("err = %v, want DeliveryError{unknown error}", err)
+	}
+}
+
+func TestCreateDeliveryPollException(t *testing.T) {
+	tests := []struct {
+		name, fields, want string
+	}{
+		{"reason takes precedence", `"errorReason":"Product not found","exception":{"message":"Other error"}`, "Product not found"},
+		{"message", `"exception":{"message":"Payment type unavailable"}`, "Payment type unavailable"},
+		{"capitalized message", `"errorReason":null,"exception":{"Message":"Terminal offline"}`, "Terminal offline"},
+		{"string", `"exception":" Product not found "`, "Product not found"},
+		{"blank reason", `"errorReason":"  ","exception":{"message":" Product not found "}`, "Product not found"},
+		{"null", `"exception":null`, unknownReason},
+		{"empty object", `"exception":{}`, unknownReason},
+		{"blank message", `"exception":{"message":"  "}`, unknownReason},
+		{"empty string", `"exception":""`, unknownReason},
+		{"array", `"exception":["private data"]`, unknownReason},
+		{"number", `"exception":123`, unknownReason},
+		{"unexpected message", `"exception":{"message":{"private":"data"}}`, unknownReason},
+		{"unrelated fields", `"exception":{"stackTrace":"private data","customer":"private data"}`, unknownReason},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := newDeliveryClient(t,
+				reply(`{"correlationId":"c1","orderInfo":{"id":"x","creationStatus":"InProgress"}}`),
+				reply(`{"state":"Error",`+tt.fields+`}`))
+			_, err := c.CreateDelivery(context.Background(), "tg-1", testOrder())
+			var de *DeliveryError
+			if !errors.As(err, &de) || de.Reason != tt.want || !Permanent(err) {
+				t.Fatalf("err = %v, want permanent DeliveryError{%s}", err, tt.want)
+			}
+		})
+	}
+}
+
+func TestCreateDeliveryErrorDiagnostics(t *testing.T) {
+	tests := []struct {
+		name, create, status, endpoint, correlationID string
+	}{
+		{"create rejection", `{"correlationId":"c1","orderInfo":{"creationStatus":"Error","errorInfo":{"message":"Rejected"}}}`, "", "1/deliveries/create", "c1"},
+		{"command rejection", `{"correlationId":"c2","orderInfo":{"id":"remote-id","creationStatus":"InProgress"}}`, `{"state":"Error","exception":{"message":"Rejected","stackTrace":"private"}}`, "1/commands/status", "c2"},
+		{"invalid response", `{`, "", "1/deliveries/create", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := newDeliveryClient(t, reply(tt.create), reply(tt.status))
+			_, err := c.CreateDelivery(context.Background(), "tg-1", testOrder())
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			var buf bytes.Buffer
+			slog.New(slog.NewJSONHandler(&buf, nil)).Error("failed", "error", err)
+			var entry struct {
+				Error struct {
+					Message       string `json:"message"`
+					Endpoint      string `json:"endpoint"`
+					CorrelationID string `json:"correlation_id"`
+					OrderID       string `json:"iiko_order_id"`
+				} `json:"error"`
+			}
+			if e := json.Unmarshal(buf.Bytes(), &entry); e != nil {
+				t.Fatal(e)
+			}
+			if e := entry.Error; e.Message != err.Error() || e.Endpoint != tt.endpoint || e.CorrelationID != tt.correlationID || e.OrderID != "guid-1" {
+				t.Fatalf("diagnostics = %+v", e)
+			}
+			if strings.Contains(buf.String(), "private") || strings.Contains(buf.String(), "+79001234567") {
+				t.Fatalf("log contains unrelated payload: %s", &buf)
+			}
+		})
 	}
 }
 
