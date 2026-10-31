@@ -164,7 +164,9 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
 
 - [x] [84 Promo RMS contract](84-promo-iiko-contract.md) [83]
   - Plan revised (2026-10-31): use one configured RMS flexible-sum discount with saved eligible positions. Owner accepts different iiko per-line rounding; total discount and food payment must match exactly. The earlier exact-line-mapping blocker is superseded. Task 84 remains unchecked pending its revised documentation/fixture checks; restaurant setup and authorized total reconciliation remain release requirements. See [IIKO_PROMOCODES.md](IIKO_PROMOCODES.md).
-- [ ] [85 Promo campaign persistence](85-promo-campaign-store.md) [84]
+- [x] [85 Promo campaign persistence](85-promo-campaign-store.md) [84]
+  - Added campaign schema/store, normalized immutable codes, validated targeting, transactional replacements and shared pricing locks. Shared database cleanup now resets campaigns.
+  - Previous TestPayGET validation blocker resolved by task 83b. Formatting, build, vet, full serial suite and fresh database/coverage tests pass (2026-10-31): promo 94.0%, testutil 83.1%.
 - [ ] [86 Promo campaign admin API](86-promo-campaign-api.md) [85]
 - [ ] [87 Promo pricing and quotes](87-promo-pricing-quotes.md) [85]
 - [ ] [88 Promo order snapshots and payments](88-promo-order-snapshots.md) [87]

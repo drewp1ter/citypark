@@ -35,7 +35,7 @@ func NewDB(t *testing.T) *sqlx.DB {
 	if err := store.Migrate(ctx, db); err != nil {
 		t.Fatalf("migrate test database: %v", err)
 	}
-	_, err = db.ExecContext(ctx, `TRUNCATE users, addresses, user_addresses, menus, categories, category_images,
+	_, err = db.ExecContext(ctx, `TRUNCATE promo_codes, users, addresses, user_addresses, menus, categories, category_images,
 		products, product_images, tags, product_tags, delivery_prices, orders, order_items,
 		hotel_rooms, customer_telegram_proofs
 		RESTART IDENTITY CASCADE`)
