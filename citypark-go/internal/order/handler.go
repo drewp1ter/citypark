@@ -57,6 +57,7 @@ func (h *Handler) Routes(r chi.Router) {
 }
 
 func (h *Handler) routes(r chi.Router) {
+	r.With(h.optional).Post("/orders/quote", httpx.Handle(h.quote))
 	r.With(h.optional, WorkingHours(h.svc.clock, h.opts.Hours)).
 		Post("/orders", httpx.Handle(h.create))
 

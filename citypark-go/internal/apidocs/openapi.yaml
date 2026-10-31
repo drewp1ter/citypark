@@ -252,6 +252,47 @@ components:
           type: string
           maxLength: 1000
           example: ул. Ленина, 1
+    QuoteInput:
+      type: object
+      required: [items, fulfillment]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [productId, amount]
+            properties:
+              productId: {type: integer, format: int64, minimum: 1}
+              amount: {type: integer, minimum: 1}
+        fulfillment: {type: string, enum: [delivery, pickup]}
+        city:
+          type: string
+          description: Required for delivery; exact town name. Ignored for pickup.
+        promoCode:
+          type: string
+          description: Optional; empty means no code. Trimmed, ASCII uppercased, then validated against [A-Z0-9_-]{3,32}.
+    OrderQuote:
+      type: object
+      required: [subtotal, eligibleSubtotal, discount, total, deliveryPrice, payableTotal, promoCode, items]
+      properties:
+        subtotal: {type: number}
+        eligibleSubtotal: {type: number}
+        discount: {type: number}
+        total: {type: number}
+        deliveryPrice: {type: number}
+        payableTotal: {type: number}
+        promoCode: {type: string, nullable: true}
+        items:
+          type: array
+          items:
+            type: object
+            required: [productId, amount, offeredPrice, discount]
+            properties:
+              productId: {type: integer, format: int64}
+              amount: {type: integer}
+              offeredPrice: {type: number}
+              discount: {type: number}
     PromoCampaignInput:
       type: object
       required: [code, percentage, target]
@@ -3570,6 +3611,70 @@ paths:
                 $ref: '#/components/schemas/Error'
         '409':
           description: 'Такой промокод уже существует.; Код нельзя изменить после создания. (update only)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /orders/quote:
+    post:
+      summary: Quote current food and delivery pricing
+      tags: [orders]
+      description: >-
+        Public with optional authentication. No orders, customers, reservations or payments created.
+        Private/no-store including errors. Fresh catalog availability and campaign snapshot;
+        start inclusive/end exclusive. Merge duplicates; union eligibility; floor percentage discount
+        with optional cap; largest remainder allocation with productId tie break. Delivery threshold
+        uses discounted food. No-code quotes have null promoCode, zero eligible subtotal and discounts.
+        Pickup has zero delivery fee. Working-hours placement middleware is not applied.
+      security:
+        - {}
+        - bearerAuth: []
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteInput'
+            example: {"items": [{"productId": 1, "amount": 1}, {"productId": 2, "amount": 1}], "fulfillment": "delivery", "city": "Сочи", "promoCode": "SAVE10"}
+      responses:
+        '200':
+          description: Authoritative pricing in rubles; does not reserve a price.
+          headers:
+            Cache-Control:
+              schema: {type: string}
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderQuote'
+              example: {"subtotal": 699, "eligibleSubtotal": 699, "discount": 69.9, "total": 629.1, "deliveryPrice": 150, "payableTotal": 779.1, "promoCode": "SAVE10", "items": [{"productId": 1, "amount": 1, "offeredPrice": 599, "discount": 59.9}, {"productId": 2, "amount": 1, "offeredPrice": 100, "discount": 10}]}
+        '400':
+          description: >-
+            Некорректный JSON for malformed body/types. Standard validation envelope for missing/invalid
+            items, fulfillment or required city. Некорректное количество. for quantity overflow.
+            Продукт не найден. for unknown products. Указано не существующее имя населенного пункта. for unknown towns.
+            Promo field errors use message Ошибка валидации, пожалуйста проверьте введенные вами данные and errors.promoCode:
+            Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.
+            Промокод недействителен.
+            В корзине нет блюд для этого промокода.
+            Недостаточная сумма подходящих блюд для промокода.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '503':
+          description: >-
+            Заказ блюда «{name}» временно недоступен.
+            Возможность заказа "{name}" доступна только в следующие дни недели: {days}
+            Время заказа "{name}" ограничено с {start} до {end}.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера (database errors or monetary overflow).
           content:
             application/json:
               schema:

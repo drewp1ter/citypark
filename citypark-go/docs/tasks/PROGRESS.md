@@ -169,6 +169,7 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
   - Previous TestPayGET validation blocker resolved by task 83b. Formatting, build, vet, full serial suite and fresh database/coverage tests pass (2026-10-31): promo 94.0%, testutil 83.1%.
 - [x] [86 Promo campaign admin API](86-promo-campaign-api.md) [85]
   - Added admin-only list/get/create/update with transactional writes, exact validation/conflict messages and app wiring; API.md/OpenAPI include all four routes and captured examples. Auth, CRUD, disable, invalid requests and database-error tests pass. Formatting/build/vet/full serial suite pass; coverage: promo 95.9%, app 98.8%, apidocs 100%.
-- [ ] [87 Promo pricing and quotes](87-promo-pricing-quotes.md) [85]
+- [x] [87 Promo pricing and quotes](87-promo-pricing-quotes.md) [85]
+  - Added checked integer promo calculation, proportional largest-remainder allocation and public private/no-store quotes using a repeatable catalog/campaign snapshot. Quotes merge duplicates, enforce fresh availability, price delivery after discount and create no orders/customers/payment links. API.md/OpenAPI include captured examples and errors. Formatting/build/vet/full serial suite pass; promo coverage 96.6%, order 92.1%, apidocs 100%.
 - [ ] [88 Promo order snapshots and payments](88-promo-order-snapshots.md) [87]
 - [ ] [89 Promo RMS and staff integration](89-promo-order-integrations.md) [84, 88]

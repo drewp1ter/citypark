@@ -3159,3 +3159,53 @@ Writes are transactional. PUT fully replaces writable configuration; code cannot
 Validation uses message `Ошибка валидации, пожалуйста проверьте введенные вами данные` and the indicated key in `errors`. Wrong JSON types are malformed JSON errors.
 
 Attempting to edit code returns 409: `Код нельзя изменить после создания.`
+
+#### POST /orders/quote
+
+Computes current authoritative pricing without creating orders, customers, addresses, reservations or payment links. Quotes do not reserve a price; availability, campaign configuration and delivery may change before checkout.
+
+- **Role:** public, optional authentication. Invalid supplied credentials return 401.
+- **Cache:** private, no-store, including errors. Working-hours middleware for order placement is not applied; product and category ordering windows and manual dish blocks are checked using the current clock.
+
+**Request body**
+
+| Field | Type | Required | Rules |
+|---|---|---|---|
+| items | array | yes | At least one item; each has positive integer productId and amount. Duplicate products are merged with checked quantity addition |
+| fulfillment | string | yes | delivery or pickup |
+| city | string | for delivery | Exact existing town name; ignored for pickup |
+| promoCode | string | no | Trim outer whitespace, uppercase ASCII, validate `[A-Z0-9_-]{3,32}`. Empty/omitted means no discount |
+
+```json
+{"items": [{"productId": 1, "amount": 1}, {"productId": 2, "amount": 1}], "fulfillment": "delivery", "city": "Сочи", "promoCode": "SAVE10"}
+```
+
+**Response 200** (captured from TestQuote)
+
+```json
+{"subtotal": 699, "eligibleSubtotal": 699, "discount": 69.9, "total": 629.1, "deliveryPrice": 150, "payableTotal": 779.1, "promoCode": "SAVE10", "items": [{"productId": 1, "amount": 1, "offeredPrice": 599, "discount": 59.9}, {"productId": 2, "amount": 1, "offeredPrice": 100, "discount": 10}]}
+```
+
+Amounts are rubles. subtotal is original food, eligibleSubtotal is eligible food before discount, discount is the saved calculation, total is discounted food, deliveryPrice is separate, payableTotal is their sum. The example town has price 150 and freeFrom 650: food 699 qualified before discount, but discounted food 629.10 requires paid delivery.
+Items retain original unit offeredPrice and merged quantity; discount is per line, never per unit. Largest-remainder allocation breaks ties by ascending productId. No-code quotes have eligibleSubtotal=0, discount=0, promoCode=null and zero line discounts. Pickup deliveryPrice=0. A zero discount is allowed when integer rounding yields zero; an empty/nonpositive eligible subtotal is rejected for a supplied code.
+
+**Errors**
+
+| Status | When | Message |
+|---|---|---|
+| 400 | Malformed body/types | `Некорректный JSON` |
+| 400 | Missing/invalid items, amount, fulfillment or required city | `Ошибка валидации, пожалуйста проверьте введенные вами данные` with standard field errors |
+| 400 | Repeated amounts overflow | `Некорректное количество.` |
+| 400 | Missing/deleted product | `Продукт не найден.` |
+| 400 | Unknown delivery town | `Указано не существующее имя населенного пункта.` |
+| 400 | Malformed promoCode | `Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.` |
+| 400 | Unknown, disabled, future or expired promoCode | `Промокод недействителен.` |
+| 400 | No eligible positive food spend | `В корзине нет блюд для этого промокода.` |
+| 400 | Eligible subtotal below minimum | `Недостаточная сумма подходящих блюд для промокода.` |
+| 401 | Invalid supplied credential | `Требуется авторизация` |
+| 503 | Manually blocked dish | `Заказ блюда «{name}» временно недоступен.` |
+| 503 | Category or product closed by day | `Возможность заказа "{name}" доступна только в следующие дни недели: {days}` |
+| 503 | Category or product closed by time | `Время заказа "{name}" ограничено с {start} до {end}.` |
+| 500 | Database errors or unrepresentable monetary totals | `Внутренняя ошибка сервера` |
+
+Promo failures use the standard validation message with the exact text above in errors.promoCode. Dates use start inclusive and end exclusive. Eligibility is the union of current category membership and explicit product selections; overlap never doubles a discount. Discount is floor(eligibleSubtotal * percentage / 100), limited by optional cap. Delivery thresholds use discounted food total.
