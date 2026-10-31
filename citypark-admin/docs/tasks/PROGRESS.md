@@ -60,5 +60,6 @@ stop if that task is not ticked.
 
 Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md). Planned only; existing blockers remain unchanged.
 
-- [ ] [27 Promo campaign management](27-promo-campaigns.md) [admin26; backend86]
+- [x] [27 Promo campaign management](27-promo-campaigns.md) [admin26; backend86]
+  - Added campaign creation/editing/disabling, searchable independent targets and explicit Moscow schedules with preserved form errors. API generation, check (294 unit tests), build and four real-backend Playwright flows pass at 390/1440 px in both themes with a non-Moscow browser timezone. All test campaigns are disabled.
 - [ ] [28 Promo order breakdown](28-promo-order-details.md) [admin27; backend89]

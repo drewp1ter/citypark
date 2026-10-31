@@ -16,6 +16,7 @@ import { Route as AppDeliveryRouteImport } from './routes/_app/delivery'
 import { Route as AppFreeRoomsRouteImport } from './routes/_app/free-rooms'
 import { Route as AppMenuRouteImport } from './routes/_app/menu'
 import { Route as AppOrdersRouteImport } from './routes/_app/orders'
+import { Route as AppPromoCodesRouteImport } from './routes/_app/promo-codes'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppContentHomeRouteImport } from './routes/_app/content/home'
 import { Route as AppContentHotelRouteImport } from './routes/_app/content/hotel'
@@ -64,6 +65,11 @@ const AppMenuRoute = AppMenuRouteImport.update({
 const AppOrdersRoute = AppOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPromoCodesRoute = AppPromoCodesRouteImport.update({
+  id: '/promo-codes',
+  path: '/promo-codes',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReportsRoute = AppReportsRouteImport.update({
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/free-rooms': typeof AppFreeRoomsRoute
   '/menu': typeof AppMenuRoute
   '/orders': typeof AppOrdersRouteWithChildren
+  '/promo-codes': typeof AppPromoCodesRoute
   '/reports': typeof AppReportsRoute
   '/content/home': typeof AppContentHomeRoute
   '/content/hotel': typeof AppContentHotelRoute
@@ -171,6 +178,7 @@ export interface FileRoutesByTo {
   '/free-rooms': typeof AppFreeRoomsRoute
   '/menu': typeof AppMenuRoute
   '/orders': typeof AppOrdersRouteWithChildren
+  '/promo-codes': typeof AppPromoCodesRoute
   '/reports': typeof AppReportsRoute
   '/': typeof AppIndexRoute
   '/content/home': typeof AppContentHomeRoute
@@ -196,6 +204,7 @@ export interface FileRoutesById {
   '/_app/free-rooms': typeof AppFreeRoomsRoute
   '/_app/menu': typeof AppMenuRoute
   '/_app/orders': typeof AppOrdersRouteWithChildren
+  '/_app/promo-codes': typeof AppPromoCodesRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/': typeof AppIndexRoute
   '/_app/content/home': typeof AppContentHomeRoute
@@ -222,6 +231,7 @@ export interface FileRouteTypes {
     | '/free-rooms'
     | '/menu'
     | '/orders'
+    | '/promo-codes'
     | '/reports'
     | '/content/home'
     | '/content/hotel'
@@ -244,6 +254,7 @@ export interface FileRouteTypes {
     | '/free-rooms'
     | '/menu'
     | '/orders'
+    | '/promo-codes'
     | '/reports'
     | '/'
     | '/content/home'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/_app/free-rooms'
     | '/_app/menu'
     | '/_app/orders'
+    | '/_app/promo-codes'
     | '/_app/reports'
     | '/_app/'
     | '/_app/content/home'
@@ -340,6 +352,13 @@ declare module '@tanstack/react-router' {
       path: '/orders'
       fullPath: '/orders'
       preLoaderRoute: typeof AppOrdersRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/promo-codes': {
+      id: '/_app/promo-codes'
+      path: '/promo-codes'
+      fullPath: '/promo-codes'
+      preLoaderRoute: typeof AppPromoCodesRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/reports': {
@@ -467,6 +486,7 @@ interface AppRouteChildren {
   AppFreeRoomsRoute: typeof AppFreeRoomsRoute
   AppMenuRoute: typeof AppMenuRoute
   AppOrdersRoute: typeof AppOrdersRouteWithChildren
+  AppPromoCodesRoute: typeof AppPromoCodesRoute
   AppReportsRoute: typeof AppReportsRoute
   AppIndexRoute: typeof AppIndexRoute
   AppContentHomeRoute: typeof AppContentHomeRoute
@@ -489,6 +509,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFreeRoomsRoute: AppFreeRoomsRoute,
   AppMenuRoute: AppMenuRoute,
   AppOrdersRoute: AppOrdersRouteWithChildren,
+  AppPromoCodesRoute: AppPromoCodesRoute,
   AppReportsRoute: AppReportsRoute,
   AppIndexRoute: AppIndexRoute,
   AppContentHomeRoute: AppContentHomeRoute,

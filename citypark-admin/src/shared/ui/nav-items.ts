@@ -7,6 +7,7 @@ export const mainNavItems: NavItem[] = [
 	{ label: 'Заказы онлайн', to: '/orders/live' },
 	{ label: 'Доставка', to: '/delivery' },
 	{ label: 'Меню', to: '/menu' },
+	{ label: 'Промокоды', to: '/promo-codes' },
 ]
 
 export const contentNavItems: NavItem[] = [

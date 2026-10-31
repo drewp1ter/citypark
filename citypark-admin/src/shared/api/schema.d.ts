@@ -2941,7 +2941,7 @@ export interface paths {
         put?: never;
         /**
          * Place an order
-         * @description Role: public with optional Bearer authentication. Invalid, expired, empty or repeated Authorization headers return 401; deleted accounts and changed roles also return 401. A customer token assigns account ownership independently of checkout phone. Admin and guest orders remain unowned. Existing contact profiles and saved addresses are unchanged. Contacts and delivery text are immutable checkout snapshots. Duplicate lookup requires the same authenticated account or the same server-issued guest checkout cookie, and the same name, phone, address, comment, deliveryTime and items in new/pending status. A missing/invalid/expired cookie starts a new scope; phone alone never reuses an order. Cookie: citypark_guest_checkout, HttpOnly, Secure, SameSite=Lax, Path=/api/v1/orders, Max-Age=86400 with absolute 24-hour validity. Server-side clients must forward it on retries; it grants no order-read access. Use HTTPS. Responses send Cache-Control: private, no-store. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0).
+         * @description Role: public with optional Bearer authentication. Invalid, expired, empty or repeated Authorization headers return 401; deleted accounts and changed roles also return 401. A customer token assigns account ownership independently of checkout phone. Admin and guest orders remain unowned. Existing contact profiles and saved addresses are unchanged. Contacts and delivery text are immutable checkout snapshots. Duplicate lookup requires the same authenticated account or the same server-issued guest checkout cookie, and the same name, phone, address, comment, deliveryTime and items in new/pending status. A missing/invalid/expired cookie starts a new scope; phone alone never reuses an order. Cookie: citypark_guest_checkout, HttpOnly, Secure, SameSite=Lax, Path=/api/v1/orders, Max-Age=86400 with absolute 24-hour validity. Server-side clients must forward it on retries; it grants no order-read access. Use HTTPS. Responses send Cache-Control: private, no-store. Orders are accepted only during the working hours from `GET /working-hours`. A `deliveryTime` outside them is a 400 with `errors.deliveryTime` = `Мы работаем с 9:00 до 22:00` (built from the current hours). Orders are paid only online: send the customer to `redirectUrl`, the Moneta payment page. A `paymentType` field in the request is ignored. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0). Promo code participates in duplicate matching. Same-code retries retain saved pricing even when the campaign changes or expires; product block safety remains. A fresh promo order requires expectedPayableTotal; mismatch returns 409 before any customer/order writes. Obtain a fresh quote and require a new submission. Payments use saved discounted food plus saved delivery.
          */
         post: {
             parameters: {
@@ -2989,9 +2989,43 @@ export interface paths {
                         "application/json": components["schemas"]["CreateOrderResult"];
                     };
                 };
-                400: components["responses"]["BadRequest"];
+                /** @description Standard validation/JSON errors. errors.expectedPayableTotal: Подтвердите итоговую сумму заказа. errors.promoCode: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. Or Промокод недействителен. / В корзине нет блюд для этого промокода. / Недостаточная сумма подходящих блюд для промокода. Quantity overflow: Некорректное количество. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
                 401: components["responses"]["Unauthorized"];
-                503: components["responses"]["Unavailable"];
+                /** @description Сумма заказа изменилась. Проверьте итог и повторите оформление. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Existing working-hours/product availability errors, or Заказы с промокодом временно недоступны. when a new promo order lacks RMS discount/terminal/payment configuration. Rejected before writes/payment links; existing pending retries keep saved pricing. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -3196,6 +3230,15 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                /** @description Нельзя изменять состав заказа с промокодом. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -3240,6 +3283,15 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                /** @description Нельзя изменять состав заказа с промокодом. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         options?: never;
@@ -3435,7 +3487,62 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Moneta payment notification via query parameters */
+        get: {
+            parameters: {
+                query: {
+                    MNT_ID: string;
+                    MNT_TRANSACTION_ID: string;
+                    MNT_OPERATION_ID: string;
+                    MNT_AMOUNT: string;
+                    MNT_CURRENCY_CODE: string;
+                    MNT_TEST_MODE: string;
+                    MNT_SIGNATURE: string;
+                    MNT_SUBSCRIBER_ID?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description SUCCESS; accepted or already processed */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description FAIL; malformed form, command, order ID or amount */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description FAIL; invalid signature or shop fields */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description FAIL; order not found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description FAIL; server error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
         put?: never;
         /**
          * Moneta payment notification
@@ -3451,6 +3558,12 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/x-www-form-urlencoded": {
+                        MNT_ID: string;
+                        /** @enum {string} */
+                        MNT_CURRENCY_CODE: "RUB";
+                        /** @enum {string} */
+                        MNT_TEST_MODE: "0" | "1";
+                        MNT_SUBSCRIBER_ID?: string;
                         /** @description Our order id. */
                         MNT_TRANSACTION_ID: string;
                         /** @description Moneta's id of the payment. */
@@ -3497,6 +3610,134 @@ export interface paths {
                     content: {
                         "text/plain": string;
                     };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/moneta/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Validate Moneta order without changing payment state
+         * @description Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500.
+         */
+        get: {
+            parameters: {
+                query: {
+                    MNT_COMMAND: string;
+                    MNT_ID: string;
+                    MNT_TRANSACTION_ID: string;
+                    MNT_OPERATION_ID?: string;
+                    MNT_AMOUNT?: string;
+                    MNT_CURRENCY_CODE: string;
+                    MNT_TEST_MODE: string;
+                    MNT_SIGNATURE: string;
+                    MNT_SUBSCRIBER_ID?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Signed XML; MNT_ID, MNT_TRANSACTION_ID, MNT_RESULT_CODE, optional MNT_AMOUNT, MNT_SIGNATURE. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/xml": string;
+                    };
+                };
+                /** @description Malformed form or command; FAIL */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid signature or shop fields; FAIL */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Database failure; FAIL */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Validate Moneta order without changing payment state
+         * @description Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/x-www-form-urlencoded": {
+                        MNT_COMMAND: string;
+                        MNT_ID: string;
+                        MNT_TRANSACTION_ID: string;
+                        MNT_OPERATION_ID?: string;
+                        MNT_AMOUNT?: string;
+                        MNT_CURRENCY_CODE: string;
+                        MNT_TEST_MODE: string;
+                        MNT_SIGNATURE: string;
+                        MNT_SUBSCRIBER_ID?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Signed XML; MNT_ID, MNT_TRANSACTION_ID, MNT_RESULT_CODE, optional MNT_AMOUNT, MNT_SIGNATURE. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/xml": string;
+                    };
+                };
+                /** @description Malformed form or command; FAIL */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Invalid signature or shop fields; FAIL */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Database failure; FAIL */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
                 };
             };
         };
@@ -3559,6 +3800,508 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 413: components["responses"]["PayloadTooLarge"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/promo-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List campaigns
+         * @description Admin only. Disabled campaigns remain visible. No deletion. Lists ordered by descending id.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Saved campaign configuration. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example [
+                         *       {
+                         *         "id": 1,
+                         *         "code": "TEST_10",
+                         *         "percentage": 10,
+                         *         "enabled": true,
+                         *         "target": "all",
+                         *         "productIds": [],
+                         *         "categoryIds": [],
+                         *         "minimumEligibleSubtotal": null,
+                         *         "maximumDiscount": null,
+                         *         "startsAt": null,
+                         *         "endsAt": null
+                         *       }
+                         *     ]
+                         */
+                        "application/json": components["schemas"]["PromoCampaign"][];
+                    };
+                };
+                /** @description Требуется авторизация */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Недостаточно прав */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Create campaign
+         * @description Admin only. Disabled campaigns remain visible. No deletion. Lists ordered by descending id.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "TEST_10",
+                     *       "percentage": 10,
+                     *       "enabled": true,
+                     *       "target": "all",
+                     *       "productIds": [],
+                     *       "categoryIds": [],
+                     *       "minimumEligibleSubtotal": null,
+                     *       "maximumDiscount": null,
+                     *       "startsAt": null,
+                     *       "endsAt": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PromoCampaignInput"];
+                };
+            };
+            responses: {
+                /** @description Saved campaign configuration. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": 1,
+                         *       "code": "TEST_10",
+                         *       "percentage": 10,
+                         *       "enabled": true,
+                         *       "target": "all",
+                         *       "productIds": [],
+                         *       "categoryIds": [],
+                         *       "minimumEligibleSubtotal": null,
+                         *       "maximumDiscount": null,
+                         *       "startsAt": null,
+                         *       "endsAt": null
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PromoCampaign"];
+                    };
+                };
+                /** @description Некорректный JSON for malformed JSON/types/timestamps. Otherwise message: Ошибка валидации, пожалуйста проверьте введенные вами данные. errors.code: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. errors.percentage: Укажите целый процент от 1 до 99. errors.minimumEligibleSubtotal or errors.maximumDiscount: Укажите положительную сумму. errors.endsAt: Дата окончания должна быть позже даты начала. errors.target: Выберите все блюда или укажите блюда и категории. errors.productIds or errors.categoryIds: Выбранное блюдо или категория не найдены. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Требуется авторизация */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Недостаточно прав */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Такой промокод уже существует.; Код нельзя изменить после создания. (update only) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/promo-codes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get campaign
+         * @description Admin only. Disabled campaigns remain visible. No deletion. Lists ordered by descending id.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Saved campaign configuration. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": 1,
+                         *       "code": "TEST_10",
+                         *       "percentage": 10,
+                         *       "enabled": true,
+                         *       "target": "all",
+                         *       "productIds": [],
+                         *       "categoryIds": [],
+                         *       "minimumEligibleSubtotal": null,
+                         *       "maximumDiscount": null,
+                         *       "startsAt": null,
+                         *       "endsAt": null
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PromoCampaign"];
+                    };
+                };
+                /** @description Требуется авторизация */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Недостаточно прав */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Промокод не найден. (missing campaign); Не найдено (invalid path ID) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        /**
+         * Replace campaign configuration
+         * @description Admin only. Disabled campaigns remain visible. No deletion. Lists ordered by descending id.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "code": "TEST_10",
+                     *       "percentage": 10,
+                     *       "enabled": true,
+                     *       "target": "all",
+                     *       "productIds": [],
+                     *       "categoryIds": [],
+                     *       "minimumEligibleSubtotal": null,
+                     *       "maximumDiscount": null,
+                     *       "startsAt": null,
+                     *       "endsAt": null
+                     *     }
+                     */
+                    "application/json": components["schemas"]["PromoCampaignInput"];
+                };
+            };
+            responses: {
+                /** @description Saved campaign configuration. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "id": 1,
+                         *       "code": "TEST_10",
+                         *       "percentage": 10,
+                         *       "enabled": true,
+                         *       "target": "all",
+                         *       "productIds": [],
+                         *       "categoryIds": [],
+                         *       "minimumEligibleSubtotal": null,
+                         *       "maximumDiscount": null,
+                         *       "startsAt": null,
+                         *       "endsAt": null
+                         *     }
+                         */
+                        "application/json": components["schemas"]["PromoCampaign"];
+                    };
+                };
+                /** @description Некорректный JSON for malformed JSON/types/timestamps. Otherwise message: Ошибка валидации, пожалуйста проверьте введенные вами данные. errors.code: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. errors.percentage: Укажите целый процент от 1 до 99. errors.minimumEligibleSubtotal or errors.maximumDiscount: Укажите положительную сумму. errors.endsAt: Дата окончания должна быть позже даты начала. errors.target: Выберите все блюда или укажите блюда и категории. errors.productIds or errors.categoryIds: Выбранное блюдо или категория не найдены. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Требуется авторизация */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Недостаточно прав */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Промокод не найден. (missing campaign); Не найдено (invalid path ID) */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Такой промокод уже существует.; Код нельзя изменить после создания. (update only) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/quote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quote current food and delivery pricing
+         * @description Public with optional authentication. No orders, customers, reservations or payments created. Private/no-store including errors. Fresh catalog availability and campaign snapshot; start inclusive/end exclusive. Merge duplicates; union eligibility; floor percentage discount with optional cap; largest remainder allocation with productId tie break. Delivery threshold uses discounted food. No-code quotes have null promoCode, zero eligible subtotal and discounts. Pickup has zero delivery fee. Working-hours placement middleware is not applied.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "items": [
+                     *         {
+                     *           "productId": 1,
+                     *           "amount": 1
+                     *         },
+                     *         {
+                     *           "productId": 2,
+                     *           "amount": 1
+                     *         }
+                     *       ],
+                     *       "fulfillment": "delivery",
+                     *       "city": "Сочи",
+                     *       "promoCode": "SAVE10"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["QuoteInput"];
+                };
+            };
+            responses: {
+                /** @description Authoritative pricing in rubles; does not reserve a price. */
+                200: {
+                    headers: {
+                        "Cache-Control"?: string;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "subtotal": 699,
+                         *       "eligibleSubtotal": 699,
+                         *       "discount": 69.9,
+                         *       "total": 629.1,
+                         *       "deliveryPrice": 150,
+                         *       "payableTotal": 779.1,
+                         *       "promoCode": "SAVE10",
+                         *       "items": [
+                         *         {
+                         *           "productId": 1,
+                         *           "amount": 1,
+                         *           "offeredPrice": 599,
+                         *           "discount": 59.9
+                         *         },
+                         *         {
+                         *           "productId": 2,
+                         *           "amount": 1,
+                         *           "offeredPrice": 100,
+                         *           "discount": 10
+                         *         }
+                         *       ]
+                         *     }
+                         */
+                        "application/json": components["schemas"]["OrderQuote"];
+                    };
+                };
+                /** @description Некорректный JSON for malformed body/types. Standard validation envelope for missing/invalid items, fulfillment or required city. Некорректное количество. for quantity overflow. Продукт не найден. for unknown products. Указано не существующее имя населенного пункта. for unknown towns. Promo field errors use message Ошибка валидации, пожалуйста проверьте введенные вами данные and errors.promoCode: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. Промокод недействителен. В корзине нет блюд для этого промокода. Недостаточная сумма подходящих блюд для промокода. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Внутренняя ошибка сервера (database errors or monetary overflow). */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Заказ блюда «{name}» временно недоступен. Возможность заказа "{name}" доступна только в следующие дни недели: {days} Время заказа "{name}" ограничено с {start} до {end}. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -3689,6 +4432,64 @@ export interface components {
             /** @example ул. Ленина, 1 */
             address: string;
         };
+        QuoteInput: {
+            items: {
+                /** Format: int64 */
+                productId: number;
+                amount: number;
+            }[];
+            /** @enum {string} */
+            fulfillment: "delivery" | "pickup";
+            /** @description Required for delivery; exact town name. Ignored for pickup. */
+            city?: string;
+            /** @description Optional; empty means no code. Trimmed, ASCII uppercased, then validated against [A-Z0-9_-]{3,32}. */
+            promoCode?: string;
+        };
+        OrderQuote: {
+            subtotal: number;
+            eligibleSubtotal: number;
+            discount: number;
+            total: number;
+            deliveryPrice: number;
+            payableTotal: number;
+            promoCode: string | null;
+            items: {
+                /** Format: int64 */
+                productId: number;
+                amount: number;
+                offeredPrice: number;
+                discount: number;
+            }[];
+        };
+        /** @description Full replacement. Money in rubles; nullable limits must be positive. enabled defaults false; omitted arrays become empty, omitted nullable fields become null. */
+        PromoCampaignInput: {
+            /** @description Trimmed and uppercased ASCII; immutable after creation. */
+            code: string;
+            percentage: number;
+            enabled?: boolean;
+            /**
+             * @description all requires empty target arrays; selected requires at least one product or category.
+             * @enum {string}
+             */
+            target: "all" | "selected";
+            /** @description Existing product IDs; sorted and deduplicated on save. */
+            productIds?: number[];
+            /** @description Existing category IDs; union with products, sorted and deduplicated. */
+            categoryIds?: number[];
+            minimumEligibleSubtotal?: number | null;
+            maximumDiscount?: number | null;
+            /** Format: date-time */
+            startsAt?: string | null;
+            /**
+             * Format: date-time
+             * @description Must follow startsAt when both supplied.
+             */
+            endsAt?: string | null;
+        };
+        PromoCampaign: components["schemas"]["PromoCampaignInput"] & {
+            /** Format: int64 */
+            id: number;
+        };
         DeliveryPrice: {
             /** @example 1 */
             id: number;
@@ -3794,6 +4595,10 @@ export interface components {
             amount: number;
         };
         CreateOrder: {
+            /** @description Optional normalized promo code. Empty means no code; format [A-Z0-9_-]{3,32} after trimming and ASCII uppercase. */
+            promoCode?: string;
+            /** @description Required for promo orders. Confirmed discounted food plus delivery; compares with saved total on duplicate retries. */
+            expectedPayableTotal?: number;
             /**
              * @description A valid Russian phone number. It is stored as +7XXXXXXXXXX.
              * @example +79991234567
@@ -3825,6 +4630,12 @@ export interface components {
             order?: components["schemas"]["Order"];
         };
         Order: {
+            /** @description Original food subtotal, in rubles. */
+            subtotal: number;
+            /** @description Persisted food discount, zero for historical/no-code orders. */
+            discount: number;
+            /** @description Saved normalized code, null without promo. */
+            promoCode: string | null;
             /** @example 2 */
             id: number;
             /** Format: date-time */
@@ -3840,7 +4651,7 @@ export interface components {
              */
             deliveryTime: string;
             /**
-             * @description Sum of the items without delivery, in rubles.
+             * @description Saved discounted food (subtotal minus discount), excluding delivery.
              * @example 599
              */
             total: number;
@@ -3863,6 +4674,8 @@ export interface components {
                 name: string;
                 categoryName: string;
                 amount: number;
+                /** @description Saved line discount in rubles, not a unit price reduction. */
+                discount: number;
                 /** @description Rubles. The price the item was ordered at. */
                 offeredPrice: number;
             }[];
@@ -4329,7 +5142,7 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description The order cannot be accepted now (working hours or sale window). */
+        /** @description The order cannot be accepted now (working hours, sale window or manual dish block). */
         Unavailable: {
             headers: {
                 [name: string]: unknown;
