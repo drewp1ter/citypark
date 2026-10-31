@@ -73,19 +73,7 @@ export function useCheckoutQuote(
 			current = false
 		}
 	}, [request, key, enabled, dirty, restored])
-	useEffect(() => {
-		const refresh = () => {
-			if (document.visibilityState === 'visible') setRevision((value) => value + 1)
-		}
-		window.addEventListener('focus', refresh)
-		document.addEventListener('visibilitychange', refresh)
-		const timer = window.setInterval(refresh, 60000)
-		return () => {
-			window.removeEventListener('focus', refresh)
-			document.removeEventListener('visibilitychange', refresh)
-			window.clearInterval(timer)
-		}
-	}, [])
+	
 	const result = enabled && restored && !dirty && state?.key === key ? state.result : undefined
 	const quote: OrderQuote | undefined = result?.ok ? result.quote : undefined
 	return {
