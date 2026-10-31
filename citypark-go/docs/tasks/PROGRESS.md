@@ -153,6 +153,11 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
   - Implemented exception-message fallback and structured failed-attempt diagnostics; pickup/courier mapping and retry behavior are unchanged. Build, vet, formatting, package tests and coverage pass: iiko 94.1%, app 98.8%.
   - Completion blocked (2026-10-31): the serial full suite fails at the unchanged `internal/order/check_test.go:TestPayGET` (expects 200 SUCCESS and a paid order, receives 400 FAIL with missing operation ID/amount). Reproduces in isolation; the order package does not depend on the changed iiko/app packages. Left task 82 untouched, task 83 unchecked, and changes uncommitted until the required full suite passes. No real iiko request or replay of order 16 was made.
 
+## MONETA callback test repair
+
+- [x] [83b Repair MONETA GET callback regression test](83b-moneta-pay-get-regression.md) [82] (unblocks task 85 validation)
+  - Corrected the GET success fixture and added missing/mismatched amount rejection tests. Targeted tests, uncached serial full suite, build, vet and formatting pass; order coverage 91.6%. Task 85 remains separate.
+
 ## Promo codes
 
 Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blockers remain unchanged.

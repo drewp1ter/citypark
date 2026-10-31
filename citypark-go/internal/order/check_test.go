@@ -111,7 +111,12 @@ func TestMonetaMalformedForms(t *testing.T) {
 func TestPayGET(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
-	req := httptest.NewRequest(http.MethodGet, "/webhooks/moneta?MNT_TRANSACTION_ID="+strconv.FormatInt(id, 10), nil)
+	form := url.Values{
+		"MNT_TRANSACTION_ID": {strconv.FormatInt(id, 10)},
+		"MNT_OPERATION_ID":   {"555"},
+		"MNT_AMOUNT":         {"790.00"},
+	}
+	req := httptest.NewRequest(http.MethodGet, "/webhooks/moneta?"+form.Encode(), nil)
 	rec := httptest.NewRecorder()
 	newRouter(e, defaultOpts()).ServeHTTP(rec, req)
 	wantPlain(t, rec, 200, "SUCCESS")
@@ -129,4 +134,28 @@ func TestCheckHTTPBadSignature(t *testing.T) {
 		t.Fatalf("%d %s", rec.Code, rec.Body)
 	}
 	e.wantUntouched(t, id, StatusPending)
+}
+
+func TestPayGETInvalidAmount(t *testing.T) {
+	for _, tc := range []struct{ name, amount string }{
+		{"omitted", ""},
+		{"mismatch", "1.00"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newSvcEnv(t, friday)
+			id := seedPending(t, e)
+			form := url.Values{
+				"MNT_TRANSACTION_ID": {strconv.FormatInt(id, 10)},
+				"MNT_OPERATION_ID":   {"555"},
+			}
+			if tc.amount != "" {
+				form.Set("MNT_AMOUNT", tc.amount)
+			}
+			req := httptest.NewRequest(http.MethodGet, "/webhooks/moneta?"+form.Encode(), nil)
+			rec := httptest.NewRecorder()
+			newRouter(e, defaultOpts()).ServeHTTP(rec, req)
+			wantPlain(t, rec, http.StatusBadRequest, "FAIL")
+			e.wantUntouched(t, id, StatusPending)
+		})
+	}
 }
