@@ -1,103 +1,225 @@
-# Promo discounts in iiko: RMS contract planning
+# Promo RMS integration contract
 
-Status: **planned RMS mapping**, revised 2026-10-31. Task 84 remains unchecked until its revised
-source/fixture checks are completed. Owner accepts different iiko per-line allocations when eligible positions,
-total discount and food payment match exactly. The previous exact-per-line blocker is superseded.
-No application code, configuration, real orders or payments were changed.
+Verified 2026-10-31. Mandatory input to task 89. Business rules remain in [PROMOCODES.md](PROMOCODES.md).
 
 ## Official evidence
 
-Retrieved 2026-10-31:
+- [Documentation UI](https://api-ru.iiko.services/docs).
+- [Official OpenAPI document loaded by that UI](https://api-ru.iiko.services/api-docs/docs).
 
-- [iikoCloud API documentation](https://api-ru.iiko.services/docs).
-- [Official OpenAPI JSON](https://api-ru.iiko.services/api-docs/docs), referenced directly by that page's
-  `Redoc.init`. Retrieved successfully using HTTPS with curl; the browsing tool could not open this host.
-  SHA-256 of retrieved bytes: `022ffac44d581f981a76408c426bd30c3393ff0c5333c7b3d40629dc26bbffb7`.
-  Relevant schemas are under `components.schemas`, prefix
-  `iikoTransport.PublicApi.Contracts.Deliveries.Request.CreateOrder.`.
-- [Official iikoFront discount explanation](https://iiko.github.io/front.api.doc/v6/ru/Discounts.html).
-  This describes the Front SDK, **not** an alternative HTTP integration. It explains why selective application
-  alone does not prove a fixed result: other discount restrictions still apply, automatic discounts can exist,
-  and calculations may change until fixed. Do not infer HTTP capabilities from SDK methods.
+Retrieved both using HTTP GET. HEAD on /docs returned 404 even though GET returned 200.
+Schema SHA-256: `022ffac44d581f981a76408c426bd30c3393ff0c5333c7b3d40629dc26bbffb7`.
 
-The repository defaults to `https://api-ru.iiko.services/api` and sends `POST /api/1/deliveries/create`.
-This identifies the integration family; it does not establish the deployed restaurant's Front version or settings.
+The schema establishes the wire representation; it does not prove a restaurant's configuration or runtime acceptance.
+The relevant component names below share prefix `iikoTransport.PublicApi.Contracts.`:
 
-| Schema / endpoint | Established by official OpenAPI | Not established |
-|---|---|---|
-| `ProductOrderItem` | `productId`, unit `price`, optional `positionId`; supplied price can differ from menu price; position UUID must be globally unique | Monetary precision/rounding for a non-terminating discounted unit price; whether separate price positions are preserved or merged on the deployed Front |
-| `OrderItem` | `type`, `amount`; quantity range 0–999.999 | A line-total override field |
-| `DiscountsInfo` | `discounts`, `card`, `fixedLoyaltyDiscounts` | That fixing loyalty discounts disables every other automatic RMS discount |
-| `RmsDiscount` | `type: RMS`, `discountTypeId`, `sum`, `selectivePositions` (position UUIDs); supply sum only for an assign-amount discount | Exact allocation/rounding across positions; repeated instances of the same discount type with different sums/positions |
-| `IikoCardDiscount` | `type: iikoCard`, `programId`, `programName`, `discountItems`; each item has `positionId`, `sum`, `amount`; available from 7.4.4 | Permission to use this as an arbitrary website discount without a real configured card program; deployed program/version support |
-| `Payment` | `paymentTypeKind`, `paymentTypeId`, `sum`, `isProcessedExternally`; external processing means payment was made outside iiko | Acceptance of underpaying unchanged food lines as a discount |
-| `/api/1/discounts` | Organization-specific IDs, mode (`Percent`, `FlexibleSum`, `FixedSum`), selective-application capability and other restrictions | A usable discount ID or its deployed configuration without an organization response |
-| `/api/1/payment_types` | Payment kind, processing type (`External`, `Internal`, `Both`), available terminal groups | That the configured payment type supports these discounted orders |
+| Schema / endpoint | Supported contract |
+|---|---|
+| POST /api/1/deliveries/create | organizationId, terminalGroupId, order and existing createOrderSettings envelope |
+| Deliveries.Request.CreateOrder.ProductOrderItem | Original price per unit, inherited amount, productId, positionId UUID unique across the whole system |
+| Deliveries.Request.CreateOrder.Discount | type discriminator maps RMS to RmsDiscount |
+| Deliveries.Request.CreateOrder.RmsDiscount | discountTypeId UUID, sum, selectivePositions UUID array; sum is supplied only for assign-amount discounts |
+| Deliveries.Request.CreateOrder.Payment | paymentTypeKind, sum, paymentTypeId; isProcessedExternally means payment processed outside iiko |
+| POST /api/1/discounts | Request organizationIds array; response discounts grouped by organization |
+| Discounts.DiscountCardTypeInfo | mode, canBeAppliedSelectively, isCategorisedDiscount, productCategoryDiscounts, minOrderSum, isManual, isAutomatic, isDeleted |
+| Discounts.DiscountCardMode | Percent, FlexibleSum, FixedSum |
 
-## Exact arithmetic fixtures
+Use exactly one RMS entry in order.discountsInfo.discounts for positive saved discount. Its sum is the saved total in rubles. selectivePositions contains every saved eligible line, even when backend allocation is zero. For zero discount omit the RMS entry. Do not send response-only selectivePositionsWithSum as a create field.
+Generate random globally unique position UUIDs once and persist them with order snapshots; preserve them across retries together with the order UUID. Never reuse fixture UUIDs in real orders. Never reconstruct eligibility from current campaigns. Keep original quantities and offered unit prices; do not split or reprice positions.
 
-All amounts below are **integer kopecks**, quantities are unchanged. Product IDs are local fixture IDs, not
-invented iiko identifiers. These are exact saved-pricing examples; task 84 must still add complete RMS create-request fixtures.
-Campaign targets product 1 plus its category and product 2's category: product 1 qualifies once through the union;
-product 3 is ineligible. Percentage is 20, cap is 100 kopecks.
+## Restaurant setup and deployment acceptance
+
+IIKO_PROMO_DISCOUNT_TYPE_ID must reference a real discount returned for the configured organization by /api/1/discounts. Configure assign amount (FlexibleSum), canBeAppliedSelectively=true, nondeleted, manual and nonautomatic, without category restrictions or a minimum that changes the backend result. The assign-amount requirement is explicit in RmsDiscount; interpreting FlexibleSum as that setting must also be confirmed in restaurant setup. This is one shared RMS discount, not one per campaign.
+Confirm activation, time windows, VAT/tax treatment, discount combinations and both fulfillment modes in restaurant configuration. The dictionary does not expose every configuration condition. Confirm the existing configured payment ID/kind via /api/1/payment_types, processing type External or Both and availability for the terminal group, and its compatibility with this discount and external online payments. Do not infer compatibility from the schema alone.
+Task 89 must reject new promo orders before writes/payment creation when integration configuration is missing, using the shared contract's 503. Retain paid-order alert/retry handling. Deploy backend tasks 85–89 before enabling checkout campaigns.
+Keep campaigns disabled until an explicitly authorized restaurant acceptance check verifies pickup and courier creation, exact total discount, unchanged ineligible items and exact food payment. Inspect command completion and the resulting iikoFront order. Backend and iiko allocations across eligible lines may differ; this alone is acceptable. No real order or payment was sent for this task.
+
+Unsupported: Percent/FixedSum configuration for this sum override, nonselective discounts, conflicting automatic/category discounts, missing saved eligibility/position IDs, iikoCard substitution, split-price lines, stacking and refunds. A restaurant that cannot honor the exact total and eligible set blocks release; identical per-line rounding is not required.
+
+## Reconciled synthetic fixtures
+
+All UUIDs and contact/address values below are illustrative. Replace organization, terminal, catalog, payment and discount IDs with real configuration for authorized acceptance. Fixtures extend the current integration's legacy-address mapping and externally processed payment behavior.
+
+Campaign: 50%, cap 1.00 RUB (binding), selected product 1 plus its category (overlap counted once), product 2 also eligible. Product 3 is ineligible. Product 4 is eligible with zero backend allocation.
+
+| Product | Unit RUB | Quantity | Gross RUB | Eligible | Backend discount RUB |
+|---|---:|---:|---:|---|---:|
+| 1 | 100.00 | 3 | 300.00 | yes, overlapping targets | 0.60 |
+| 2 | 100.00 | 2 | 200.00 | yes | 0.40 |
+| 3 | 50.00 | 1 | 50.00 | no | 0.00 |
+| 4 | 0.01 | 1 | 0.01 | yes | 0.00 |
+
+Eligible subtotal 500.01; floor(50001 * 50 / 100) = 25000 kopecks; cap yields 100. Proportional floors are 59, 39, 0; descending remainders assign one extra kopeck each to products 1 and 2. Gross food 550.01 minus discount 1.00 = iiko food total/payment 549.01. Product 2's net 199.60 / 2 divides evenly, but product 1's 299.40 / 3 also divides evenly; the additional fixture below exercises indivisible net unit prices.
+
+Pickup has delivery 0 and MONETA 549.01. Courier assumes the existing town rule yields delivery 100.00 after discount: iiko food/payment remains 549.01, MONETA is 649.01. Delivery remains a paid-delivery comment, with no delivery position or discount.
+
+### Pickup
 
 ```json
 {
-  "percentage": 20,
-  "maximumDiscountKopecks": 100,
-  "items": [
-    {"productId": 1, "amount": 3, "offeredPriceKopecks": 101, "discountKopecks": 43},
-    {"productId": 2, "amount": 2, "offeredPriceKopecks": 202, "discountKopecks": 57},
-    {"productId": 3, "amount": 1, "offeredPriceKopecks": 500, "discountKopecks": 0}
-  ],
-  "subtotalKopecks": 1207,
-  "eligibleSubtotalKopecks": 707,
-  "discountKopecks": 100,
-  "totalKopecks": 1107
+  "organizationId": "00000000-0000-4000-8000-000000000020",
+  "terminalGroupId": "00000000-0000-4000-8000-000000000021",
+  "createOrderSettings": {
+    "transportToFrontTimeout": 180
+  },
+  "order": {
+    "id": "00000000-0000-4000-8000-000000000010",
+    "externalNumber": "100",
+    "phone": "+79990000000",
+    "orderServiceType": "DeliveryByClient",
+    "customer": {
+      "type": "one-time",
+      "name": "Тест"
+    },
+    "comment": "Заказ с сайта, оплачен онлайн",
+    "items": [
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000001",
+        "positionId": "00000000-0000-4000-8000-000000000101",
+        "amount": 3,
+        "price": 100
+      },
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000002",
+        "positionId": "00000000-0000-4000-8000-000000000102",
+        "amount": 2,
+        "price": 100
+      },
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000003",
+        "positionId": "00000000-0000-4000-8000-000000000103",
+        "amount": 1,
+        "price": 50
+      },
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000004",
+        "positionId": "00000000-0000-4000-8000-000000000104",
+        "amount": 1,
+        "price": 0.01
+      }
+    ],
+    "discountsInfo": {
+      "discounts": [
+        {
+          "type": "RMS",
+          "discountTypeId": "00000000-0000-4000-8000-000000000030",
+          "sum": 1,
+          "selectivePositions": [
+            "00000000-0000-4000-8000-000000000101",
+            "00000000-0000-4000-8000-000000000102",
+            "00000000-0000-4000-8000-000000000104"
+          ]
+        }
+      ]
+    },
+    "payments": [
+      {
+        "paymentTypeKind": "Card",
+        "paymentTypeId": "00000000-0000-4000-8000-000000000040",
+        "sum": 549.01,
+        "isProcessedExternally": true
+      }
+    ]
+  }
 }
 ```
 
-Calculation: uncapped discount = floor(707 × 20 / 100) = 141, capped to 100.
-Allocation floors are 42 and 57; remainders are 606/707 and 101/707. The last kopeck goes to product 1,
-so discounts are 43 and 57. Net lines are 260, 347, 500; their sum is 1107.
+### Courier
 
-| Fulfillment | Original food | Discount | Required iiko item total | Required food payment | Delivery | MONETA |
-|---|---:|---:|---:|---:|---:|---:|
-| Pickup | 1207 | 100 | 1107 | 1107 | 0 | 1107 |
-| Courier, town price 10000 and free threshold 100000 | 1207 | 100 | 1107 | 1107 | 10000 | 11107 |
+```json
+{
+  "organizationId": "00000000-0000-4000-8000-000000000020",
+  "terminalGroupId": "00000000-0000-4000-8000-000000000021",
+  "createOrderSettings": {
+    "transportToFrontTimeout": 180
+  },
+  "order": {
+    "id": "00000000-0000-4000-8000-000000000011",
+    "externalNumber": "101",
+    "phone": "+79990000000",
+    "orderServiceType": "DeliveryByCourier",
+    "customer": {
+      "type": "one-time",
+      "name": "Тест"
+    },
+    "comment": "Заказ с сайта, оплачен онлайн\nАдрес: Белореченск, тестовый адрес, 1\nДоставка: 100.00 ₽ (оплачена)",
+    "items": [
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000001",
+        "positionId": "00000000-0000-4000-8000-000000000101",
+        "amount": 3,
+        "price": 100
+      },
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000002",
+        "positionId": "00000000-0000-4000-8000-000000000102",
+        "amount": 2,
+        "price": 100
+      },
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000003",
+        "positionId": "00000000-0000-4000-8000-000000000103",
+        "amount": 1,
+        "price": 50
+      },
+      {
+        "type": "Product",
+        "productId": "00000000-0000-4000-8000-000000000004",
+        "positionId": "00000000-0000-4000-8000-000000000104",
+        "amount": 1,
+        "price": 0.01
+      }
+    ],
+    "discountsInfo": {
+      "discounts": [
+        {
+          "type": "RMS",
+          "discountTypeId": "00000000-0000-4000-8000-000000000030",
+          "sum": 1,
+          "selectivePositions": [
+            "00000000-0000-4000-8000-000000000101",
+            "00000000-0000-4000-8000-000000000102",
+            "00000000-0000-4000-8000-000000000104"
+          ]
+        }
+      ]
+    },
+    "payments": [
+      {
+        "paymentTypeKind": "Card",
+        "paymentTypeId": "00000000-0000-4000-8000-000000000040",
+        "sum": 549.01,
+        "isProcessedExternally": true
+      }
+    ],
+    "deliveryPoint": {
+      "address": {
+        "type": "legacy",
+        "street": {
+          "name": "Ленина",
+          "city": "Белореченск"
+        },
+        "house": "1"
+      },
+      "comment": "Белореченск, тестовый адрес, 1"
+    }
+  }
+}
+```
 
-The courier fixture retains the existing placeholder `deliveryPoint.address` and actual address in comments.
-Delivery stays out of items and the iiko payment, and is recorded as paid in the existing delivery comment.
-Its fee is evaluated against food **after** discount. Pickup retains `DeliveryByClient`; courier retains
-`DeliveryByCourier`. Existing IDs, customer fields and retry behavior must be preserved.
+### Indivisible-unit boundary
 
-## Selected RMS mapping
+Use either fixture with cap 1.01 instead of 1.00: allocation becomes 0.61, 0.40, 0, 0 (same remainder method). Product 1 net is 299.39 RUB for quantity 3, which cannot be represented as an integer-kopeck unit price. Keep price=100 and amount=3; change only RMS sum to 1.01 and payment sum to 549.00. Gross 550.01 - 1.01 = 549.00; MONETA pickup=549.00, courier=649.00. Eligibility still includes product 4. This representation avoids division of net line values into unit prices.
 
-Use one real restaurant RMS discount type configured for assign-amount (FlexibleSum) and selective application.
-Configure its UUID through IIKO_PROMO_DISCOUNT_TYPE_ID; do not create an iiko campaign for each website code.
-Keep the original item prices and quantities. Assign globally unique position UUIDs once for an outgoing order,
-reusing them throughout retries. Send one order.discountsInfo.discounts entry with type=RMS, discountTypeId,
-sum equal to the saved total discount in rubles, and selectivePositions containing all saved eligible positions.
-Include eligible positions even if their backend allocation rounded to zero; never infer eligibility from a positive
-discount or current campaign targets. Task 88 must persist this membership. Omit the RMS entry for zero discount.
+### Zero-discount boundary
 
-For the arithmetic fixture above, send original unit prices 1.01, 2.02 and 5.00 rubles, quantities 3, 2 and 1,
-and RMS sum 1.00 applied only to positions for products 1 and 2. Required food payment is 11.07 rubles.
-iiko may allocate that 1.00 differently from our saved 0.43/0.57; ineligible product 3 must not receive it.
-Our API/history retain backend allocations. No split-price items, fractional-kopeck unit prices, repeated RMS
-entries or iikoCard programs are needed. Delivery and payment treatment remain as described above.
+For saved discount 0 omit the RMS entry, retain original prices and quantities, and send food payment 550.01; MONETA is 550.01 for pickup or 650.01 with delivery 100.00. Re-evaluate the existing town threshold against discounted food when initially pricing each order; these courier examples assume delivery remains 100.00. Retries use saved totals.
 
-## Remaining task 84 work and release checks
-
-Task 84 must add complete pickup/courier HTTP JSON fixtures with clearly labelled fixture UUIDs, verify their
-schema fields and reconcile totals. This plan update does not mark those acceptance checks complete.
-Restaurant configuration is a deployment requirement: confirm the real ID via /api/1/discounts, FlexibleSum and
-selective settings, payment compatibility via /api/1/payment_types, and both fulfillment modes. Confirm no
-category/time/minimum restrictions, automatic discounts or tax settings alter the required result.
-
-Task 89 adds and validates IIKO_PROMO_DISCOUNT_TYPE_ID. Missing configuration rejects new promo orders before
-writes/payment creation with 503 «Заказы с промокодом временно недоступны.». Existing pending retries keep
-saved monetary snapshots; already-paid dispatch failures retain alerts and retry behavior. Keep campaigns
-disabled until an explicitly authorized acceptance check verifies the actual RMS discount and food payment.
-No real orders are authorized by this documentation task. External payment processing does not imply external
-fiscalization; retain existing fiscalization behavior.
+Verification: source links retrieved, create request inheritance/discriminators and dictionary fields inspected, all fixture sums reconciled in integer kopecks. No application changes; application tests are unnecessary for this documentation-only task. Restaurant setup and authorized runtime acceptance remain release checks.

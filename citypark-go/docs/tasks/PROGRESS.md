@@ -157,7 +157,7 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
 
 Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blockers remain unchanged.
 
-- [ ] [84 Promo RMS contract](84-promo-iiko-contract.md) [83]
+- [x] [84 Promo RMS contract](84-promo-iiko-contract.md) [83]
   - Plan revised (2026-10-31): use one configured RMS flexible-sum discount with saved eligible positions. Owner accepts different iiko per-line rounding; total discount and food payment must match exactly. The earlier exact-line-mapping blocker is superseded. Task 84 remains unchecked pending its revised documentation/fixture checks; restaurant setup and authorized total reconciliation remain release requirements. See [IIKO_PROMOCODES.md](IIKO_PROMOCODES.md).
 - [ ] [85 Promo campaign persistence](85-promo-campaign-store.md) [84]
 - [ ] [86 Promo campaign admin API](86-promo-campaign-api.md) [85]
