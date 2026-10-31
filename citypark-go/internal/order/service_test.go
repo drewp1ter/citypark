@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"slices"
 	"testing"
 	"time"
@@ -54,6 +55,22 @@ var friday = time.Date(2024, 5, 24, 15, 0, 0, 0, time.UTC)
 func newSvcEnv(t *testing.T, now time.Time) *svcEnv {
 	t.Helper()
 	db := testutil.NewDB(t)
+	var settingsData []byte
+	if err := db.Get(&settingsData, `SELECT data FROM site_settings WHERE id=1`); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		restore, err := sqlx.Connect("pgx", os.Getenv("TEST_DB_DSN"))
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		defer restore.Close()
+		if _, err := restore.Exec(`INSERT INTO site_settings (id, data) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET data=EXCLUDED.data`, settingsData); err != nil {
+			t.Error(err)
+		}
+	})
+	db.MustExec(`UPDATE site_settings SET data=jsonb_set(data::jsonb, '{promoCodesEnabled}', 'true') WHERE id=1`)
 	e := &svcEnv{db: db, notifier: &fakeNotifier{}, payments: &fakePayments{form: PaymentForm{Amount: "749.00", Signature: "sig", URL: "https://pay.test/?x"}}}
 	e.category = testutil.InsertCategory(t, db, testutil.Category{Name: "Мангал"})
 	e.productA = testutil.InsertProduct(t, db, testutil.Product{CategoryID: e.category, Name: "Шашлык", PriceKopecks: 59900})

@@ -318,3 +318,33 @@ func TestStoreGetBadData(t *testing.T) {
 		t.Error("Get on malformed data returned no error")
 	}
 }
+
+func TestPromoCodesEnabledRoundTrip(t *testing.T) {
+	f := newFixture(t)
+	f.db.MustExec(`UPDATE site_settings SET data=data::jsonb - 'promoCodesEnabled' WHERE id=1`)
+	m, st := f.get(t)
+	if st.PromoCodesEnabled || m["promoCodesEnabled"] != false {
+		t.Fatal(m)
+	}
+	for _, value := range []bool{true, false} {
+		body := f.seeded(t)
+		body["promoCodesEnabled"] = value
+		code, response := f.put(t, f.admin, body)
+		if code != 200 || response["promoCodesEnabled"] != value {
+			t.Fatalf("%d %v", code, response)
+		}
+		_, stored := f.get(t)
+		if stored.PromoCodesEnabled != value {
+			t.Fatal(stored)
+		}
+	}
+	body := f.seeded(t)
+	body["promoCodesEnabled"] = true
+	if code, _ := f.put(t, f.admin, body); code != 200 {
+		t.Fatal(code)
+	}
+	delete(body, "promoCodesEnabled")
+	if code, out := f.put(t, f.admin, body); code != 200 || out["promoCodesEnabled"] != false {
+		t.Fatalf("%d %v", code, out)
+	}
+}

@@ -14,6 +14,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/money"
 	"github.com/drewp1ter/citypark-go/internal/promo"
+	"github.com/drewp1ter/citypark-go/internal/settings"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/validate"
 )
@@ -47,6 +48,17 @@ func quoteCodeError(message string) error {
 	return e
 }
 
+func checkPromoEnabled(ctx context.Context, db store.DBTX) error {
+	st, _, err := settings.NewStore(db).Get(ctx)
+	if err != nil {
+		return err
+	}
+	if !st.PromoCodesEnabled {
+		return quoteCodeError("Промокоды временно отключены.")
+	}
+	return nil
+}
+
 // Quote reads a repeatable snapshot without creating any business records or payments.
 func (s *Service) Quote(ctx context.Context, in QuoteInput) (Quote, error) {
 	if err := validate.Struct(in); err != nil {
@@ -71,6 +83,9 @@ func (s *Service) Quote(ctx context.Context, in QuoteInput) (Quote, error) {
 	var campaign *promo.Campaign
 	code := strings.TrimSpace(in.PromoCode)
 	if code != "" {
+		if err := checkPromoEnabled(ctx, tx); err != nil {
+			return Quote{}, err
+		}
 		// Validate format without invoking campaign configuration validation.
 		code = strings.Map(func(r rune) rune {
 			if r >= 'a' && r <= 'z' {

@@ -196,6 +196,10 @@ func TestPromoPayment(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	e.db.MustExec(`UPDATE site_settings SET data=jsonb_set(data::jsonb, '{promoCodesEnabled}', 'false') WHERE id=1`)
+	if retry, err := e.svc.Create(context.Background(), in); err != nil || retry.OrderID != res.OrderID {
+		t.Fatalf("retry %v %v", retry, err)
+	}
 	e.payments.valid = true
 	e.payments.form.Amount = "779.10"
 	cb := callback(res.OrderID)
@@ -359,5 +363,63 @@ func TestPromoRollbackProtection(t *testing.T) {
 	defer tx.Rollback()
 	if _, err = tx.Exec(down); err == nil || !strings.Contains(err.Error(), "cannot discard order promo snapshots") {
 		t.Fatalf("rollback protection: %v", err)
+	}
+}
+
+func TestGlobalPromoSwitch(t *testing.T) {
+	e := newSvcEnv(t, friday)
+	quoteCampaign(t, e, baseCampaign())
+	in := promoInput(t, e)
+	e.db.MustExec(`UPDATE site_settings SET data=jsonb_set(data::jsonb, '{promoCodesEnabled}', 'false') WHERE id=1`)
+	quote := QuoteInput{Items: in.Items, Fulfillment: "pickup", PromoCode: in.PromoCode}
+	router := newRouter(e, defaultOpts())
+	rec := testutil.DoJSON(t, router, "POST", "/orders/quote", "", quote)
+	var response struct {
+		Errors map[string]string `json:"errors"`
+	}
+	testutil.Decode(t, rec, &response)
+	if rec.Code != 400 || response.Errors["promoCode"] != "Промокоды временно отключены." {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	body := orderBody(e, true)
+	body["promoCode"] = "SAVE10"
+	body["expectedPayableTotal"] = 779.10
+	rec = testutil.DoJSON(t, router, "POST", "/orders", "", body)
+	testutil.Decode(t, rec, &response)
+	if rec.Code != 400 || response.Errors["promoCode"] != "Промокоды временно отключены." {
+		t.Fatalf("%d %s", rec.Code, rec.Body)
+	}
+	e.svc.ConfigurePromo("")
+	_, err := e.svc.Create(context.Background(), in)
+	var he *httpx.Error
+	if !errors.As(err, &he) || he.Status != 400 || he.Fields["promoCode"] != "Промокоды временно отключены." {
+		t.Fatal(err)
+	}
+	for _, table := range []string{"orders", "users", "addresses"} {
+		if testutil.Count(t, e.db, "SELECT count(*) FROM "+table) != 0 {
+			t.Fatal(table)
+		}
+	}
+	quote.PromoCode = ""
+	if _, err := e.svc.Quote(context.Background(), quote); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Create(context.Background(), e.input(false)); err != nil {
+		t.Fatal(err)
+	}
+	e.db.MustExec(`DELETE FROM site_settings WHERE id=1`)
+	quote.PromoCode = "SAVE10"
+	if _, err := e.svc.Quote(context.Background(), quote); err == nil {
+		t.Fatal("missing settings permitted quote")
+	}
+	if _, err := e.svc.Create(context.Background(), in); err == nil {
+		t.Fatal("missing settings permitted order")
+	}
+	e.db.MustExec(`INSERT INTO site_settings (id, data) VALUES (1, '[]')`)
+	if _, err := e.svc.Quote(context.Background(), quote); err == nil {
+		t.Fatal("unreadable settings permitted quote")
+	}
+	if _, err := e.svc.Create(context.Background(), in); err == nil {
+		t.Fatal("unreadable settings permitted order")
 	}
 }

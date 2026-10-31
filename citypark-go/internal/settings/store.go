@@ -27,7 +27,8 @@ type Social struct {
 }
 
 type Settings struct {
-	Phones struct {
+	PromoCodesEnabled bool `json:"promoCodesEnabled"`
+	Phones            struct {
 		Restaurant Phone `json:"restaurant"`
 		Hotel      Phone `json:"hotel"`
 		Free       Phone `json:"free"`

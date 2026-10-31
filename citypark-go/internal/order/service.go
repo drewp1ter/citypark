@@ -185,9 +185,6 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 		found = true
 	}
 
-	if !found && code != "" && s.promoDiscountTypeID == "" {
-		return CreateResult{}, httpx.NewError(503, "Заказы с промокодом временно недоступны.")
-	}
 	if !found {
 		id, err := s.save(ctx, saveParams{
 			scope:        scope,
@@ -287,6 +284,12 @@ func (s *Service) save(ctx context.Context, p saveParams) (int64, error) {
 	err := store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
 		var campaign *promo.Campaign
 		if p.promoCode != "" {
+			if err := checkPromoEnabled(ctx, tx); err != nil {
+				return err
+			}
+			if s.promoDiscountTypeID == "" {
+				return httpx.NewError(503, "Заказы с промокодом временно недоступны.")
+			}
 			c, e := promo.NewStore(tx).ByCode(ctx, p.promoCode)
 			if errors.Is(e, store.ErrNotFound) {
 				return quoteCodeError("Промокод недействителен.")

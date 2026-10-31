@@ -2081,7 +2081,7 @@ The site's contact details are one object. Navigation, legal links, the site nam
 
 #### GET /settings
 
-Returns the contact details.
+Returns the contact details and global promo-code switch.
 
 - **Role:** public
 
@@ -2089,6 +2089,7 @@ Returns the contact details.
 
 ```json
 {
+  "promoCodesEnabled": false,
   "phones": {
     "restaurant": { "label": "Ресторан и доставка", "shortLabel": "Ресторан", "display": "8 918 311-97-91", "number": "+79183119791", "altDisplay": "8 (86155) 3-30-03", "altNumber": "+78615533003" },
     "hotel": { "label": "Отель", "shortLabel": "Отель", "display": "8 918 311-97-10", "number": "+79183119710", "altDisplay": "8 (86155) 3-30-02", "altNumber": "+78615533002" },
@@ -2111,6 +2112,7 @@ Returns the contact details.
 | `phones.restaurant`, `.hotel`, `.free`, `.landline` | `label` and `shortLabel` are titles; `display` is the text to show; `number` is for the `tel:` link |
 | `altDisplay`, `altNumber` | a second (landline) number; both are `""` when there is none |
 | `social[].url` | always starts with `https://` |
+| `promoCodesEnabled` | Global switch for new promo quotes and orders; defaults to false for existing settings. |
 
 **Errors**
 
@@ -2132,6 +2134,7 @@ Replaces the whole settings object.
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
+| `promoCodesEnabled` | boolean | no | Omission defaults to false. |
 | `phones.<name>.label` | string | yes | at most 60 characters (`<name>` is `restaurant`, `hotel`, `free` or `landline`) |
 | `phones.<name>.shortLabel` | string | yes | at most 30 characters |
 | `phones.<name>.display` | string | yes | at most 40 characters |
@@ -2155,6 +2158,7 @@ Every string is trimmed before it is checked. An `updatedAt` in the body is igno
 
 ```json
 {
+  "promoCodesEnabled": false,
   "phones": {
     "restaurant": { "label": "Ресторан и доставка", "shortLabel": "Ресторан", "display": "8 918 311-97-91", "number": "+79183119791", "altDisplay": "8 (86155) 3-30-03", "altNumber": "+78615533003" },
     "hotel": { "label": "Отель", "shortLabel": "Отель", "display": "8 918 311-97-10", "number": "+79183119710", "altDisplay": "8 (86155) 3-30-02", "altNumber": "+78615533002" },
@@ -2343,6 +2347,7 @@ Promo orders require a confirmed quote total. A mismatch returns 409 before any 
 | 400 | `address.city` is not a known delivery city | `Указано не существующее имя населенного пункта.` |
 | 400 | a product does not exist or is deleted | `Продукт не найден.` |
 | 400 | Missing/nonpositive expectedPayableTotal on promo order; errors.expectedPayableTotal | `Подтвердите итоговую сумму заказа.` |
+| 400 | Global promo switch disabled for a new order; errors.promoCode | `Промокоды временно отключены.` |
 | 400 | Invalid promo code format; errors.promoCode | `Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.` |
 | 400 | Unknown/disabled/future/expired code on a fresh order; errors.promoCode | `Промокод недействителен.` |
 | 400 | No eligible positive spend; errors.promoCode | `В корзине нет блюд для этого промокода.` |
@@ -3424,6 +3429,7 @@ Items retain original unit offeredPrice and merged quantity; discount is per lin
 | 400 | Repeated amounts overflow | `Некорректное количество.` |
 | 400 | Missing/deleted product | `Продукт не найден.` |
 | 400 | Unknown delivery town | `Указано не существующее имя населенного пункта.` |
+| 400 | Global promo switch disabled; errors.promoCode | `Промокоды временно отключены.` |
 | 400 | Malformed promoCode | `Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний.` |
 | 400 | Unknown, disabled, future or expired promoCode | `Промокод недействителен.` |
 | 400 | No eligible positive food spend | `В корзине нет блюд для этого промокода.` |
@@ -3434,4 +3440,4 @@ Items retain original unit offeredPrice and merged quantity; discount is per lin
 | 503 | Category or product closed by time | `Время заказа "{name}" ограничено с {start} до {end}.` |
 | 500 | Database errors or unrepresentable monetary totals | `Внутренняя ошибка сервера` |
 
-Promo failures use the standard validation message with the exact text above in errors.promoCode. Dates use start inclusive and end exclusive. Eligibility is the union of current category membership and explicit product selections; overlap never doubles a discount. Discount is floor(eligibleSubtotal * percentage / 100), limited by optional cap. Delivery thresholds use discounted food total.
+The global settings switch defaults to false; no-code checkout and saved-order retries remain available when disabled. Promo failures use the standard validation message with the exact text above in errors.promoCode. Dates use start inclusive and end exclusive. Eligibility is the union of current category membership and explicit product selections; overlap never doubles a discount. Discount is floor(eligibleSubtotal * percentage / 100), limited by optional cap. Delivery thresholds use discounted food total.
