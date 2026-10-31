@@ -17,8 +17,8 @@ export const PHONES: readonly { name: PhoneName; title: string }[] = [
 
 export const MAX_SOCIAL = 10
 
-// Every value is a string, so the form has the same shape as the request.
-export type SettingsForm = SettingsData
+// The form uses the request shape, with an explicit value for the optional switch.
+export type SettingsForm = SettingsData & { promoCodesEnabled: boolean }
 
 /** Error messages by the backend's dotted keys: `email`, `phones.hotel.number`, `social[0].url`. */
 export type SettingsErrors = Record<string, string>
@@ -51,6 +51,7 @@ export function toForm(settings: SettingsData): SettingsForm {
 		altNumber: p.altNumber,
 	})
 	return {
+		promoCodesEnabled: settings.promoCodesEnabled ?? false,
 		phones: {
 			restaurant: phone(settings.phones.restaurant),
 			hotel: phone(settings.phones.hotel),
@@ -75,6 +76,7 @@ export function toRequest(f: SettingsForm): SettingsData {
 		altNumber: p.altNumber.trim(),
 	})
 	return {
+		promoCodesEnabled: f.promoCodesEnabled,
 		phones: {
 			restaurant: phone(f.phones.restaurant),
 			hotel: phone(f.phones.hotel),

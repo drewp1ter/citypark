@@ -19,6 +19,7 @@ const phone = (display: string, number: string) => ({
 })
 
 const settings: SettingsData = {
+	promoCodesEnabled: false,
 	phones: {
 		restaurant: phone('8 918 311-97-91', '+79183119791'),
 		hotel: phone('8 918 311-97-10', '+79183119710'),
@@ -46,8 +47,14 @@ describe('displayToNumber', () => {
 })
 
 describe('toForm / toRequest', () => {
+	it.each([true, false])('preserves the promo switch: %s', (promoCodesEnabled) => {
+		const form = toForm({ ...settings, promoCodesEnabled })
+		expect(form.promoCodesEnabled).toBe(promoCodesEnabled)
+		expect(toRequest(form).promoCodesEnabled).toBe(promoCodesEnabled)
+	})
+
 	it('round-trips valid settings', () => {
-		expect(toRequest(toForm(settings))).toEqual(settings)
+		expect(toRequest(toForm(settings))).toEqual({ ...settings, promoCodesEnabled: false })
 	})
 
 	it('drops updatedAt and trims texts', () => {

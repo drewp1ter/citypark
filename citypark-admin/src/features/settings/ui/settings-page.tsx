@@ -1,4 +1,4 @@
-import { Button, Card, FieldError, Form, Input, Label, Skeleton, Spinner, TextField } from '@heroui/react'
+import { Button, Card, FieldError, Form, Input, Label, Skeleton, Spinner, Switch, TextField } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
 import { useBlocker } from '@tanstack/react-router'
 import { useState, type FormEvent, type ReactNode } from 'react'
@@ -116,6 +116,19 @@ function SettingsFormView({ settings }: { settings: SettingsData }) {
 
 	return (
 		<Form onSubmit={submit} validationBehavior='aria' className='flex max-w-3xl flex-col gap-6'>
+			<Section title='Настройки заказа'>
+				<Switch
+					isSelected={form.promoCodesEnabled}
+					onChange={(promoCodesEnabled) => setForm((current) => ({ ...current, promoCodesEnabled }))}
+				>
+					<Switch.Content>
+						<Switch.Control>
+							<Switch.Thumb />
+						</Switch.Control>
+						<Label>Промокоды включены</Label>
+					</Switch.Content>
+				</Switch>
+			</Section>
 			<Section title='Телефоны'>
 				{PHONES.map(({ name, title }) => (
 					<PhoneFields

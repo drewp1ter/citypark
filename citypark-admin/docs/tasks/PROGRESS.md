@@ -64,3 +64,6 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
   - Added campaign creation/editing/disabling, searchable independent targets and explicit Moscow schedules with preserved form errors. API generation, check (294 unit tests), build and four real-backend Playwright flows pass at 390/1440 px in both themes with a non-Moscow browser timezone. All test campaigns are disabled.
 - [x] [28 Promo order breakdown](28-promo-order-details.md) [admin27; backend89]
   - Previous backend 503 blocker resolved after owner configuration (2026-10-31). Added stored subtotal/code/discount/food total and line discounts without changing no-code presentation or subtracting discounts twice. API generation, check (294 unit tests), build and four real-backend promo-order flows pass at 390/1440 px in both themes, covering capped discounts, pickup/delivery, immutable snapshots after campaign edits, legacy display and live totals. Test campaigns are disabled; test orders remain unpaid. No payment callback, real charge or iiko order was sent.
+
+- [x] [29 Global promo-code switch in settings](29-global-promo-switch.md) [Backend task 90 and admin task 28]
+  - API generation, check (296 tests), build and settings Playwright flow pass against the restarted backend. The original switch value was restored.

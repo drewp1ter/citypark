@@ -2989,7 +2989,7 @@ export interface paths {
                         "application/json": components["schemas"]["CreateOrderResult"];
                     };
                 };
-                /** @description Standard validation/JSON errors. errors.expectedPayableTotal: Подтвердите итоговую сумму заказа. errors.promoCode: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. Or Промокод недействителен. / В корзине нет блюд для этого промокода. / Недостаточная сумма подходящих блюд для промокода. Quantity overflow: Некорректное количество. */
+                /** @description Standard validation/JSON errors. errors.expectedPayableTotal: Подтвердите итоговую сумму заказа. errors.promoCode: Промокоды временно отключены. / Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. Or Промокод недействителен. / В корзине нет блюд для этого промокода. / Недостаточная сумма подходящих блюд для промокода. Quantity overflow: Некорректное количество. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -4207,7 +4207,7 @@ export interface paths {
         put?: never;
         /**
          * Quote current food and delivery pricing
-         * @description Public with optional authentication. No orders, customers, reservations or payments created. Private/no-store including errors. Fresh catalog availability and campaign snapshot; start inclusive/end exclusive. Merge duplicates; union eligibility; floor percentage discount with optional cap; largest remainder allocation with productId tie break. Delivery threshold uses discounted food. No-code quotes have null promoCode, zero eligible subtotal and discounts. Pickup has zero delivery fee. Working-hours placement middleware is not applied.
+         * @description Public with optional authentication. No orders, customers, reservations or payments created. Private/no-store including errors. Fresh catalog availability and campaign snapshot; start inclusive/end exclusive. Merge duplicates; union eligibility; floor percentage discount with optional cap; largest remainder allocation with productId tie break. Delivery threshold uses discounted food. No-code quotes have null promoCode, zero eligible subtotal and discounts. Pickup has zero delivery fee. The global promo switch defaults to false; no-code quotes remain available. Working-hours placement middleware is not applied.
          */
         post: {
             parameters: {
@@ -4274,7 +4274,7 @@ export interface paths {
                         "application/json": components["schemas"]["OrderQuote"];
                     };
                 };
-                /** @description Некорректный JSON for malformed body/types. Standard validation envelope for missing/invalid items, fulfillment or required city. Некорректное количество. for quantity overflow. Продукт не найден. for unknown products. Указано не существующее имя населенного пункта. for unknown towns. Promo field errors use message Ошибка валидации, пожалуйста проверьте введенные вами данные and errors.promoCode: Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. Промокод недействителен. В корзине нет блюд для этого промокода. Недостаточная сумма подходящих блюд для промокода. */
+                /** @description Некорректный JSON for malformed body/types. Standard validation envelope for missing/invalid items, fulfillment or required city. Некорректное количество. for quantity overflow. Продукт не найден. for unknown products. Указано не существующее имя населенного пункта. for unknown towns. Promo field errors use message Ошибка валидации, пожалуйста проверьте введенные вами данные and errors.promoCode: Промокоды временно отключены. Промокод должен содержать от 3 до 32 латинских букв, цифр, дефисов или подчёркиваний. Промокод недействителен. В корзине нет блюд для этого промокода. Недостаточная сумма подходящих блюд для промокода. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -4900,6 +4900,11 @@ export interface components {
             display: string;
         };
         Settings: {
+            /**
+             * @description Global switch for new promo quotes and orders; omitted values and existing settings default to false.
+             * @default false
+             */
+            promoCodesEnabled: boolean;
             phones: {
                 restaurant: components["schemas"]["SettingsPhone"];
                 hotel: components["schemas"]["SettingsPhone"];
