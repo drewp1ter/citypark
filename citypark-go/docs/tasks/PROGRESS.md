@@ -149,6 +149,17 @@ Release sequence and future numbered tasks: [CUSTOMER_ACCOUNTS.md](CUSTOMER_ACCO
   - Added requested Python Pay URL simulator with order-ID CLI, signed amount lookup, explicit amount override and dry run; six isolated Python tests pass. No real payment callback was sent. Existing backend database-validation block remains.
 
 ## iiko order diagnostics
-- [ ] [83 iiko order error diagnostics](83-iiko-order-error-diagnostics.md) [62, 79]
+- [x] [83 iiko order error diagnostics](83-iiko-order-error-diagnostics.md) [62, 79]
   - Implemented exception-message fallback and structured failed-attempt diagnostics; pickup/courier mapping and retry behavior are unchanged. Build, vet, formatting, package tests and coverage pass: iiko 94.1%, app 98.8%.
   - Completion blocked (2026-10-31): the serial full suite fails at the unchanged `internal/order/check_test.go:TestPayGET` (expects 200 SUCCESS and a paid order, receives 400 FAIL with missing operation ID/amount). Reproduces in isolation; the order package does not depend on the changed iiko/app packages. Left task 82 untouched, task 83 unchecked, and changes uncommitted until the required full suite passes. No real iiko request or replay of order 16 was made.
+
+## Promo codes
+
+Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blockers remain unchanged.
+
+- [ ] [84 Promo iiko contract](84-promo-iiko-contract.md) [83]
+- [ ] [85 Promo campaign persistence](85-promo-campaign-store.md) [84]
+- [ ] [86 Promo campaign admin API](86-promo-campaign-api.md) [85]
+- [ ] [87 Promo pricing and quotes](87-promo-pricing-quotes.md) [85]
+- [ ] [88 Promo order snapshots and payments](88-promo-order-snapshots.md) [87]
+- [ ] [89 Promo iiko and staff integration](89-promo-order-integrations.md) [84, 88]

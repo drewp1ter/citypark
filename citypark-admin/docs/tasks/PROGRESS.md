@@ -55,3 +55,10 @@ stop if that task is not ticked.
   - Show the persistent manual block separately from schedule-based unavailability. Disable the switch while saving, report success/failure and refresh menu data after success.
   - Test block/unblock, failed saves and state refresh on mobile and desktop; run required admin checks and the menu flow against the updated backend.
   - API types regenerated; check (274 unit tests), build and menu e2e pass, including save failure and restored block/unblock fixtures. Optional QA_PUBLIC_BASE_URL runs the public blocked-dish flow while the fixture is blocked.
+
+## Promo codes
+
+Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md). Planned only; existing blockers remain unchanged.
+
+- [ ] [27 Promo campaign management](27-promo-campaigns.md) [admin26; backend86]
+- [ ] [28 Promo order breakdown](28-promo-order-details.md) [admin27; backend89]
