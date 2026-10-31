@@ -75,7 +75,8 @@ Total = subtotal - D. Delivery = existing town rule evaluated on total; pickup d
 Rounding down ensures a positive priced food order cannot become free with 1–99%; retain existing
 validation for zero-priced carts rather than adding a new payment-free flow.
 
-Persist original offered prices, per-line discount and campaign ID/code/percentage snapshot alongside order
+Persist original offered prices, per-line discount, per-line promo eligibility (including eligible lines with zero
+allocated discount), and campaign ID/code/percentage snapshot alongside order
 subtotal/discount; historical reads never recalculate from live campaigns. Backfill old orders with zero discount.
 Read a consistent campaign + selection snapshot within the order transaction (lock campaign row against edits;
 admin updates lock the same row before replacing targets). Reuse pricing logic in quotes and order creation.
@@ -101,6 +102,7 @@ Use existing httpx validation envelopes and existing 401/403 behavior. Field err
 - target / selection shape: «Выберите все блюда или укажите блюда и категории.»
 - expectedPayableTotal missing/invalid: «Подтвердите итоговую сумму заказа.»
 - changed total (409): «Сумма заказа изменилась. Проверьте итог и повторите оформление.»
+- missing promo integration configuration for a new order (503): «Заказы с промокодом временно недоступны.»
 - missing campaign (404): «Промокод не найден.»
 - promo-order item mutation (409): «Нельзя изменять состав заказа с промокодом.»
 Use existing messages for unrelated order/cart/town errors and malformed JSON. Unexpected I/O errors remain 500.
@@ -111,20 +113,37 @@ changing items, town or fulfillment triggers a new quote. Ignore stale responses
 is pending/failed. On creation 409 fetch a fresh quote, show the message and require another user submission.
 Never redirect automatically after changed pricing. No public campaign browsing or suggested-code list.
 
-## iiko prerequisite and release
+## iiko RMS integration and release
 
-Task 84 verifies the official iiko wire contract before integration is implemented. It must resolve discount
-representation, rounding/quantity reconciliation and any restaurant-side setup. No fabricated discount IDs,
-no live test orders, no assumption that merely reducing payment sum is accepted. Record evidence and exact
-payload fixtures in IIKO_PROMOCODES.md. If unavailable, record a blocker and leave task 84 unchecked.
-The current iiko payment represents food only; delivery remains in its existing paid-delivery comment.
-Deploy backend 85–89 before enabling either checkout. Verify discounted food, iiko payment, MONETA charge
-and delivery reconcile; keep campaigns disabled until checks pass. Disabling campaigns stops new redemptions
-without invalidating existing payable orders. No refund, loyalty, usage analytics or coupon stacking work.
+Owner decision (2026-10-31): use one configured RMS flexible-sum discount type. Our backend owns campaigns,
+eligibility and discount calculation. iiko remains the menu source and receives all paid orders.
+Backend per-line allocations remain authoritative for our API, admin, website and history. iiko may allocate the
+same total differently across eligible lines; identical per-line rounding is not required. Eligible positions,
+total discount and food payment must match exactly; ineligible lines must not receive the promo discount.
+
+Task 84 documents the RMS contract and exact pickup/courier fixtures in IIKO_PROMOCODES.md. Preserve original
+unit prices and quantities; assign globally unique position UUIDs and retain them throughout retries. Send one
+order.discountsInfo.discounts entry with type=RMS, configured discountTypeId, saved discount as sum in rubles,
+and selectivePositions containing all saved eligible position UUIDs, including zero-allocation eligible lines.
+Never reconstruct eligibility from live campaigns. Omit the RMS entry when the saved discount is zero.
+No split-price positions, fabricated IDs, iikoCard programs or separate iiko campaigns per promo code.
+
+Add IIKO_PROMO_DISCOUNT_TYPE_ID for a real restaurant discount configured for assign-amount (FlexibleSum) and
+selective application, compatible with the payment type and both fulfillment modes. Confirm no category, time,
+minimum-spend, automatic-discount or tax settings change the required result. Task 89 validates configuration;
+missing configuration prevents new promo orders before writes/payment creation, while already-paid order failures
+retain existing alerts/retry behavior. Existing pending-order retries retain their saved monetary snapshots.
+
+The iiko payment remains discounted food only; delivery retains its existing paid-delivery comment.
+MONETA charges saved discounted food plus delivery. Staff Telegram messages include saved promo code, discount
+and payable total. Deploy backend 85–89 before enabling either checkout. Keep campaigns disabled until an
+explicitly authorized acceptance check confirms RMS total discount and food payment on the deployed restaurant.
+Task 84 and automated tests send no real orders or payments. Setup/acceptance remains a release requirement,
+not a requirement for identical backend/iiko line allocations. No refund, loyalty, usage analytics or stacking.
 
 ## Task sequence
 
-Backend: 84 iiko contract → 85 persistence → 86 admin API and 87 quotes → 88 orders → 89 integrations.
+Backend: 84 RMS contract → 85 persistence → 86 admin API and 87 quotes → 88 orders → 89 integrations.
 Admin: 27 campaign editor after backend86 → 28 order breakdown after backend89.
 Website: 43 shared checkout after backend89 → 44 history/QA after admin28.
 See each project's PROGRESS.md for linked unchecked tasks.

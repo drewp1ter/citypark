@@ -27,6 +27,9 @@ Persist discounts atomically and charge the recorded amount.
 ## Spec
 Persist discounts atomically and charge the recorded amount.
 Add order campaign ID/code/percentage snapshot, subtotal/discount kopecks and per-order-item discount_kopecks.
+Persist per-order-item promo eligibility as well, including eligible lines with zero allocated discount.
+Backfill eligibility to false for historical orders. This is an internal snapshot for RMS selectivePositions;
+no public eligibility field is required. Never infer it from discount > 0 or current campaign targets.
 Backfill historical subtotals from offered prices and quantities; discounts default to zero. Never modify original
 OfferedPrice. Use next available migration number; reversal must not silently discard paid discount records.
 Add optional promoCode and expectedPayableTotal input; require expected amount for promo orders. Reuse task87
@@ -41,7 +44,9 @@ The shared contract fixes business rules, wire shapes, money arithmetic, message
 Do not broaden scope or change those rules. Read installed library docs before using new library APIs.
 
 ## Tests to write
-- TestPromoOrderSnapshot: stored original prices, line allocations, code and totals reconcile after campaign edits.
+- TestPromoOrderSnapshot: stored original prices, line allocations, eligibility, code and totals survive campaign edits.
+- TestPromoEligibilitySnapshot: overlapping targets qualify once; ineligible lines stay excluded; eligible lines
+  with zero allocated discount remain eligible for RMS; historical/no-code orders have false eligibility.
 - TestPromoOrderDuplicate: same code retries same order; different/no code does not reuse it; expired existing retry works.
 - TestPromoOrderConcurrency: concurrent edits produce one consistent campaign version, never mixed targets/rate.
 - TestPromoExpectedTotal: missing value 400; changed price/delivery/discount 409 and no writes; matching value succeeds.
