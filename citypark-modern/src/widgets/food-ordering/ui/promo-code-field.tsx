@@ -1,6 +1,6 @@
 'use client'
 
-import { Button, TextField } from '@/shared/ui'
+import { TextField } from '@/shared/ui'
 
 export function PromoCodeField({
 	text,
@@ -18,11 +18,13 @@ export function PromoCodeField({
 	disabled: boolean
 }) {
 	return (
-		<section aria-label='Промокод' className='bg-surface text-text flex flex-col gap-2 rounded-lg p-4'>
+		<section aria-label='Промокод' className='bg-surface text-text flex flex-col gap-3 rounded-lg p-4'>
 			<TextField
 				label='Промокод'
 				value={text}
 				onChange={(event) => onChange(event.target.value)}
+				clearable={!disabled}
+				onClear={onRemove}
 				error={error}
 				autoComplete='off'
 				maxLength={256}
@@ -33,13 +35,6 @@ export function PromoCodeField({
 					}
 				}}
 			/>
-			<div className='flex flex-wrap gap-2'>
-				{text && (
-					<Button variant='outline' disabled={disabled} onClick={onRemove}>
-						Удалить
-					</Button>
-				)}
-			</div>
 			{pending && (
 				<p role='status' className='text-text-muted text-sm'>
 					Рассчитываем заказ…

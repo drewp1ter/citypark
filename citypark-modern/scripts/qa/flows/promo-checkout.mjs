@@ -175,6 +175,8 @@ try {
 				}
 				await checkTotals(page, await quote(''))
 				const promoField = page.getByRole('textbox', { name: /^Промокод/ })
+				const clearPromo = page.getByRole('region', { name: 'Промокод', exact: true })
+					.getByRole('button', { name: 'Очистить поле', exact: true })
 				let actionCount = 0
 				const countAction = (request) => {
 					if (request.method() === 'POST' && request.headers()['next-action']) actionCount++
@@ -216,7 +218,7 @@ try {
 					await promoField.fill(codes.replace)
 					await expect(page.getByRole('alert').filter({ hasText: 'Промокоды временно отключены.' })).toBeVisible()
 					await expect(page.getByRole('button', { name: /^Оплатить/ }).filter({ visible: true })).toBeDisabled()
-					await page.getByRole('button', { name: 'Удалить', exact: true }).click()
+					await clearPromo.click()
 					await checkTotals(page, await quote(''))
 					await backend('/settings', { ...originalSettings, promoCodesEnabled: true }, 'PUT')
 				}
@@ -250,7 +252,7 @@ try {
 					await expect(page.getByRole('textbox', { name: /^Промокод/ })).toHaveValue(code)
 					await expect(page.getByRole('button', { name: /^Оплатить/ }).filter({ visible: true })).toBeDisabled()
 				}
-				await page.getByRole('button', { name: 'Удалить', exact: true }).click()
+				await clearPromo.click()
 				await checkTotals(page, await quote(''))
 				await apply(page, codes.apply)
 				await checkTotals(page, await quote(codes.apply))
@@ -284,7 +286,7 @@ try {
 				})
 				await apply(page, codes.replace)
 				await caught
-				await page.getByRole('button', { name: 'Удалить', exact: true }).click()
+				await clearPromo.click()
 				release()
 				await checkTotals(page, await quote('', 'pickup', [{ productId: product.id, amount: quantity + 1 }]))
 				await page.unrouteAll({ behavior: 'wait' })

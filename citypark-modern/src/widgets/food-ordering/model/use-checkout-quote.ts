@@ -54,7 +54,7 @@ export function useCheckoutQuote(
 			remember(normalized)
 			setRevision((value) => value + 1)
 			setEditing(false)
-		}, 500)
+		}, 1000)
 		return () => window.clearTimeout(timer)
 	}, [text, normalized, editing, promoEnabled, remember])
 	const request = JSON.stringify({ lines: input.lines, method: input.method, city: input.city, promoCode: promoEnabled ? code : '' })

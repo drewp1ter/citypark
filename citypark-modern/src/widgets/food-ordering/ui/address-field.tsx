@@ -15,7 +15,7 @@ import { cn } from '@/shared/lib'
 import { TextField, controlClass, fieldErrorClass, fieldLabelClass } from '@/shared/ui'
 
 const MIN_QUERY = 3
-const DEBOUNCE_MS = 300
+const DEBOUNCE_MS = 700
 
 type AddressFieldProps = {
 	label: ReactNode

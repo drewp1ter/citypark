@@ -59,7 +59,7 @@ export function PromoCodesPage() {
 								{campaign.percentage}% · {campaign.enabled ? 'Активен' : 'Отключён'}
 							</p>
 							<p className='text-sm text-muted'>
-								Москва: {campaign.startsAt ? toMoscowInput(campaign.startsAt).replace('T', ' ') : 'Сразу'} —{' '}
+								{campaign.startsAt ? toMoscowInput(campaign.startsAt).replace('T', ' ') : 'Сразу'} —{' '}
 								{campaign.endsAt ? toMoscowInput(campaign.endsAt).replace('T', ' ') : 'Без окончания'}
 							</p>
 						</div>
