@@ -12,6 +12,7 @@ export type SitePhone = {
 }
 
 export type SiteSettings = {
+	promoCodesEnabled: boolean
 	phones: { restaurant: SitePhone; hotel: SitePhone; free: SitePhone; landline: SitePhone }
 	address: { postcode: string; city: string; street: string; full: string }
 	email: string
@@ -32,6 +33,7 @@ type ApiPhone = {
 
 /** The body of `GET /settings`. */
 export type ApiSiteSettings = {
+	promoCodesEnabled?: boolean
 	phones: { restaurant: ApiPhone; hotel: ApiPhone; free: ApiPhone; landline: ApiPhone }
 	address: { postcode: string; city: string; street: string }
 	email: string
@@ -42,6 +44,7 @@ export type ApiSiteSettings = {
 
 /** The contacts the site had before they moved to the backend. Shown when the backend does not answer. */
 export const defaultSiteSettings: SiteSettings = {
+	promoCodesEnabled: false,
 	phones: {
 		restaurant: {
 			label: 'Ресторан и доставка',
@@ -118,6 +121,7 @@ function toSitePhone(phone: ApiPhone): SitePhone {
 export function toSiteSettings(api: ApiSiteSettings): SiteSettings {
 	const { postcode, city, street } = api.address
 	return {
+		promoCodesEnabled: api.promoCodesEnabled === true,
 		phones: {
 			restaurant: toSitePhone(api.phones.restaurant),
 			hotel: toSitePhone(api.phones.hotel),

@@ -1,6 +1,6 @@
 'use client'
 
-import { startTransition, useEffect, useState } from 'react'
+import { startTransition, useCallback, useEffect, useState } from 'react'
 import { quoteOrder } from '../api/quote-order'
 import type { OrderQuote } from '../api/orders-api'
 
@@ -12,38 +12,52 @@ export function useCheckoutQuote(
 	input: Request,
 	enabled: boolean,
 	refresh: number | undefined,
-	surface: 'web' | 'mini'
+	surface: 'web' | 'mini',
+	promoEnabled: boolean
 ) {
 	const storageKey = `citypark-checkout-promo:${surface}`
 	const [restored, setRestored] = useState(false)
 	const [text, setText] = useState('')
 	const [code, setCode] = useState('')
+	const [editing, setEditing] = useState(false)
 	const [revision, setRevision] = useState(0)
 	const [state, setState] = useState<QuoteState>()
 	const normalized = text.trim().replace(/[a-z]/g, (letter) => letter.toUpperCase())
-	const dirty = normalized !== code
+	const dirty = promoEnabled && (editing || normalized !== code)
 	useEffect(() => {
 		let saved = ''
 		try {
-			saved = sessionStorage.getItem(storageKey) ?? ''
+			if (promoEnabled) saved = sessionStorage.getItem(storageKey) ?? ''
+			else sessionStorage.removeItem(storageKey)
 		} catch {
 			/* Storage can be unavailable. */
 		}
 		startTransition(() => {
 			setText(saved)
-			setCode(saved)
+			setCode(saved.trim().replace(/[a-z]/g, (letter) => letter.toUpperCase()))
+			setEditing(false)
 			setRestored(true)
 		})
-	}, [storageKey])
-	const remember = (value: string) => {
+	}, [storageKey, promoEnabled])
+	const remember = useCallback((value: string) => {
 		try {
 			if (value) sessionStorage.setItem(storageKey, value)
 			else sessionStorage.removeItem(storageKey)
 		} catch {
 			/* Pricing still works without persistence. */
 		}
-	}
-	const request = JSON.stringify({ lines: input.lines, method: input.method, city: input.city, promoCode: code })
+	}, [storageKey])
+	useEffect(() => {
+		if (!promoEnabled || !editing) return
+		const timer = window.setTimeout(() => {
+			setCode(normalized)
+			remember(normalized)
+			setRevision((value) => value + 1)
+			setEditing(false)
+		}, 500)
+		return () => window.clearTimeout(timer)
+	}, [text, normalized, editing, promoEnabled, remember])
+	const request = JSON.stringify({ lines: input.lines, method: input.method, city: input.city, promoCode: promoEnabled ? code : '' })
 	const key = JSON.stringify([request, input.menu, revision, refresh])
 	useEffect(() => {
 		if (!enabled || !restored || dirty) return
@@ -76,24 +90,25 @@ export function useCheckoutQuote(
 	const quote: OrderQuote | undefined = result?.ok ? result.quote : undefined
 	return {
 		text,
-		setText,
-		quote,
-		code: normalized,
-		pending: enabled && !dirty && !result,
-		ready: !!quote,
-		error: dirty
-			? 'Примените промокод или удалите его.'
-			: result && !result.ok
-				? ('fields' in result ? result.fields?.promoCode : undefined) || result.message
-				: undefined,
-		apply: () => {
-			setCode(normalized)
-			remember(normalized)
-			setRevision((value) => value + 1)
+		setText: (value: string) => {
+			setText(value)
+			if (value.trim() === '') {
+				setCode('')
+				setEditing(false)
+				remember('')
+				setRevision((value) => value + 1)
+			} else setEditing(true)
 		},
+		quote,
+		code: promoEnabled ? normalized : '',
+		pending: enabled && (!restored || dirty || !result),
+		ready: !!quote,
+		promoError: result && !result.ok && 'fields' in result ? result.fields?.promoCode : undefined,
+		error: result && !result.ok && !('fields' in result && result.fields?.promoCode) ? result.message : undefined,
 		remove: () => {
 			setText('')
 			setCode('')
+			setEditing(false)
 			remember('')
 			setRevision((value) => value + 1)
 		},

@@ -5,7 +5,6 @@ import { Button, TextField } from '@/shared/ui'
 export function PromoCodeField({
 	text,
 	onChange,
-	onApply,
 	onRemove,
 	pending,
 	error,
@@ -13,7 +12,6 @@ export function PromoCodeField({
 }: {
 	text: string
 	onChange: (value: string) => void
-	onApply: () => void
 	onRemove: () => void
 	pending: boolean
 	error?: string
@@ -32,14 +30,10 @@ export function PromoCodeField({
 				onKeyDown={(event) => {
 					if (event.key === 'Enter') {
 						event.preventDefault()
-						if (!disabled) onApply()
 					}
 				}}
 			/>
 			<div className='flex flex-wrap gap-2'>
-				<Button disabled={disabled} onClick={onApply}>
-					{text.trim() ? 'Применить' : 'Пересчитать'}
-				</Button>
 				{text && (
 					<Button variant='outline' disabled={disabled} onClick={onRemove}>
 						Удалить

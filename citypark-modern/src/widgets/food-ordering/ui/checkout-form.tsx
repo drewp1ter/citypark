@@ -35,6 +35,7 @@ type CheckoutFormProps = {
 	towns: readonly DeliveryTown[]
 	/** Hours when orders are accepted: the bounds of the «Ко времени» input. */
 	hours: WorkingHours
+	promoCodesEnabled: boolean
 	/** The customer came back from Moneta after a failed payment. */
 	paymentFailed: boolean
 	/** DaData is configured: «Улица и дом» offers address suggestions. */
@@ -48,6 +49,7 @@ export function CheckoutForm({
 	dishes,
 	towns,
 	hours,
+	promoCodesEnabled,
 	paymentFailed,
 	suggestions,
 	intro,
@@ -73,7 +75,8 @@ export function CheckoutForm({
 		{ lines, method, city, menu: dishes.map((dish) => [dish.id, dish.available, dish.orderBlocked, dish.variants]) },
 		cartReady && priced.items.length > 0 && !noDelivery,
 		state.status === 'error' ? state.refreshQuote : undefined,
-		mini ? 'mini' : 'web'
+		mini ? 'mini' : 'web',
+		promoCodesEnabled
 	)
 	const quote = pricing.quote
 	const deliveryPrice = quote?.deliveryPrice
@@ -306,15 +309,19 @@ export function CheckoutForm({
 									</li>
 								))}
 							</ul>
-							<PromoCodeField
+							{promoCodesEnabled && <PromoCodeField
 								text={pricing.text}
 								onChange={pricing.setText}
-								onApply={pricing.apply}
 								onRemove={pricing.remove}
 								pending={pricing.pending}
-								error={pricing.error || (!pricing.ready ? errors.promoCode || errors.expectedPayableTotal : undefined)}
+								error={pricing.promoError || (!pricing.ready ? errors.promoCode : undefined)}
 								disabled={pending}
-							/>
+							/>}
+							{(pricing.error || (!pricing.ready && errors.expectedPayableTotal) || (!promoCodesEnabled && errors.promoCode)) && (
+								<p role='alert' className='bg-surface text-danger rounded-sm p-3 text-sm'>
+									{pricing.error || errors.expectedPayableTotal || errors.promoCode}
+								</p>
+							)}
 							<dl
 								aria-label='Расчёт заказа'
 								className='bg-inverse-bg text-inverse-text flex flex-col gap-2 rounded-lg p-4 md:p-0'

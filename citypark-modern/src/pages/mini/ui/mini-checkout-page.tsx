@@ -1,7 +1,7 @@
 import { connection } from 'next/server'
 import { getDeliveryTowns, getMenu } from '@/entities/dish'
 import { getMiniProfile } from '@/features/telegram-launch'
-import { getWorkingHours } from '@/shared/api'
+import { getSiteSettings, getWorkingHours } from '@/shared/api'
 import { serverEnv } from '@/shared/config'
 import { AppLink } from '@/shared/ui'
 import { MiniPaymentReturnPage } from './mini-payment-return-page'
@@ -11,7 +11,7 @@ export async function MiniCheckoutPage({ searchParams }: { searchParams?: Promis
 	await connection()
 	if (!(await getMiniProfile())) return null
 	if (searchParams && (await searchParams).payment === 'failed') return <MiniPaymentReturnPage searchParams={searchParams} failed />
-	const [menu, towns, hours] = await Promise.all([getMenu(), getDeliveryTowns(), getWorkingHours()])
+	const [menu, towns, hours, settings] = await Promise.all([getMenu(), getDeliveryTowns(), getWorkingHours(), getSiteSettings()])
 	return (
 		<div className='min-h-[var(--mini-height,100dvh)] pt-[var(--mini-top,env(safe-area-inset-top))] pr-[var(--mini-right,env(safe-area-inset-right))] pb-[var(--mini-bottom,env(safe-area-inset-bottom))] pl-[var(--mini-left,env(safe-area-inset-left))]'>
 			<header className='border-border flex min-h-14 items-center gap-3 border-b px-4'>
@@ -26,6 +26,7 @@ export async function MiniCheckoutPage({ searchParams }: { searchParams?: Promis
 					dishes={menu.dishes}
 					towns={towns}
 					hours={hours}
+					promoCodesEnabled={settings.promoCodesEnabled}
 					paymentFailed={false}
 					suggestions={Boolean(serverEnv().DADATA_API_KEY)}
 					intro={<h1 className='heading mb-4 text-3xl'>Оформление заказа</h1>}
