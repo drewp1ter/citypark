@@ -10,6 +10,33 @@ function apiUrl(): string {
 
 type Product = { id: number; isAvailableForOrder: boolean }
 
+test('new orders are above pending payments on mobile and on the right on desktop', async ({ page }) => {
+	await signIn(page)
+	await page.getByRole('link', { name: 'Заказы онлайн' }).click()
+	const fresh = page.getByRole('region', { name: 'Новые', exact: true })
+	const pending = page.getByRole('region', { name: 'Ждут оплаты', exact: true })
+	await expect(fresh).toBeVisible()
+	await expect(pending).toBeVisible()
+
+	await page.setViewportSize({ width: 390, height: 844 })
+	await expect(async () => {
+		const freshBox = await fresh.boundingBox()
+		const pendingBox = await pending.boundingBox()
+		expect(freshBox).not.toBeNull()
+		expect(pendingBox).not.toBeNull()
+		expect(freshBox!.y + freshBox!.height).toBeLessThanOrEqual(pendingBox!.y)
+	}).toPass()
+
+	await page.setViewportSize({ width: 1440, height: 900 })
+	await expect(async () => {
+		const freshBox = await fresh.boundingBox()
+		const pendingBox = await pending.boundingBox()
+		expect(freshBox).not.toBeNull()
+		expect(pendingBox).not.toBeNull()
+		expect(pendingBox!.x + pendingBox!.width).toBeLessThanOrEqual(freshBox!.x)
+	}).toPass()
+})
+
 // A new phone per run (the backend renames a customer found by phone).
 function newPhone(): string {
 	return '+79' + Array.from({ length: 9 }, () => 7 + Math.floor(Math.random() * 3)).join('')

@@ -5,13 +5,15 @@ export function OrderColumn({
 	title,
 	orders,
 	freshIds,
+	className = '',
 }: {
 	title: string
 	orders: LiveOrder[]
 	freshIds: ReadonlySet<number>
+	className?: string
 }) {
 	return (
-		<section aria-label={title} className='flex min-w-0 flex-col gap-3 rounded-2xl bg-default/40 p-3'>
+		<section aria-label={title} className={`flex min-w-0 flex-col gap-3 rounded-2xl bg-default/40 p-3 ${className}`}>
 			<h2 className='font-semibold'>
 				{title} · {orders.length}
 			</h2>

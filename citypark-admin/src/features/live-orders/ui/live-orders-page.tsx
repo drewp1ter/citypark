@@ -108,8 +108,8 @@ export function LiveOrdersPage() {
 	} else {
 		content = (
 			<div className='grid items-start gap-4 lg:grid-cols-2'>
-				<OrderColumn title='Ждут оплаты' orders={board.pending} freshIds={freshIds} />
 				<OrderColumn title='Новые' orders={board.fresh} freshIds={freshIds} />
+				<OrderColumn title='Ждут оплаты' orders={board.pending} freshIds={freshIds} className='lg:order-first' />
 			</div>
 		)
 	}
