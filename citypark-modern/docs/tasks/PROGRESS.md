@@ -133,3 +133,10 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [48 Mobile cart opening and closing animations](48-mobile-cart-motion.md) [47]
   - Check, production build and cart-motion browser flow pass in both themes with normal/reduced motion. Verified animated opening/closing, close button, Escape, backdrop, repeated opening, focus restoration and checkout navigation; no backend writes.
+
+## Delivery settings
+
+- [x] [49 Delivery information from the backend](49-delivery-settings.md) [website48; backend91]
+  - Use editable delivery facts and Белореченск’s existing tariff/threshold for captions and cart estimates; admin30 provides the editor.
+  - Check/build and production delivery-settings, menu, checkout-and-contacts and cart-motion flows pass. Verified real facts at 390/1440 px in both themes, tariff estimates below/at threshold, independent settings/tariff cache refresh, zero threshold, pure fallback/validation cases, and restoration propagation. Authorized temporary settings/tariff writes were restored; no orders or payments created. Authenticated Mini App/device checks remain manual; shared provider/cart path checked statically.
+  - Deviation: app wrapper lives in `src/app/delivery` rather than `src/app/providers`; Steiger rejects `providers` under `fsd/segments-by-purpose`. No rule overrides added.

@@ -1,4 +1,4 @@
-import { delivery, getMenu } from '@/entities/dish'
+import { getDeliveryInfo, getMenu } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { formatHours, formatPrice } from '@/shared/lib'
 import { CartPanel } from '@/widgets/cart-summary'
@@ -8,16 +8,18 @@ const pill = 'rounded-pill border border-border bg-surface px-3 py-1.5 text-sm m
 
 /** Delivery menu: facts, search and categories, dishes, and the cart column. */
 export async function MenuPage({ categoryId }: { categoryId?: string }) {
-	const [menu, hours] = await Promise.all([getMenu(), getWorkingHours()])
+	const [menu, hours, delivery] = await Promise.all([getMenu(), getWorkingHours(), getDeliveryInfo()])
 
 	return (
 		<main className='max-w-wide-page mx-auto w-full px-3 pt-2 md:px-6 md:pt-8'>
 			<div className='flex flex-wrap items-end justify-between gap-x-5 gap-y-3'>
 				<h1 className='heading mx-1.5 mt-2 text-4xl md:mx-0 md:mt-0 md:text-[length:var(--text-h1)]'>Доставка</h1>
 				<ul className='flex flex-wrap gap-1.5 md:gap-2'>
-					<li className='rounded-pill bg-accent text-on-accent px-3 py-1.5 text-sm font-semibold md:px-4 md:py-2 md:text-base'>
-						0 ₽ от {formatPrice(delivery.freeFrom)}
-					</li>
+					{delivery.city && delivery.city.freeFrom > 0 && (
+						<li className='rounded-pill bg-accent text-on-accent px-3 py-1.5 text-sm font-semibold md:px-4 md:py-2 md:text-base'>
+							0 ₽ от {formatPrice(delivery.city.freeFrom)}
+						</li>
+					)}
 					<li className={pill}>{formatHours(hours)}</li>
 					<li className={pill}>
 						{delivery.cooking}

@@ -1,7 +1,7 @@
 'use client'
 
 import type { MouseEvent, RefObject } from 'react'
-import { quoteDelivery, type Dish } from '@/entities/dish'
+import { quoteDelivery, useDeliveryInfo, type Dish } from '@/entities/dish'
 import { useSiteSettings } from '@/shared/config'
 import { formatPrice, plural } from '@/shared/lib'
 import { AppLink, Button, CloseIcon, IconButton } from '@/shared/ui'
@@ -23,7 +23,7 @@ type CartSheetProps = {
 export function CartSheet({ dishes, dialog, onClose, checkoutHref = '/checkout', mini = false }: CartSheetProps) {
 	const { items, count, subtotal } = usePricedCart(dishes)
 	const { restaurant } = useSiteSettings().phones
-	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal })
+	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal }, useDeliveryInfo())
 
 	const closeOnBackdropOrLink = (event: MouseEvent<HTMLDialogElement>) => {
 		const target = event.target as HTMLElement

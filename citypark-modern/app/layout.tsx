@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Onest, Unbounded } from 'next/font/google'
+import { DeliveryProvider } from '@/app/delivery'
 import { RegisterServiceWorker } from '@/app/pwa'
 import { ThemeProvider } from '@/app/theme'
 import { getSiteSettings } from '@/shared/api'
@@ -49,7 +50,9 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
 					Перейти к содержимому
 				</a>
 				<ThemeProvider>
-					<SiteSettingsProvider value={settings}>{children}</SiteSettingsProvider>
+					<SiteSettingsProvider value={settings}>
+						<DeliveryProvider>{children}</DeliveryProvider>
+					</SiteSettingsProvider>
 				</ThemeProvider>
 			</body>
 		</html>

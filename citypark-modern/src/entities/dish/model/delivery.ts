@@ -1,11 +1,9 @@
 import { typo } from '@/shared/lib'
-
-/** Delivery facts shown on the home page, the menu page, the cart and checkout. */
-export const delivery = {
-	/** Order total (rubles) from which delivery in Белореченск is free. */
-	freeFrom: 500,
+import type { DeliveryTown } from './types'
+export type DeliveryInfo = { cooking: string; outskirtsFee: string; outskirtsRange: string; city: DeliveryTown | null }
+export const defaultDeliveryInfo: DeliveryInfo = {
 	cooking: typo('~30 мин'),
 	outskirtsFee: typo('СОТ и ДНТ 200–350 ₽'),
-	/** Just the range, for the order summary. */
 	outskirtsRange: typo('200–350 ₽'),
-} as const
+	city: null,
+}

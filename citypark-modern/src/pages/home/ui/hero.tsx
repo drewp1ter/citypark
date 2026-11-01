@@ -1,7 +1,7 @@
 import { Fragment } from 'react'
 import Image from 'next/image'
 import type { PageContent } from '@/entities/content'
-import { delivery } from '@/entities/dish'
+import { getDeliveryInfo } from '@/entities/dish'
 import { minPricePerNight, type Room } from '@/entities/room'
 import { getSiteSettings } from '@/shared/api'
 import { NBSP, formatPrice, type Photo } from '@/shared/lib'
@@ -85,7 +85,8 @@ export async function Hero({ content, rooms }: { content: PageContent; rooms: re
 	const [phoneHead, phoneTail] = splitPhone(phones.restaurant.display)
 	const min = minPricePerNight(rooms)
 	const price = min === null ? undefined : { minRoomPrice: min }
-	const freeFrom = formatPrice(delivery.freeFrom)
+	const delivery = await getDeliveryInfo()
+	const freeFrom = delivery.city && delivery.city.freeFrom > 0 ? formatPrice(delivery.city.freeFrom) : null
 	const deliveryCaption = both(content, 'home.hero.delivery-caption')
 
 	return (
@@ -128,8 +129,8 @@ export async function Hero({ content, rooms }: { content: PageContent; rooms: re
 					photo={content.image('home.hero.delivery-photo')}
 					title={both(content, 'home.hero.delivery-title')}
 					caption={{
-						mobile: `${deliveryCaption.mobile} ${freeFrom}`,
-						desktop: `${deliveryCaption.desktop} ${freeFrom}`,
+						mobile: freeFrom ? `${deliveryCaption.mobile} ${freeFrom}` : 'Доставка еды',
+						desktop: freeFrom ? `${deliveryCaption.desktop} ${freeFrom}` : 'Доставка еды',
 					}}
 				/>
 

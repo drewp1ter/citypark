@@ -1,6 +1,6 @@
 'use client'
 
-import { quoteDelivery, type Dish } from '@/entities/dish'
+import { quoteDelivery, useDeliveryInfo, type Dish } from '@/entities/dish'
 import { useSiteSettings } from '@/shared/config'
 import { formatPrice, plural } from '@/shared/lib'
 import { AppLink, Button } from '@/shared/ui'
@@ -11,7 +11,7 @@ import { usePricedCart } from './use-priced-cart'
 export function CartPanel({ dishes, checkoutHref = '/checkout' }: { dishes: readonly Dish[]; checkoutHref?: string }) {
 	const { items, count, subtotal, ready } = usePricedCart(dishes)
 	const { restaurant } = useSiteSettings().phones
-	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal })
+	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal }, useDeliveryInfo())
 	const empty = ready && items.length === 0
 
 	return (
