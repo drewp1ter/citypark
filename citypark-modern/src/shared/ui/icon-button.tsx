@@ -23,7 +23,7 @@ type IconButtonAsButton = OwnProps & { href?: undefined } & Omit<ComponentPropsW
 export function IconButton(props: IconButtonAsLink | IconButtonAsButton) {
 	const { variant = 'outline', className, ...rest } = props
 	const classes = cn(
-		'inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-50',
+		'motion-control inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full disabled:cursor-not-allowed disabled:opacity-50',
 		variants[variant],
 		className
 	)

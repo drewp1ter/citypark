@@ -12,7 +12,7 @@ const variants: Record<CardVariant, string> = {
 
 /** Class names of a card, for cards that are links (use with AppLink). Add the radius and padding yourself. */
 export function cardClass(variant: CardVariant = 'surface', className?: string): string {
-	return cn('relative flex flex-col overflow-hidden', variants[variant], className)
+	return cn('motion-card relative flex flex-col overflow-hidden', variants[variant], className)
 }
 
 type CardProps = ComponentPropsWithoutRef<'div'> & {

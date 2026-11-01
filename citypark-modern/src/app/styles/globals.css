@@ -110,8 +110,14 @@
 		}
 	}
 
-	a:hover {
-		opacity: var(--hover-opacity);
+	a {
+		transition: opacity 160ms ease;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		a:hover {
+			opacity: var(--hover-opacity);
+		}
 	}
 
 	:focus-visible {
@@ -157,9 +163,76 @@
 
 /* Telegram supplies these insets at runtime; browser safe areas cover the first paint. */
 :root {
-  --mini-height: 100dvh;
-  --mini-top: env(safe-area-inset-top, 0px);
-  --mini-right: env(safe-area-inset-right, 0px);
-  --mini-bottom: env(safe-area-inset-bottom, 0px);
-  --mini-left: env(safe-area-inset-left, 0px);
+	--mini-height: 100dvh;
+	--mini-top: env(safe-area-inset-top, 0px);
+	--mini-right: env(safe-area-inset-right, 0px);
+	--mini-bottom: env(safe-area-inset-bottom, 0px);
+	--mini-left: env(safe-area-inset-left, 0px);
+}
+
+/* Shared controls use the same hover and pressed feedback. */
+.motion-control {
+	transition:
+		translate 180ms ease,
+		scale 180ms ease,
+		opacity 160ms ease,
+		background-color 180ms ease,
+		border-color 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.motion-control:where(:not(:disabled):not([aria-disabled='true'])):hover {
+		opacity: var(--hover-opacity);
+	}
+}
+
+@media (prefers-reduced-motion: no-preference) {
+	@keyframes heading-in {
+		from {
+			opacity: 0;
+			translate: 0 8px;
+		}
+		to {
+			opacity: 1;
+			translate: 0 0;
+		}
+	}
+
+	@keyframes dialog-in {
+		from {
+			opacity: 0;
+			translate: 0 12px;
+		}
+		to {
+			opacity: 1;
+			translate: 0 0;
+		}
+	}
+
+	h1 {
+		animation: heading-in 360ms ease-out;
+	}
+
+	dialog[open] {
+		animation: dialog-in 220ms ease-out;
+	}
+
+	.motion-control:where(:not(:disabled):not([aria-disabled='true'])):active {
+		scale: 0.97;
+	}
+
+	/* Only photo cards with actions respond; static information panels stay still. */
+	:is(a.motion-card, article.motion-card:has(a, button)) img {
+		transition: scale 360ms ease;
+	}
+
+	@media (hover: hover) and (pointer: fine) {
+		.motion-control:where(:not(:disabled):not([aria-disabled='true'])):hover {
+			translate: 0 -2px;
+		}
+
+		:is(a.motion-card, article.motion-card:has(a, button)):hover img {
+			scale: 1.035;
+		}
+	}
 }

@@ -125,3 +125,8 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 - [x] [46 Automatic checkout location with DaData](46-checkout-geolocation.md) [website45]
   - Website and Telegram Mini App: automatic location request, editable address autofill, supported-town matching and manual fallback. Reuses DaData credentials; no backend or admin task required.
   - `npm run check`, `npm run build`, `checkout-geolocation.mjs`, `checkout-and-contacts.mjs`, `promo-checkout.mjs` with temporary campaigns, and `telegram-mini.mjs` pass. Campaigns were disabled by QA cleanup; no orders or payments were created. Authenticated Telegram Mini App geolocation and promo checks remain pending supplied session/device access.
+
+## Motion
+
+- [x] [47 CSS animations and hover effects](47-css-motion.md) [46]
+  - Check and production build pass. Chromium checks of the generated production CSS pass in eight combinations of light/dark themes, mouse/touch input and normal/reduced motion, including disabled controls and dialog entry.

@@ -30,7 +30,7 @@ type ButtonAsButton = OwnProps & { href?: undefined } & ComponentPropsWithoutRef
 export function Button(props: ButtonAsLink | ButtonAsButton) {
 	const { variant = 'accent', size = 'md', className, ...rest } = props
 	const classes = cn(
-		'inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-pill font-semibold',
+		'motion-control inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-pill font-semibold disabled:cursor-not-allowed disabled:opacity-50',
 		variants[variant],
 		sizes[size],
 		className
