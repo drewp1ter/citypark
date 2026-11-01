@@ -280,6 +280,8 @@ func TestAppSmoke(t *testing.T) {
 		body         string
 	}{
 		{http.MethodGet, "/api/v1/health", http.StatusOK, ""},
+		{http.MethodGet, "/api/v1/delivery-settings", http.StatusOK, ""},
+		{http.MethodPut, "/api/v1/delivery-settings", http.StatusUnauthorized, ""},
 		{http.MethodGet, "/api/v1/categories", http.StatusOK, "[]"},
 		{http.MethodGet, "/api/v1/user", http.StatusUnauthorized, ""},
 		{http.MethodOptions, "/api/v1/orders", http.StatusNoContent, ""},

@@ -17,6 +17,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/content"
 	"github.com/drewp1ter/citypark-go/internal/customer"
 	"github.com/drewp1ter/citypark-go/internal/deliveryprice"
+	"github.com/drewp1ter/citypark-go/internal/deliverysettings"
 	"github.com/drewp1ter/citypark-go/internal/google"
 	"github.com/drewp1ter/citypark-go/internal/health"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
@@ -124,6 +125,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 		content.NewHandler(db, uploads, tokens).Routes(r)
 		settings.NewHandler(settings.NewStore(db), tokens).Routes(r)
 		workinghours.NewHandler(hours, tokens).Routes(r)
+		deliverysettings.NewHandler(deliverysettings.NewStore(db), tokens).Routes(r)
 		live.NewHandler(hub, tokens, log).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			Hours:           hours,

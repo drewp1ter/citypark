@@ -3441,3 +3441,57 @@ Items retain original unit offeredPrice and merged quantity; discount is per lin
 | 500 | Database errors or unrepresentable monetary totals | `Внутренняя ошибка сервера` |
 
 The global settings switch defaults to false; no-code checkout and saved-order retries remain available when disabled. Promo failures use the standard validation message with the exact text above in errors.promoCode. Dates use start inclusive and end exclusive. Eligibility is the union of current category membership and explicit product selections; overlap never doubles a discount. Discount is floor(eligibleSubtotal * percentage / 100), limited by optional cap. Delivery thresholds use discounted food total.
+
+### Delivery information
+
+These fields are informational captions. Authoritative town tariffs and free-delivery thresholds remain in `/delivery-prices`; these settings never change order pricing. Text is plain text and must be rendered escaped. No additional cache policy is applied.
+
+#### GET /delivery-settings
+
+Role: **public**. No parameters or request body.
+
+Request: `GET /api/v1/delivery-settings`.
+
+**200** — current information:
+
+```json
+{"cooking":"~30 мин","outskirtsLabel":"СОТ и ДНТ","outskirtsMin":200,"outskirtsMax":350,"updatedAt":"2026-11-01T10:23:30.663667Z"}
+```
+
+Errors: **404** `Не найдено` (singleton missing); **500** `Внутренняя ошибка сервера`. GET never recreates a missing row.
+
+#### PUT /delivery-settings
+
+Role: **admin**, Bearer JWT. Atomically replaces all four fields; does not recreate a missing row.
+
+| Field | Rules |
+|---|---|
+| `cooking` | Required plain text, trimmed, 1–100 Unicode characters |
+| `outskirtsLabel` | Required plain text, trimmed, 1–60 Unicode characters |
+| `outskirtsMin` | Required non-null integer rubles, 0–100000 |
+| `outskirtsMax` | Required non-null integer rubles, 0–100000, at least `outskirtsMin` |
+
+Zero and equal bounds are accepted. Fractional numbers, strings and booleans are rejected as malformed JSON. Invalid requests leave the saved row unchanged.
+
+Request:
+
+```json
+{"cooking":"~30 мин","outskirtsLabel":"СОТ и ДНТ","outskirtsMin":200,"outskirtsMax":350}
+```
+
+**200** — saved fields with server-generated RFC 3339 `updatedAt`, in the same shape as GET above.
+
+Errors:
+
+- **400** `Некорректный JSON` for malformed JSON or wrong types.
+- **400** `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with field errors: `поле не должно быть пустым` for missing/null prices or empty text; `значение должно быть не больше 100` / `значение должно быть не больше 60` for overlong text; `значение должно быть не меньше 0` / `значение должно быть не больше 100000` for price bounds.
+- **400** reversed range, example captured from tests:
+
+```json
+{"statusCode":400,"message":"Ошибка валидации, пожалуйста проверьте введенные вами данные","errors":{"outskirtsMax":"Максимальная цена должна быть не меньше минимальной"}}
+```
+
+- **401** `Требуется авторизация`.
+- **403** `Недостаточно прав`.
+- **404** `Не найдено`.
+- **500** `Внутренняя ошибка сервера`.

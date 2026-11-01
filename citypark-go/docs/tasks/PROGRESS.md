@@ -178,3 +178,10 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
 
 - [x] [90 Global promo-code switch](90-global-promo-switch.md) [Backend tasks 51 and 89]
   - Formatting, build, vet, full serial suite and coverage pass: settings 92.7%, order 91.2%, apidocs 100%. Live payment and iiko checks were not performed.
+
+## Delivery settings
+
+- [x] [91 Delivery information settings](91-delivery-settings.md) [backend90]
+  - Added singleton migration, public GET/admin PUT, strict validation, app wiring and API/OpenAPI documentation. Town tariffs and order pricing remain independent.
+  - Formatting, build, vet and serial suite pass with `go test -p 1 -skip '^TestPromoConfiguration$' ./...`. Owner explicitly authorized skipping the existing promo failure (2026-11-01); the unfiltered suite still fails only that test because the global promo switch is disabled. No test code was skipped or weakened permanently.
+  - Coverage with the same approved exclusion: deliverysettings 100%, app 98.3%, apidocs 100%. No live settings writes, orders, payments or notifications performed.

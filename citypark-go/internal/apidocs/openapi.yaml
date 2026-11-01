@@ -10,6 +10,7 @@ tags:
   - name: user
   - name: addresses
   - name: promo-codes
+  - name: delivery-settings
   - name: delivery-prices
   - name: catalog
   - name: hotel
@@ -1029,6 +1030,39 @@ components:
           required: [updatedAt]
           properties:
             updatedAt: {type: string, format: date-time}
+    DeliverySettingsInput:
+      type: object
+      required: [cooking, outskirtsLabel, outskirtsMin, outskirtsMax]
+      properties:
+        cooking:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Plain text; trimmed before validation and storage.
+        outskirtsLabel:
+          type: string
+          minLength: 1
+          maxLength: 60
+          description: Plain text; trimmed before validation and storage.
+        outskirtsMin:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          description: Informational whole rubles; must not exceed outskirtsMax.
+        outskirtsMax:
+          type: integer
+          minimum: 0
+          maximum: 100000
+          description: Informational whole rubles; must not be less than outskirtsMin.
+    DeliverySettings:
+      allOf:
+        - $ref: '#/components/schemas/DeliverySettingsInput'
+        - type: object
+          required: [updatedAt]
+          properties:
+            updatedAt:
+              type: string
+              format: date-time
     WorkingHours:
       type: object
       required: [start, end]
@@ -2713,6 +2747,68 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /delivery-settings:
+    get:
+      summary: Get delivery information
+      tags: [delivery-settings]
+      description: >-
+        Role: public. Informational cooking text and outskirts range only;
+        authoritative town tariffs and free thresholds remain in delivery-prices.
+      responses:
+        '200':
+          description: Current saved information and timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySettings'
+              example: {cooking: '~30 мин', outskirtsLabel: 'СОТ и ДНТ', outskirtsMin: 200, outskirtsMax: 350, updatedAt: '2026-11-01T10:23:30.663667Z'}
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: Replace delivery information
+      tags: [delivery-settings]
+      description: >-
+        Role: admin. Informational cooking text and outskirts range only;
+        authoritative town tariffs and free thresholds remain in delivery-prices.
+        All four fields are required. Text is trimmed. Prices are integer rubles, 0–100000;
+        minimum must not exceed maximum (errors.outskirtsMax: Максимальная цена должна быть не меньше минимальной).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliverySettingsInput'
+            example: {cooking: '~30 мин', outskirtsLabel: 'СОТ и ДНТ', outskirtsMin: 200, outskirtsMax: 350}
+      responses:
+        '200':
+          description: Current saved information and timestamp.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliverySettings'
+              example: {cooking: '~30 мин', outskirtsLabel: 'СОТ и ДНТ', outskirtsMin: 200, outskirtsMax: 350, updatedAt: '2026-11-01T10:23:30.663667Z'}
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /working-hours:
     get:
       summary: Get the working hours
