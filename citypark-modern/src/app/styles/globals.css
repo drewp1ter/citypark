@@ -236,3 +236,63 @@
 		}
 	}
 }
+
+/* Keep the closing sheet in the top layer until its slide finishes. Native
+   close(), Escape, focus restoration and link navigation need no JS timers. */
+@media (prefers-reduced-motion: no-preference) {
+	@keyframes cart-sheet-in {
+		from {
+			translate: 0 100%;
+			opacity: 0;
+		}
+		to {
+			translate: 0 0;
+			opacity: 1;
+		}
+	}
+
+	dialog.cart-sheet[open] {
+		animation: cart-sheet-in 260ms ease-out;
+	}
+
+	@supports (overlay: auto) and (transition-behavior: allow-discrete) {
+		dialog.cart-sheet {
+			opacity: 0;
+			translate: 0 100%;
+			transition:
+				translate 260ms ease,
+				opacity 260ms ease,
+				display 260ms allow-discrete,
+				overlay 260ms allow-discrete;
+		}
+
+		dialog.cart-sheet[open] {
+			animation: none;
+			opacity: 1;
+			translate: 0 0;
+		}
+
+		dialog.cart-sheet::backdrop {
+			opacity: 0;
+			transition:
+				opacity 260ms ease,
+				display 260ms allow-discrete,
+				overlay 260ms allow-discrete;
+		}
+
+		dialog.cart-sheet[open]::backdrop {
+			opacity: 1;
+		}
+
+		@starting-style {
+			dialog.cart-sheet[open] {
+				opacity: 0;
+				translate: 0 100%;
+			}
+
+			dialog.cart-sheet[open]::backdrop {
+				opacity: 0;
+			}
+		}
+	}
+}

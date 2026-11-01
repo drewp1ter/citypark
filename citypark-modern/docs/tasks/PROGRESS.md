@@ -130,3 +130,6 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [47 CSS animations and hover effects](47-css-motion.md) [46]
   - Check and production build pass. Chromium checks of the generated production CSS pass in eight combinations of light/dark themes, mouse/touch input and normal/reduced motion, including disabled controls and dialog entry.
+
+- [x] [48 Mobile cart opening and closing animations](48-mobile-cart-motion.md) [47]
+  - Check, production build and cart-motion browser flow pass in both themes with normal/reduced motion. Verified animated opening/closing, close button, Escape, backdrop, repeated opening, focus restoration and checkout navigation; no backend writes.

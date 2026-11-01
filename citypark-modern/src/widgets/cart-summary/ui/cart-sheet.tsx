@@ -36,7 +36,7 @@ export function CartSheet({ dishes, dialog, onClose, checkoutHref = '/checkout',
 			aria-labelledby='cart-sheet-title'
 			onClick={closeOnBackdropOrLink}
 			onClose={onClose}
-			className={`bg-inverse-bg text-inverse-text backdrop:bg-scrim fixed inset-x-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl p-5 pb-6 lg:hidden ${mini ? 'bottom-[var(--mini-bottom)]' : 'bottom-0'}`}
+			className={`cart-sheet bg-inverse-bg text-inverse-text backdrop:bg-scrim fixed inset-x-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl p-5 pb-6 lg:hidden ${mini ? 'bottom-[var(--mini-bottom)]' : 'bottom-0'}`}
 		>
 			<div className='flex items-center justify-between gap-3'>
 				<h2 id='cart-sheet-title' className='heading text-2xl'>
