@@ -2809,6 +2809,121 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/delivery-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get delivery information
+         * @description Role: public. Informational cooking text and outskirts range only; authoritative town tariffs and free thresholds remain in delivery-prices.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current saved information and timestamp. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "cooking": "~30 мин",
+                         *       "outskirtsLabel": "СОТ и ДНТ",
+                         *       "outskirtsMin": 200,
+                         *       "outskirtsMax": 350,
+                         *       "updatedAt": "2026-11-01T10:23:30.663667Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["DeliverySettings"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        /**
+         * Replace delivery information
+         * @description Role: admin. Informational cooking text and outskirts range only; authoritative town tariffs and free thresholds remain in delivery-prices. All four fields are required. Text is trimmed. Prices are integer rubles, 0–100000; minimum must not exceed maximum (errors.outskirtsMax: Максимальная цена должна быть не меньше минимальной).
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "cooking": "~30 мин",
+                     *       "outskirtsLabel": "СОТ и ДНТ",
+                     *       "outskirtsMin": 200,
+                     *       "outskirtsMax": 350
+                     *     }
+                     */
+                    "application/json": components["schemas"]["DeliverySettingsInput"];
+                };
+            };
+            responses: {
+                /** @description Current saved information and timestamp. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "cooking": "~30 мин",
+                         *       "outskirtsLabel": "СОТ и ДНТ",
+                         *       "outskirtsMin": 200,
+                         *       "outskirtsMax": 350,
+                         *       "updatedAt": "2026-11-01T10:23:30.663667Z"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["DeliverySettings"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/working-hours": {
         parameters: {
             query?: never;
@@ -4941,6 +5056,20 @@ export interface components {
             social: components["schemas"]["SettingsSocial"][];
         };
         SettingsResponse: components["schemas"]["Settings"] & {
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        DeliverySettingsInput: {
+            /** @description Plain text; trimmed before validation and storage. */
+            cooking: string;
+            /** @description Plain text; trimmed before validation and storage. */
+            outskirtsLabel: string;
+            /** @description Informational whole rubles; must not exceed outskirtsMax. */
+            outskirtsMin: number;
+            /** @description Informational whole rubles; must not be less than outskirtsMin. */
+            outskirtsMax: number;
+        };
+        DeliverySettings: components["schemas"]["DeliverySettingsInput"] & {
             /** Format: date-time */
             updatedAt: string;
         };

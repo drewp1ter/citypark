@@ -1,10 +1,9 @@
 import { Button, Label, SearchField, Skeleton, Table } from '@heroui/react'
 import { useQuery } from '@tanstack/react-query'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { components } from '../../../shared/api/schema'
 import { formatRub } from '../../../shared/lib/format'
 import { PageHeader } from '../../../shared/ui/page-header'
-import { WorkingHoursCard } from '../../working-hours/ui/working-hours-card'
 import { deliveryPricesQuery } from '../api'
 import { DeleteDialog } from './delete-dialog'
 import { DeliveryPriceDialog } from './delivery-price-dialog'
@@ -31,7 +30,7 @@ function Name({ item }: { item: DeliveryPrice }) {
 	)
 }
 
-export function DeliveryPricesPage() {
+export function DeliveryPricesPage({ children }: { children?: ReactNode }) {
 	const query = useQuery(deliveryPricesQuery)
 	const [search, setSearch] = useState('')
 	const [editing, setEditing] = useState<EditState>(null)
@@ -124,7 +123,7 @@ export function DeliveryPricesPage() {
 					</Button>
 				}
 			/>
-			<WorkingHoursCard />
+			{children}
 			<SearchField name='search' value={search} onChange={setSearch} className='mb-4 max-w-sm'>
 				<Label>Поиск города</Label>
 				<SearchField.Group>

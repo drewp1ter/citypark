@@ -67,3 +67,9 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [29 Global promo-code switch in settings](29-global-promo-switch.md) [Backend task 90 and admin task 28]
   - API generation, check (296 tests), build and settings Playwright flow pass against the restarted backend. The original switch value was restored.
+
+## Delivery settings
+
+- [x] [30 Editable delivery information](30-delivery-settings.md) [admin29; backend91]
+  - Add cooking text and outskirts label/range editing to «Доставка»; reuse existing town price/threshold controls.
+  - API generation, check (303 tests), build and delivery-settings Playwright flow (5 tests) pass. Verified 390/1440 px, both themes, real saves/reloads, field errors, pending/transport failures, dirty refetch preservation, loading/retry, working-hours visibility, city search and tariff dialog. Owner-authorized settings writes restored original values; no orders or payments.
