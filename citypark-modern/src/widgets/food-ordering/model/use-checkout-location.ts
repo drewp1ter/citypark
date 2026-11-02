@@ -1,10 +1,12 @@
 'use client'
 
+import { captureAddressAutofillFailure, type AutofillReason } from '@/shared/monitoring'
 import { useEffect, useRef, useState } from 'react'
 
 type Result =
 	{ status: 'matched'; town: string; street: string } | { status: 'unmatched' } | { status: 'unavailable' | 'invalid' }
 type Options = {
+	surface: 'web' | 'mini'
 	enabled: boolean
 	configured: boolean
 	initialTown: string
@@ -12,7 +14,7 @@ type Options = {
 	onDetected: (town: string, street: string) => void
 }
 
-export function useCheckoutLocation({ enabled, configured, initialTown, initialStreet, onDetected }: Options) {
+export function useCheckoutLocation({ surface, enabled, configured, initialTown, initialStreet, onDetected }: Options) {
 	const [status, setStatus] = useState('')
 	const started = useRef(false)
 	const takenOver = useRef(false)
@@ -27,8 +29,18 @@ export function useCheckoutLocation({ enabled, configured, initialTown, initialS
 				active.current = false
 			}
 		}
+		const begin = Date.now()
+		const report = (reason: AutofillReason, browser_code?: number) =>
+			captureAddressAutofillFailure(reason, {
+				stage: 'browser',
+				surface,
+				elapsed_ms: Date.now() - begin,
+				secure_context: window.isSecureContext,
+				browser_code,
+			})
 		started.current = true
 		if (!navigator.geolocation) {
+			report('unsupported')
 			queueMicrotask(() => setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.'))
 			return
 		}
@@ -47,6 +59,10 @@ export function useCheckoutLocation({ enabled, configured, initialTown, initialS
 						signal: AbortSignal.timeout(5000),
 					})
 					const result = (await response.json()) as Result
+					if (!result || !['matched', 'unmatched', 'unavailable', 'invalid'].includes(result.status))
+						throw new Error('Invalid autofill response')
+					if (result.status === 'matched' && (typeof result.town !== 'string' || typeof result.street !== 'string'))
+						throw new Error('Invalid autofill address')
 					if (!active.current || takenOver.current) return
 					if (response.ok && result.status === 'matched') {
 						onDetected(result.town, result.street)
@@ -54,12 +70,26 @@ export function useCheckoutLocation({ enabled, configured, initialTown, initialS
 					} else if (response.ok && result.status === 'unmatched')
 						setStatus('Не удалось подобрать населённый пункт доставки. Выберите его вручную.')
 					else setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
-				} catch {
+				} catch (error) {
+					if (active.current && !takenOver.current)
+						report(
+							error instanceof Error && error.name === 'TimeoutError'
+								? 'request_timeout'
+								: error instanceof SyntaxError ||
+									  (error instanceof Error && error.message.startsWith('Invalid autofill'))
+									? 'invalid_response'
+									: 'request_failed'
+						)
 					if (active.current && !takenOver.current)
 						setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
 				}
 			},
-			() => {
+			(error) => {
+				if (active.current && !takenOver.current)
+					report(
+						error.code === 1 ? 'permission_denied' : error.code === 3 ? 'location_timeout' : 'position_unavailable',
+						error.code
+					)
 				if (active.current && !takenOver.current)
 					setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
 			},
@@ -68,7 +98,7 @@ export function useCheckoutLocation({ enabled, configured, initialTown, initialS
 		return () => {
 			active.current = false
 		}
-	}, [enabled, configured, initialTown, initialStreet, onDetected])
+	}, [surface, enabled, configured, initialTown, initialStreet, onDetected])
 
 	return {
 		status,

@@ -7,8 +7,16 @@ const source = await readFile(new URL('../../src/shared/monitoring/config.ts', i
 const { outputText } = ts.transpileModule(source, {
 	compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 })
+const dataSource = await readFile(new URL('../../src/shared/monitoring/autofill-data.ts', import.meta.url), 'utf8')
+const dataJS = ts.transpileModule(dataSource, {
+	compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+}).outputText
+const configJS = outputText.replace(
+	"'./autofill-data'",
+	JSON.stringify(`data:text/javascript;base64,${Buffer.from(dataJS).toString('base64')}`)
+)
 const { sampleRate, backendTraceTargets, scrubError, scrubSpan, privacyOptions } = await import(
-	`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`
+	`data:text/javascript;base64,${Buffer.from(configJS).toString('base64')}`
 )
 
 assert.equal(sampleRate(undefined, true), 1)
@@ -84,3 +92,20 @@ for (const file of ['instrumentation-client.ts', 'sentry.server.config.ts', 'sen
 	assert.doesNotMatch(config, /SENTRY_AUTH_TOKEN/, 'build token must never enter SDK initialization')
 }
 console.log('Sentry QA: sampling, propagation boundaries, error/span redaction and disabled configuration pass.')
+
+const diagnostic = scrubError({
+	tags: { autofill_reason: 'provider_http', secret: 'secret' },
+	fingerprint: ['secret'],
+	contexts: {
+		autofill: { stage: 'provider', http_status: 403, elapsed_ms: 20, lat: 44, address: 'secret', surface: 'secret' },
+	},
+})
+assert.deepEqual(diagnostic.tags, { autofill_reason: 'provider_http' })
+assert.deepEqual(diagnostic.contexts.autofill, { stage: 'provider', http_status: 403, elapsed_ms: 20 })
+assert.deepEqual(diagnostic.fingerprint, ['address-autofill', 'provider', 'provider_http'])
+assert.equal(JSON.stringify(diagnostic).includes('secret'), false)
+assert.equal(
+	scrubError({ tags: { autofill_reason: 'customer_address' }, contexts: { autofill: { stage: 'provider' } } }).tags,
+	undefined
+)
+console.log('Autofill reason/context/fingerprint allowlist PASS')

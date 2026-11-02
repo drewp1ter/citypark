@@ -62,3 +62,26 @@ The source-map upload completed successfully, and no public `.map` files remaine
 These temporary routes are removed from the final source. This proves the production artifact/source-map configuration locally, not a production deployment. The existing menu QA flow also passed against the production build with the real configured backend. An earlier run overlapped the backend restart and timed out; rerunning with the backend running passed.
 
 [Cross-service verification trace](https://citypark-ym.sentry.io/explore/traces/trace/8409f2e72c634806a9182b324130a770) confirmed the Next request, outgoing HTTP span and Go handler share one trace; both errors were attached. The backend owner ran the temporary error route, then restarted the final clean code. The former route now returns 404 and backend health returns 200.
+
+## Address autofill diagnostics
+
+Failed and partial checkout autofill attempts emit `AddressAutofillError`. Filter by `autofill_reason`; issues group by stage and reason. Permission denial, empty results, unsupported regions, missing/ambiguous towns and partial addresses use warning severity; technical failures use error severity.
+
+The `autofill` context permits only stage, checkout surface (`web`/`mini`), elapsed milliseconds, HTTP status, browser error code, secure-context status, delivery-town/candidate counts and locality source (`city`/`settlement`). The final SDK filter validates these fields again. Coordinates, locality/address text, raw responses, credentials and arbitrary errors remain excluded. Successful autofill and intentional skips emit nothing. Recognized server failures are reported by the server; browser transport failures are reported by the browser. A browser timeout can coincide with a later server failure and produce two distinct stage events.
+
+Verification commands (production server on port 3111, real configured backend):
+
+```bash
+node scripts/qa/sentry.mjs
+node scripts/qa/autofill-provider.mjs
+node --env-file=.env scripts/qa/flows/checkout-geolocation.mjs
+node --env-file=.env scripts/qa/autofill-browser.mjs
+```
+
+Provider tests use controlled responses and never contact DaData. Browser tests intercept telemetry by default; `SEND_AUTOFILL_VERIFICATION=1` forwards the synthetic permission-denied event to the configured Sentry project. The geolocation flow also sends a malformed request through the real route to verify server validation reporting. No orders or payments are created.
+
+Verified on 2026-11-02 from a local production build with uploaded source maps:
+- [Browser permission denial: CITYPARK-MODERN-A](https://citypark-ym.sentry.io/issues/CITYPARK-MODERN-A): warning, `browser_code: 1`, `surface: web`, original hook and reporter TypeScript frames.
+- [Server invalid input: CITYPARK-MODERN-9](https://citypark-ym.sentry.io/issues/CITYPARK-MODERN-9): error, validation stage, original handler/reporter TypeScript frames.
+
+Both retain the anonymous IP placeholder and exclude customer location data. Production rollout still uses the owner-managed build/restart process above.

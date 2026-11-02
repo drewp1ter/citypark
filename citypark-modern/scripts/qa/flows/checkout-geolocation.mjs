@@ -101,6 +101,55 @@ assert.deepEqual(
 	).json(),
 	{ status: 'matched', town: 'Белореченск', street: '' }
 )
+// Every handled failure has exactly one structured report and leaves its API contract intact.
+for (const [overrides, reason] of [
+	[{ key: () => undefined }, 'configuration'],
+	[{ geocode: async () => null }, 'empty_results'],
+	[{ geocode: async () => ({ ...address, region: 'other' }) }, 'unsupported_region'],
+	[{ towns: async () => [] }, 'no_town'],
+	[{ towns: async () => [towns[0], towns[0]] }, 'ambiguous_town'],
+	[
+		{
+			towns: async () => {
+				throw new Error('private backend payload')
+			},
+		},
+		'delivery_list',
+	],
+	[
+		{
+			match: () => {
+				throw new Error('private matching payload')
+			},
+		},
+		'town_matching',
+	],
+	[{ geocode: async () => ({ ...address, street_with_type: null }) }, 'partial'],
+	...['provider_network', 'provider_timeout', 'provider_http', 'provider_json', 'provider_shape'].map((reason) => [
+		{
+			geocode: async () => {
+				throw Object.assign(new Error('private provider payload'), { reason, httpStatus: 403 })
+			},
+		},
+		reason,
+	]),
+]) {
+	const reports = []
+	await post(
+		'{"lat":44,"lon":39}',
+		deps({ ...overrides, normalize: (value) => value.toLowerCase(), report: (...args) => reports.push(args) })
+	)
+	assert.equal(reports.length, 1)
+	assert.equal(reports[0][0], reason)
+	assert.equal(JSON.stringify(reports).includes('private'), false)
+	assert.ok(reports[0][1].elapsed_ms >= 0)
+}
+const reports = []
+await post('{', deps({ report: (...args) => reports.push(args) }))
+assert.equal(reports[0][0], 'invalid')
+reports.length = 0
+await post('{"lat":44,"lon":39}', deps({ report: (...args) => reports.push(args) }))
+assert.equal(reports.length, 0)
 console.log('Geolocation route handler: validation, matching, no-store and provider failures PASS')
 
 const base = (process.env.BASE_URL ?? 'http://localhost:3111').replace(/\/$/, '')
@@ -119,6 +168,7 @@ try {
 				},
 				{ cart, theme }
 			)
+			await context.route('**/api/address-suggest?**', (route) => route.fulfill({ json: [] }))
 			const page = await context.newPage()
 			let requests = 0
 			await page.route('**/api/address-geolocate', async (route) => {
@@ -127,11 +177,11 @@ try {
 			})
 			await page.goto(base + '/checkout')
 			await expect(page.getByRole('status').filter({ hasText: 'Адрес определён.' })).toBeVisible({ timeout: 12000 })
-			await expect(page.getByLabel('Улица и дом')).toHaveValue('ул Гоголя, д 61')
+			await expect(page.getByRole('combobox', { name: 'Улица и дом' })).toHaveValue('ул Гоголя, д 61')
 			await expect(page.getByRole('button', { name: /^Оплатить/ })).toBeEnabled({ timeout: 10000 })
 			await expect.poll(() => requests).toBe(1)
-			await page.getByLabel('Улица и дом').fill('Мой адрес')
-			await expect(page.getByLabel('Улица и дом')).toHaveValue('Мой адрес')
+			await page.getByRole('combobox', { name: 'Улица и дом' }).fill('Мой адрес')
+			await expect(page.getByRole('combobox', { name: 'Улица и дом' })).toHaveValue('Мой адрес')
 			await context.close()
 			console.log(`Website autofill ${width}px ${theme}: PASS`)
 		}
@@ -141,6 +191,7 @@ try {
 	await context.grantPermissions(['geolocation'])
 	await context.setGeolocation({ latitude: 44.77, longitude: 39.87 })
 	await context.addInitScript((cart) => localStorage.setItem('citypark-cart', JSON.stringify(cart)), cart)
+	await context.route('**/api/address-suggest?**', (route) => route.fulfill({ json: [] }))
 	const page = await context.newPage()
 	let release
 	await page.route('**/api/address-geolocate', async (route) => {
@@ -151,10 +202,10 @@ try {
 	})
 	await page.goto(base + '/checkout')
 	await expect(page.getByRole('status').filter({ hasText: 'Определяем ваш адрес' })).toBeVisible({ timeout: 10000 })
-	await page.getByLabel('Улица и дом').fill('Введённая улица')
+	await page.getByRole('combobox', { name: 'Улица и дом' }).fill('Введённая улица')
 	release()
 	await page.waitForTimeout(100)
-	await expect(page.getByLabel('Улица и дом')).toHaveValue('Введённая улица')
+	await expect(page.getByRole('combobox', { name: 'Улица и дом' })).toHaveValue('Введённая улица')
 	await context.close()
 	console.log('Delayed autofill preserves manual address edits: PASS')
 

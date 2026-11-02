@@ -1,3 +1,4 @@
+import { autofillReasons, sanitizeAutofill } from './autofill-data'
 import type { ErrorEvent, BrowserOptions } from '@sentry/nextjs'
 
 type StreamedSpanJSON = Parameters<NonNullable<BrowserOptions['beforeSendSpan']>>[0]
@@ -21,7 +22,11 @@ export function backendTraceTargets(apiUrl: string | undefined): RegExp[] {
 
 /** Keep code locations and identifiers, excluding free-form messages and request data. */
 export function scrubError(event: ErrorEvent): ErrorEvent {
+	const reason = autofillReasons.find((reason) => reason === event.tags?.autofill_reason)
+	const details = reason && event.contexts?.autofill ? sanitizeAutofill(event.contexts.autofill) : undefined
 	return {
+		fingerprint: reason && details?.stage ? ['address-autofill', String(details.stage), reason] : undefined,
+		tags: reason ? { autofill_reason: reason } : undefined,
 		type: event.type,
 		event_id: event.event_id,
 		// Prevent ingestion from deriving a location from the sender's network address.
@@ -55,17 +60,20 @@ export function scrubError(event: ErrorEvent): ErrorEvent {
 				},
 			})),
 		},
-		contexts: event.contexts?.trace
-			? {
-					trace: {
-						trace_id: event.contexts.trace.trace_id,
-						span_id: event.contexts.trace.span_id,
-						parent_span_id: event.contexts.trace.parent_span_id,
-						op: event.contexts.trace.op,
-						status: event.contexts.trace.status,
-					},
-				}
-			: undefined,
+		contexts: {
+			...(details ? { autofill: details } : {}),
+			...(event.contexts?.trace
+				? {
+						trace: {
+							trace_id: event.contexts.trace.trace_id,
+							span_id: event.contexts.trace.span_id,
+							parent_span_id: event.contexts.trace.parent_span_id,
+							op: event.contexts.trace.op,
+							status: event.contexts.trace.status,
+						},
+					}
+				: {}),
+		},
 	}
 }
 

@@ -91,6 +91,7 @@ export function CheckoutForm({
 		setStreet(detectedStreet)
 	}, [])
 	const location = useCheckoutLocation({
+		surface: mini ? 'mini' : 'web',
 		enabled: method === 'delivery' && cartReady && priced.items.length > 0,
 		configured: locationEnabled,
 		initialTown: values?.city || '',
