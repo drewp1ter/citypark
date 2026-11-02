@@ -1,5 +1,5 @@
 import { getNews } from '@/entities/article'
-import { getMenu } from '@/entities/dish'
+import { getHomepageMenuConfiguration, getMenu, selectHomepageMenu } from '@/entities/dish'
 import { getFreeRoomsCount, getRooms } from '@/entities/room'
 import { PLACEHOLDER_PHOTO } from '@/shared/lib'
 import { getPageContent } from '@/entities/content'
@@ -10,11 +10,8 @@ import { NewsSection } from './news-section'
 import { RestaurantSection } from './restaurant-section'
 import { RoomsSection } from './rooms-section'
 
-const HOME_CATEGORIES = 4
-const HOME_DISHES = 3
-
 export async function HomePage() {
-	const [content, rooms, freeRooms, menu, news] = await Promise.all([
+	const [content, rooms, freeRooms, menu, news, homepageMenu] = await Promise.all([
 		getPageContent('home'),
 		getRooms().catch((error: unknown) => {
 			console.error(error)
@@ -32,10 +29,12 @@ export async function HomePage() {
 			console.error(error)
 			return null
 		}),
+		getHomepageMenuConfiguration().catch((error: unknown) => {
+			console.error(error)
+			return { categories: [] }
+		}),
 	])
-	const available = menu?.dishes.filter((dish) => dish.available) ?? []
-	const withPhoto = available.filter((dish) => dish.photo.src !== PLACEHOLDER_PHOTO)
-	const dishes = [...withPhoto, ...available.filter((dish) => !withPhoto.includes(dish))].slice(0, HOME_DISHES)
+	const groups = menu ? selectHomepageMenu(menu, homepageMenu, PLACEHOLDER_PHOTO) : []
 	const latestNews = news && news.length >= 3 ? ([news[0], news[1], news[2]] as const) : null
 
 	return (
@@ -43,9 +42,7 @@ export async function HomePage() {
 			<Hero content={content} rooms={rooms ?? []} />
 			<RoomsSection content={content} rooms={rooms} free={freeRooms} />
 			<RestaurantSection content={content} />
-			{menu && (
-				<DeliverySection content={content} categories={menu.categories.slice(0, HOME_CATEGORIES)} dishes={dishes} />
-			)}
+			{groups.length > 0 && <DeliverySection content={content} groups={groups} />}
 			{latestNews && <NewsSection title={content.text('home.news.heading')} items={latestNews} />}
 			<div className='max-w-page mx-auto w-full px-3 pt-14 pb-0 md:px-6 md:pt-28 md:pb-6'>
 				<ContactsBlock />

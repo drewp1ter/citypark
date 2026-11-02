@@ -1,6 +1,8 @@
 export { getDeliveryTowns } from './api/get-delivery-prices'
 export { matchDeliveryTown, normalizeLocality } from './lib/match-delivery-town'
 export { getDishesByIds, getMenu } from './api/get-menu'
+export { fetchHomepageMenu as getHomepageMenuConfiguration } from './api/menu-api'
+export { selectHomepageMenu, type HomepageMenuGroup } from './lib/select-homepage-menu'
 export { priceLines, type PricedCart, type PricedLine } from './lib/price-lines'
 export { quoteDelivery, type DeliveryMethod, type DeliveryQuote, type DeliveryZone } from './lib/quote-delivery'
 export { townDeliveryPrice } from './lib/town-delivery-price'

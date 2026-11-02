@@ -1,5 +1,9 @@
 # Progress
 
+## Homepage menu
+- [x] [51 Homepage category switching and curated dishes](51-homepage-menu.md) [website50; backend92]
+  - Check/build, pure resolver checks, the real-backend homepage-menu flow and existing menu/cart regression pass. Browser QA covers saved/manual/default selections at 390/1440px in both themes, exact dish order, switching without navigation or scroll changes, keyboard/focus, cart persistence and no page overflow/errors. Original homepage configuration restored; no orders or payments.
+
 Take the first unchecked task. Tick it only when every "Done when" command passes. The numbers in brackets are the tasks it depends on.
 
 ## Backend integration

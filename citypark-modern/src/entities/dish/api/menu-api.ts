@@ -1,4 +1,5 @@
 import { serverEnv } from '@/shared/config'
+import type { HomepageMenuConfiguration } from '../lib/select-homepage-menu'
 
 export type ApiImage = { id: number; url: string; type: string }
 export type ApiCategory = {
@@ -33,6 +34,10 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 export function fetchCategories(): Promise<ApiCategory[]> {
 	return fetchJson<ApiCategory[]>('/categories')
+}
+
+export function fetchHomepageMenu(): Promise<HomepageMenuConfiguration> {
+	return fetchJson<HomepageMenuConfiguration>('/homepage-menu')
 }
 
 export async function fetchProducts(): Promise<ApiProduct[]> {
