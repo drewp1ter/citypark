@@ -795,3 +795,30 @@ func TestSyncPreservesProductOrderingBlock(t *testing.T) {
 		t.Fatalf("blocked=%v err=%v", blocked, err)
 	}
 }
+
+func TestSyncPreservesHomepageMenu(t *testing.T) {
+	db := testutil.NewDB(t)
+	s := NewSyncer(db, &fakeSource{n: baseMenu()})
+	if _, err := s.Sync(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	var categoryID, productID int64
+	if err := db.Get(&productID, `SELECT id FROM products WHERE iiko_id='p-shashlik'`); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Get(&categoryID, `SELECT category_id FROM products WHERE id=$1`, productID); err != nil {
+		t.Fatal(err)
+	}
+	var before string
+	if err := db.Get(&before, `UPDATE homepage_menu SET data=jsonb_build_object('categories', jsonb_build_array(jsonb_build_object('categoryId',$1::bigint,'productIds',jsonb_build_array($2::bigint)))) WHERE id=1 RETURNING data::text`, categoryID, productID); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { db.MustExec(`UPDATE homepage_menu SET data='{"categories":[]}' WHERE id=1`) })
+	if _, err := s.Sync(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	var after string
+	if err := db.Get(&after, `SELECT data::text FROM homepage_menu WHERE id=1`); err != nil || after != before {
+		t.Fatal(after, err)
+	}
+}

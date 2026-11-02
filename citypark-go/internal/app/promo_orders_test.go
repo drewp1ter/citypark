@@ -160,6 +160,13 @@ func TestPromoStaffMessage(t *testing.T) {
 }
 func TestPromoConfiguration(t *testing.T) {
 	db := testutil.NewDB(t)
+	// Exercise the missing-provider configuration guard with the independent global switch enabled.
+	var originalSettings []byte
+	if err := db.Get(&originalSettings, `SELECT data FROM site_settings WHERE id=1`); err != nil {
+		t.Fatal(err)
+	}
+	db.MustExec(`UPDATE site_settings SET data=jsonb_set(data, '{promoCodesEnabled}', 'true') WHERE id=1`)
+	t.Cleanup(func() { db.MustExec(`UPDATE site_settings SET data=$1 WHERE id=1`, originalSettings) })
 	now := time.Date(2026, 10, 30, 12, 0, 0, 0, time.FixedZone("MSK", 10800))
 	c, err := config.Load(func(string) (string, bool) { return "", false })
 	if err != nil {

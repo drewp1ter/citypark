@@ -1,5 +1,10 @@
 # Progress
 
+## Homepage menu
+- [x] [92 Homepage menu configuration](92-homepage-menu.md) [91]
+  - Public GET/admin PUT, atomic validated selections, independent migration, OpenAPI/API docs and iiko-sync preservation are complete. Formatting/build/vet/full tests pass; coverage: homepagemenu 95.7%, app 98.3%, iiko 94.1%.
+  - Fixed an existing promo configuration test prerequisite: explicitly enable its independent global switch and restore the original settings afterward; assertions unchanged.
+
 Take the first unchecked task. Tick it only when every "Done when" command passes. The numbers in brackets are the tasks it depends on.
 
 ## Foundation

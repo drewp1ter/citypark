@@ -11,6 +11,7 @@ tags:
   - name: addresses
   - name: promo-codes
   - name: delivery-settings
+  - name: homepage-menu
   - name: delivery-prices
   - name: catalog
   - name: hotel
@@ -120,6 +121,30 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    HomepageMenu:
+      type: object
+      required: [categories]
+      properties:
+        categories:
+          type: array
+          description: Ordered selections. An empty array uses the first four visible menu categories on the homepage.
+          items:
+            type: object
+            required: [categoryId, productIds]
+            properties:
+              categoryId:
+                type: integer
+                format: int64
+                minimum: 1
+              productIds:
+                type: array
+                maxItems: 3
+                uniqueItems: true
+                description: Ordered dishes from this category. Empty means automatic suggestions.
+                items:
+                  type: integer
+                  format: int64
+                  minimum: 1
     CustomerMethod:
       type: object
       required: [provider, verified]
@@ -1250,6 +1275,51 @@ components:
               description: Empty, or `X% Y%` with X and Y from 0 to 100.
               example: 50% 30%
 paths:
+  /homepage-menu:
+    get:
+      summary: Read homepage menu selections
+      tags: [homepage-menu]
+      description: Public raw configuration. Resolve IDs against the live visible catalog; stale selections are retained for admin repair.
+      responses:
+        '200':
+          description: Ordered configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomepageMenu'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Внутренняя ошибка сервера
+    put:
+      summary: Replace homepage menu selections
+      tags: [homepage-menu]
+      description: Admin only. Atomic replacement; unique visible non-deleted categories and up to three unique non-deleted products per category. Blocked and out-of-hours dishes are allowed.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HomepageMenu'
+      responses:
+        '200':
+          description: Saved configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomepageMenu'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          description: Внутренняя ошибка сервера
   /health:
     get:
       summary: Check that the server is up

@@ -3495,3 +3495,46 @@ Errors:
 - **403** `Недостаточно прав`.
 - **404** `Не найдено`.
 - **500** `Внутренняя ошибка сервера`.
+
+### Homepage menu
+
+#### GET /homepage-menu
+
+Role: public. No parameters or request body. Returns **200** with the saved, ordered configuration:
+
+```json
+{"categories":[{"categoryId":2,"productIds":[]},{"categoryId":1,"productIds":[2,1]}]}
+```
+
+This is raw configuration: deleted, hidden or moved catalog IDs may remain until staff repair them.
+Resolve it against the current visible menu. Empty `categories` means the first four visible categories;
+empty `productIds` means up to three automatic suggestions from that category. Manual selections are not topped up.
+Ordering blocks and closed ordering hours do not remove a selected dish; apply the existing ordering controls.
+No valid manual products means automatic suggestions. Omit empty categories and hide the teaser when no categories remain.
+The initial response is `{"categories":[]}`. iiko sync preserves this configuration.
+
+Errors: **404** `Не найдено` if the configuration row is missing; **500** `Внутренняя ошибка сервера` for storage failures.
+
+#### PUT /homepage-menu
+
+Role: admin (Bearer JWT). Atomically replaces the entire configuration and returns **200** with the same shape.
+Example request: `{"categories":[{"categoryId":2,"productIds":[]},{"categoryId":1,"productIds":[2,1]}]}`.
+Both arrays are required and non-null. Arrays define display order; product IDs must belong to the specified category.
+Unavailable ordering hours and manual ordering blocks are allowed. Hidden/deleted/missing categories and deleted/missing/moved products are rejected.
+
+Errors:
+
+| Status | Message / field errors |
+|---|---|
+| 400 | `Некорректный JSON` for malformed JSON or incorrect field types |
+| 400 | `Ошибка валидации, пожалуйста проверьте введенные вами данные`; indexed keys below |
+| 401 | `Требуется авторизация` |
+| 403 | `Недостаточно прав` |
+| 404 | `Не найдено` if the configuration row is missing |
+| 500 | `Внутренняя ошибка сервера` |
+
+Validation fields (first error returned; rejected saves leave configuration unchanged):
+
+- `categories`: `Укажите список категорий` (missing/null).
+- `categories[i].categoryId`: `Укажите уникальную категорию` (non-positive/duplicate) or `Категория недоступна` (missing/deleted/hidden).
+- `categories[i].productIds`: `Укажите список из не более трёх блюд` (missing/null or more than three), `Укажите уникальные блюда` (non-positive/duplicate), or `Блюдо недоступно или относится к другой категории` (missing/deleted/moved).
