@@ -93,7 +93,7 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 				if (active.current && !takenOver.current)
 					setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
 			},
-			{ timeout: 10000, maximumAge: 0, enableHighAccuracy: false }
+			{ timeout: 30000, maximumAge: 0, enableHighAccuracy: false }
 		)
 		return () => {
 			active.current = false
