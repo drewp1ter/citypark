@@ -146,3 +146,7 @@ Set `IIKO_PROMO_DISCOUNT_TYPE_ID` to a real discount returned by `POST /api/1/di
 New promo orders require the discount ID plus terminal group and payment type settings; otherwise POST /orders returns 503 `Заказы с промокодом временно недоступны.` before customer/order writes or payment links. No-code orders and existing pending retries keep their existing behavior. An already-paid dispatch with missing/incompatible settings must alert staff; it never retries without the discount.
 
 Keep campaigns disabled until an explicitly authorized deployment acceptance verifies both pickup and courier orders: original unit prices/quantities, all saved eligible positions (including lines with zero backend allocation), no ineligible positions, exact total RMS discount and exact discounted food payment. iiko may distribute that total differently across eligible lines. Delivery stays a paid-delivery comment; MONETA collects discounted food plus delivery. Check command completion and the resulting iikoFront order. See [the verified RMS contract](docs/tasks/IIKO_PROMOCODES.md). Automated tests use local fakes and do not send live orders, payments or Telegram messages.
+
+## Sentry
+
+Optional HTTP error and trace monitoring is documented in [docs/SENTRY.md](docs/SENTRY.md), including environment variables, privacy behavior, verification and manual deployment. Empty `SENTRY_DSN` disables reporting.

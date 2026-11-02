@@ -335,3 +335,37 @@ func TestPromoConfiguration(t *testing.T) {
 		}
 	}
 }
+
+func TestConfigSentry(t *testing.T) {
+	for _, tc := range []struct {
+		env, rate string
+		want      float64
+		invalid   bool
+	}{
+		{"development", "", 1, false}, {"test", "", .1, false},
+		{"development", "0", 0, false}, {"test", "1", 1, false},
+		{"test", "0.25", .25, false}, {"test", "NaN", 0, true},
+		{"test", "+Inf", 0, true}, {"test", "-0.1", 0, true},
+		{"test", "1.1", 0, true}, {"test", "oops", 0, true},
+	} {
+		t.Run(tc.env+tc.rate, func(t *testing.T) {
+			env := map[string]string{"APP_ENV": tc.env, "SENTRY_DSN": "https://public@example.test/1", "SENTRY_RELEASE": "citypark-go@test"}
+			if tc.rate != "" {
+				env["SENTRY_TRACES_SAMPLE_RATE"] = tc.rate
+			}
+			cfg, err := Load(lookupMap(env))
+			if tc.invalid {
+				if err == nil {
+					t.Fatal("invalid sample rate accepted")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.Sentry.TracesSampleRate != tc.want || cfg.Sentry.Release != "citypark-go@test" || cfg.Sentry.DSN != env["SENTRY_DSN"] {
+				t.Fatalf("unexpected settings: %+v", cfg.Sentry)
+			}
+		})
+	}
+}

@@ -4,6 +4,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/mail"
 	"net/url"
 	"regexp"
@@ -13,6 +14,7 @@ import (
 )
 
 type Config struct {
+	Sentry                   Sentry
 	Env                      string // "development", "production" or "test"
 	Port                     int
 	Debug                    bool
@@ -32,6 +34,11 @@ type Config struct {
 	Hotel                    Hotel
 	OneC                     OneC
 	Upload                   Upload
+}
+
+type Sentry struct {
+	DSN, Release     string
+	TracesSampleRate float64
 }
 
 type JWT struct {
@@ -108,6 +115,16 @@ func Load(lookup LookupFunc) (Config, error) {
 		return Config{}, err
 	}
 	c.Debug = str("DEBUG", "false") == "true"
+	defaultRate := "0.1"
+	if c.Env == "development" {
+		defaultRate = "1"
+	}
+	c.Sentry.DSN = str("SENTRY_DSN", "")
+	c.Sentry.Release = str("SENTRY_RELEASE", "")
+	c.Sentry.TracesSampleRate, err = strconv.ParseFloat(str("SENTRY_TRACES_SAMPLE_RATE", defaultRate), 64)
+	if err != nil || math.IsNaN(c.Sentry.TracesSampleRate) || math.IsInf(c.Sentry.TracesSampleRate, 0) || c.Sentry.TracesSampleRate < 0 || c.Sentry.TracesSampleRate > 1 {
+		return Config{}, errors.New("SENTRY_TRACES_SAMPLE_RATE must be a finite number between 0 and 1")
+	}
 
 	tz := str("APP_TIMEZONE", "Europe/Moscow")
 	if c.Timezone, err = time.LoadLocation(tz); err != nil {

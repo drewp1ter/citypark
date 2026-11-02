@@ -190,3 +190,9 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
   - Added singleton migration, public GET/admin PUT, strict validation, app wiring and API/OpenAPI documentation. Town tariffs and order pricing remain independent.
   - Formatting, build, vet and serial suite pass with `go test -p 1 -skip '^TestPromoConfiguration$' ./...`. Owner explicitly authorized skipping the existing promo failure (2026-11-01); the unfiltered suite still fails only that test because the global promo switch is disabled. No test code was skipped or weakened permanently.
   - Coverage with the same approved exclusion: deliverysettings 100%, app 98.3%, apidocs 100%. No live settings writes, orders, payments or notifications performed.
+
+## Monitoring
+
+- [x] [93 Sentry backend monitoring](93-sentry.md) [92]
+  - SDK implementation, formatting, build, vet, full serial suite and coverage pass: monitoring/config 100%, httpx 89.8%, app 98.4%. Optional middleware is inside existing recovery, unexpected errors capture once and group by normalized route; privacy tests cover event/span redaction and isolated request hubs.
+  - Owner restarted the real backend; CITYPARK-GO-1 confirms the returned-error capture with readable Go file/function/line frames. Trace 8409f2e72c634806a9182b324130a770 connects Next.js, outbound HTTP and Go, with both error events. Temporary trigger removed from source; owner restarted the clean build and verified the former route returns 404 while health returns 200. No live orders/payments/notifications generated. Production rollout remains a separate approval step; see docs/SENTRY.md.

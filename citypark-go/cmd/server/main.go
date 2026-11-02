@@ -16,6 +16,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/config"
 	"github.com/drewp1ter/citypark-go/internal/logging"
+	"github.com/drewp1ter/citypark-go/internal/monitoring"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/drewp1ter/citypark-go/internal/user"
 )
@@ -37,6 +38,18 @@ func run() error {
 
 	log := logging.New(os.Stdout, cfg.Env, cfg.Debug)
 	slog.SetDefault(log)
+
+	client, err := monitoring.New(cfg.Sentry.DSN, cfg.Env, cfg.Sentry.Release, cfg.Sentry.TracesSampleRate)
+	if err != nil {
+		return fmt.Errorf("configure sentry: %w", err)
+	}
+	defer func() {
+		flushCtx, cancel := context.WithTimeout(context.Background(), monitoring.ShutdownTimeout)
+		defer cancel()
+		if !monitoring.Flush(flushCtx, client) {
+			log.Warn("sentry flush timed out")
+		}
+	}()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -63,7 +76,7 @@ func run() error {
 		log.Info("admin account created", "email", cfg.Admin.Email)
 	}
 
-	a := app.New(cfg, db, log, clock.System(cfg.Timezone))
+	a := app.New(cfg, db, log, clock.System(cfg.Timezone), monitoring.Middleware(client))
 	srv := &http.Server{
 		Addr:              "0.0.0.0:" + strconv.Itoa(cfg.Port),
 		Handler:           a.Handler,

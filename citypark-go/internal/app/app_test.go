@@ -248,7 +248,7 @@ func (f *fakeTelegram) sentChats() []string {
 	return append([]string(nil), f.chats...)
 }
 
-func newApp(t *testing.T, db *sqlx.DB, tg *fakeTelegram, env map[string]string) *app.App {
+func newApp(t *testing.T, db *sqlx.DB, tg *fakeTelegram, env map[string]string, middleware ...func(http.Handler) http.Handler) *app.App {
 	t.Helper()
 	merged := map[string]string{
 		"IIKO_BASE_URL":          tg.URL,
@@ -267,7 +267,7 @@ func newApp(t *testing.T, db *sqlx.DB, tg *fakeTelegram, env map[string]string) 
 		t.Fatalf("config.Load: %v", err)
 	}
 	log := slog.New(slog.NewTextHandler(io.Discard, nil))
-	return app.New(cfg, db, log, clock.Fixed(time.Date(2026, 10, 13, 12, 0, 0, 0, cfg.Timezone)))
+	return app.New(cfg, db, log, clock.Fixed(time.Date(2026, 10, 13, 12, 0, 0, 0, cfg.Timezone)), middleware...)
 }
 
 func TestAppSmoke(t *testing.T) {
@@ -516,4 +516,29 @@ func TestAppLiveOrders(t *testing.T) {
 		t.Errorf("event = %s (%v), want order.pending with status pending", data, err)
 	}
 	a.Notifier.Wait()
+}
+
+// Injected monitoring must execute inside the existing panic recovery boundary.
+func TestAppInjectedMiddleware(t *testing.T) {
+	db := testutil.NewDB(t)
+	middleware := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("X-Monitoring-Active", "true")
+			if r.URL.Path == "/verification-panic" {
+				panic("verification")
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+	a := newApp(t, db, newFakeTelegram(t), nil, middleware)
+	for _, tc := range []struct {
+		path   string
+		status int
+	}{{"/api/v1/health", 200}, {"/verification-panic", 500}} {
+		rec := httptest.NewRecorder()
+		a.Handler.ServeHTTP(rec, httptest.NewRequest("GET", tc.path, nil))
+		if rec.Code != tc.status || rec.Header().Get("X-Monitoring-Active") != "true" {
+			t.Fatalf("%s: status=%d headers=%v", tc.path, rec.Code, rec.Header())
+		}
+	}
 }

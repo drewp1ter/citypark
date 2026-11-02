@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -71,6 +72,15 @@ func WriteError(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.As(err, &e) {
 		JSON(w, e.Status, e)
 		return
+	}
+	if hub := sentry.GetHubFromContext(r.Context()); hub != nil {
+		hub.WithScope(func(scope *sentry.Scope) {
+			// Group by the declared route, never by a customer-provided URL or ID.
+			if route := chi.RouteContext(r.Context()); route != nil {
+				scope.SetTag("monitoring.route", r.Method+" "+route.RoutePattern())
+			}
+			hub.CaptureException(err)
+		})
 	}
 	slog.Default().Error("unhandled error", "method", r.Method, "path", r.URL.Path, "error", err)
 	JSON(w, http.StatusInternalServerError, NewError(http.StatusInternalServerError, "Внутренняя ошибка сервера"))

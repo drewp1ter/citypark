@@ -50,7 +50,7 @@ type App struct {
 }
 
 // New builds all stores, services and handlers and returns the router.
-func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
+func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middleware ...func(http.Handler) http.Handler) *App {
 	if cfg.Moneta.ID == "" || cfg.Moneta.Secret == "" {
 		log.Warn("moneta is not configured")
 	}
@@ -102,7 +102,9 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock) *App {
 	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)
 
 	r := chi.NewRouter()
-	r.Use(logging.Recover(log), logging.Requests(log), cors)
+	r.Use(logging.Recover(log))
+	r.Use(middleware...)
+	r.Use(logging.Requests(log), cors)
 	r.Route("/api/v1", func(r chi.Router) {
 		health.Routes(r)
 		apidocs.Routes(r)
