@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { withSentryConfig } from '@sentry/nextjs/config'
 
 type RemotePattern = NonNullable<NonNullable<NextConfig['images']>['remotePatterns']>[number]
 
@@ -56,4 +57,15 @@ const nextConfig: NextConfig = {
 	},
 }
 
-export default nextConfig
+export default withSentryConfig(nextConfig, {
+	org: 'citypark-ym',
+	project: 'citypark-modern',
+	authToken: process.env.SENTRY_AUTH_TOKEN,
+	silent: !process.env.SENTRY_AUTH_TOKEN,
+	widenClientFileUpload: true,
+	sourcemaps: {
+		disable: !process.env.SENTRY_AUTH_TOKEN,
+		deleteSourcemapsAfterUpload: true,
+	},
+	release: { name: process.env.NEXT_PUBLIC_SENTRY_RELEASE, setCommits: false },
+})

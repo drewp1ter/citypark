@@ -2,12 +2,14 @@
 
 import { useEffect } from 'react'
 import { useSiteSettings } from '@/shared/config'
+import { captureException } from '@/shared/monitoring'
 import { Button } from '@/shared/ui'
 
 /** Shown by the `error.tsx` of /menu and /checkout when the menu cannot be read from the backend. */
 export function MenuError({ error, retry }: { error: unknown; retry: () => void }) {
 	const { phones } = useSiteSettings()
 	useEffect(() => {
+		captureException(error)
 		console.error(error)
 	}, [error])
 

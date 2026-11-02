@@ -149,3 +149,9 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [50 Local DaData geolocation diagnostics](50-dadata-geolocation-diagnostics.md)
   - Opt-in development terminal logs show provider responses, HTTP status, normalized town candidates and rejection/failure reasons. API responses and selection rules are preserved; credentials are redacted and production logging is disabled. `npm run check`, `npm run build` and an isolated controlled-provider/handler harness pass, covering successful matching, unsupported settlement/region, duplicates, empty/malformed responses, provider/transport and delivery-list failures, logging guards and credential redaction. No live provider requests or backend writes were performed. Build emits existing dynamic-rendering diagnostics for `/` and `/menu` and completes successfully.
+
+## Monitoring
+
+- [x] [52 Sentry website monitoring](52-sentry.md) [51; backend93 for distributed verification]
+  - Check, production build, monitoring QA and real-backend menu flow pass. SDK setup covers browser, Node and Edge initialization, request/navigation hooks, route/global error boundaries and strict privacy filters. Public source-map uploads succeeded and `.next/static` has no maps.
+  - Fresh production-build browser/server errors (CITYPARK-MODERN-6 and -7) resolve to original TypeScript source with code context. Trace 8409f2e72c634806a9182b324130a770 links website→HTTP→Go and both errors. Temporary verification routes removed; owner restarted the clean backend and its former trigger returns 404. Final clean source-map upload passes; no token in public bundles. Next dev generated its documented AGENTS.md guidance block; retained it. Production rollout is separate and requires the normal owner-managed release/restart process; see docs/SENTRY.md.

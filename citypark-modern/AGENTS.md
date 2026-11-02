@@ -161,3 +161,13 @@ second page needs it. Steiger (`npm run lint:fsd`) enforces this, so keep it fre
 - Not designed: mobile nav sheet, news article page, 404, empty cart, form success/error states — build
   them from the existing components and tokens (see `design/pages.md`).
 - Date inputs in the screenshots show sample dates; use real defaults (today / tomorrow).
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

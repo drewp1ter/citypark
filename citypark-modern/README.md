@@ -48,3 +48,7 @@ then run `npm run qa:customer-release`. The runner is read-only by default and r
 
 Booking engine and room availability · Menu content in the backend (descriptions, weights and photos of the dishes) · delivery tariffs below 500 ₽ and for СОТ/ДНТ · PDF documents and legal texts · text and photos of the
 news and recipes · the Yandex Map · a 3D panorama link. The integration points are marked with `TODO` in the code.
+
+## Sentry
+
+Browser and Next.js server monitoring, privacy filters, source-map uploads and manual deployment are described in [docs/SENTRY.md](docs/SENTRY.md). Run `node scripts/qa/sentry.mjs` for the telemetry configuration checks.
