@@ -1,5 +1,9 @@
 # Progress
 
+## Homepage menu
+- [x] [31 Homepage menu editor](31-homepage-menu.md) [admin30; backend92]
+  - Check (305 tests), build and all five homepage-menu Playwright tests pass against the configured backend. Verified real save/reload, category/dish ordering, maximum selection, search, stale IDs, loading/retry, pending/field/transport errors, preserved drafts and navigation protection at 390/1440px in both themes. Original homepage configuration restored; no orders or payments.
+
 Take the first unchecked task. Tick it only when every "Done when" command passes. The numbers in brackets are the
 tasks it depends on. A task that needs a citypark-go task says so; check `../citypark-go/docs/tasks/PROGRESS.md` and
 stop if that task is not ticked.

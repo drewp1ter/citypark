@@ -4,6 +4,91 @@
  */
 
 export interface paths {
+    "/homepage-menu": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read homepage menu selections
+         * @description Public raw configuration. Resolve IDs against the live visible catalog; stale selections are retained for admin repair.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Ordered configuration. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HomepageMenu"];
+                    };
+                };
+                404: components["responses"]["NotFound"];
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        /**
+         * Replace homepage menu selections
+         * @description Admin only. Atomic replacement; unique visible non-deleted categories and up to three unique non-deleted products per category. Blocked and out-of-hours dishes are allowed.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["HomepageMenu"];
+                };
+            };
+            responses: {
+                /** @description Saved configuration. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["HomepageMenu"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -4429,6 +4514,15 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        HomepageMenu: {
+            /** @description Ordered selections. An empty array uses the first four visible menu categories on the homepage. */
+            categories: {
+                /** Format: int64 */
+                categoryId: number;
+                /** @description Ordered dishes from this category. Empty means automatic suggestions. */
+                productIds: number[];
+            }[];
+        };
         CustomerMethod: {
             /** @enum {string} */
             provider: "email" | "google" | "telegram";
