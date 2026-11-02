@@ -1,4 +1,5 @@
 import { serverEnv } from '@/shared/config'
+import { dadataDebug } from './dadata-debug'
 
 const ENDPOINT = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address'
 const GEOLOCATE_ENDPOINT = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/geolocate/address'
@@ -81,20 +82,41 @@ export type ReverseAddress = {
 export async function reverseGeocode(lat: number, lon: number): Promise<ReverseAddress | null> {
 	const key = serverEnv().DADATA_API_KEY
 	if (!key) throw new Error('DaData is not configured')
-	const response = await fetch(GEOLOCATE_ENDPOINT, {
-		method: 'POST',
-		headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Token ${key}` },
-		body: JSON.stringify({ lat, lon, count: 1, radius_meters: 100, language: 'ru' }),
-		signal: AbortSignal.timeout(3000),
-	})
-	if (!response.ok) throw new Error(`DaData geolocate: ${response.status}`)
-	const body: unknown = await response.json()
-	if (!body || typeof body !== 'object' || !('suggestions' in body) || !Array.isArray(body.suggestions))
+	let response: Response
+	try {
+		response = await fetch(GEOLOCATE_ENDPOINT, {
+			method: 'POST',
+			headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Token ${key}` },
+			body: JSON.stringify({ lat, lon, count: 1, radius_meters: 100, language: 'ru' }),
+			signal: AbortSignal.timeout(3000),
+		})
+	} catch {
+		dadataDebug('provider failure', { reason: 'Network failure or provider timeout' })
+		throw new Error('DaData geolocate request failed')
+	}
+	const raw = await response.text()
+	dadataDebug('provider response', { httpStatus: response.status, body: raw })
+	if (!response.ok) {
+		dadataDebug('provider failure', { reason: 'Non-success HTTP status', httpStatus: response.status })
+		throw new Error(`DaData geolocate: ${response.status}`)
+	}
+	let body: unknown
+	try {
+		body = JSON.parse(raw)
+	} catch {
+		dadataDebug('provider failure', { reason: 'Malformed provider JSON' })
 		throw new Error('Invalid DaData geolocate response')
+	}
+	if (!body || typeof body !== 'object' || !('suggestions' in body) || !Array.isArray(body.suggestions)) {
+		dadataDebug('provider failure', { reason: 'Missing or invalid suggestions array' })
+		throw new Error('Invalid DaData geolocate response')
+	}
 	if (body.suggestions.length === 0) return null
 	const first = body.suggestions[0] as { data?: unknown }
-	if (!first || typeof first !== 'object' || !first.data || typeof first.data !== 'object')
+	if (!first || typeof first !== 'object' || !first.data || typeof first.data !== 'object') {
+		dadataDebug('provider failure', { reason: 'Missing or invalid first address' })
 		throw new Error('Invalid DaData geolocate address')
+	}
 	const data = first.data as Record<string, unknown>
 	const fields = [
 		'region',
@@ -110,7 +132,9 @@ export async function reverseGeocode(lat: number, lon: number): Promise<ReverseA
 		'block',
 	]
 	for (const field of fields)
-		if (data[field] !== undefined && data[field] !== null && typeof data[field] !== 'string')
+		if (data[field] !== undefined && data[field] !== null && typeof data[field] !== 'string') {
+			dadataDebug('provider failure', { reason: 'Invalid address field type', field })
 			throw new Error('Invalid DaData geolocate address')
+		}
 	return Object.fromEntries(fields.map((field) => [field, data[field] ?? null])) as ReverseAddress
 }

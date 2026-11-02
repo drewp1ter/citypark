@@ -1,5 +1,5 @@
-import { getDeliveryTowns, matchDeliveryTown } from '@/entities/dish'
-import { reverseGeocode } from '@/shared/api'
+import { getDeliveryTowns, matchDeliveryTown, normalizeLocality } from '@/entities/dish'
+import { dadataDebug, reverseGeocode } from '@/shared/api'
 import { serverEnv } from '@/shared/config'
 import { postAddressGeolocate } from './address-geolocate-handler'
 
@@ -9,4 +9,6 @@ export const POST = (request: Request) =>
 		geocode: reverseGeocode,
 		towns: getDeliveryTowns,
 		match: matchDeliveryTown,
+		normalize: normalizeLocality,
+		debug: dadataDebug,
 	})

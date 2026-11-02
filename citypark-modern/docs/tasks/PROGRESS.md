@@ -140,3 +140,8 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
   - Use editable delivery facts and Белореченск’s existing tariff/threshold for captions and cart estimates; admin30 provides the editor.
   - Check/build and production delivery-settings, menu, checkout-and-contacts and cart-motion flows pass. Verified real facts at 390/1440 px in both themes, tariff estimates below/at threshold, independent settings/tariff cache refresh, zero threshold, pure fallback/validation cases, and restoration propagation. Authorized temporary settings/tariff writes were restored; no orders or payments created. Authenticated Mini App/device checks remain manual; shared provider/cart path checked statically.
   - Deviation: app wrapper lives in `src/app/delivery` rather than `src/app/providers`; Steiger rejects `providers` under `fsd/segments-by-purpose`. No rule overrides added.
+
+## Local diagnostics
+
+- [x] [50 Local DaData geolocation diagnostics](50-dadata-geolocation-diagnostics.md)
+  - Opt-in development terminal logs show provider responses, HTTP status, normalized town candidates and rejection/failure reasons. API responses and selection rules are preserved; credentials are redacted and production logging is disabled. `npm run check`, `npm run build` and an isolated controlled-provider/handler harness pass, covering successful matching, unsupported settlement/region, duplicates, empty/malformed responses, provider/transport and delivery-list failures, logging guards and credential redaction. No live provider requests or backend writes were performed. Build emits existing dynamic-rendering diagnostics for `/` and `/menu` and completes successfully.

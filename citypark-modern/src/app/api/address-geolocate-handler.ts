@@ -15,6 +15,8 @@ export type GeolocateDependencies = {
 	geocode: (lat: number, lon: number) => Promise<GeolocateAddress | null>
 	towns: () => Promise<readonly GeolocateTown[]>
 	match: (locality: string | null | undefined, towns: readonly GeolocateTown[]) => GeolocateTown | undefined
+	normalize?: (locality: string) => string
+	debug?: (event: string, details: unknown) => void
 }
 
 const headers = { 'Cache-Control': 'no-store' }
@@ -52,18 +54,54 @@ export async function postAddressGeolocate(request: Request, deps: GeolocateDepe
 	try {
 		key = deps.key()
 	} catch {
+		deps.debug?.('selection skipped', { reason: 'Server configuration unavailable' })
 		return json({ status: 'unavailable' }, 503)
 	}
-	if (!key) return json({ status: 'unavailable' }, 503)
+	if (!key) {
+		deps.debug?.('selection skipped', { reason: 'Missing DADATA_API_KEY' })
+		return json({ status: 'unavailable' }, 503)
+	}
+	let stage = 'provider lookup'
 	try {
 		const address = await deps.geocode(lat, lon)
-		if (!address || address.region !== 'Краснодарский' || address.region_type !== 'край')
+		if (!address) {
+			deps.debug?.('selection rejected', { reason: 'Empty provider results' })
 			return json({ status: 'unmatched' })
+		}
+		deps.debug?.('provider locality', {
+			region: address.region,
+			regionType: address.region_type,
+			city: address.city,
+			settlement: address.settlement,
+		})
+		if (address.region !== 'Краснодарский' || address.region_type !== 'край') {
+			deps.debug?.('selection rejected', { reason: 'Unsupported region' })
+			return json({ status: 'unmatched' })
+		}
 		const locality = address.settlement?.trim() ? address.settlement : address.city
-		const town = deps.match(locality, await deps.towns())
+		stage = 'delivery-list lookup'
+		const towns = await deps.towns()
+		stage = 'town matching'
+		const town = deps.match(locality, towns)
+		const normalize = deps.normalize
+		if (normalize && deps.debug) {
+			const normalized = normalize(locality || '')
+			const deliveryTowns = towns.map(({ name }) => ({ name, normalized: normalize(name) }))
+			const candidates = deliveryTowns.filter((item) => item.normalized === normalized)
+			deps.debug('town matching', {
+				locality,
+				source: address.settlement?.trim() ? 'settlement' : 'city',
+				normalized,
+				deliveryTowns,
+				candidates,
+				reason: town ? 'Matched' : candidates.length > 1 ? 'Multiple town matches' : 'No town match',
+			})
+		}
 		if (!town) return json({ status: 'unmatched' })
+		deps.debug?.('selection accepted', { town: town.name, street: street(address) })
 		return json({ status: 'matched', town: town.name, street: street(address) })
 	} catch {
+		deps.debug?.('selection failed', { reason: `${stage} failed` })
 		return json({ status: 'unavailable' }, 502)
 	}
 }
