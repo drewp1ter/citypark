@@ -150,3 +150,5 @@ Keep campaigns disabled until an explicitly authorized deployment acceptance ver
 ## Sentry
 
 Optional HTTP error and trace monitoring is documented in [docs/SENTRY.md](docs/SENTRY.md), including environment variables, privacy behavior, verification and manual deployment. Empty `SENTRY_DSN` disables reporting.
+
+Production public-content export and restore: [docs/CONTENT_SEED.md](docs/CONTENT_SEED.md). This uses a separate command from the development demo seeder.

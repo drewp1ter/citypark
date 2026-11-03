@@ -196,3 +196,8 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
 - [x] [93 Sentry backend monitoring](93-sentry.md) [92]
   - SDK implementation, formatting, build, vet, full serial suite and coverage pass: monitoring/config 100%, httpx 89.8%, app 98.4%. Optional middleware is inside existing recovery, unexpected errors capture once and group by normalized route; privacy tests cover event/span redaction and isolated request hubs.
   - Owner restarted the real backend; CITYPARK-GO-1 confirms the returned-error capture with readable Go file/function/line frames. Trace 8409f2e72c634806a9182b324130a770 connects Next.js, outbound HTTP and Go, with both error events. Temporary trigger removed from source; owner restarted the clean build and verified the former route returns 404 while health returns 200. No live orders/payments/notifications generated. Production rollout remains a separate approval step; see docs/SENTRY.md.
+
+## Production content
+
+- [x] [94 Production content snapshot](94-production-content-seed.md) [93]
+  - Exported public data and 77 uploads from the read-only source. Bundle/schema/checksum validation, repeat restore, excluded data preservation, roundtrip equality, identity advancement and failed-restore rollback pass. Formatting, build, vet and full serial tests pass; command coverage 76.4% (cmd exempt from internal coverage threshold). No production restore performed.

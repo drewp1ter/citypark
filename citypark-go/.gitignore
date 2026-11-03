@@ -3,3 +3,6 @@
 *.log
 .env.development
 uploads/
+# Reviewed production seed uploads are versioned; runtime uploads remain ignored.
+!seeds/production/assets/uploads/
+!seeds/production/assets/uploads/**
