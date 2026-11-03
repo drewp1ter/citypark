@@ -209,6 +209,23 @@ try {
 	await context.close()
 	console.log('Delayed autofill preserves manual address edits: PASS')
 
+	// A denied location request selects the first delivery option without filling the street.
+	const denied = await browser.newContext()
+	await denied.addInitScript((cart) => {
+		localStorage.setItem('citypark-cart', JSON.stringify(cart))
+		Object.defineProperty(navigator, 'geolocation', {
+			value: { getCurrentPosition: (_success, failure) => failure({ code: 1 }) },
+		})
+	}, cart)
+	const deniedPage = await denied.newPage()
+	await deniedPage.goto(base + '/checkout')
+	await expect(deniedPage.getByRole('status').filter({ hasText: 'Проверьте населённый пункт' })).toBeVisible()
+	const city = deniedPage.locator('select[name="city"]')
+	const firstTown = await city.locator('option').nth(1).getAttribute('value')
+	await expect(city).toHaveValue(firstTown)
+	await expect(deniedPage.getByRole('combobox', { name: 'Улица и дом' })).toHaveValue('')
+	await denied.close()
+
 	const invalid = await fetch(`${base}/api/address-geolocate`, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },

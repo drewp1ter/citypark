@@ -12,9 +12,10 @@ type Options = {
 	initialTown: string
 	initialStreet: string
 	onDetected: (town: string, street: string) => void
+	onFailure: () => void
 }
 
-export function useCheckoutLocation({ surface, enabled, configured, initialTown, initialStreet, onDetected }: Options) {
+export function useCheckoutLocation({ surface, enabled, configured, initialTown, initialStreet, onDetected, onFailure }: Options) {
 	const [status, setStatus] = useState('')
 	const started = useRef(false)
 	const takenOver = useRef(false)
@@ -29,6 +30,11 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 				active.current = false
 			}
 		}
+		const fail = (message = 'Не удалось определить адрес. Проверьте населённый пункт и введите улицу и номер дома.') => {
+			if (takenOver.current || cancelled.current) return
+			onFailure()
+			setStatus(message)
+		}
 		const begin = Date.now()
 		const report = (reason: AutofillReason, browser_code?: number) =>
 			captureAddressAutofillFailure(reason, {
@@ -41,7 +47,7 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 		started.current = true
 		if (!navigator.geolocation) {
 			report('unsupported')
-			queueMicrotask(() => setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.'))
+			queueMicrotask(() => fail())
 			return
 		}
 		active.current = true
@@ -68,8 +74,8 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 						onDetected(result.town, result.street)
 						setStatus('Адрес определён. Проверьте улицу и номер дома.')
 					} else if (response.ok && result.status === 'unmatched')
-						setStatus('Не удалось подобрать населённый пункт доставки. Выберите его вручную.')
-					else setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
+						fail()
+					else fail()
 				} catch (error) {
 					if (active.current && !takenOver.current)
 						report(
@@ -81,7 +87,7 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 									: 'request_failed'
 						)
 					if (active.current && !takenOver.current)
-						setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
+						fail()
 				}
 			},
 			(error) => {
@@ -91,14 +97,14 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 						error.code
 					)
 				if (active.current && !takenOver.current)
-					setStatus('Не удалось определить адрес. Выберите населённый пункт и введите адрес вручную.')
+					fail()
 			},
 			{ timeout: 30000, maximumAge: 0, enableHighAccuracy: false }
 		)
 		return () => {
 			active.current = false
 		}
-	}, [surface, enabled, configured, initialTown, initialStreet, onDetected])
+	}, [surface, enabled, configured, initialTown, initialStreet, onDetected, onFailure])
 
 	return {
 		status,

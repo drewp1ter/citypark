@@ -90,6 +90,13 @@ export function CheckoutForm({
 		setCity(town)
 		setStreet(detectedStreet)
 	}, [])
+	const fallbackTown = towns[0]?.name || ''
+	const onLocationFailure = useCallback(() => {
+		setCity((current) => current || fallbackTown)
+	}, [fallbackTown])
+	useEffect(() => {
+		if (!locationEnabled && method === 'delivery') queueMicrotask(onLocationFailure)
+	}, [locationEnabled, method, onLocationFailure])
 	const location = useCheckoutLocation({
 		surface: mini ? 'mini' : 'web',
 		enabled: method === 'delivery' && cartReady && priced.items.length > 0,
@@ -97,6 +104,7 @@ export function CheckoutForm({
 		initialTown: values?.city || '',
 		initialStreet: values?.street || '',
 		onDetected,
+		onFailure: onLocationFailure,
 	})
 
 	const noDelivery = method === 'delivery' && towns.length === 0
