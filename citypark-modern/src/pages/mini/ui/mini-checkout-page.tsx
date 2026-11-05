@@ -1,3 +1,4 @@
+import { loadAddressBook } from '@/entities/address/index.server'
 import { connection } from 'next/server'
 import { getDeliveryTowns, getMenu } from '@/entities/dish'
 import { getMiniProfile } from '@/features/telegram-launch'
@@ -14,11 +15,12 @@ export async function MiniCheckoutPage({
 	if (!(await getMiniProfile())) return null
 	if (searchParams && (await searchParams).payment === 'failed')
 		return <MiniPaymentReturnPage searchParams={searchParams} failed />
-	const [menu, towns, hours, settings] = await Promise.all([
+	const [menu, towns, hours, settings, addressBook] = await Promise.all([
 		getMenu(),
 		getDeliveryTowns(),
 		getWorkingHours(),
 		getSiteSettings(),
+		loadAddressBook('mini'),
 	])
 	return (
 		<div className='min-h-[var(--mini-height,100dvh)] pt-[var(--mini-top,env(safe-area-inset-top))] pr-[var(--mini-right,env(safe-area-inset-right))] pb-[var(--mini-bottom,env(safe-area-inset-bottom))] pl-[var(--mini-left,env(safe-area-inset-left))]'>
@@ -31,6 +33,7 @@ export async function MiniCheckoutPage({
 			<main id='content'>
 				<CheckoutForm
 					mini
+					addressBook={addressBook}
 					dishes={menu.dishes}
 					towns={towns}
 					hours={hours}

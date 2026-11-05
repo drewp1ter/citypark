@@ -20,6 +20,7 @@ export type SelectOption = {
 	label: ReactNode
 	/** Plain text for type-ahead when the label is markup. */
 	textValue?: string
+	disabled?: boolean
 }
 
 type SelectProps = {
@@ -95,6 +96,7 @@ export function Select({
 						<ListBoxItem
 							key={option.value}
 							id={option.value}
+							isDisabled={option.disabled}
 							textValue={option.textValue ?? (typeof option.label === 'string' ? option.label : option.value)}
 							className={cn(
 								'flex min-h-11 cursor-pointer items-center rounded-[12px] px-3',

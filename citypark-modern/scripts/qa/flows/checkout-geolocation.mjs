@@ -209,6 +209,43 @@ try {
 	await context.close()
 	console.log('Delayed autofill preserves manual address edits: PASS')
 
+	// A hydrated saved default wins before browser location can start.
+	const saved = await browser.newContext({ viewport: { width: 390, height: 900 } })
+	await saved.addInitScript((cart) => {
+		localStorage.setItem('citypark-cart', JSON.stringify(cart))
+		const entry = {
+			id: crypto.randomUUID(),
+			revision: crypto.randomUUID(),
+			isDefault: true,
+			name: 'Дом',
+			city: 'Белореченск',
+			street: 'Гоголя, 61',
+			apartment: '12',
+			entrance: '2',
+		}
+		localStorage.setItem(
+			'citypark.addresses.v1',
+			JSON.stringify({ version: 1, revision: crypto.randomUUID(), entries: [entry] })
+		)
+		window.locationRequests = 0
+		Object.defineProperty(navigator, 'geolocation', {
+			value: {
+				getCurrentPosition() {
+					window.locationRequests++
+				},
+			},
+		})
+	}, cart)
+	const savedPage = await saved.newPage()
+	await savedPage.route('**/api/address-suggest?**', (route) => route.fulfill({ json: [] }))
+	await savedPage.goto(base + '/checkout')
+	await expect(savedPage.getByRole('combobox', { name: 'Улица и дом' })).toHaveValue('Гоголя, 61')
+	await expect(savedPage.locator('input[name="apartment"]')).toHaveValue('12')
+	await expect(savedPage.locator('input[name="entrance"]')).toHaveValue('2')
+	assert.equal(await savedPage.evaluate(() => window.locationRequests), 0)
+	await saved.close()
+	console.log('Guest hydration/default prevents geolocation and preserves all address fields: PASS')
+
 	// A denied location request selects the first delivery option without filling the street.
 	const denied = await browser.newContext()
 	await denied.addInitScript((cart) => {

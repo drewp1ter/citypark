@@ -1,7 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { formatAddress } from '@/entities/address'
+import { addressFieldsSchema, formatAddress } from '@/entities/address'
+import { createSavedAddress, loadAddressBook } from '@/entities/address/index.server'
+import { CustomerApiError } from '@/shared/customer'
 import { getDeliveryTowns, getMenu, priceLines } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { phoneDigits } from '@/shared/lib'
@@ -89,6 +91,45 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 		}
 		if (!towns.some((town) => town.name === order.data.city)) {
 			errors.city = 'Выберите населённый пункт'
+			return { status: 'error', errors, values }
+		}
+	}
+
+	if (order.data.method === 'delivery' && values.saveAddress === 'on') {
+		const fields = addressFieldsSchema.safeParse({
+			name: values.addressName,
+			city: values.city,
+			street: values.street,
+			apartment: values.apartment,
+			entrance: values.entrance,
+		})
+		if (!fields.success) {
+			for (const issue of fields.error.issues) {
+				const field = issue.path[0] === 'name' ? 'addressName' : (issue.path[0] as OrderField)
+				errors[field] = issue.message
+			}
+			return { status: 'error', errors, values }
+		}
+		try {
+			const current = await loadAddressBook(surface)
+			if (values.addressContext === 'guest' && surface === 'web' && current.context.kind === 'guest') {
+				// Browser storage has already acknowledged the local save. Login may race it;
+				// that save stays local and never grants permission to write an account book.
+			} else if (
+				values.addressContext === 'account' &&
+				current.context.kind === 'account' &&
+				String(current.context.accountId) === values.expectedAccountId
+			) {
+				await createSavedAddress(surface, current.context.accountId, fields.data)
+			} else {
+				errors.addressSave = 'Войдите повторно, чтобы сохранить адрес'
+				return { status: 'error', errors, values }
+			}
+		} catch (error) {
+			errors.addressSave =
+				error instanceof CustomerApiError && error.status < 500
+					? error.message
+					: 'Не удалось сохранить адрес. Повторите попытку или снимите отметку «Сохранить адрес».'
 			return { status: 'error', errors, values }
 		}
 	}

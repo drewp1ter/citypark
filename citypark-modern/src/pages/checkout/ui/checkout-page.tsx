@@ -1,3 +1,4 @@
+import { loadAddressBook } from '@/entities/address/index.server'
 import { connection } from 'next/server'
 import { redirect } from 'next/navigation'
 import { getPendingPaymentContext } from '@/shared/customer'
@@ -17,16 +18,18 @@ export async function CheckoutPage({
 }) {
 	if (paymentFailed) {
 		const context = await getPendingPaymentContext(returnedOrderId)
-  if (context?.origin === 'history') redirect(`/${context.surface === 'mini' ? 'mini' : 'account'}/orders/${context.orderId}?payment=failed`)
+		if (context?.origin === 'history')
+			redirect(`/${context.surface === 'mini' ? 'mini' : 'account'}/orders/${context.orderId}?payment=failed`)
 		if (context?.surface === 'mini') redirect(`/mini/checkout?payment=failed&MNT_TRANSACTION_ID=${context.orderId}`)
 	}
 	// Rendered per request: a build must not need the backend, and a backend failure must reach error.tsx.
 	await connection()
-	const [menu, towns, hours, settings] = await Promise.all([
+	const [menu, towns, hours, settings, addressBook] = await Promise.all([
 		getMenu(),
 		getDeliveryTowns(),
 		getWorkingHours(),
 		getSiteSettings(),
+		loadAddressBook('web'),
 	])
 
 	return (
@@ -34,6 +37,7 @@ export async function CheckoutPage({
 			<CheckoutHeader step={2} />
 			<main>
 				<CheckoutForm
+					addressBook={addressBook}
 					dishes={menu.dishes}
 					towns={towns}
 					hours={hours}

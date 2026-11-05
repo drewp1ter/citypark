@@ -8,7 +8,10 @@
 // This flow creates/edits/defaults/deletes temporary addresses only. No orders or payments.
 // Native Telegram relaunch/keyboard checks require an owner device and remain manual.
 import assert from 'node:assert/strict'
-import { chromium } from 'playwright'
+import { chromium, expect } from 'playwright/test'
+import { randomUUID } from 'node:crypto'
+import { seedCart } from '../menu-cart.mjs'
+const checkoutCart = await seedCart([1])
 const base = (process.env.BASE_URL ?? 'http://localhost:3111').replace(/\/+$/, '')
 const browser = await chromium.launch()
 const key = 'citypark.addresses.v1'
@@ -103,6 +106,110 @@ try {
 			console.log(
 				`PASS expected guest CRUD, duplicate/conflict, default, cancel, reload, focus, reset/read-only, no overflow: ${width}px ${theme}`
 			)
+			// Task 57: guest-only storage writes and invalid contact fields. Never create an order.
+			const home = {
+				id: randomUUID(),
+				revision: randomUUID(),
+				isDefault: true,
+				name: 'Дом',
+				city: 'Белореченск',
+				street: 'Гоголя, 61',
+				apartment: '12',
+				entrance: '2',
+			}
+			const work = {
+				...home,
+				id: randomUUID(),
+				revision: randomUUID(),
+				isDefault: false,
+				name: 'Работа',
+				street: 'Ленина, 20',
+				apartment: '',
+				entrance: '4',
+			}
+			await page.evaluate(
+				({ key, entries, cart }) => {
+					localStorage.setItem(key, JSON.stringify({ version: 1, revision: crypto.randomUUID(), entries }))
+					localStorage.setItem('citypark-cart', JSON.stringify(cart))
+				},
+				{ key, entries: [home, work], cart: checkoutCart }
+			)
+			await page.goto(base + '/checkout')
+			const selector = page.locator('select[name="savedAddress"]')
+			const choose = async (key) => {
+				await page.getByRole('button', { name: /Сохранённые адреса/ }).click()
+				await page
+					.getByRole('option', {
+						name: key === 'guest:' + home.id ? 'Дом' : key ? 'Работа' : 'Другой адрес',
+						exact: true,
+					})
+					.click()
+			}
+			const street = page.getByRole('combobox', { name: 'Улица и дом', exact: true })
+			const apartment = page.locator('input[name="apartment"]'),
+				entrance = page.locator('input[name="entrance"]')
+			await expect(selector).toHaveValue('guest:' + home.id)
+			await expect(street).toHaveValue(home.street)
+			await expect(apartment).toHaveValue('12')
+			await expect(entrance).toHaveValue('2')
+			await expect(page.getByLabel('Сохранить адрес', { exact: true })).not.toBeChecked()
+			await choose('guest:' + work.id)
+			await expect(street).toHaveValue(work.street)
+			await expect(apartment).toHaveValue('')
+			await expect(entrance).toHaveValue('4')
+			await apartment.fill('15')
+			await expect(selector).toHaveValue('')
+			await expect(street).toHaveValue(work.street)
+			await expect(entrance).toHaveValue('4')
+			await choose('guest:' + home.id)
+			await choose('')
+			await expect(street).toHaveValue('')
+			await expect(apartment).toHaveValue('')
+			await expect(entrance).toHaveValue('')
+			await choose('guest:' + home.id)
+			// Simulate another tab deleting the selection; its delivery draft survives.
+			await page.evaluate((key) => {
+				const book = JSON.parse(localStorage.getItem(key))
+				book.entries = book.entries.slice(1)
+				localStorage.setItem(key, JSON.stringify(book))
+				dispatchEvent(new StorageEvent('storage', { key }))
+			}, key)
+			await expect(selector).toHaveValue('')
+			await expect(street).toHaveValue(home.street)
+			await page.getByLabel('Сохранить адрес', { exact: true }).check()
+			await page.getByLabel('Название адреса', { exact: true }).fill('Новый дом')
+			const submit = page.getByRole('button', { name: /^Оплатить/ }).filter({ visible: true })
+			await expect(submit).toBeEnabled({ timeout: 10000 })
+			// Missing name, phone and consent guarantee validation stops order dispatch.
+			await submit.click()
+			await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).entries.length === 2, key)
+			await expect(page.getByText('Укажите имя', { exact: true })).toBeVisible()
+			await expect(street).toHaveValue(home.street)
+			await expect(apartment).toHaveValue('12')
+			await expect(entrance).toHaveValue('2')
+			await expect(page.getByLabel('Название адреса', { exact: true })).toHaveValue('Новый дом')
+			await submit.click()
+			await expect(page.getByText('Укажите имя', { exact: true })).toBeVisible()
+			assert.equal(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).entries.length, key), 2)
+			await page.evaluate((key) => {
+				const original = Storage.prototype.setItem
+				Storage.prototype.setItem = function (k, v) {
+					if (k === key) throw Error('quota')
+					return original.call(this, k, v)
+				}
+			}, key)
+			await street.fill('Совсем новая, 5')
+			await submit.click()
+			await expect(page.getByText('Не удалось сохранить адрес в этом браузере', { exact: true })).toBeVisible()
+			await expect(street).toHaveValue('Совсем новая, 5')
+			await page.getByLabel('Сохранить адрес', { exact: true }).uncheck()
+			await page.getByText('Самовывоз', { exact: true }).click()
+			await expect(page.getByLabel('Сохранить адрес', { exact: true })).toHaveCount(0)
+			assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+			console.log(
+				`PASS checkout default/selection/units/removal/error retention, explicit save/duplicate/storage failure/pickup: ${width}px ${theme}`
+			)
+
 			await context.close()
 		}
 	for (const surface of ['web', 'mini']) {

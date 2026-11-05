@@ -8,6 +8,10 @@ const oneOf = <T extends readonly [string, ...string[]]>(values: T) => z.enum(va
 
 export const orderSchema = z.object({
 	method: oneOf(methods),
+	saveAddress: z.string(),
+	addressName: z.string(),
+	addressContext: z.string(),
+	expectedAccountId: z.string(),
 	promoCode: z
 		.string()
 		.trim()
@@ -62,7 +66,7 @@ export const linesSchema = z
 	.min(1, 'Корзина пуста')
 
 /** "form" = an error that belongs to the whole order, not to one field. */
-export type OrderErrorKey = OrderField | 'form'
+export type OrderErrorKey = OrderField | 'form' | 'addressSave'
 
 export const orderFields = Object.keys(orderSchema.shape) as OrderField[]
 

@@ -2,10 +2,10 @@
 
 import { useMenuRefresh } from '@/shared/lib'
 
-import { useActionState, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useActionState, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { cartActions, useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, townDeliveryPrice, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
-import { AddressField } from '@/entities/address'
+import { AddressField, type AddressBookLoad } from '@/entities/address'
 import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
 import {
 	AppLink,
@@ -25,11 +25,16 @@ import { PromoCodeField } from './promo-code-field'
 import { formatQuotePrice } from '../model/quote-price'
 import { useCheckoutLocation } from '../model/use-checkout-location'
 
+import { useCheckoutAddress } from '../model/use-checkout-address'
+import { SavedAddressSelector } from './saved-address-selector'
+import { useRouter } from 'next/navigation'
+
 const initialState: OrderState = { status: 'idle' }
 
 const dishWord = (count: number) => plural(count, ['блюдо', 'блюда', 'блюд'])
 
 type CheckoutFormProps = {
+	addressBook: AddressBookLoad
 	/** The whole menu: the cart only stores ids, so the prices are looked up here. */
 	dishes: readonly Dish[]
 	/** Towns with delivery prices from the backend. */
@@ -48,6 +53,7 @@ type CheckoutFormProps = {
 }
 
 export function CheckoutForm({
+	addressBook,
 	dishes,
 	towns,
 	hours,
@@ -59,7 +65,11 @@ export function CheckoutForm({
 	mini = false,
 }: CheckoutFormProps) {
 	useMenuRefresh()
-	const [state, formAction, pending] = useActionState(mini ? placeMiniOrder : placeOrder, initialState)
+	const address = useCheckoutAddress(addressBook, towns)
+	const [state, formAction, pending] = useActionState(async (previous: OrderState, data: FormData) => {
+		if (!(await address.beforeSubmit(String(data.get('method'))))) return previous
+		return (mini ? placeMiniOrder : placeOrder)(previous, data)
+	}, initialState)
 	const errors = state.status === 'error' ? state.errors : {}
 	const values = state.status === 'error' ? state.values : undefined
 
@@ -68,44 +78,26 @@ export function CheckoutForm({
 	const priced = useMemo(() => priceLines(lines, dishes), [lines, dishes])
 
 	const [method, setMethod] = useState<DeliveryMethod>(values?.method === 'pickup' ? 'pickup' : 'delivery')
-	const [city, setCity] = useState(values?.city || '')
-	const [street, setStreet] = useState(values?.street || '')
 	const [when, setWhen] = useState(values?.when || 'asap')
 	const [consent, setConsent] = useState(values?.consent === 'on')
-	const submittedValues = values ? JSON.stringify([values.method, values.city, values.street]) : ''
+	const { city, street, apartment, entrance } = address.fields
+	const router = useRouter()
 	useEffect(() => {
-		if (!submittedValues) return
-		queueMicrotask(() => {
-			const [restoredMethod, restoredCity, restoredStreet] = JSON.parse(submittedValues) as [
-				DeliveryMethod,
-				string,
-				string,
-			]
-			setMethod(restoredMethod)
-			setCity(restoredCity)
-			setStreet(restoredStreet)
-		})
-	}, [submittedValues])
-	const onDetected = useCallback((town: string, detectedStreet: string) => {
-		setCity(town)
-		setStreet(detectedStreet)
-	}, [])
-	const fallbackTown = towns[0]?.name || ''
-	const onLocationFailure = useCallback(() => {
-		setCity((current) => current || fallbackTown)
-	}, [fallbackTown])
-	useEffect(() => {
-		if (!locationEnabled && method === 'delivery') queueMicrotask(onLocationFailure)
-	}, [locationEnabled, method, onLocationFailure])
+		if (!locationEnabled && method === 'delivery' && address.locationAllowed) queueMicrotask(address.fallback)
+	}, [locationEnabled, method, address.locationAllowed, address.fallback])
 	const location = useCheckoutLocation({
 		surface: mini ? 'mini' : 'web',
-		enabled: method === 'delivery' && cartReady && priced.items.length > 0,
+		enabled: method === 'delivery' && cartReady && priced.items.length > 0 && address.locationAllowed,
 		configured: locationEnabled,
-		initialTown: values?.city || '',
-		initialStreet: values?.street || '',
-		onDetected,
-		onFailure: onLocationFailure,
+		initialTown: '',
+		initialStreet: '',
+		onDetected: address.detected,
+		onFailure: address.fallback,
 	})
+	const editAddress = (field: keyof typeof address.fields, value: string) => {
+		location.takeOver()
+		address.edit(field, value)
+	}
 
 	const noDelivery = method === 'delivery' && towns.length === 0
 	const selectedTown = towns.find((town) => town.name === city)
@@ -125,7 +117,7 @@ export function CheckoutForm({
 		quote.deliveryPrice > 0 &&
 		!!selectedTown &&
 		townDeliveryPrice(selectedTown, quote.subtotal) === 0
-	const canSubmit = cartReady && priced.items.length > 0 && !pending && !noDelivery && pricing.ready
+	const canSubmit = address.ready && cartReady && priced.items.length > 0 && !pending && !noDelivery && pricing.ready
 
 	return (
 		<div className='max-w-narrow-page mx-auto w-full px-3 pt-2 pb-4 md:px-6 md:pt-10 md:pb-10'>
@@ -157,10 +149,22 @@ export function CheckoutForm({
 					<form
 						id='checkout'
 						action={formAction}
-						onReset={(event) => event.preventDefault()}
+						onSubmit={() => location.takeOver()}
+						onResetCapture={(event) => {
+							// React Aria listens to the native reset event even on controlled fields.
+							// Stop it before those listeners can erase a failed submission's draft.
+							event.preventDefault()
+							event.stopPropagation()
+						}}
 						noValidate
 						className='grid gap-2 md:grid-cols-3 md:items-start md:gap-3'
 					>
+						<input type='hidden' name='addressContext' value={addressBook.context.kind} />
+						<input
+							type='hidden'
+							name='expectedAccountId'
+							value={addressBook.context.kind === 'account' ? addressBook.context.accountId : ''}
+						/>
 						<input type='hidden' name='lines' value={JSON.stringify(lines)} />
 						<input type='hidden' name='promoCode' value={pricing.code} />
 						<input type='hidden' name='expectedPayableTotal' value={quote?.payableTotal ?? ''} />
@@ -193,6 +197,54 @@ export function CheckoutForm({
 								<p role='status' className='text-text-muted'>
 									{location.status}
 								</p>
+							)}
+							{method === 'delivery' && (
+								<>
+									<SavedAddressSelector
+										entries={address.entries}
+										selected={address.selected}
+										towns={towns}
+										mini={mini}
+										onSelect={(key) => {
+											location.takeOver()
+											address.select(key)
+										}}
+									/>
+									{addressBook.error && (
+										<p role='status'>
+											{addressBook.error}{' '}
+											<button type='button' className='tap-area underline' onClick={() => router.refresh()}>
+												Повторить
+											</button>
+										</p>
+									)}
+									<CheckboxField
+										name='saveAddress'
+										checked={address.save}
+										onChange={(event) => address.setSave(event.target.checked)}
+									>
+										Сохранить адрес
+									</CheckboxField>
+									{address.save && (
+										<>
+											<TextField
+												label='Название адреса'
+												name='addressName'
+												value={address.name}
+												onChange={(event) => address.setName(event.target.value)}
+												error={errors.addressName}
+											/>
+											<p className='text-text-muted text-sm'>
+												Адрес будет сохранён при оформлении заказа, независимо от результата оплаты.
+											</p>
+										</>
+									)}
+									{(address.saveError || errors.addressSave) && (
+										<p role='alert' className='text-danger'>
+											{address.saveError || errors.addressSave}
+										</p>
+									)}
+								</>
 							)}
 							<div className='grid gap-3 md:grid-cols-2'>
 								<Select
@@ -235,9 +287,7 @@ export function CheckoutForm({
 											]}
 											value={city}
 											onValueChange={(value) => {
-												location.takeOver()
-												setCity(value)
-												setStreet('')
+												editAddress('city', value)
 											}}
 											error={errors.city}
 										/>
@@ -247,8 +297,13 @@ export function CheckoutForm({
 											town={city}
 											suggestions={suggestions}
 											value={street}
-											onValueChange={setStreet}
-											onManualEdit={location.takeOver}
+											onValueChange={(value) => {
+												if (value !== street) editAddress('street', value)
+											}}
+											onManualEdit={() => {
+												location.takeOver()
+												address.takeOver()
+											}}
 											error={errors.street}
 											className='md:col-span-2'
 										/>
@@ -261,7 +316,8 @@ export function CheckoutForm({
 													</>
 												}
 												name='apartment'
-												defaultValue={values?.apartment}
+												value={apartment}
+												onChange={(event) => editAddress('apartment', event.target.value)}
 												error={errors.apartment}
 											/>
 											<TextField
@@ -272,7 +328,8 @@ export function CheckoutForm({
 													</>
 												}
 												name='entrance'
-												defaultValue={values?.entrance}
+												value={entrance}
+												onChange={(event) => editAddress('entrance', event.target.value)}
 												error={errors.entrance}
 											/>
 										</div>

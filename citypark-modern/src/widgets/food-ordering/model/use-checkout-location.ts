@@ -15,12 +15,21 @@ type Options = {
 	onFailure: () => void
 }
 
-export function useCheckoutLocation({ surface, enabled, configured, initialTown, initialStreet, onDetected, onFailure }: Options) {
+export function useCheckoutLocation({
+	surface,
+	enabled,
+	configured,
+	initialTown,
+	initialStreet,
+	onDetected,
+	onFailure,
+}: Options) {
 	const [status, setStatus] = useState('')
 	const started = useRef(false)
 	const takenOver = useRef(false)
 	const cancelled = useRef(false)
 	const active = useRef(false)
+	const request = useRef<AbortController | null>(null)
 
 	useEffect(() => {
 		if (!enabled || !configured || initialTown || initialStreet || cancelled.current) return
@@ -30,8 +39,12 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 				active.current = false
 			}
 		}
-		const fail = (message = 'Не удалось определить адрес. Проверьте населённый пункт и введите улицу и номер дома.') => {
+		let finished = false
+		const fail = (
+			message = 'Не удалось определить адрес. Проверьте населённый пункт и введите улицу и номер дома.'
+		) => {
 			if (takenOver.current || cancelled.current) return
+			finished = true
 			onFailure()
 			setStatus(message)
 		}
@@ -52,17 +65,18 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 		}
 		active.current = true
 		queueMicrotask(() => {
-			if (active.current && !takenOver.current) setStatus('Определяем ваш адрес…')
+			if (active.current && !takenOver.current && !finished) setStatus('Определяем ваш адрес…')
 		})
 		navigator.geolocation.getCurrentPosition(
 			async ({ coords }) => {
 				if (!active.current || takenOver.current) return
 				try {
+					request.current = new AbortController()
 					const response = await fetch('/api/address-geolocate', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						body: JSON.stringify({ lat: coords.latitude, lon: coords.longitude }),
-						signal: AbortSignal.timeout(5000),
+						signal: AbortSignal.any([request.current.signal, AbortSignal.timeout(5000)]),
 					})
 					const result = (await response.json()) as Result
 					if (!result || !['matched', 'unmatched', 'unavailable', 'invalid'].includes(result.status))
@@ -71,10 +85,10 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 						throw new Error('Invalid autofill address')
 					if (!active.current || takenOver.current) return
 					if (response.ok && result.status === 'matched') {
+						finished = true
 						onDetected(result.town, result.street)
 						setStatus('Адрес определён. Проверьте улицу и номер дома.')
-					} else if (response.ok && result.status === 'unmatched')
-						fail()
+					} else if (response.ok && result.status === 'unmatched') fail()
 					else fail()
 				} catch (error) {
 					if (active.current && !takenOver.current)
@@ -86,8 +100,7 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 									? 'invalid_response'
 									: 'request_failed'
 						)
-					if (active.current && !takenOver.current)
-						fail()
+					if (active.current && !takenOver.current) fail()
 				}
 			},
 			(error) => {
@@ -96,8 +109,7 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 						error.code === 1 ? 'permission_denied' : error.code === 3 ? 'location_timeout' : 'position_unavailable',
 						error.code
 					)
-				if (active.current && !takenOver.current)
-					fail()
+				if (active.current && !takenOver.current) fail()
 			},
 			{ timeout: 30000, maximumAge: 0, enableHighAccuracy: false }
 		)
@@ -112,10 +124,11 @@ export function useCheckoutLocation({ surface, enabled, configured, initialTown,
 			takenOver.current = true
 			cancelled.current = true
 			active.current = false
-			cancelled.current = true
+			request.current?.abort()
 			setStatus('')
 		},
 		pickup: () => {
+			request.current?.abort()
 			active.current = false
 			setStatus('')
 		},

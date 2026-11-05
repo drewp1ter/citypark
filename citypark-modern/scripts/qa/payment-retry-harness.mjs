@@ -87,7 +87,7 @@ for (const [file, name, props, failed] of [
  ['src/pages/mini/ui/mini-payment-return-page.tsx', 'MiniPaymentReturnPage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: '7' }), failed: true }, true]
 ]) for (const surface of ['web', 'mini']) {
  const modules = {
- 'next/navigation': { redirect }, 'next/server': {}, '@/shared/customer': { getPendingPaymentContext: async () => ({ orderId: 7, surface, origin: 'history' }) },
+ '@/entities/address/index.server': {}, 'next/navigation': { redirect }, 'next/server': {}, '@/shared/customer': { getPendingPaymentContext: async () => ({ orderId: 7, surface, origin: 'history' }) },
  '@/entities/order': { getMyOrder: () => { throw Error('Must route history before checkout effects') } }, '@/shared/ui': {}, '@/shared/api': {}, '@/shared/lib': {}, '@/shared/config': {}, '@/entities/dish': {}, '@/widgets/food-ordering': {},
  './checkout-header': {}, './clear-cart': {}, './title-row': {}, './mini-clear-cart': {}, './pending-payment-refresh': {}
  }
