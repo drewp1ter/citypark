@@ -212,3 +212,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [65 Customer questions and content gaps](65-customer-questions.md) [64]
   - Five server-rendered contact FAQ answers use existing settings/hours and reference parking copy. Source review and eight owner follow-up topics documented in CUSTOMER_QUESTIONS.md. Check/build, raw HTML, 390/1440px light/dark screenshots, keyboard/no-overflow/phone-wrap and existing JSON-LD HTTP checks pass. No backend writes; deployment/indexing acceptance remains pending.
+
+- [x] [66 Yandex Webmaster runbook](66-yandex-webmaster-runbook.md) [62; preparation through 65]
+  - Owner runbook covers production readiness, genuine HTML verification file, sitemap submission, indexing troubleshooting and Alice visibility. Official sources and local links/configuration reviewed; check/build and diff checks pass. Existing dynamic-rendering build diagnostics remain. Registration, verification artifact, deployment and Webmaster submissions remain pending.

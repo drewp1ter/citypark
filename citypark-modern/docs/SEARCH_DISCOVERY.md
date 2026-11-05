@@ -2,6 +2,8 @@
 
 Production: https://cityparkvip.ru. Deployment is pending. Owner registers with Yandex Webmaster later.
 
+Owner instructions: [Yandex Webmaster runbook](YANDEX_WEBMASTER.md).
+
 ## Prioritized queue
 
 - 61 (P0): canonical metadata, staging/private noindex.
@@ -47,3 +49,9 @@ Added five always-visible answers at /contacts#questions: address, guest parking
 Source review and unresolved owner questions are in [CUSTOMER_QUESTIONS.md](CUSTOMER_QUESTIONS.md). Further answers about delivery cutoff/total time, cancellation/refunds, booking conditions, parking security/capacity, accessibility and allergen handling require verified owner facts and remain unpublished. No backend writes or API changes.
 
 Validation: production build, check, raw-HTML answer/value/link checks, 390/1440px browser checks in both themes without website JavaScript, keyboard focus, no horizontal overflow and single-line phone links. Screenshots reviewed in /tmp/citypark-task65. Existing business JSON-LD HTTP acceptance passes. Existing dynamic-rendering diagnostics remain during build; production deployment/indexing acceptance remains pending. Run `node scripts/qa/customer-questions.mjs` against a production build (BASE_URL defaults to http://localhost:3112).
+
+## Task 66 owner runbook (2026-11-05)
+
+Prepared [YANDEX_WEBMASTER.md](YANDEX_WEBMASTER.md) using the current official Yandex instructions and repository configuration. It covers production readiness, the real HTML verification file and its byte-for-byte response check, standalone public-file deployment, sitemap submission, indexing troubleshooting and Alice visibility evidence. All operational steps remain pending; no account, domain, deployment, verification artifact or Webmaster submission was changed. Task 67 is the deployment/owner handoff gate, not completed by writing these instructions.
+
+Task 66 validation: `npm run check`, `npm run build`, local-link/configuration review and `git diff --check` passed. Existing dynamic-rendering diagnostics remain during build. All runbook operational statuses remain Pending.
