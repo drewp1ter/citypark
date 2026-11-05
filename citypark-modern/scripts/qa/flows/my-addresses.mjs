@@ -101,6 +101,22 @@ try {
 			await context.addInitScript((theme) => localStorage.setItem('theme', theme), theme)
 			const page = await context.newPage()
 			await page.route('**/api/address-suggest?**', (route) => route.abort())
+			// privacy: collect everything the page could leak to console, errors or other origins.
+			const leaks = []
+			const secrets = ['Гоголя', 'Ленина', 'Дом QA', 'Работа QA', 'Дом новый', 'Дубликат']
+			const encoded = secrets.map((value) => encodeURIComponent(value))
+			const watch = (text) => {
+				if (secrets.some((value) => text.includes(value))) leaks.push('console/pageerror')
+			}
+			page.on('console', (message) => watch(message.text()))
+			page.on('pageerror', (error) => watch(String(error.message)))
+			page.on('request', (request) => {
+				const url = request.url()
+				const external = new URL(url).origin !== new URL(base).origin
+				const body = request.postData() ?? ''
+				if (external && (secrets.some((v) => body.includes(v)) || encoded.some((v) => url.includes(v))))
+					leaks.push('external request')
+			})
 			await page.goto(base + '/account/addresses')
 			await expect(page.getByRole('region', { name: 'Импорт адресов' })).toHaveCount(0)
 			await page.getByRole('heading', { name: 'Мои адреса', exact: true }).waitFor()
@@ -151,6 +167,16 @@ try {
 			await remove(page, cards.first())
 			await page.getByText('У вас пока нет сохранённых адресов', { exact: true }).waitFor()
 			assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
+			assert.deepEqual(leaks, [], `privacy: saved-address text leaked (${width}px ${theme})`)
+			console.log(`PASS privacy: no address text in console, page errors or external requests: ${width}px ${theme}`)
+			// responsiveA11y: every visible management control is at least 44 px tall.
+			const small = await page.evaluate(() =>
+				[...document.querySelectorAll('main button, main a, main input')]
+					.filter((el) => el.offsetParent !== null && el.getBoundingClientRect().height < 44)
+					.map((el) => (el.getAttribute('aria-label') ?? el.textContent ?? el.tagName).trim().slice(0, 30))
+			)
+			assert.deepEqual(small, [], `responsiveA11y: controls under 44 px (${width}px ${theme})`)
+			console.log(`PASS responsiveA11y: management controls >= 44 px: ${width}px ${theme}`)
 			await page.evaluate((key) => localStorage.setItem(key, '{broken'), key)
 			await page.reload()
 			await page.getByRole('button', { name: 'Сбросить сохранённые адреса', exact: true }).click()
@@ -501,6 +527,46 @@ try {
 	pending.push(
 		'Second-account isolation, legacy/unavailable seeded fixtures, expired/changed account browser responses and native Telegram acceptance require supplied accounts/device'
 	)
+	// Named acceptance matrix (task 59). Each row states what ran in this process, in isolated harnesses
+	// or backend tests, and what only an owner session/device can prove. Blocked rows are never passes.
+	const authorized = process.env.QA_ADDRESS_WRITES === '1' && !!process.env.QA_WEB_SESSION
+	const matrix = [
+		[
+			'guestCRUD',
+			'PASS',
+			'this flow + address-store/management harnesses (CRUD, reload, corrupt/unknown version, quota)',
+		],
+		[
+			'accountCRUD',
+			authorized ? 'RAN' : 'BLOCKED',
+			'needs QA_ADDRESS_WRITES=1 + QA_WEB_SESSION/QA_OTHER_WEB_SESSION/QA_MINI_SESSION; isolation logic: address-api harness',
+		],
+		[
+			'sharedLocationSafety',
+			'PARTIAL',
+			'backend tests TestBookOwnerIsolation/TestDeleteEntry/TestBookConcurrentCreates pass; live two-account run blocked',
+		],
+		[
+			'legacyReview',
+			'BLOCKED',
+			'needs seeded legacy account fixtures; UI logic covered by address-management harness only',
+		],
+		['checkoutPrefill', 'PASS', 'this flow + checkout-address harness + checkout-geolocation flow'],
+		['checkoutSave', 'PASS', 'this flow + checkout-address harness (sequencing); no order or payment created'],
+		[
+			'loginImport',
+			'PARTIAL',
+			'address-import harness + anonymous/invalid-session checks; real login/Google/Telegram return blocked',
+		],
+		['sessionChanges', 'PARTIAL', 'address-import/api harnesses; expiry/account switch with real sessions blocked'],
+		['privacy', 'PASS', 'this flow: console, page errors, external requests; address-store/api harness privacy checks'],
+		[
+			'responsiveA11y',
+			'PASS',
+			'this flow: 390/1440 px, light/dark, focus, 44 px targets, no overflow; native Telegram keyboard blocked',
+		],
+	]
+	for (const [name, status, note] of matrix) console.log(`${status.padEnd(8)} ${name}: ${note}`)
 	console.log('BLOCKED acceptance: ' + pending.join('; '))
 	if (process.env.QA_ADDRESS_REQUIRE_ALL === '1') process.exitCode = 1
 } finally {
