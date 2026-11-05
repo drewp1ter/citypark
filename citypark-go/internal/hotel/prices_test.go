@@ -26,11 +26,10 @@ type pricesFixture struct {
 	user   string
 }
 
-// newPricesFixture returns a router over the migrated database. NewDB does not truncate hotel_prices and
-// breakfast_items (the migration seeds them), so the state found at the start is put back after the test.
+// newPricesFixture uses an isolated schema with deterministic migration seed data.
 func newPricesFixture(t *testing.T) pricesFixture {
 	t.Helper()
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	before, err := NewStore(db).GetPrices(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -344,7 +343,7 @@ func TestReplacePricesInTx(t *testing.T) {
 type onlyDBTX struct{ store.DBTX }
 
 func TestReplacePricesUnsupportedDB(t *testing.T) {
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 
 	_, err := NewStore(onlyDBTX{db}).ReplacePrices(context.Background(), Fees{}, nil)
 

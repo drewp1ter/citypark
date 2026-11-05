@@ -35,11 +35,10 @@ type fixture struct {
 	user    string
 }
 
-// newFixture returns a router over the migrated database. NewDB does not truncate `news` (the seed is part of the
-// schema), so the rows found at the start are put back after the test.
+// newFixture uses an isolated schema with deterministic migration seed data.
 func newFixture(t *testing.T) fixture {
 	t.Helper()
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	restoreNews(t, db)
 
 	tokens := auth.NewTokens("test-secret", time.Hour, clock.Fixed(october))
@@ -590,7 +589,7 @@ func TestPublicUploadedPhotoURL(t *testing.T) {
 }
 
 func TestStoreNotFound(t *testing.T) {
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	restoreNews(t, db)
 	s := NewStore(db)
 	ctx := context.Background()

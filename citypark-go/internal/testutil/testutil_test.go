@@ -106,3 +106,30 @@ func TestDoJSON(t *testing.T) {
 		t.Errorf("empty request echoed %+v, want no auth, content type or body", got)
 	}
 }
+
+func TestNewContentDBIsolation(t *testing.T) {
+	first := NewContentDB(t)
+	if _, err := first.Exec(`DELETE FROM news; INSERT INTO breakfast_items(sort,name,price_kopecks) VALUES(99,'Test item',1)`); err != nil {
+		t.Fatal(err)
+	}
+	var schema string
+	t.Run("isolated seed", func(t *testing.T) {
+		second := NewContentDB(t)
+		if err := second.Get(&schema, `SELECT current_schema()`); err != nil {
+			t.Fatal(err)
+		}
+		if n := Count(t, second, `SELECT count(*) FROM news`); n != 7 {
+			t.Fatalf("news = %d, want 7", n)
+		}
+		if n := Count(t, second, `SELECT count(*) FROM breakfast_items`); n != 5 {
+			t.Fatalf("breakfast = %d, want 5", n)
+		}
+	})
+	var n int
+	if err := first.Get(&n, `SELECT count(*) FROM information_schema.schemata WHERE schema_name=$1`, schema); err != nil || n != 0 {
+		t.Fatalf("schema remains after cleanup: %d, %v", n, err)
+	}
+	if n := Count(t, first, `SELECT count(*) FROM news`); n != 0 {
+		t.Fatalf("isolated writes changed: %d", n)
+	}
+}

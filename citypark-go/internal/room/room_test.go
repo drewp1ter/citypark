@@ -48,11 +48,10 @@ type fixture struct {
 	user    string
 }
 
-// newFixture returns a router over the migrated database. NewDB does not truncate `rooms` (the seed is part of
-// the schema), so the rows are put back after the test.
+// newFixture uses an isolated schema with deterministic migration seed data.
 func newFixture(t *testing.T) fixture {
 	t.Helper()
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	restoreRooms(t, db)
 
 	tokens := auth.NewTokens("test-secret", time.Hour, clock.Fixed(october))
@@ -465,7 +464,7 @@ func TestPublicPhotoURL(t *testing.T) {
 }
 
 func TestStoreGet(t *testing.T) {
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	s := NewStore(db)
 	ctx := context.Background()
 
@@ -482,7 +481,7 @@ func TestStoreGet(t *testing.T) {
 }
 
 func TestStoreUpdateJoinsTransaction(t *testing.T) {
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	restoreRooms(t, db)
 	ctx := context.Background()
 
@@ -520,7 +519,7 @@ func TestStoreUpdateJoinsTransaction(t *testing.T) {
 }
 
 func TestStoreUpdateNotFound(t *testing.T) {
-	db := testutil.NewDB(t)
+	db := testutil.NewContentDB(t)
 	_, old, err := NewStore(db).Update(context.Background(), Room{ID: "penthouse", Price: 100})
 	if !errors.Is(err, store.ErrNotFound) || old.PhotoURL != "" || old.Gallery != nil {
 		t.Errorf("Update unknown id: old %q, err %v; want ErrNotFound", old, err)

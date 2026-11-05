@@ -207,3 +207,8 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
 - [x] [95 Payment retry for unpaid orders](95-payment-retry.md) [backend88–90; backend94]
   - Added owner-only retry endpoint, customer eligibility metadata and shared same-day/opening-hours checks for retry and Moneta CHECK; saved prices and delayed payment confirmations are preserved. Website and Mini App session wiring verified without live payments or notifications.
   - Formatting, build, vet, full serial suite and coverage pass: order 92.0%, app 98.9%, apidocs 100%. Test database is available; previous blocker resolved. API/OpenAPI updated. Corrected task text to preserve the existing invalid-ID 404 behavior. Website UI remains website task 54.
+
+## My addresses
+
+- [x] [96 Saved-address schema and read model](96-address-book-model.md) [backend95]
+  - Saved-address schema/read model and metadata-safe rollback complete. Content tests use isolated migration-seeded schemas. Formatting/build/vet and fresh full serial suite pass (2026-11-05); coverage: address 89.7%, hotel 91.5%, news 94.3%, room 95.2%, testutil 81.3%.
