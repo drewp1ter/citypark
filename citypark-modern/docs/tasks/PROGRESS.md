@@ -203,3 +203,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [62 Public sitemap](62-public-sitemap.md) [61]
   - Complete public sitemap and robots reference implemented using shared production origin. Harness, check, build and production HTTP checks pass: valid XML and 91 exact URLs from live backend lists. Backend failures propagate; no backend writes. Public deployment acceptance remains pending.
+
+- [x] [63 Public server HTML audit](63-server-html-audit.md) [62]
+  - Read-only production HTTP audit, check and build pass. Contacts/hours, 5 room details and 24 linked categories with 246 dishes verified from parsed server HTML, excluding scripts/styles/templates. No rendering fixes needed. Query-category canonical and fallback freshness limitations documented in SEARCH_DISCOVERY.md; public deployment acceptance remains pending.

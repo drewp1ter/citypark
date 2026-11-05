@@ -19,3 +19,11 @@ Create each detailed task using TASK_TEMPLATE.md before beginning it; execute on
 Keep SITE_INDEXING_ENABLED=false on staging. Enable true only on the public production deployment and rebuild. Check initial HTML for canonical and robots tags on public pages and noindex on account, checkout/payment returns and Mini App routes. Check room/news canonicals with actual backend identifiers. Missing content must still return 404. Until verified on the deployed site these checks remain pending.
 
 Yandex documentation: https://yandex.ru/support/webmaster/ru/service/quick-start and https://yandex.ru/support/webmaster/ru/service/rights.html.
+
+## Task 63 audit results (2026-11-05)
+
+Production-build HTTP acceptance passed against the configured live backend: contact address/email/company/phone links, restaurant hours on contacts/home/menu, public restaurant/hotel main content, all 5 room listings and detail names/prices/descriptions, and all 24 linked menu category responses with 246 dish descriptions/prices. Category descriptions are checked wherever supplied. No rendering fixes were needed.
+
+The acceptance script fetches HTML and uses an inert DOMParser, stripping scripts/styles/templates before checking main content; React payloads cannot satisfy text assertions. It does not execute website JavaScript, submit forms or modify backend data. Nonempty catalogs and successful backend responses are required. Run `node scripts/qa/public-content-http.mjs` against a production build using BASE_URL (default http://localhost:3112).
+
+Limitations: this proves server HTML availability, not mobile visibility of every responsive duplicate or search inclusion. Menu categories are reachable through ordinary query links and render independently; they currently canonicalize to /menu, so category-specific indexing is not established by this audit. Existing fallback hours/contacts may become stale during backend failures; this audit requires a healthy backend and checks current values. Public deployment checks and Yandex indexing/visibility remain pending.
