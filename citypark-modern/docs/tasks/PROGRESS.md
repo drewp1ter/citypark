@@ -209,3 +209,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [64 Hotel and restaurant structured data](64-business-structured-data.md) [63]
   - Server-rendered Hotel/Restaurant graph on contacts uses the same settings/hours as visible facts, stable canonical IDs and script-safe serialization. Isolated/security harness, check/build, live-backend HTML agreement and task 63 content regression pass. Existing dynamic-rendering diagnostics and deployed-site acceptance remain documented; no backend writes.
+
+- [x] [65 Customer questions and content gaps](65-customer-questions.md) [64]
+  - Five server-rendered contact FAQ answers use existing settings/hours and reference parking copy. Source review and eight owner follow-up topics documented in CUSTOMER_QUESTIONS.md. Check/build, raw HTML, 390/1440px light/dark screenshots, keyboard/no-overflow/phone-wrap and existing JSON-LD HTTP checks pass. No backend writes; deployment/indexing acceptance remains pending.

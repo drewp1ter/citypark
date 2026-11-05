@@ -5,6 +5,7 @@ import { serverEnv, site } from '@/shared/config'
 import { NBSP, formatHours } from '@/shared/lib'
 import { AppLink, Button, PinIcon, YandexMap, cardClass } from '@/shared/ui'
 import { businessJsonLd } from '../model/business-json-ld'
+import { ContactsQuestions } from './contacts-questions'
 
 /** "8 918 311-97-91" -> ["8 918", "311-97-91"] (the number is set on two lines in the big cards). */
 const splitPhone = (display: string): [string, string] => {
@@ -177,6 +178,7 @@ export async function ContactsPage() {
 					<p className='text-text-muted mt-1.5 text-[15px]'>Для гостей — бесплатная парковка у здания.</p>
 				</div>
 			</section>
+			<ContactsQuestions settings={settings} workingHours={workingHours} />
 		</main>
 	)
 }

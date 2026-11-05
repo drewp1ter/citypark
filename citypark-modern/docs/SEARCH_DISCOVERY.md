@@ -39,3 +39,11 @@ Validation passed: isolated normal/changed/empty data and malicious-text round-t
 Commands: `node scripts/qa/business-json-ld-harness.mjs`, `node scripts/qa/business-json-ld-http.mjs`, `node scripts/qa/public-content-http.mjs`. HTTP checks use BASE_URL (default http://localhost:3112) and the configured live backend.
 
 References: [Schema.org Hotel](https://schema.org/Hotel), [Restaurant](https://schema.org/Restaurant); implementation follows the installed Next.js JSON-LD guide at node_modules/next/dist/docs/01-app/02-guides/json-ld.md.
+
+## Task 65 customer questions (2026-11-05)
+
+Added five always-visible answers at /contacts#questions: address, guest parking, restaurant/delivery hours, hotel details/prices/rules and the delivery menu. Mutable address/phone/hour values come from the existing contact-page fetches. Parking repeats the exact reference copy. Existing hotel policies and variable delivery charges are linked rather than copied into new fixed promises.
+
+Source review and unresolved owner questions are in [CUSTOMER_QUESTIONS.md](CUSTOMER_QUESTIONS.md). Further answers about delivery cutoff/total time, cancellation/refunds, booking conditions, parking security/capacity, accessibility and allergen handling require verified owner facts and remain unpublished. No backend writes or API changes.
+
+Validation: production build, check, raw-HTML answer/value/link checks, 390/1440px browser checks in both themes without website JavaScript, keyboard focus, no horizontal overflow and single-line phone links. Screenshots reviewed in /tmp/citypark-task65. Existing business JSON-LD HTTP acceptance passes. Existing dynamic-rendering diagnostics remain during build; production deployment/indexing acceptance remains pending. Run `node scripts/qa/customer-questions.mjs` against a production build (BASE_URL defaults to http://localhost:3112).
