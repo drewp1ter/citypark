@@ -631,7 +631,7 @@ components:
           format: date-time
         status:
           type: string
-          enum: [new, paid, confirmed, canceled]
+          enum: [new, pending, paid, confirmed, canceled]
         comment:
           type: string
         deliveryTime:
@@ -688,6 +688,34 @@ components:
               offeredPrice:
                 type: number
                 description: Rubles. The price the item was ordered at.
+    PaymentRetryEligibility:
+      type: object
+      required: [allowed, reason]
+      properties:
+        allowed:
+          type: boolean
+        reason:
+          type: string
+          enum: ['', not_payable, expired, closed]
+      description: Fresh backend eligibility. Only same-day new/pending orders without a payment ID are payable during restaurant hours in APP_TIMEZONE (default Europe/Moscow).
+    CustomerOrder:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          required: [paymentRetry]
+          properties:
+            paymentRetry:
+              $ref: '#/components/schemas/PaymentRetryEligibility'
+    CustomerOrderList:
+      type: object
+      required: [orders, count]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerOrder'
+        count:
+          type: integer
     OrderList:
       type: object
       required: [orders, count]
@@ -3104,11 +3132,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OrderList'
+                $ref: '#/components/schemas/CustomerOrderList'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          description: Database or payment-hours lookup failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /orders/live:
     get:
       summary: Live order events (WebSocket)
@@ -3146,15 +3180,23 @@ paths:
         - $ref: '#/components/parameters/Id'
       responses:
         '200':
-          description: The order.
+          description: Customers receive CustomerOrder with paymentRetry; admins receive Order without this metadata.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Order'
+                anyOf:
+                  - $ref: '#/components/schemas/CustomerOrder'
+                  - $ref: '#/components/schemas/Order'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          description: Database or payment-hours lookup failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     delete:
       summary: Delete an order together with its items
       description: >-
@@ -3174,6 +3216,59 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+  /orders/{id}/payment-retry:
+    post:
+      summary: Retry payment for an owned unpaid order
+      description: >-
+        Authenticated customer only (website or Mini App); no guest or admin bypass.
+        No body. Uses the original ID and saved discounted total plus delivery without writes or notifications.
+        Only new/pending orders with no payment ID created today in APP_TIMEZONE (default Europe/Moscow)
+        qualify during current restaurant opening hours [start, end). Ownership is checked first.
+        Repeated requests sign the same order. Responses including errors send Cache-Control private, no-store.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Payment link for the existing order.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [orderId, redirectUrl]
+                properties:
+                  orderId: {type: integer}
+                  redirectUrl: {type: string, format: uri}
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Invalid ID, missing, guest or foreign order. Не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Этот заказ уже оплачен или недоступен для оплаты. / Срок оплаты заказа истёк. Оформите новый заказ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Оплата доступна только в часы работы ресторана.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /orders/{id}/items:
     post:
       summary: Add a product to an order or change its amount
@@ -3497,7 +3592,7 @@ paths:
     get:
       summary: Validate Moneta order without changing payment state
       tags: [integrations]
-      description: Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500.
+      description: Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500. Unpaid orders must be created today in APP_TIMEZONE and within restaurant hours, including previously issued links; otherwise code 500. Recorded payments retain code 200 except canceled orders. Valid delayed payment confirmations remain accepted. Missing hours configuration or lookup failure is an HTTP 500 error.
       parameters:
         - in: query
           name: MNT_COMMAND
@@ -3560,7 +3655,7 @@ paths:
     post:
       summary: Validate Moneta order without changing payment state
       tags: [integrations]
-      description: Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500.
+      description: Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500. Unpaid orders must be created today in APP_TIMEZONE and within restaurant hours, including previously issued links; otherwise code 500. Recorded payments retain code 200 except canceled orders. Valid delayed payment confirmations remain accepted. Missing hours configuration or lookup failure is an HTTP 500 error.
       requestBody:
         required: true
         content:

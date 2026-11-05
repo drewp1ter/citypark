@@ -6,7 +6,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"mime/multipart"
@@ -26,6 +28,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/config"
+	"github.com/drewp1ter/citypark-go/internal/customer"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
 	"github.com/drewp1ter/citypark-go/internal/order"
 	"github.com/drewp1ter/citypark-go/internal/telegram"
@@ -540,5 +543,79 @@ func TestAppInjectedMiddleware(t *testing.T) {
 		if rec.Code != tc.status || rec.Header().Get("X-Monitoring-Active") != "true" {
 			t.Fatalf("%s: status=%d headers=%v", tc.path, rec.Code, rec.Header())
 		}
+	}
+}
+
+func TestPaymentRetryAppWiring(t *testing.T) {
+	db := testutil.NewDB(t)
+	tg := newFakeTelegram(t)
+	env := customerTestEnv()
+	env["MONETA_ID"] = "100"
+	env["MONETA_SECRET"] = "secret"
+	a := newApp(t, db, tg, env)
+	owner := testutil.InsertUser(t, db, "Иван", "+79991234567", "user")
+	cat := testutil.InsertCategory(t, db, testutil.Category{Name: "Пиццы"})
+	product := testutil.InsertProduct(t, db, testutil.Product{CategoryID: cat, Name: "Пицца", PriceKopecks: 79000})
+	id, err := order.NewStore(db).Insert(context.Background(), order.InsertParams{CustomerID: owner, AccountID: &owner, ItemsHash: "retry", Items: []order.InsertItem{{ProductID: product, Amount: 1, OfferedPrice: 79000}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 10, 13, 9, 0, 0, 0, time.UTC)
+	db.MustExec(`UPDATE orders SET created_at=$2 WHERE id=$1`, id, now)
+	sessions := customer.NewService(db, clock.Fixed(now))
+	path := fmt.Sprintf("/api/v1/orders/%d/payment-retry", id)
+	for _, surface := range []string{"web", "mini"} {
+		method := "password"
+		if surface == "mini" {
+			method = "telegram"
+		}
+		token, _, err := sessions.CreateSession(context.Background(), owner, method, surface)
+		if err != nil {
+			t.Fatal(err)
+		}
+		rec := testutil.DoJSON(t, a.Handler, "POST", path, token, nil)
+		if rec.Code != 200 {
+			t.Fatalf("%s: %d %s", surface, rec.Code, rec.Body)
+		}
+		var result order.CreateResult
+		testutil.Decode(t, rec, &result)
+		if result.OrderID != id || !strings.Contains(result.RedirectURL, "MNT_AMOUNT=790.00") {
+			t.Fatal(result)
+		}
+		t.Logf("signed retry response: %s", rec.Body)
+	}
+	if rec := testutil.DoJSON(t, a.Handler, "POST", path, "", nil); rec.Code != 401 {
+		t.Fatalf("unauthenticated: %d", rec.Code)
+	}
+	check := func(want string) {
+		t.Helper()
+		raw := strconv.FormatInt(id, 10)
+		sum := md5.Sum([]byte("CHECK100" + raw + "790.00RUB0secret"))
+		values := url.Values{"MNT_COMMAND": {"CHECK"}, "MNT_ID": {"100"}, "MNT_TRANSACTION_ID": {raw}, "MNT_AMOUNT": {"790.00"}, "MNT_CURRENCY_CODE": {"RUB"}, "MNT_TEST_MODE": {"0"}, "MNT_SIGNATURE": {hex.EncodeToString(sum[:])}}
+		req := httptest.NewRequest("GET", "/api/v1/webhooks/moneta/check?"+values.Encode(), nil)
+		rec := httptest.NewRecorder()
+		a.Handler.ServeHTTP(rec, req)
+		var response moneta.CheckResponse
+		if rec.Code != 200 || xml.Unmarshal(rec.Body.Bytes(), &response) != nil || response.ResultCode != want {
+			t.Fatalf("check %d %s", rec.Code, rec.Body)
+		}
+	}
+	check("402")
+	db.MustExec(`UPDATE working_hours SET start_time='13:00', end_time='14:00'`)
+	check("500")
+	token, _, err := sessions.CreateSession(context.Background(), owner, "password", "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec := testutil.DoJSON(t, a.Handler, "POST", path, token, nil)
+	if rec.Code != 503 {
+		t.Fatalf("closed: %d %s", rec.Code, rec.Body)
+	}
+	db.MustExec(`UPDATE working_hours SET start_time='09:00', end_time='22:00'`)
+	db.MustExec(`UPDATE orders SET created_at=created_at-interval '1 day' WHERE id=$1`, id)
+	check("500")
+	a.Notifier.Wait()
+	if len(tg.sentChats()) != 0 {
+		t.Fatal("retry/check sent notifications")
 	}
 }

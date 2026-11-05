@@ -78,6 +78,7 @@ type CreateResult struct {
 }
 
 type Service struct {
+	paymentHours        HoursSource
 	promoDiscountTypeID string
 	db                  *sqlx.DB
 	clock               clock.Clock
@@ -493,6 +494,13 @@ func (s *Service) PaymentCheck(ctx context.Context, cb PaymentCallback) (moneta.
 			case o.PaymentID != "":
 				code = "200"
 			case o.Status == StatusNew || o.Status == StatusPending:
+				eligible, err := s.customerOrders(ctx, []Order{o})
+				if err != nil {
+					return moneta.CheckResponse{}, err
+				}
+				if !eligible[0].PaymentRetry.Allowed {
+					break
+				}
 				if cb.Amount == "" {
 					code = "100"
 				} else if cb.Amount == amount {

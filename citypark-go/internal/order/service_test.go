@@ -77,6 +77,7 @@ func newSvcEnv(t *testing.T, now time.Time) *svcEnv {
 	e.productB = testutil.InsertProduct(t, db, testutil.Product{CategoryID: e.category, Name: "Лаваш", PriceKopecks: 10000})
 	testutil.InsertDeliveryPrice(t, db, "Сочи", 15000)
 	e.svc = NewService(db, clock.Fixed(now), e.notifier, e.payments)
+	e.svc.SetPaymentHours(defaultOpts().Hours)
 	e.svc.ConfigurePromo("00000000-0000-4000-8000-000000000001")
 	return e
 }

@@ -33,6 +33,7 @@ func seedPending(t *testing.T, e *svcEnv) int64 {
 	if err := NewStore(e.db).SetStatus(context.Background(), id, StatusPending); err != nil {
 		t.Fatalf("SetStatus: %v", err)
 	}
+	e.db.MustExec(`UPDATE orders SET created_at=$2 WHERE id=$1`, id, e.svc.clock.Now())
 	return id
 }
 

@@ -2378,6 +2378,34 @@ Payment URLs, signed Check responses and Pay amount validation use saved discoun
 
 New promo orders require configured RMS integration. Missing configuration returns 503 before writes/payment links; no-code orders and existing pending same-code retries remain usable with saved pricing.
 
+#### POST /orders/{id}/payment-retry
+
+Obtain a payment link for an existing owned order. **Role:** authenticated customer (website or Mini App session). Guest checkout cookies and administrator credentials cannot use this endpoint.
+
+**Parameters:** `id` is a positive integer path parameter. No request body; no client-supplied amount.
+
+**Request example:** `POST /api/v1/orders/1/payment-retry` with `Authorization: Bearer <customer-session>`.
+
+**Response 200** (captured from `TestPaymentRetryAppWiring`, test merchant configuration):
+
+```json
+{"orderId":1,"redirectUrl":"https://demo.moneta.ru/assistant.htm?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=3d4ab788e5abe212849680e02b1202f9&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=1"}
+```
+
+**Errors** (standard `{ "statusCode": number, "message": string }` envelope):
+
+| Status | When | Message |
+|---|---|---|
+| 401 | Missing, invalid or expired credential | `Требуется авторизация` |
+| 403 | Administrator or another non-customer role | `Недостаточно прав` |
+| 404 | Invalid ID, missing order, unowned guest order or another account's order | `Не найдено` |
+| 409 | Status is not new/pending, or payment ID already exists | `Этот заказ уже оплачен или недоступен для оплаты.` |
+| 409 | Creation date is not today | `Срок оплаты заказа истёк. Оформите новый заказ.` |
+| 503 | Outside restaurant opening hours | `Оплата доступна только в часы работы ресторана.` |
+| 500 | Database/hours failure, missing hours configuration or empty generated payment URL | `Внутренняя ошибка сервера` |
+
+**Notes:** Ownership is checked before eligibility. Only `new`/`pending` orders without a payment ID, created today in `APP_TIMEZONE` (default `Europe/Moscow`), are eligible during current opening hours (start inclusive, end exclusive). Future creation dates are also rejected. Uses the original order ID and saved `total + deliveryPrice`, including saved discounts. No repricing, order/status updates, promo consumption or staff notifications occur. Repeated calls sign the same transaction. A link is not a reservation: subsequent Moneta CHECK can reject it after closing or midnight. Payment confirmations for money already collected retain their existing validation and idempotence, even when delayed. All responses, including errors, send `Cache-Control: private, no-store`.
+
 #### GET /orders/my
 
 Lists orders owned by the signed-in account, newest first. Ownership uses `account_id`, independently of the checkout contact or phone. Guest orders are excluded, even when the phone matches. There is no guest-order claiming.
@@ -2427,7 +2455,8 @@ Lists orders owned by the signed-in account, newest first. Ownership uses `accou
       ],
       "subtotal": 599,
       "discount": 0,
-      "promoCode": null
+      "promoCode": null,
+      "paymentRetry": { "allowed": true, "reason": "" }
     }
   ],
   "count": 12
@@ -2442,6 +2471,8 @@ Lists orders owned by the signed-in account, newest first. Ownership uses `accou
 | 401 | no token or invalid token | `Требуется авторизация` |
 
 **Notes**
+
+Customer responses include `paymentRetry: { "allowed": boolean, "reason": "" | "not_payable" | "expired" | "closed" }`, computed from fresh backend state using the retry policy above. Reasons are evaluated in that order (empty reason means allowed); no payment ID or ownership fields are exposed. An hours lookup needed for eligibility is performed at most once per request. A lookup failure returns 500 `Внутренняя ошибка сервера` rather than guessed availability. Admin detail responses retain their existing order shape without `paymentRetry`. The examples with allowed=true assume a same-day request during opening hours.
 
 `count` is the total number of the user's orders, not the size of the page. `orders` is `[]` when there are none. `address` is `null` for a pickup order. `subtotal` is original food and `total` is `subtotal - discount`, without delivery; add `deliveryPrice` for the amount to pay.
 
@@ -2491,7 +2522,8 @@ Returns one order.
   ],
   "subtotal": 599,
   "discount": 0,
-  "promoCode": null
+  "promoCode": null,
+  "paymentRetry": { "allowed": true, "reason": "" }
 }
 ```
 
@@ -2504,11 +2536,13 @@ Returns one order.
 
 **Notes**
 
+Customer responses include `paymentRetry: { "allowed": boolean, "reason": "" | "not_payable" | "expired" | "closed" }`, computed from fresh backend state using the retry policy above. Reasons are evaluated in that order (empty reason means allowed); no payment ID or ownership fields are exposed. An hours lookup needed for eligibility is performed at most once per request. A lookup failure returns 500 `Внутренняя ошибка сервера` rather than guessed availability. Admin detail responses retain their existing order shape without `paymentRetry`. The examples with allowed=true assume a same-day request during opening hours.
+
 An admin can read any order. A customer can read only an order whose `account_id` matches their authenticated account. Orders owned by another account and unowned guest orders return the same 404 as a missing order, including when their checkout phone matches the customer.
 
 `customer.name`, `customer.phone`, `address.city` and `address.address` are checkout snapshots. `customer.id` is the legacy contact ID, not proof of ownership. Pickup has `address: null`; if the source address was deleted, its snapshot survives with `address.id: 0`. Legacy rows without snapshots fall back to their existing contact/address references. Owner IDs and guest scopes are not exposed. Responses send `Cache-Control: private, no-store`.
 
-**Promo snapshot response example** (captured from TestPromoOrderSnapshot):
+**Promo snapshot response example** (captured from TestPromoOrderSnapshot; persisted order fields only, before adding customer `paymentRetry` metadata):
 
 ```json
 {
@@ -2579,7 +2613,7 @@ This sends `Sec-WebSocket-Protocol: bearer, <jwt>`. The server answers with the 
 
 **Messages**
 
-Every message is a text frame with one JSON object. `order` has the same shape as the response of `GET /orders/{id}`.
+Every message is a text frame with one JSON object. `order` has the same shape as the admin response of `GET /orders/{id}`, without customer `paymentRetry` metadata.
 
 | `type` | When |
 |---|---|
@@ -2810,7 +2844,7 @@ Adds a product to an order, or changes the amount of a product that is already i
 
 **Response 200**
 
-The updated order, in the same format as `GET /orders/{id}`.
+The updated order, in the same format as the admin response of `GET /orders/{id}` (without `paymentRetry`).
 
 ```json
 {
@@ -3162,11 +3196,11 @@ This application's order IDs are positive integers, so the illustrative external
 <MNT_RESPONSE><MNT_ID>54600817</MNT_ID><MNT_TRANSACTION_ID>FF790ABCD</MNT_TRANSACTION_ID><MNT_RESULT_CODE>500</MNT_RESULT_CODE><MNT_SIGNATURE>373cc5df0d19d0e98eb4ebfceaa9cd38</MNT_SIGNATURE></MNT_RESPONSE>
 ```
 
-Result codes: 100 = payable order with omitted request amount; 402 = payable order with matching amount; 200 = recorded payment; 500 = missing, canceled, nonpayable order or amount mismatch. Existing orders include MNT_AMOUNT as the stored total plus delivery. Canceled status takes precedence over a recorded payment. No new expiry policy is introduced.
+Result codes: 100 = payable order with omitted request amount; 402 = payable order with matching amount; 200 = recorded payment; 500 = missing, canceled, nonpayable order or amount mismatch. Existing orders include MNT_AMOUNT as the stored total plus delivery. Canceled status takes precedence over a recorded payment. Unpaid orders must have been created today in APP_TIMEZONE (default Europe/Moscow) and pass current restaurant hours [start, end). Otherwise code 500 is returned, including for previously issued links. Recorded payments retain code 200 regardless of age/hours, except canceled orders. Valid delayed payment confirmations are still accepted; CHECK never confirms a payment.
 
 Response signature is MD5(result code + merchant ID + transaction ID + integrity code). Check requests never update orders or send notifications.
 
-**Errors:** 400 for malformed forms, duplicate MNT fields or a command other than CHECK; 403 for invalid signature or merchant/currency/mode mismatch; 500 for database errors. Error bodies are plain text FAIL followed by a newline.
+**Errors:** 400 for malformed forms, duplicate MNT fields or a command other than CHECK; 403 for invalid signature or merchant/currency/mode mismatch; 500 for database errors, missing payment-hours configuration or hours lookup failures. Error bodies are plain text FAIL followed by a newline.
 
 #### GET /webhooks/moneta/check
 

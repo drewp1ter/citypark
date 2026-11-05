@@ -72,6 +72,7 @@ func (h *Handler) routes(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(h.access)
 		r.Get("/orders/my", httpx.Handle(h.listMine))
+		r.Post("/orders/{id}/payment-retry", httpx.Handle(h.retryPayment))
 		r.Get("/orders/{id}", httpx.Handle(h.get))
 	})
 	r.Group(func(r chi.Router) {
@@ -126,7 +127,14 @@ func (h *Handler) listMine(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	httpx.JSON(w, http.StatusOK, listResponse{Orders: orders, Count: count})
+	customerOrders, err := h.svc.customerOrders(r.Context(), orders)
+	if err != nil {
+		return err
+	}
+	httpx.JSON(w, http.StatusOK, struct {
+		Orders []customerOrder `json:"orders"`
+		Count  int             `json:"count"`
+	}{Orders: customerOrders, Count: count})
 	return nil
 }
 
@@ -215,7 +223,15 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) error {
 		// do not reveal that someone else's order exists
 		return httpx.NotFound()
 	}
-	httpx.JSON(w, http.StatusOK, o)
+	if who.Role == auth.RoleAdmin {
+		httpx.JSON(w, http.StatusOK, o)
+	} else {
+		orders, err := h.svc.customerOrders(r.Context(), []Order{o})
+		if err != nil {
+			return err
+		}
+		httpx.JSON(w, http.StatusOK, orders[0])
+	}
 	return nil
 }
 

@@ -98,6 +98,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		orders.ConfigurePromo(cfg.Iiko.PromoDiscountTypeID)
 	}
 	hours := workinghours.NewStore(db)
+	orders.SetPaymentHours(hours)
 	googleService := google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, "")
 	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)
 

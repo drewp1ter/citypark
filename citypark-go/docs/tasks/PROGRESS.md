@@ -201,3 +201,9 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
 
 - [x] [94 Production content snapshot](94-production-content-seed.md) [93]
   - Exported public data and 77 uploads from the read-only source. Bundle/schema/checksum validation, repeat restore, excluded data preservation, roundtrip equality, identity advancement and failed-restore rollback pass. Formatting, build, vet and full serial tests pass; command coverage 76.4% (cmd exempt from internal coverage threshold). No production restore performed.
+
+## Payment retry
+
+- [x] [95 Payment retry for unpaid orders](95-payment-retry.md) [backend88–90; backend94]
+  - Added owner-only retry endpoint, customer eligibility metadata and shared same-day/opening-hours checks for retry and Moneta CHECK; saved prices and delayed payment confirmations are preserved. Website and Mini App session wiring verified without live payments or notifications.
+  - Formatting, build, vet, full serial suite and coverage pass: order 92.0%, app 98.9%, apidocs 100%. Test database is available; previous blocker resolved. API/OpenAPI updated. Corrected task text to preserve the existing invalid-ID 404 behavior. Website UI remains website task 54.

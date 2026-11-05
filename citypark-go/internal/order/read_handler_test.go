@@ -182,7 +182,7 @@ func TestGetOwn(t *testing.T) {
 	}
 	var got map[string]any
 	testutil.Decode(t, rec, &got)
-	wantKeys(t, got, "id", "createdAt", "updatedAt", "status", "comment",
+	wantKeys(t, got, "paymentRetry", "id", "createdAt", "updatedAt", "status", "comment",
 		"total", "deliveryPrice", "deliveryTime", "customer", "address", "items", "subtotal", "discount", "promoCode")
 	if got["comment"] != "first" || got["status"] != StatusNew || got["deliveryPrice"] != float64(150) {
 		t.Errorf("order = %v", got)
