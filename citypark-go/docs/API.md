@@ -949,6 +949,8 @@ Adds a delivery address to the signed-in user.
 
 Posting the same address twice returns the same `id`. Addresses are shared between users: another user who posts the same city and address gets the same `id`.
 
+The first link in an empty address book becomes the default. Reposting preserves existing structured metadata. New legacy links require review before checkout autofill; response IDs remain shared address IDs.
+
 #### DELETE /addresses/{id}
 
 Removes an address from the signed-in user's list.
@@ -974,7 +976,7 @@ No body.
 
 **Notes**
 
-The answer is 204 also when the address does not exist or is not in the user's list. Only the user's link is removed; other users keep the address.
+The answer is 204 also when the address does not exist or is not in the user's list. Only the user's link is removed; other users keep the address. Deleting the default leaves no default; no replacement is selected. Shared addresses and order history are preserved.
 
 ### Delivery prices
 

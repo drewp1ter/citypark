@@ -13,9 +13,10 @@ import (
 
 // Handler serves the signed-in user's delivery addresses.
 type Handler struct {
-	store  *Store
-	tokens *auth.Tokens
-	access func(http.Handler) http.Handler
+	service *Service
+	store   *Store
+	tokens  *auth.Tokens
+	access  func(http.Handler) http.Handler
 }
 
 func NewHandler(s *Store, tokens *auth.Tokens, access ...func(http.Handler) http.Handler) *Handler {
@@ -72,11 +73,17 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	a, err := h.store.FindOrCreate(r.Context(), in.City, in.Address)
-	if err != nil {
-		return err
+	var a Address
+	var err error
+	if h.service != nil {
+		a, err = h.service.CreateLegacy(r.Context(), id.UserID, in.City, in.Address)
+	} else {
+		a, err = h.store.FindOrCreate(r.Context(), in.City, in.Address)
+		if err == nil {
+			err = h.store.LinkUser(r.Context(), id.UserID, a.ID)
+		}
 	}
-	if err := h.store.LinkUser(r.Context(), id.UserID, a.ID); err != nil {
+	if err != nil {
 		return err
 	}
 	httpx.JSON(w, http.StatusCreated, a)
@@ -92,9 +99,17 @@ func (h *Handler) remove(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if err := h.store.UnlinkUser(r.Context(), id.UserID, addressID); err != nil {
+	if h.service != nil {
+		err = h.service.DeleteLegacy(r.Context(), id.UserID, addressID)
+	} else {
+		err = h.store.UnlinkUser(r.Context(), id.UserID, addressID)
+	}
+	if err != nil {
 		return err
 	}
 	httpx.NoContent(w)
 	return nil
 }
+
+// WithService enables owner-locked transactional legacy mutations.
+func (h *Handler) WithService(s *Service) *Handler { h.service = s; return h }

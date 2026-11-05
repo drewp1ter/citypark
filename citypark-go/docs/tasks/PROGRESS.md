@@ -214,3 +214,5 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
   - Saved-address schema/read model and metadata-safe rollback complete. Content tests use isolated migration-seeded schemas. Formatting/build/vet and fresh full serial suite pass (2026-11-05); coverage: address 89.7%, hotel 91.5%, news 94.3%, room 95.2%, testutil 81.3%.
 - [x] [96b Transactional saved-address creation and editing](96b-address-book-writes.md) [backend96]
   - Owner-locked transactional create/deduplication and immutable-address editing complete. Ownership, legacy collisions, concurrent creates, write/commit rollback and historical snapshots tested. Formatting/build/vet and fresh full serial suite pass; address coverage 91.5% (2026-11-05).
+- [x] [96c Address defaults, deletion and legacy compatibility](96c-address-book-defaults.md) [backend96b]
+  - Owner-locked default selection/deletion and service-backed legacy writes complete; staff access, shared IDs, metadata and order history preserved. Concurrent/default rollback and production wiring tested. Formatting/build/vet and fresh full serial suite pass; coverage: address 93.4%, app 98.9% (2026-11-05).

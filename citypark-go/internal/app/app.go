@@ -116,7 +116,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		customer.NewEmailHandler(db, sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
 		customer.NewTelegramHandler(db, sessions, customer.NewLimits(c), cfg.CustomerTelegramBotToken, cfg.CustomerAuthEnabled).Routes(r)
 		google.NewHandler(googleService, sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
-		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).Routes(r)
+		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).WithService(address.NewService(db)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)
 		promo.NewHandler(db, tokens).Routes(r)
 		catalogHandler := catalog.NewHandler(catalog.NewStore(db), c, cfg.DefaultPageSize)
