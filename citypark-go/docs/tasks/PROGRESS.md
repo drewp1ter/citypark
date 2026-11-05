@@ -1,5 +1,7 @@
 # Progress
 
+Planned feature: [My addresses](MY_ADDRESSES.md). Task 96 is complete; follow the remaining task queue. Follow the unchecked queue below.
+
 ## Homepage menu
 - [x] [92 Homepage menu configuration](92-homepage-menu.md) [91]
   - Public GET/admin PUT, atomic validated selections, independent migration, OpenAPI/API docs and iiko-sync preservation are complete. Formatting/build/vet/full tests pass; coverage: homepagemenu 95.7%, app 98.3%, iiko 94.1%.
@@ -209,6 +211,8 @@ Implementation plan: [Promo codes](PROMOCODES.md). Planned only; existing blocke
   - Formatting, build, vet, full serial suite and coverage pass: order 92.0%, app 98.9%, apidocs 100%. Test database is available; previous blocker resolved. API/OpenAPI updated. Corrected task text to preserve the existing invalid-ID 404 behavior. Website UI remains website task 54.
 
 ## My addresses
+
+Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one backend release unit; do not deploy an intermediate migration without metadata-aware account merging.
 
 - [x] [96 Saved-address schema and read model](96-address-book-model.md) [backend95]
   - Saved-address schema/read model and metadata-safe rollback complete. Content tests use isolated migration-seeded schemas. Formatting/build/vet and fresh full serial suite pass (2026-11-05); coverage: address 89.7%, hotel 91.5%, news 94.3%, room 95.2%, testutil 81.3%.
