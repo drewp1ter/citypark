@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { getMyOrder } from '@/entities/order'
 import { getPendingPaymentContext } from '@/shared/customer'
 import { AppLink, cardClass } from '@/shared/ui'
@@ -7,6 +8,7 @@ import { PendingPaymentRefresh } from './pending-payment-refresh'
 
 export async function MiniPaymentReturnPage({ searchParams, failed = false }: { searchParams: Promise<{ MNT_TRANSACTION_ID?: string }>; failed?: boolean }) {
  const context = await getPendingPaymentContext((await searchParams).MNT_TRANSACTION_ID)
+ if (context?.origin === 'history') redirect(`/${context.surface === 'mini' ? 'mini' : 'account'}/orders/${context.orderId}?payment=${failed ? 'failed' : 'returned'}`)
  const reopenUrl = serverEnv().TELEGRAM_MINI_APP_URL
  let status: 'paid' | 'pending' | 'failed' | 'missing' = 'missing'
  if (context?.surface === 'mini') {

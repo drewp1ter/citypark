@@ -1,3 +1,4 @@
+import { PaymentRetry } from '@/features/payment-retry'
 import { redirect } from 'next/navigation'
 import { CustomerApiError } from '@/shared/customer'
 import { formatDate } from '@/shared/lib'
@@ -23,6 +24,7 @@ export async function OrderHistoryPage({ searchParams }: { searchParams: Promise
     <AppLink href={`/account/orders/${order.id}`} className='min-h-11 font-semibold underline'>Заказ № {order.id}</AppLink>
     <span>{formatDate(order.createdAt)} · {orderStatusLabel(order.status)}</span>
     <span>Товары: {formatOrderPrice(order, order.total)} · Доставка: {formatOrderPrice(order, order.deliveryPrice)} · Итого: {formatOrderPrice(order, orderPayable(order))}</span>
+    <PaymentRetry orderId={order.id} status={order.status} eligibility={order.paymentRetry} surface='web' />
    </li>)}</ul>
    <nav aria-label='Страницы заказов' className='flex flex-wrap gap-3'>
     {page > 1 && <AppLink className='min-h-11 py-2 underline' href={`/account/orders?page=${page - 1}`}>Предыдущая</AppLink>}

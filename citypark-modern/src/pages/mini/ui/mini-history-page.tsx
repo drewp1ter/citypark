@@ -1,3 +1,4 @@
+import { PaymentRetry } from '@/features/payment-retry'
 import { redirect } from 'next/navigation'
 import { getMyOrders, formatOrderPrice, orderPayable, orderStatusLabel } from '@/entities/order'
 import { CustomerApiError } from '@/shared/customer'
@@ -23,6 +24,7 @@ export async function MiniHistoryPage({ searchParams }: { searchParams: Promise<
     <AppLink href={`/mini/orders/${order.id}`} className='min-h-11 font-semibold underline'>Заказ № {order.id}</AppLink>
     <span>{formatDate(order.createdAt)} · {orderStatusLabel(order.status)}</span>
     <span>Итого: {formatOrderPrice(order, orderPayable(order))}</span>
+    <PaymentRetry orderId={order.id} status={order.status} eligibility={order.paymentRetry} surface='mini' />
    </li>)}</ul>
    <nav aria-label='Страницы заказов' className='flex flex-wrap gap-3'>
     {page > 1 && <AppLink className='min-h-11 py-2 underline' href={`/mini/orders?page=${page - 1}`}>Предыдущая</AppLink>}

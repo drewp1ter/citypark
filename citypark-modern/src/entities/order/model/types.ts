@@ -1,4 +1,5 @@
 export type Order = {
+ paymentRetry?: { allowed: boolean; reason: '' | 'not_payable' | 'expired' | 'closed' };
  id: number; createdAt: string; status: string; comment: string; deliveryTime: string;
  subtotal: number; discount: number; promoCode: string | null;
  total: number; deliveryPrice: number;

@@ -11,6 +11,7 @@ import { TitleRow } from './title-row'
 /** Step 3, "Готово". Moneta brings the customer here after a successful payment. */
 export async function CheckoutDonePage({ searchParams }: { searchParams: Promise<{ MNT_TRANSACTION_ID?: string }> }) {
 	const context = await getPendingPaymentContext((await searchParams).MNT_TRANSACTION_ID)
+ if (context?.origin === 'history') redirect(`/${context.surface === 'mini' ? 'mini' : 'account'}/orders/${context.orderId}?payment=returned`)
 	if (context?.surface === 'mini') redirect(`/mini/checkout/done?MNT_TRANSACTION_ID=${context.orderId}`)
 	let status: 'paid' | 'pending' | 'failed' | 'unknown' = 'unknown'
 	if (context?.surface === 'web') {

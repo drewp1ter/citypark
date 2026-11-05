@@ -13,7 +13,7 @@ type GoogleAttempt = { key: string; token: string; intent: 'login' | 'link'; exp
 export const guestCookieName = 'citypark_guest_checkout_scope'
 const paymentName = '__Host-citypark_payment'
 const paymentDevName = 'citypark_payment_dev'
-export type PaymentContext = { orderId: number; surface: 'web' | 'mini'; issuedAt: number }
+export type PaymentContext = { orderId: number; surface: 'web' | 'mini'; issuedAt: number; origin?: 'checkout' | 'history' }
 
 function paymentCookieName() { return customerCookieName() === productionName ? paymentName : paymentDevName }
 
@@ -21,11 +21,12 @@ async function paymentKey(surface: 'web' | 'mini') {
  return surface === 'mini' ? getMiniSessionToken() : (await getCustomerSessionToken()) ?? getGuestCheckoutCookie()
 }
 
-export async function setPendingPaymentContext(orderId: number, surface: 'web' | 'mini'): Promise<void> {
+export async function setPendingPaymentContext(orderId: number, surface: 'web' | 'mini', origin: 'checkout' | 'history' = 'checkout'): Promise<void> {
  if (!Number.isSafeInteger(orderId) || orderId < 1) throw new Error('Invalid order id')
+ if (origin !== 'checkout' && origin !== 'history') throw new Error('Invalid payment origin')
  const key = await paymentKey(surface)
  if (!key) throw new Error('Missing payment session')
- const context: PaymentContext = { orderId, surface, issuedAt: Date.now() }
+ const context: PaymentContext = { orderId, surface, issuedAt: Date.now(), origin }
  const payload = Buffer.from(JSON.stringify(context)).toString('base64url')
  const signature = createHmac('sha256', key).update(payload).digest('base64url')
  const name = paymentCookieName()
@@ -43,13 +44,14 @@ export async function getPendingPaymentContext(returnedId?: string): Promise<Pay
  if (!value || typeof value !== 'object') return undefined
  const context = value as PaymentContext
  if ((context.surface !== 'web' && context.surface !== 'mini') || context.orderId !== Number(returnedId) || !Number.isSafeInteger(context.orderId) || typeof context.issuedAt !== 'number' || context.issuedAt > Date.now() || Date.now() - context.issuedAt > 86400_000) return undefined
+ if (context.origin !== undefined && context.origin !== 'checkout' && context.origin !== 'history') return undefined
  const key = await paymentKey(context.surface)
  if (!key) return undefined
  const expected = createHmac('sha256', key).update(payload).digest()
  let actual: Buffer
  try { actual = Buffer.from(signature, 'base64url') } catch { return undefined }
  if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return undefined
- return context
+ return { ...context, origin: context.origin ?? 'checkout' }
 }
 
 function customerCookieName() {

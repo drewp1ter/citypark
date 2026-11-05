@@ -1,10 +1,12 @@
+import { PaymentRetry, PaymentReturnStatus } from '@/features/payment-retry'
 import { notFound, redirect } from 'next/navigation'
 import { getMyOrder, OrderBreakdown, orderStatusLabel } from '@/entities/order'
 import { CustomerApiError } from '@/shared/customer'
 import { formatDate } from '@/shared/lib'
 import { AppLink, cardClass } from '@/shared/ui'
 
-export async function MiniOrderPage({ params }: { params: Promise<{ id: string }> }) {
+export async function MiniOrderPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ payment?: string }> }) {
+ const payment = (await searchParams).payment
  const raw = (await params).id
  if (!/^[1-9]\d*$/.test(raw) || !Number.isSafeInteger(Number(raw))) notFound()
  let order
@@ -26,6 +28,8 @@ export async function MiniOrderPage({ params }: { params: Promise<{ id: string }
    {order.comment && <p>Комментарий: {order.comment}</p>}
    <h2 className='font-display text-xl'>Состав заказа</h2>
    <OrderBreakdown order={order} />
+   <PaymentReturnStatus status={order.status} payment={payment} />
+   <PaymentRetry orderId={order.id} status={order.status} eligibility={order.paymentRetry} surface='mini' />
   </div>
  </main>
 }

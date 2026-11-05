@@ -158,3 +158,10 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [53 Address autofill Sentry diagnostics](53-autofill-sentry.md) [52]
   - Check/build, privacy/provider QA and production geolocation/browser failure flows pass. Development runs also verify effect replay, single capture/request and manual takeover/unmount suppression. Source maps uploaded; Sentry MCP confirms browser CITYPARK-MODERN-A and server CITYPARK-MODERN-9 with original TypeScript frames and allowlisted diagnostics. Coordinates, addresses and provider payloads remain excluded. No orders or payments; production deployment and native Telegram device permission checks remain separate.
+
+## Payment retry
+
+- [x] [54 Payment retry from order history](54-payment-retry.md) [website53; backend95]
+  - Added shared payment retry on website and Mini App history/details, authoritative backend eligibility, isolated surface sessions, signed history origin and cart-preserving payment returns.
+  - Check (typecheck/ESLint/Steiger), fresh production build, isolated action/crypto/status/return-routing harness, production payment-retry flow (390/1440 px, light/dark) and applicable Telegram payment regressions pass against the available backend. No backend writes performed.
+  - Owner explicitly accepted the remaining manual checks and requested completion/commit (2026-11-05). Authenticated retry/returns with existing owned orders, stale backend rejection, provider success/failure, and native Telegram/external-browser checks are handed off to the owner; they are not claimed as automated passes. QA setup is documented in scripts/qa/flows/payment-retry.mjs.
