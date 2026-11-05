@@ -55,3 +55,20 @@ Validation: production build, check, raw-HTML answer/value/link checks, 390/1440
 Prepared [YANDEX_WEBMASTER.md](YANDEX_WEBMASTER.md) using the current official Yandex instructions and repository configuration. It covers production readiness, the real HTML verification file and its byte-for-byte response check, standalone public-file deployment, sitemap submission, indexing troubleshooting and Alice visibility evidence. All operational steps remain pending; no account, domain, deployment, verification artifact or Webmaster submission was changed. Task 67 is the deployment/owner handoff gate, not completed by writing these instructions.
 
 Task 66 validation: `npm run check`, `npm run build`, local-link/configuration review and `git diff --check` passed. Existing dynamic-rendering diagnostics remain during build. All runbook operational statuses remain Pending.
+
+## Task 67 production preflight — blocked (2026-11-05, 22:12 UTC)
+
+Read-only HTTPS requests confirm that production is reachable, but the intended frontend is not deployed. All four responses below contain the same prior-application HTML shell:
+
+| URL | HTTP status | Content-Type | Body length |
+|---|---|---|---|
+| https://cityparkvip.ru/ | 200 | text/html | 1,788 bytes |
+| https://cityparkvip.ru/contacts | 200 | text/html | 1,788 bytes |
+| https://cityparkvip.ru/robots.txt | 200 | text/html | 1,788 bytes |
+| https://cityparkvip.ru/sitemap.xml | 200 | text/html | 1,788 bytes |
+
+Each response body has SHA-256 `a95a277da0639cbabf2db17e2db8acc1db2e4eedc75a9e4cea9e061c14a56123`. The shell contains the old title, a client application root and an existing Yandex verification meta tag. The responses lack the intended Next.js assets, contacts FAQ and business JSON-LD. Additional /hotel, /rooms and /menu requests also returned the prior shell. The robots and sitemap URLs therefore fail their required formats despite returning 200.
+
+The existing verification tag does not establish which account owns the site or whether verification remains valid. Before replacing the old frontend, the owner should check existing Webmaster access and retain the active verification method, or establish the genuine replacement method described in the runbook. No verification value was copied into the new app.
+
+Task 67 is skipped for now at the owner’s request (2026-11-05); acceptance has not passed. Resume when the owner returns to it after the intended frontend is deployed with correct production configuration and the matching backend is available for read-only comparison. Redirect, canonical/private-noindex, missing-content 404, production content/JSON-LD, Webmaster processing and Alice visibility acceptance remain unrun; an earlier local test pass cannot substitute for them. All runbook operational statuses remain Pending. No deployment, DNS/settings changes, Webmaster submissions or backend writes were performed. No application code was changed; this is blocker evidence, not a completed release check.

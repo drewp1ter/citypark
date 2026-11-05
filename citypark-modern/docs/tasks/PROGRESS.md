@@ -215,3 +215,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [66 Yandex Webmaster runbook](66-yandex-webmaster-runbook.md) [62; preparation through 65]
   - Owner runbook covers production readiness, genuine HTML verification file, sitemap submission, indexing troubleshooting and Alice visibility. Official sources and local links/configuration reviewed; check/build and diff checks pass. Existing dynamic-rendering build diagnostics remain. Registration, verification artifact, deployment and Webmaster submissions remain pending.
+
+- [67 Production search acceptance](67-production-search-acceptance.md) — **Skipped for now by owner (2026-11-05)** [64–66; production deployment]
+  - Blocked (2026-11-05, 22:12 UTC): cityparkvip.ru still serves the previous application's identical HTML shell at /, /contacts, /robots.txt and /sitemap.xml (HTTP 200 text/html). New frontend deployment is required before acceptance. Existing legacy Yandex verification meta tag needs continuity review; account status is unknown. Evidence in SEARCH_DISCOVERY.md. No deployment, account operations or backend writes performed.
