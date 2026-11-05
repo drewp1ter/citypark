@@ -140,7 +140,7 @@ func TestPaymentCheckByUUID(t *testing.T) {
 				cb.TransactionID = unknownUUID
 			}
 			got, err := e.svc.PaymentCheck(context.Background(), cb)
-			if err != nil || got.ResultCode != tt.code || got.Amount != tt.amount || got.TransactionID != cb.TransactionID {
+			if err != nil || got.Response.ResultCode != tt.code || got.Response.Amount != tt.amount || got.Response.TransactionID != cb.TransactionID {
 				t.Fatalf("response %+v, %v; want code %s amount %q echoing %q", got, err, tt.code, tt.amount, cb.TransactionID)
 			}
 		})

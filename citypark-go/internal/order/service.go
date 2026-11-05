@@ -484,40 +484,72 @@ func timeClosed(name string, w salewindow.Window) *httpx.Error {
 		fmt.Sprintf(`Время заказа "%s" ограничено с %s до %s.`, name, w.StartString(), w.EndString()))
 }
 
+// Reasons a MONETA CHECK failed. They are logged and sent to Sentry as a tag, so keep them fixed.
+const (
+	CheckBadRequest      = "bad_request"            // the form is not valid or MNT_COMMAND is not CHECK; HTTP 400
+	CheckBadSignature    = "bad_signature"          // HTTP 403
+	CheckInternalError   = "internal_error"         // any other error from PaymentCheck; HTTP 500
+	CheckInvalidID       = "invalid_transaction_id" // result 500: the id is not a canonical UUID
+	CheckOrderNotFound   = "order_not_found"        // result 500: no order has this UUID
+	CheckOrderCanceled   = "order_canceled"         // result 500
+	CheckNotPayable      = "order_not_payable"      // result 500: the status does not allow payment
+	CheckRetryNotAllowed = "retry_not_allowed"      // result 500: new or pending order that cannot be paid now
+	CheckAmountMismatch  = "amount_mismatch"        // result 500: cb.Amount differs from the order amount
+)
+
+// CheckOutcome is the result of PaymentCheck. Reason is empty for result codes 100, 200 and 402.
+type CheckOutcome struct {
+	Response       moneta.CheckResponse
+	Reason         string // one of the Check* constants, or ""
+	OrderID        int64  // 0 when no order was found
+	OrderStatus    string // "" when no order was found
+	RetryReason    string // PaymentRetry.Reason when Reason is CheckRetryNotAllowed
+	ExpectedAmount string // the amount we computed, "" when no order was found
+}
+
 // PaymentCheck reads persisted order state without confirming payment.
-func (s *Service) PaymentCheck(ctx context.Context, cb PaymentCallback) (moneta.CheckResponse, error) {
+func (s *Service) PaymentCheck(ctx context.Context, cb PaymentCallback) (CheckOutcome, error) {
 	if !s.payments.Verify(cb) {
-		return moneta.CheckResponse{}, httpx.NewError(http.StatusForbidden, "Неверная подпись")
+		return CheckOutcome{}, httpx.NewError(http.StatusForbidden, "Неверная подпись")
 	}
 	code, amount := "500", ""
+	out := CheckOutcome{Reason: CheckInvalidID}
 	if uuid, ok := parseTransactionID(cb.TransactionID); ok {
+		out.Reason = CheckOrderNotFound
 		o, err := NewStore(s.db).ByPaymentUUID(ctx, uuid)
 		if err != nil && !errors.Is(err, store.ErrNotFound) {
-			return moneta.CheckResponse{}, err
+			return CheckOutcome{}, err
 		}
 		if err == nil {
 			amount = moneta.FormatAmount(o.Total + o.DeliveryPrice)
+			out.OrderID, out.OrderStatus, out.ExpectedAmount = o.ID, o.Status, amount
+			out.Reason = CheckNotPayable
 			switch {
 			case o.Status == StatusCanceled:
+				out.Reason = CheckOrderCanceled
 			case o.PaymentID != "":
-				code = "200"
+				code, out.Reason = "200", ""
 			case o.Status == StatusNew || o.Status == StatusPending:
 				eligible, err := s.customerOrders(ctx, []Order{o})
 				if err != nil {
-					return moneta.CheckResponse{}, err
+					return CheckOutcome{}, err
 				}
 				if !eligible[0].PaymentRetry.Allowed {
+					out.Reason, out.RetryReason = CheckRetryNotAllowed, eligible[0].PaymentRetry.Reason
 					break
 				}
 				if cb.Amount == "" {
-					code = "100"
+					code, out.Reason = "100", ""
 				} else if cb.Amount == amount {
-					code = "402"
+					code, out.Reason = "402", ""
+				} else {
+					out.Reason = CheckAmountMismatch
 				}
 			}
 		}
 	}
-	return s.payments.CheckResponse(cb.TransactionID, code, amount), nil
+	out.Response = s.payments.CheckResponse(cb.TransactionID, code, amount)
+	return out, nil
 }
 
 func expectedTotalError() error {

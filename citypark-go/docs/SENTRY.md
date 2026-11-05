@@ -15,6 +15,10 @@ Each request gets an independent hub. Sentry captures panics before the existing
 
 Free-form exception values are replaced with `Unexpected application error`: they can embed SQL parameters, customer information or credentials. Issue diagnosis uses exception types, stacks, normalized route grouping, trace IDs and releases; original text remains in existing local logs. Request data, user identity, breadcrumbs, custom contexts and span data are removed. Transaction names use chi route patterns rather than actual IDs. An anonymous IP placeholder prevents location inference at ingestion. No log forwarding, background-job instrumentation or custom DB spans are configured.
 
+## MONETA CHECK failures
+
+Every CHECK that is rejected (HTTP 400, 403, 500) or answered with result code 500 sends one warning event `MONETA check failed: <reason>`, grouped by reason. Reasons: `bad_request`, `bad_signature`, `internal_error`, `invalid_transaction_id`, `order_not_found`, `order_canceled`, `order_not_payable`, `retry_not_allowed`, `amount_mismatch`. The event has no order id, UUID or amount. Look in the server log for the line `moneta check` with the same time to see the transaction id, order id, order status and both amounts. Every CHECK writes that line (Info when it succeeds, Warn when it fails).
+
 ## Checks
 
 ```bash

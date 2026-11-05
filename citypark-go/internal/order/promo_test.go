@@ -214,7 +214,7 @@ func TestPromoPayment(t *testing.T) {
 	}
 	e.wantPaidOnce(t, res.OrderID)
 	check, err := e.svc.PaymentCheck(context.Background(), cb)
-	if err != nil || check.Amount != "779.10" || check.ResultCode != "200" {
+	if err != nil || check.Response.Amount != "779.10" || check.Response.ResultCode != "200" {
 		t.Fatalf("check %v %v", check, err)
 	}
 }

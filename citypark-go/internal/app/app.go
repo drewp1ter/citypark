@@ -27,6 +27,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/logging"
 	"github.com/drewp1ter/citypark-go/internal/mailer"
 	"github.com/drewp1ter/citypark-go/internal/moneta"
+	"github.com/drewp1ter/citypark-go/internal/monitoring"
 	"github.com/drewp1ter/citypark-go/internal/news"
 	"github.com/drewp1ter/citypark-go/internal/onec"
 	"github.com/drewp1ter/citypark-go/internal/order"
@@ -136,6 +137,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			Hours:           hours,
 			DefaultPageSize: cfg.DefaultPageSize,
+			OnCheckFailure:  monitoring.CaptureCheckFailure,
 		}, adapter.Required(true), adapter.Optional).Routes(r)
 		onec.NewHandler(onec.NewClient(cfg.OneC.HotelURL, cfg.OneC.User, cfg.OneC.Password, nil), tokens, c).Routes(r)
 		upload.NewHandler(uploads, tokens).Routes(r)

@@ -233,7 +233,7 @@ func TestPaymentCheckRetryEligibility(t *testing.T) {
 				}
 				return
 			}
-			if err != nil || got.ResultCode != tc.code {
+			if err != nil || got.Response.ResultCode != tc.code {
 				t.Fatalf("%+v %v", got, err)
 			}
 		})

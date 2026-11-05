@@ -52,6 +52,30 @@ func Middleware(client *sentry.Client) func(http.Handler) http.Handler {
 	}
 }
 
+// checkReasons are the failure reasons of a MONETA CHECK (order.Check* constants). Only these tag
+// values pass scrub; they are copied here because order must not be imported.
+var checkReasons = map[string]bool{
+	"bad_request": true, "bad_signature": true, "internal_error": true, "invalid_transaction_id": true,
+	"order_not_found": true, "order_canceled": true, "order_not_payable": true,
+	"retry_not_allowed": true, "amount_mismatch": true,
+}
+
+const checkReasonTag = "moneta.check_reason"
+
+// CaptureCheckFailure reports one failed MONETA CHECK, grouped by reason. It carries no order data.
+// It does nothing when the context has no hub (Sentry disabled).
+func CaptureCheckFailure(ctx context.Context, reason string) {
+	hub := sentry.GetHubFromContext(ctx)
+	if hub == nil {
+		return
+	}
+	hub.WithScope(func(scope *sentry.Scope) {
+		scope.SetTag(checkReasonTag, reason)
+		scope.SetLevel(sentry.LevelWarning)
+		hub.CaptureMessage("MONETA check failed: " + reason)
+	})
+}
+
 // Flush waits for queued telemetry; call after request and background work drains.
 func Flush(ctx context.Context, client *sentry.Client) bool {
 	return client.FlushWithContext(ctx)
@@ -62,6 +86,7 @@ func Flush(ctx context.Context, client *sentry.Client) bool {
 // generic; local application logs retain the original diagnostics.
 func scrub(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 	route := event.Tags["monitoring.route"]
+	checkReason := event.Tags[checkReasonTag]
 	event.Request = nil
 	event.User = sentry.User{IPAddress: "0.0.0.0"}
 	event.Tags = nil
@@ -105,6 +130,13 @@ func scrub(event *sentry.Event, _ *sentry.EventHint) *sentry.Event {
 		span.Name = ""
 		span.Data = nil
 		span.Tags = nil
+	}
+	if checkReason != "" && checkReasons[checkReason] && len(event.Exception) == 0 && event.Type != "transaction" {
+		event.Tags = map[string]string{checkReasonTag: checkReason}
+		event.Message = "MONETA check failed: " + checkReason
+		event.Fingerprint = []string{"moneta-check", checkReason}
+		event.Level = sentry.LevelWarning
+		return event
 	}
 	// String panics use Message rather than Exception; keep a safe issue title.
 	if len(event.Exception) == 0 && event.Type != "transaction" {

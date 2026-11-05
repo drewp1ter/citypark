@@ -2,6 +2,7 @@ package order
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -30,6 +31,8 @@ const validationMessage = "Ошибка валидации, пожалуйста
 type HandlerOptions struct {
 	Hours           HoursSource
 	DefaultPageSize int
+	// OnCheckFailure is called once with a Check* reason for every failed MONETA CHECK. nil = no reporting.
+	OnCheckFailure func(ctx context.Context, reason string)
 }
 
 // Handler serves the order endpoints.
@@ -390,20 +393,41 @@ func parseMoneta(w http.ResponseWriter, r *http.Request) (PaymentCallback, error
 func (h *Handler) monetaCheck(w http.ResponseWriter, r *http.Request) {
 	cb, err := parseMoneta(w, r)
 	if err != nil || cb.Command != "CHECK" {
+		h.checkFailed(r, cb, CheckOutcome{Reason: CheckBadRequest}, http.StatusBadRequest)
 		http.Error(w, "FAIL", http.StatusBadRequest)
 		return
 	}
-	response, err := h.svc.PaymentCheck(r.Context(), cb)
+	out, err := h.svc.PaymentCheck(r.Context(), cb)
 	if err != nil {
-		status := http.StatusInternalServerError
+		status, reason := http.StatusInternalServerError, CheckInternalError
 		var he *httpx.Error
 		if errors.As(err, &he) {
 			status = he.Status
+			if status == http.StatusForbidden {
+				reason = CheckBadSignature
+			}
 		}
+		h.checkFailed(r, cb, CheckOutcome{Reason: reason}, status)
 		http.Error(w, "FAIL", status)
 		return
 	}
+	h.checkFailed(r, cb, out, http.StatusOK)
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	_, _ = io.WriteString(w, xml.Header)
-	_ = xml.NewEncoder(w).Encode(response)
+	_ = xml.NewEncoder(w).Encode(out.Response)
+}
+
+// checkFailed logs every CHECK and reports the failed ones. It never logs the signature or subscriber id.
+func (h *Handler) checkFailed(r *http.Request, cb PaymentCallback, out CheckOutcome, status int) {
+	level := slog.LevelInfo
+	if out.Reason != "" {
+		level = slog.LevelWarn
+	}
+	slog.Default().Log(r.Context(), level, "moneta check",
+		"transaction_id", cb.TransactionID, "http_status", status, "result_code", out.Response.ResultCode,
+		"reason", out.Reason, "order_id", out.OrderID, "order_status", out.OrderStatus,
+		"amount_sent", cb.Amount, "amount_expected", out.ExpectedAmount, "retry_reason", out.RetryReason)
+	if out.Reason != "" && h.opts.OnCheckFailure != nil {
+		h.opts.OnCheckFailure(r.Context(), out.Reason)
+	}
 }

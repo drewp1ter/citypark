@@ -35,7 +35,7 @@ func TestPaymentCheckStates(t *testing.T) {
 			cb.Command = "CHECK"
 			cb.Amount = tc.amount
 			got, err := e.svc.PaymentCheck(context.Background(), cb)
-			if err != nil || got.ResultCode != tc.code || got.Amount != "790.00" {
+			if err != nil || got.Response.ResultCode != tc.code || got.Response.Amount != "790.00" {
 				t.Fatalf("response %+v, %v", got, err)
 			}
 			o := e.order(t, id)
@@ -52,7 +52,7 @@ func TestPaymentCheckErrors(t *testing.T) {
 	for _, id := range []string{strconv.FormatInt(id, 10), unknownUUID, "abc", "0", "-1"} {
 		cb := PaymentCallback{Command: "CHECK", TransactionID: id}
 		got, err := e.svc.PaymentCheck(context.Background(), cb)
-		if err != nil || got.ResultCode != "500" {
+		if err != nil || got.Response.ResultCode != "500" {
 			t.Fatalf("%s: %+v %v", id, got, err)
 		}
 	}

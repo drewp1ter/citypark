@@ -145,3 +145,48 @@ func TestScrub(t *testing.T) {
 		t.Fatal("missing safe panic message")
 	}
 }
+
+func TestCaptureCheckFailure(t *testing.T) {
+	const uuid = "0f8fad5b-d9cb-469f-a165-70867728950e"
+	for _, tc := range []struct{ name, reason, message string }{
+		{"known reason", "order_not_found", "MONETA check failed: order_not_found"},
+		{"unknown reason is scrubbed", "private@example.test " + uuid, "Unexpected application error"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			tr := &transport{}
+			client, err := New("https://public@example.test/1", "test", "citypark-go@test", 1, tr)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx := sentry.SetHubOnContext(context.Background(), sentry.NewHub(client, sentry.NewScope()))
+			CaptureCheckFailure(ctx, tc.reason)
+			if len(tr.events) != 1 {
+				t.Fatalf("events = %d", len(tr.events))
+			}
+			event := tr.events[0]
+			if event.Message != tc.message {
+				t.Fatalf("message %q, want %q", event.Message, tc.message)
+			}
+			data, _ := json.Marshal(event)
+			for _, leak := range []string{"private@example.test", uuid, "Bearer"} {
+				if strings.Contains(string(data), leak) {
+					t.Fatalf("leaked %q: %s", leak, data)
+				}
+			}
+			if tc.reason != "order_not_found" {
+				if len(event.Tags) != 0 || len(event.Fingerprint) != 0 {
+					t.Fatalf("tags %v fingerprint %v", event.Tags, event.Fingerprint)
+				}
+				return
+			}
+			if event.Tags["moneta.check_reason"] != "order_not_found" || event.Level != sentry.LevelWarning ||
+				len(event.Fingerprint) != 2 || event.Fingerprint[0] != "moneta-check" || event.Fingerprint[1] != "order_not_found" {
+				t.Fatalf("tags %v level %v fingerprint %v", event.Tags, event.Level, event.Fingerprint)
+			}
+		})
+	}
+}
+
+func TestCaptureCheckFailureWithoutHub(t *testing.T) {
+	CaptureCheckFailure(context.Background(), "bad_signature") // must not panic
+}
