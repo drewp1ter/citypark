@@ -292,7 +292,7 @@ func TestCreateOnline(t *testing.T) {
 	if o.Status != StatusPending || o.PaymentID != "" {
 		t.Errorf("Status = %q, PaymentID = %q; want pending and empty", o.Status, o.PaymentID)
 	}
-	want := []PaymentRequest{{OrderID: res.OrderID, Amount: 74900}}
+	want := []PaymentRequest{{TransactionID: e.uuid(t, res.OrderID), Amount: 74900}}
 	if !slices.Equal(e.payments.requests, want) {
 		t.Errorf("payment requests = %+v, want %+v", e.payments.requests, want)
 	}
@@ -345,7 +345,7 @@ func TestCreateOnlinePickup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Create: %v", err)
 	}
-	want := []PaymentRequest{{OrderID: res.OrderID, Amount: money.Kopecks(59900)}}
+	want := []PaymentRequest{{TransactionID: e.uuid(t, res.OrderID), Amount: money.Kopecks(59900)}}
 	if !slices.Equal(e.payments.requests, want) {
 		t.Errorf("payment requests = %+v, want %+v", e.payments.requests, want)
 	}
@@ -367,7 +367,7 @@ func TestCreateOnlineReuse(t *testing.T) {
 	if n := e.count(t, `SELECT count(*) FROM orders`); n != 1 {
 		t.Errorf("orders = %d, want 1", n)
 	}
-	want := []PaymentRequest{{OrderID: first.OrderID, Amount: 74900}, {OrderID: first.OrderID, Amount: 74900}}
+	want := []PaymentRequest{{TransactionID: e.uuid(t, first.OrderID), Amount: 74900}, {TransactionID: e.uuid(t, first.OrderID), Amount: 74900}}
 	if !slices.Equal(e.payments.requests, want) {
 		t.Errorf("payment requests = %+v, want %+v", e.payments.requests, want)
 	}

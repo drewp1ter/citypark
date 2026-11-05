@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/drewp1ter/citypark-go/internal/money"
@@ -39,15 +38,16 @@ func FormatAmount(k money.Kopecks) string {
 	return fmt.Sprintf("%d.%02d", k/100, k%100)
 }
 
-// RequestSignature signs the payment form for an order. amount comes from FormatAmount.
-func (s *Signer) RequestSignature(orderID int64, amount string) string {
-	return s.sum(s.id + strconv.FormatInt(orderID, 10) + amount + Currency + s.testMode + s.secret)
+// RequestSignature signs the payment form for an order. transactionID is the order's payment UUID;
+// amount comes from FormatAmount.
+func (s *Signer) RequestSignature(transactionID, amount string) string {
+	return s.sum(s.id + transactionID + amount + Currency + s.testMode + s.secret)
 }
 
 // PaymentURL returns the MONETA.Assistant address for an order: base followed by the query
 // MNT_ID, MNT_AMOUNT, MNT_TRANSACTION_ID, MNT_CURRENCY_CODE, MNT_TEST_MODE, MNT_SIGNATURE and,
 // when not empty, MNT_SUCCESS_URL and MNT_FAIL_URL. amount comes from FormatAmount.
-func (s *Signer) PaymentURL(base string, orderID int64, amount, successURL, failURL string) string {
+func (s *Signer) PaymentURL(base, transactionID, amount, successURL, failURL string) string {
 	u, err := url.Parse(base)
 	if err != nil {
 		return ""
@@ -55,10 +55,10 @@ func (s *Signer) PaymentURL(base string, orderID int64, amount, successURL, fail
 	q := u.Query()
 	q.Set("MNT_ID", s.id)
 	q.Set("MNT_AMOUNT", amount)
-	q.Set("MNT_TRANSACTION_ID", strconv.FormatInt(orderID, 10))
+	q.Set("MNT_TRANSACTION_ID", transactionID)
 	q.Set("MNT_CURRENCY_CODE", Currency)
 	q.Set("MNT_TEST_MODE", s.testMode)
-	q.Set("MNT_SIGNATURE", s.RequestSignature(orderID, amount))
+	q.Set("MNT_SIGNATURE", s.RequestSignature(transactionID, amount))
 	if successURL != "" {
 		q.Set("MNT_SUCCESS_URL", successURL)
 	}

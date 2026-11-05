@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -198,7 +197,7 @@ func assertSent(t *testing.T, got, want []sentMessage) {
 func TestPaymentsAdapter(t *testing.T) {
 	p := app.NewMonetaPayments(moneta.New("100", "secret", false), app.PaymentPages{Base: "https://pay.test/"})
 
-	form := p.Form(order.PaymentRequest{OrderID: 15, Amount: 79000})
+	form := p.Form(order.PaymentRequest{TransactionID: "15", Amount: 79000})
 	if form.Amount != "790.00" || form.Signature != "8c65fcd4afe3dc4cb915e04aaa273574" {
 		t.Errorf("Form = %+v, want amount 790.00 and the known signature", form)
 	}
@@ -371,7 +370,10 @@ func TestAppOnlineFlow(t *testing.T) {
 		t.Fatalf("redirectUrl = %q, want it to carry MNT_AMOUNT=790.00", res.RedirectURL)
 	}
 
-	id := strconv.FormatInt(res.OrderID, 10)
+	var id string
+	if err := db.Get(&id, `SELECT payment_uuid::text FROM orders WHERE id = $1`, res.OrderID); err != nil {
+		t.Fatal(err)
+	}
 	sum := md5.Sum([]byte("100" + id + "555" + "790.00" + "RUB" + "0" + "secret"))
 	callback := func(signature string) *httptest.ResponseRecorder {
 		form := url.Values{
@@ -589,7 +591,10 @@ func TestPaymentRetryAppWiring(t *testing.T) {
 	}
 	check := func(want string) {
 		t.Helper()
-		raw := strconv.FormatInt(id, 10)
+		var raw string
+		if err := db.Get(&raw, `SELECT payment_uuid::text FROM orders WHERE id = $1`, id); err != nil {
+			t.Fatal(err)
+		}
 		sum := md5.Sum([]byte("CHECK100" + raw + "790.00RUB0secret"))
 		values := url.Values{"MNT_COMMAND": {"CHECK"}, "MNT_ID": {"100"}, "MNT_TRANSACTION_ID": {raw}, "MNT_AMOUNT": {"790.00"}, "MNT_CURRENCY_CODE": {"RUB"}, "MNT_TEST_MODE": {"0"}, "MNT_SIGNATURE": {hex.EncodeToString(sum[:])}}
 		req := httptest.NewRequest("GET", "/api/v1/webhooks/moneta/check?"+values.Encode(), nil)

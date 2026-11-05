@@ -63,6 +63,7 @@ type Order struct {
 	Items           []Item        `json:"items"`   // never nil
 	ItemsHash       string        `json:"-"`
 	PaymentID       string        `json:"-"`
+	PaymentUUID     string        `json:"-"` // sent to MONETA as MNT_TRANSACTION_ID
 	IikoOrderID     string        `json:"-"`
 }
 

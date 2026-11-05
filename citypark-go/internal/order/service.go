@@ -9,8 +9,8 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"regexp"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -38,8 +38,8 @@ type Notifier interface {
 }
 
 type PaymentRequest struct {
-	OrderID int64
-	Amount  money.Kopecks
+	TransactionID string // the order's PaymentUUID
+	Amount        money.Kopecks
 }
 
 // PaymentForm is what the customer needs to pay an online order.
@@ -210,7 +210,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if in.ExpectedPayableTotal != nil && *in.ExpectedPayableTotal != o.Total+o.DeliveryPrice {
 		return CreateResult{}, changedTotalError()
 	}
-	form := s.payments.Form(PaymentRequest{OrderID: o.ID, Amount: o.Total + o.DeliveryPrice})
+	form := s.payments.Form(PaymentRequest{TransactionID: o.PaymentUUID, Amount: o.Total + o.DeliveryPrice})
 	if o.Status == StatusNew {
 		if err := orders.SetStatus(ctx, o.ID, StatusPending); err != nil {
 			return CreateResult{}, err
@@ -221,10 +221,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	return CreateResult{OrderID: o.ID, RedirectURL: form.URL}, nil
 }
 
+var transactionIDPattern = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
+// parseTransactionID accepts only the canonical dashed UUID form (any letter case) and returns it lowercase.
+// Old numeric transaction ids do not match.
+func parseTransactionID(s string) (string, bool) {
+	s = strings.ToLower(s)
+	return s, transactionIDPattern.MatchString(s)
+}
+
 // PaymentConfirmed checks a payment callback and marks the order as paid.
 func (s *Service) PaymentConfirmed(ctx context.Context, cb PaymentCallback) error {
-	id, err := strconv.ParseInt(cb.TransactionID, 10, 64)
-	if err != nil || id < 1 {
+	uuid, ok := parseTransactionID(cb.TransactionID)
+	if !ok {
 		return httpx.BadRequest("Некорректное уведомление")
 	}
 	// The signature is checked before the order is loaded, so an unsigned
@@ -234,7 +243,7 @@ func (s *Service) PaymentConfirmed(ctx context.Context, cb PaymentCallback) erro
 	}
 
 	orders := NewStore(s.db)
-	o, err := orders.ByID(ctx, id)
+	o, err := orders.ByPaymentUUID(ctx, uuid)
 	if errors.Is(err, store.ErrNotFound) {
 		return httpx.NewError(http.StatusNotFound, "Заказ не найден")
 	}
@@ -242,7 +251,7 @@ func (s *Service) PaymentConfirmed(ctx context.Context, cb PaymentCallback) erro
 		return err
 	}
 
-	expected := s.payments.Form(PaymentRequest{OrderID: o.ID, Amount: o.Total + o.DeliveryPrice}).Amount
+	expected := s.payments.Form(PaymentRequest{TransactionID: o.PaymentUUID, Amount: o.Total + o.DeliveryPrice}).Amount
 	if expected != cb.Amount {
 		slog.Default().Error("moneta callback amount mismatch",
 			"order_id", o.ID, "expected", expected, "got", cb.Amount)
@@ -481,9 +490,8 @@ func (s *Service) PaymentCheck(ctx context.Context, cb PaymentCallback) (moneta.
 		return moneta.CheckResponse{}, httpx.NewError(http.StatusForbidden, "Неверная подпись")
 	}
 	code, amount := "500", ""
-	id, err := strconv.ParseInt(cb.TransactionID, 10, 64)
-	if err == nil && id > 0 {
-		o, err := NewStore(s.db).ByID(ctx, id)
+	if uuid, ok := parseTransactionID(cb.TransactionID); ok {
+		o, err := NewStore(s.db).ByPaymentUUID(ctx, uuid)
 		if err != nil && !errors.Is(err, store.ErrNotFound) {
 			return moneta.CheckResponse{}, err
 		}

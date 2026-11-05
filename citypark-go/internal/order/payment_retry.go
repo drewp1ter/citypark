@@ -87,7 +87,7 @@ func (s *Service) RetryPayment(ctx context.Context, orderID, accountID int64) (C
 	case "closed":
 		return CreateResult{}, httpx.NewError(503, "Оплата доступна только в часы работы ресторана.")
 	}
-	form := s.payments.Form(PaymentRequest{OrderID: o.ID, Amount: o.Total + o.DeliveryPrice})
+	form := s.payments.Form(PaymentRequest{TransactionID: o.PaymentUUID, Amount: o.Total + o.DeliveryPrice})
 	if form.URL == "" {
 		return CreateResult{}, fmt.Errorf("empty payment URL")
 	}

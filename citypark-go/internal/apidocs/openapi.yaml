@@ -705,7 +705,8 @@ components:
       type: object
       description: >-
         `redirectUrl` is the Moneta payment page (full MONETA.Assistant address with every `MNT_*`
-        parameter and the signature).
+        parameter and the signature). `MNT_TRANSACTION_ID` in it is the order's random payment UUID, not
+        `orderId`; Moneta appends it to the success URL, so the frontend must not read the order number from it.
       required: [orderId, redirectUrl]
       properties:
         orderId:
@@ -713,7 +714,7 @@ components:
           example: 1
         redirectUrl:
           type: string
-          example: https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_ID=100&MNT_TRANSACTION_ID=1
+          example: https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_ID=100&MNT_TRANSACTION_ID=3f2b8c1e-9d4a-4e7b-a1c6-5d0e8f7a2b94
     LiveOrderEvent:
       type: object
       required: [type]
@@ -3775,7 +3776,7 @@ paths:
                   type: string
                 MNT_TRANSACTION_ID:
                   type: string
-                  description: Our order id.
+                  description: Our payment UUID of the order (lowercase, with dashes). A numeric order id is rejected.
                 MNT_OPERATION_ID:
                   type: string
                   description: Moneta's id of the payment.

@@ -83,7 +83,7 @@ func TestCheckoutContactSafety(t *testing.T) {
 				t.Fatalf("snapshot phone search: %d, %v", count, err)
 			}
 			e.payments.valid = true
-			if err := e.svc.PaymentConfirmed(context.Background(), PaymentCallback{TransactionID: fmt.Sprint(o.ID), OperationID: "paid", Amount: "749.00"}); err != nil {
+			if err := e.svc.PaymentConfirmed(context.Background(), PaymentCallback{TransactionID: o.PaymentUUID, OperationID: "paid", Amount: "749.00"}); err != nil {
 				t.Fatal(err)
 			}
 			if len(e.notifier.pending) != 1 || len(e.notifier.paid) != 1 {

@@ -31,7 +31,7 @@ func TestPaymentCheckStates(t *testing.T) {
 			e := newSvcEnv(t, friday)
 			id := seedPending(t, e)
 			setOrderState(t, e.db, id, tc.status, tc.payment)
-			cb := callback(id)
+			cb := e.callback(t, id)
 			cb.Command = "CHECK"
 			cb.Amount = tc.amount
 			got, err := e.svc.PaymentCheck(context.Background(), cb)
@@ -48,8 +48,8 @@ func TestPaymentCheckStates(t *testing.T) {
 
 func TestPaymentCheckErrors(t *testing.T) {
 	e := newSvcEnv(t, friday)
-	seedPending(t, e)
-	for _, id := range []string{"999", "abc", "0", "-1"} {
+	id := seedPending(t, e)
+	for _, id := range []string{strconv.FormatInt(id, 10), unknownUUID, "abc", "0", "-1"} {
 		cb := PaymentCallback{Command: "CHECK", TransactionID: id}
 		got, err := e.svc.PaymentCheck(context.Background(), cb)
 		if err != nil || got.ResultCode != "500" {
@@ -66,7 +66,7 @@ func TestCheckHTTP(t *testing.T) {
 		t.Run(method, func(t *testing.T) {
 			e := newSvcEnv(t, friday)
 			id := seedPending(t, e)
-			form := url.Values{"MNT_COMMAND": {"CHECK"}, "MNT_TRANSACTION_ID": {strconv.FormatInt(id, 10)}, "MNT_AMOUNT": {"790.00"}}
+			form := url.Values{"MNT_COMMAND": {"CHECK"}, "MNT_TRANSACTION_ID": {e.uuid(t, id)}, "MNT_AMOUNT": {"790.00"}}
 			path := "/webhooks/moneta/check"
 			body := ""
 			if method == http.MethodGet {
@@ -82,7 +82,7 @@ func TestCheckHTTP(t *testing.T) {
 			if rec.Code != 200 || xml.Unmarshal(rec.Body.Bytes(), &got) != nil || got.ResultCode != "402" {
 				t.Fatalf("%d %s", rec.Code, rec.Body)
 			}
-			sum := md5.Sum([]byte("402100" + strconv.FormatInt(id, 10) + "secret"))
+			sum := md5.Sum([]byte("402100" + e.uuid(t, id) + "secret"))
 			if got.Signature != hex.EncodeToString(sum[:]) {
 				t.Fatal("bad response signature")
 			}
@@ -112,7 +112,7 @@ func TestPayGET(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
 	form := url.Values{
-		"MNT_TRANSACTION_ID": {strconv.FormatInt(id, 10)},
+		"MNT_TRANSACTION_ID": {e.uuid(t, id)},
 		"MNT_OPERATION_ID":   {"555"},
 		"MNT_AMOUNT":         {"790.00"},
 	}
@@ -127,7 +127,7 @@ func TestCheckHTTPBadSignature(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
 	e.payments.valid = false
-	req := httptest.NewRequest(http.MethodGet, "/webhooks/moneta/check?MNT_COMMAND=CHECK&MNT_TRANSACTION_ID="+strconv.FormatInt(id, 10), nil)
+	req := httptest.NewRequest(http.MethodGet, "/webhooks/moneta/check?MNT_COMMAND=CHECK&MNT_TRANSACTION_ID="+e.uuid(t, id), nil)
 	rec := httptest.NewRecorder()
 	newRouter(e, defaultOpts()).ServeHTTP(rec, req)
 	if rec.Code != 403 {
@@ -145,7 +145,7 @@ func TestPayGETInvalidAmount(t *testing.T) {
 			e := newSvcEnv(t, friday)
 			id := seedPending(t, e)
 			form := url.Values{
-				"MNT_TRANSACTION_ID": {strconv.FormatInt(id, 10)},
+				"MNT_TRANSACTION_ID": {e.uuid(t, id)},
 				"MNT_OPERATION_ID":   {"555"},
 			}
 			if tc.amount != "" {

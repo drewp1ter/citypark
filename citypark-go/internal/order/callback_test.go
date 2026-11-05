@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -37,9 +36,24 @@ func seedPending(t *testing.T, e *svcEnv) int64 {
 	return id
 }
 
-func callback(id int64) PaymentCallback {
+// unknownUUID is a canonical UUID that no seeded order has.
+const unknownUUID = "00000000-0000-4000-8000-000000000999"
+
+// uuid returns the order's payment UUID, the transaction id MONETA sends back.
+func (e *svcEnv) uuid(t *testing.T, id int64) string {
+	t.Helper()
+	return e.order(t, id).PaymentUUID
+}
+
+// callback is a signed-looking Pay callback for the order.
+func (e *svcEnv) callback(t *testing.T, id int64) PaymentCallback {
+	t.Helper()
+	return callbackUUID(e.uuid(t, id))
+}
+
+func callbackUUID(uuid string) PaymentCallback {
 	return PaymentCallback{
-		TransactionID: strconv.FormatInt(id, 10),
+		TransactionID: uuid,
 		OperationID:   "555",
 		Amount:        "790.00",
 		Signature:     "998b6268fe3a6c7f4eeb8ccec65a9566",
@@ -74,7 +88,7 @@ func TestPaymentConfirmed(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
 
-	if err := e.svc.PaymentConfirmed(context.Background(), callback(id)); err != nil {
+	if err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id)); err != nil {
 		t.Fatalf("PaymentConfirmed: %v", err)
 	}
 	e.wantPaidOnce(t, id)
@@ -85,7 +99,7 @@ func TestPaymentConfirmedTwice(t *testing.T) {
 	id := seedPending(t, e)
 
 	for i := range 2 {
-		if err := e.svc.PaymentConfirmed(context.Background(), callback(id)); err != nil {
+		if err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id)); err != nil {
 			t.Fatalf("call %d: %v", i+1, err)
 		}
 	}
@@ -99,7 +113,7 @@ func TestPaymentConfirmedFromNew(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := e.svc.PaymentConfirmed(context.Background(), callback(id)); err != nil {
+	if err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id)); err != nil {
 		t.Fatalf("PaymentConfirmed: %v", err)
 	}
 	e.wantPaidOnce(t, id)
@@ -110,7 +124,7 @@ func TestPaymentBadSignature(t *testing.T) {
 	id := seedPending(t, e)
 	e.payments.valid = false
 
-	err := e.svc.PaymentConfirmed(context.Background(), callback(id))
+	err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id))
 	wantHTTPError(t, err, http.StatusForbidden, "Неверная подпись")
 	e.wantUntouched(t, id, StatusPending)
 }
@@ -120,7 +134,7 @@ func TestPaymentBadSignatureUnknownOrder(t *testing.T) {
 	seedPending(t, e)
 	e.payments.valid = false
 
-	err := e.svc.PaymentConfirmed(context.Background(), callback(999))
+	err := e.svc.PaymentConfirmed(context.Background(), callbackUUID(unknownUUID))
 	wantHTTPError(t, err, http.StatusForbidden, "Неверная подпись")
 }
 
@@ -128,7 +142,7 @@ func TestPaymentUnknownOrder(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	seedPending(t, e)
 
-	err := e.svc.PaymentConfirmed(context.Background(), callback(999))
+	err := e.svc.PaymentConfirmed(context.Background(), callbackUUID(unknownUUID))
 	wantHTTPError(t, err, http.StatusNotFound, "Заказ не найден")
 }
 
@@ -137,7 +151,7 @@ func TestPaymentBadTransactionID(t *testing.T) {
 		t.Run("id="+txID, func(t *testing.T) {
 			e := newSvcEnv(t, friday)
 			id := seedPending(t, e)
-			cb := callback(id)
+			cb := e.callback(t, id)
 			cb.TransactionID = txID
 
 			err := e.svc.PaymentConfirmed(context.Background(), cb)
@@ -150,7 +164,7 @@ func TestPaymentBadTransactionID(t *testing.T) {
 func TestPaymentWrongAmount(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
-	cb := callback(id)
+	cb := e.callback(t, id)
 	cb.Amount = "1.00"
 
 	err := e.svc.PaymentConfirmed(context.Background(), cb)
@@ -163,7 +177,7 @@ func TestPaymentAfterConfirmed(t *testing.T) {
 	id := seedPending(t, e)
 	setOrderState(t, e.db, id, StatusConfirmed, "")
 
-	if err := e.svc.PaymentConfirmed(context.Background(), callback(id)); err != nil {
+	if err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id)); err != nil {
 		t.Fatalf("PaymentConfirmed: %v", err)
 	}
 	e.wantUntouched(t, id, StatusConfirmed)
@@ -174,17 +188,17 @@ func TestPaymentAfterCanceled(t *testing.T) {
 	id := seedPending(t, e)
 	setOrderState(t, e.db, id, StatusCanceled, "")
 
-	if err := e.svc.PaymentConfirmed(context.Background(), callback(id)); err != nil {
+	if err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id)); err != nil {
 		t.Fatalf("PaymentConfirmed: %v", err)
 	}
 	e.wantUntouched(t, id, StatusCanceled)
 }
 
 // postCallback sends a Moneta form. A zero-value field is left out of the form.
-func postCallback(h http.Handler, id int64, fields map[string]string) *httptest.ResponseRecorder {
+func postCallback(h http.Handler, transactionID string, fields map[string]string) *httptest.ResponseRecorder {
 	form := url.Values{
 		"MNT_ID":             {"100"},
-		"MNT_TRANSACTION_ID": {strconv.FormatInt(id, 10)},
+		"MNT_TRANSACTION_ID": {transactionID},
 		"MNT_OPERATION_ID":   {"555"},
 		"MNT_AMOUNT":         {"790.00"},
 		"MNT_CURRENCY_CODE":  {"RUB"},
@@ -219,7 +233,7 @@ func TestCallbackSuccess(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
 
-	rec := postCallback(newRouter(e, defaultOpts()), id, nil)
+	rec := postCallback(newRouter(e, defaultOpts()), e.uuid(t, id), nil)
 	wantPlain(t, rec, http.StatusOK, "SUCCESS")
 	e.wantPaidOnce(t, id)
 }
@@ -229,7 +243,7 @@ func TestCallbackBadSignature(t *testing.T) {
 	id := seedPending(t, e)
 	e.payments.valid = false
 
-	rec := postCallback(newRouter(e, defaultOpts()), id, nil)
+	rec := postCallback(newRouter(e, defaultOpts()), e.uuid(t, id), nil)
 	wantPlain(t, rec, http.StatusForbidden, "FAIL")
 	e.wantUntouched(t, id, StatusPending)
 }
@@ -238,7 +252,7 @@ func TestCallbackUnknownOrder(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	seedPending(t, e)
 
-	rec := postCallback(newRouter(e, defaultOpts()), 999, nil)
+	rec := postCallback(newRouter(e, defaultOpts()), unknownUUID, nil)
 	wantPlain(t, rec, http.StatusNotFound, "FAIL")
 }
 
@@ -255,7 +269,7 @@ func TestCallbackWrongAmount(t *testing.T) {
 	e := newSvcEnv(t, friday)
 	id := seedPending(t, e)
 
-	rec := postCallback(newRouter(e, defaultOpts()), id, map[string]string{"MNT_AMOUNT": "1.00"})
+	rec := postCallback(newRouter(e, defaultOpts()), e.uuid(t, id), map[string]string{"MNT_AMOUNT": "1.00"})
 	wantPlain(t, rec, http.StatusBadRequest, "FAIL")
 	e.wantUntouched(t, id, StatusPending)
 }
@@ -266,7 +280,7 @@ func TestCallbackRepeated(t *testing.T) {
 	h := newRouter(e, defaultOpts())
 
 	for i := range 2 {
-		wantPlain(t, postCallback(h, id, nil), http.StatusOK, "SUCCESS")
+		wantPlain(t, postCallback(h, e.uuid(t, id), nil), http.StatusOK, "SUCCESS")
 		if t.Failed() {
 			t.Fatalf("call %d failed", i+1)
 		}
@@ -278,7 +292,7 @@ func TestCallbackIgnoresWorkingHours(t *testing.T) {
 	e := newSvcEnv(t, time.Date(2024, 5, 24, 3, 0, 0, 0, time.UTC))
 	id := seedPending(t, e)
 
-	rec := postCallback(newRouter(e, defaultOpts()), id, nil)
+	rec := postCallback(newRouter(e, defaultOpts()), e.uuid(t, id), nil)
 	wantPlain(t, rec, http.StatusOK, "SUCCESS")
 	e.wantPaidOnce(t, id)
 }

@@ -202,7 +202,7 @@ func TestPromoPayment(t *testing.T) {
 	}
 	e.payments.valid = true
 	e.payments.form.Amount = "779.10"
-	cb := callback(res.OrderID)
+	cb := e.callback(t, res.OrderID)
 	cb.Amount = "849.00"
 	wantHTTPError(t, e.svc.PaymentConfirmed(context.Background(), cb), 400, "Неверная сумма")
 	cb.Amount = "779.10"

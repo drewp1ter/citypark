@@ -18,7 +18,7 @@ import (
 // selectOrders is the base SELECT for orders with customer and address.
 // Callers append a WHERE clause.
 const selectOrders = `
-SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id,
+SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id, o.payment_uuid::text AS payment_uuid,
        o.delivery_price_kopecks, o.iiko_order_id, o.account_id, o.subtotal_kopecks, o.discount_kopecks, o.promo_code, o.promo_code_id, o.promo_percentage,
        u.id AS customer_id, COALESCE(o.contact_name, u.name) AS customer_name,
        COALESCE(o.contact_phone, u.phone, '') AS customer_phone,
@@ -77,6 +77,7 @@ type orderRow struct {
 	DeliveryTime    string        `db:"delivery_time"`
 	ItemsHash       string        `db:"items_hash"`
 	PaymentID       string        `db:"payment_id"`
+	PaymentUUID     string        `db:"payment_uuid"`
 	DeliveryPrice   int64         `db:"delivery_price_kopecks"`
 	IikoOrderID     string        `db:"iiko_order_id"`
 	CustomerID      int64         `db:"customer_id"`
@@ -102,6 +103,7 @@ func (r orderRow) toOrder() Order {
 		Items:         []Item{},
 		ItemsHash:     r.ItemsHash,
 		PaymentID:     r.PaymentID,
+		PaymentUUID:   r.PaymentUUID,
 		IikoOrderID:   r.IikoOrderID,
 	}
 	if r.AddressCity != nil && r.AddressText != nil {
@@ -147,6 +149,20 @@ func (s *Store) Insert(ctx context.Context, p InsertParams) (int64, error) {
 func (s *Store) ByID(ctx context.Context, id int64) (Order, error) {
 	var row orderRow
 	if err := s.db.GetContext(ctx, &row, selectOrders+`WHERE o.id = $1`, id); err != nil {
+		return Order{}, store.NotFound(err)
+	}
+	orders := []Order{row.toOrder()}
+	if err := s.loadItems(ctx, orders); err != nil {
+		return Order{}, err
+	}
+	return orders[0], nil
+}
+
+// ByPaymentUUID finds an order by the transaction id sent to MONETA. id must be a canonical lowercase UUID.
+// It returns store.ErrNotFound when missing.
+func (s *Store) ByPaymentUUID(ctx context.Context, id string) (Order, error) {
+	var row orderRow
+	if err := s.db.GetContext(ctx, &row, selectOrders+`WHERE o.payment_uuid = $1::uuid`, id); err != nil {
 		return Order{}, store.NotFound(err)
 	}
 	orders := []Order{row.toOrder()}

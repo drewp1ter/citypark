@@ -2505,7 +2505,7 @@ Promo orders require a confirmed quote total. A mismatch returns 409 before any 
 **Response 201**
 
 ```json
-{ "orderId": 15, "redirectUrl": "https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=8c65fcd4afe3dc4cb915e04aaa273574&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=15" }
+{ "orderId": 15, "redirectUrl": "https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=95f0d770cc1e67ea9e8a3a70eb14f6be&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=3f2b8c1e-9d4a-4e7b-a1c6-5d0e8f7a2b94" }
 ```
 
 **Errors**
@@ -2536,7 +2536,7 @@ Promo orders require a confirmed quote total. A mismatch returns 409 before any 
 
 **Notes**
 
-Orders are paid only online. The frontend sends the customer to `redirectUrl`, the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. Repeating an identical order (same checkout name, phone, address, comment, `deliveryTime` and items) while the previous one is still new/pending returns the same `orderId` only within the same authenticated account or the same guest checkout scope. Phone alone never finds an earlier order. `paymentType` is not a field any more: responses do not have it, and a request that still sends it is accepted (the field is ignored). The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
+Orders are paid only online. The frontend sends the customer to `redirectUrl`, the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. That value is now the order's random payment UUID (lowercase, with dashes), not the order number: `orderId` in the response stays the numeric id, and the frontend must not read the order number from `MNT_TRANSACTION_ID`. Deploy note: payment links created before the deploy fail at the callback, because old numeric transaction ids are rejected. Repeating an identical order (same checkout name, phone, address, comment, `deliveryTime` and items) while the previous one is still new/pending returns the same `orderId` only within the same authenticated account or the same guest checkout scope. Phone alone never finds an earlier order. `paymentType` is not a field any more: responses do not have it, and a request that still sends it is accepted (the field is ignored). The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
 
 Authentication with a customer Bearer token assigns the order to that account regardless of the checkout phone. Admin checkout remains unowned. Guests never acquire ownership, even when their phone matches an account. Contact names/phones and delivery text are saved as snapshots for order responses, notifications and iiko; later profile/address changes do not rewrite them.
 
@@ -2563,7 +2563,7 @@ Obtain a payment link for an existing owned order. **Role:** authenticated custo
 **Response 200** (captured from `TestPaymentRetryAppWiring`, test merchant configuration):
 
 ```json
-{"orderId":1,"redirectUrl":"https://demo.moneta.ru/assistant.htm?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=3d4ab788e5abe212849680e02b1202f9&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=1"}
+{"orderId":1,"redirectUrl":"https://demo.moneta.ru/assistant.htm?MNT_AMOUNT=790.00&MNT_CURRENCY_CODE=RUB&MNT_FAIL_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%3Fpayment%3Dfailed&MNT_ID=100&MNT_SIGNATURE=607080d90b8fb471a340eeb0b8e5144a&MNT_SUCCESS_URL=http%3A%2F%2Flocalhost%3A3001%2Fcheckout%2Fdone&MNT_TEST_MODE=0&MNT_TRANSACTION_ID=e8a5f66a-aaba-4938-9e27-cc824aab6024"}
 ```
 
 **Errors** (standard `{ "statusCode": number, "message": string }` envelope):
@@ -3307,7 +3307,7 @@ Form fields (`Content-Type: application/x-www-form-urlencoded`), not JSON:
 
 | Field | Type | Required | Rules |
 |---|---|---|---|
-| `MNT_TRANSACTION_ID` | string | yes | our order id, a whole number from 1 |
+| `MNT_TRANSACTION_ID` | string | yes | our payment UUID of the order (lowercase, with dashes); a number such as `15` is rejected |
 | `MNT_OPERATION_ID` | string | yes | Moneta's id of the payment; stored as the order's payment id |
 | `MNT_AMOUNT` | string | yes | rubles with two decimals; must equal the order total plus delivery |
 | `MNT_ID` | string | yes | configured merchant account |
@@ -3336,7 +3336,7 @@ The body is always the plain text `FAIL`. Moneta repeats the call later after an
 
 | Status | When |
 |---|---|
-| 400 | `MNT_TRANSACTION_ID` is not a number from 1, or `MNT_AMOUNT` differs from the order amount |
+| 400 | `MNT_TRANSACTION_ID` is not a canonical UUID, or `MNT_AMOUNT` differs from the order amount |
 | 403 | the signature is wrong |
 | 404 | the order does not exist |
 | 500 | server error |
@@ -3353,7 +3353,7 @@ Same role, fields, responses and errors as POST /webhooks/moneta; fields are que
 
 MONETA Check URL, public and authenticated by its signature. Accepts URL-encoded form data.
 
-Required fields: MNT_COMMAND=CHECK, MNT_ID, MNT_TRANSACTION_ID, MNT_CURRENCY_CODE=RUB, MNT_TEST_MODE and MNT_SIGNATURE. Merchant and mode must match configuration. Optional signed fields: MNT_OPERATION_ID, MNT_AMOUNT (two decimals), MNT_SUBSCRIBER_ID. Missing optional fields contribute empty strings to the signature.
+Required fields: MNT_COMMAND=CHECK, MNT_ID, MNT_TRANSACTION_ID (our payment UUID of the order; a numeric id or an unknown UUID gets result code 500), MNT_CURRENCY_CODE=RUB, MNT_TEST_MODE and MNT_SIGNATURE. Merchant and mode must match configuration. Optional signed fields: MNT_OPERATION_ID, MNT_AMOUNT (two decimals), MNT_SUBSCRIBER_ID. Missing optional fields contribute empty strings to the signature.
 
 Example request (MONETA documentation test vector; account 54600817, integrity code QWERTY):
 

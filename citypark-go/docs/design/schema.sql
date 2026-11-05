@@ -130,10 +130,12 @@ CREATE TABLE orders (
     comment                text NOT NULL DEFAULT '',
     items_hash             text NOT NULL,
     payment_id             text NOT NULL DEFAULT '',
+    payment_uuid           uuid NOT NULL DEFAULT gen_random_uuid(),
     delivery_price_kopecks bigint NOT NULL DEFAULT 0 CHECK (delivery_price_kopecks >= 0)
 );
 CREATE INDEX orders_customer_id_idx ON orders (customer_id);
 CREATE INDEX orders_payment_id_idx ON orders (payment_id);
+CREATE UNIQUE INDEX orders_payment_uuid_idx ON orders (payment_uuid);
 
 CREATE TABLE order_items (
     order_id              bigint NOT NULL REFERENCES orders (id) ON DELETE CASCADE,

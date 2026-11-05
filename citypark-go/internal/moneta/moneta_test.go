@@ -1,6 +1,8 @@
 package moneta
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"net/url"
 	"testing"
 
@@ -29,17 +31,17 @@ func TestRequestSignature(t *testing.T) {
 	tests := []struct {
 		name     string
 		testMode bool
-		orderID  int64
+		txID     string
 		amount   string
 		want     string
 	}{
-		{"live", false, 15, "790.00", "8c65fcd4afe3dc4cb915e04aaa273574"},
-		{"test mode", true, 15, "790.00", "047418b1c4a31fbc826ff955c7bdf010"},
-		{"small amount", false, 15, "0.05", "0bd20edc998ca5c8e7be3780211c47f5"},
+		{"live", false, "15", "790.00", "8c65fcd4afe3dc4cb915e04aaa273574"},
+		{"test mode", true, "15", "790.00", "047418b1c4a31fbc826ff955c7bdf010"},
+		{"small amount", false, "15", "0.05", "0bd20edc998ca5c8e7be3780211c47f5"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := New("100", "secret", tt.testMode).RequestSignature(tt.orderID, tt.amount)
+			got := New("100", "secret", tt.testMode).RequestSignature(tt.txID, tt.amount)
 			if got != tt.want {
 				t.Errorf("RequestSignature = %q, want %q", got, tt.want)
 			}
@@ -105,7 +107,7 @@ func TestPaymentURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := New("100", "secret", tt.testMode).PaymentURL(base, 15, "790.00", tt.success, tt.fail)
+			got := New("100", "secret", tt.testMode).PaymentURL(base, "15", "790.00", tt.success, tt.fail)
 			u, err := url.Parse(got)
 			if err != nil {
 				t.Fatalf("PaymentURL %q is not a URL: %v", got, err)
@@ -175,11 +177,25 @@ func TestOptionalCheckFields(t *testing.T) {
 
 func TestPaymentURLExistingQuery(t *testing.T) {
 	s := New("100", "secret", false)
-	u, err := url.Parse(s.PaymentURL("https://demo.moneta.ru/assistant.htm?moneta.locale=ru#form", 15, "790.00", "", ""))
+	u, err := url.Parse(s.PaymentURL("https://demo.moneta.ru/assistant.htm?moneta.locale=ru#form", "15", "790.00", "", ""))
 	if err != nil || u.Query().Get("moneta.locale") != "ru" || u.Query().Get("MNT_AMOUNT") != "790.00" || u.Fragment != "form" {
 		t.Fatalf("url %v, %v", u, err)
 	}
-	if s.PaymentURL("://%", 15, "790.00", "", "") != "" {
+	if s.PaymentURL("://%", "15", "790.00", "", "") != "" {
 		t.Fatal("invalid URL accepted")
+	}
+}
+
+func TestMonetaPaymentURLUsesTransactionID(t *testing.T) {
+	const txID = "3f2b8c1e-9d4a-4e7b-a1c6-5d0e8f7a2b94"
+	s := New("100", "secret", false)
+	u, err := url.Parse(s.PaymentURL("https://demo.moneta.ru/assistant.htm", txID, "790.00", "", ""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := md5.Sum([]byte("100" + txID + "790.00" + "RUB" + "0" + "secret"))
+	q := u.Query()
+	if q.Get("MNT_TRANSACTION_ID") != txID || q.Get("MNT_SIGNATURE") != hex.EncodeToString(sum[:]) {
+		t.Errorf("MNT_TRANSACTION_ID = %q, MNT_SIGNATURE = %q; want %q and %x", q.Get("MNT_TRANSACTION_ID"), q.Get("MNT_SIGNATURE"), txID, sum)
 	}
 }

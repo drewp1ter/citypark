@@ -95,7 +95,7 @@ func (h *Handler) moneta(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Default().Info("moneta callback", "order_id", cb.TransactionID, "operation_id", cb.OperationID)
+	slog.Default().Info("moneta callback", "transaction_id", cb.TransactionID, "operation_id", cb.OperationID)
 
 	status, body := http.StatusOK, "SUCCESS"
 	if err := h.svc.PaymentConfirmed(r.Context(), cb); err != nil {
@@ -104,7 +104,7 @@ func (h *Handler) moneta(w http.ResponseWriter, r *http.Request) {
 		if errors.As(err, &he) {
 			status = he.Status
 		} else {
-			slog.Default().Error("moneta callback failed", "order_id", cb.TransactionID, "error", err)
+			slog.Default().Error("moneta callback failed", "transaction_id", cb.TransactionID, "error", err)
 		}
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")

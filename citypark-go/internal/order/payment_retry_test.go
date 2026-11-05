@@ -84,7 +84,7 @@ func TestRetryPayment(t *testing.T) {
 			t.Fatalf("%+v %v", got, err)
 		}
 		req := e.payments.requests[len(e.payments.requests)-1]
-		if req.OrderID != id || req.Amount != before.Total+before.DeliveryPrice {
+		if req.TransactionID != before.PaymentUUID || req.Amount != before.Total+before.DeliveryPrice {
 			t.Fatalf("%+v", req)
 		}
 	}
@@ -224,7 +224,7 @@ func TestPaymentCheckRetryEligibility(t *testing.T) {
 			if tc.paid {
 				setOrderState(t, e.db, id, StatusPaid, "555")
 			}
-			cb := callback(id)
+			cb := e.callback(t, id)
 			cb.Command = "CHECK"
 			got, err := e.svc.PaymentCheck(context.Background(), cb)
 			if tc.code == "" {
@@ -247,7 +247,7 @@ func TestPaymentRetryConfirmationRace(t *testing.T) {
 	if _, err := e.svc.RetryPayment(context.Background(), id, e.userID); err != nil {
 		t.Fatal(err)
 	}
-	cb := callback(id)
+	cb := e.callback(t, id)
 	cb.Amount = "749.00"
 	for range 2 {
 		if err := e.svc.PaymentConfirmed(context.Background(), cb); err != nil {
@@ -267,7 +267,7 @@ func TestDelayedPaymentConfirmation(t *testing.T) {
 			setOrderState(t, e.db, id, state, "")
 			e.svc.clock = clock.Fixed(friday.Add(36 * time.Hour))
 			e.svc.SetPaymentHours(nil)
-			if err := e.svc.PaymentConfirmed(context.Background(), callback(id)); err != nil {
+			if err := e.svc.PaymentConfirmed(context.Background(), e.callback(t, id)); err != nil {
 				t.Fatal(err)
 			}
 			if state == StatusPending {
