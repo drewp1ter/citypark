@@ -978,6 +978,176 @@ No body.
 
 The answer is 204 also when the address does not exist or is not in the user's list. Only the user's link is removed; other users keep the address. Deleting the default leaves no default; no replacement is selected. Shared addresses and order history are preserved.
 
+### Customer saved addresses
+
+All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring.
+
+Entry fields: `id`, `name`, `city`, `address`, `street`, `apartment`, `entrance`, `isDefault`, `needsReview`, `createdAt`, `updatedAt`. All are required in responses; timestamps are RFC 3339. `address` is immutable full text. Internal address/user IDs and credentials are never exposed. Legacy entries keep full text verbatim, with empty `street` and `needsReview=true`; they must be corrected before checkout autofill, even when default. Lists are ordered by ascending saved ID and empty lists contain `[]`.
+
+#### GET /customer/addresses
+
+List saved addresses.
+
+- **Role:** customer user; authentication matrix above applies.
+
+No request body is required.
+
+**Response 200**
+
+```json
+{"addresses":[{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.090029Z","updatedAt":"2026-11-05T13:07:41.090029Z"},{"id":2,"name":"","city":"Город","address":"  старая строка  ","street":"","apartment":"","entrance":"","isDefault":false,"needsReview":true,"createdAt":"2026-11-05T13:07:41.092927Z","updatedAt":"2026-11-05T13:07:41.092927Z"}]}
+```
+
+**Errors**
+
+| Status | Message / condition |
+|---|---|
+| 401 | Требуется авторизация (including an owner that became merged/unavailable). |
+| 403 | Недостаточно прав. |
+| 503 | Вход временно недоступен. |
+| 500 | Внутренняя ошибка сервера. |
+
+#### POST /customer/addresses
+
+Create or reuse a saved address.
+
+- **Role:** customer user; authentication matrix above applies.
+
+**Request body**
+
+Only name, city, street, apartment and entrance are accepted, each as a non-null string. Unknown fields (including userId, id and isDefault), null/scalar/array documents, multiple documents, non-string fields and bodies larger than 1 MiB return 400 Некорректный JSON. Optional name/apartment/entrance default to empty strings. Unicode boundary whitespace is trimmed; limits count code points. City and street are required. Default changes use the separate route.
+
+| Field | Limits | Exact field error |
+|---|---|---|
+| name | at most 40 | `Не больше 40 символов` |
+| city | required, at most 80 | empty: `Выберите населённый пункт`; too long: `Не больше 80 символов` |
+| street | 3–120 | short: `Укажите улицу и дом`; long: `Слишком длинный адрес` |
+| apartment | at most 20 | `Не больше 20 символов` |
+| entrance | at most 20 | `Не больше 20 символов` |
+
+```json
+{"name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
+```
+
+**Response 201**
+
+```json
+{"entry":{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":true}
+```
+
+**Response 200**
+
+```json
+{"entry":{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":false}
+```
+
+**Errors**
+
+| Status | Message / condition |
+|---|---|
+| 400 | Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field. |
+| 401 | Требуется авторизация (including an owner that became merged/unavailable). |
+| 403 | Недостаточно прав. |
+| 503 | Вход временно недоступен. |
+| 500 | Внутренняя ошибка сервера. |
+
+Duplicates are matched by NFC, collapsed Unicode whitespace and lowercase city/full text; punctuation and apartment/entrance remain significant. Creation returns the lowest matching saved ID with 200 and created=false, preserving name/default/timestamps and legacy review state. No fields are overwritten. A new entry returns 201 and created=true; only the first link in an empty book becomes default.
+
+#### PUT /customer/addresses/{id}
+
+Replace editable saved-address fields.
+
+- **Role:** customer user; authentication matrix above applies.
+- **Parameter:** `id`, positive int64 saved-entry ID belonging to the authenticated user.
+
+**Request body**
+
+Only name, city, street, apartment and entrance are accepted, each as a non-null string. Unknown fields (including userId, id and isDefault), null/scalar/array documents, multiple documents, non-string fields and bodies larger than 1 MiB return 400 Некорректный JSON. Optional name/apartment/entrance default to empty strings. Unicode boundary whitespace is trimmed; limits count code points. City and street are required. Default changes use the separate route.
+
+| Field | Limits | Exact field error |
+|---|---|---|
+| name | at most 40 | `Не больше 40 символов` |
+| city | required, at most 80 | empty: `Выберите населённый пункт`; too long: `Не больше 80 символов` |
+| street | 3–120 | short: `Укажите улицу и дом`; long: `Слишком длинный адрес` |
+| apartment | at most 20 | `Не больше 20 символов` |
+| entrance | at most 20 | `Не больше 20 символов` |
+
+```json
+{"name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
+```
+
+**Response 200**
+
+```json
+{"entry":{"id":1,"name":"","city":"Город","address":"Дом 3","street":"Дом 3","apartment":"","entrance":"","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.181725Z","updatedAt":"2026-11-05T13:07:41.187934Z"}}
+```
+
+**Errors**
+
+| Status | Message / condition |
+|---|---|
+| 400 | Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field. |
+| 401 | Требуется авторизация (including an owner that became merged/unavailable). |
+| 403 | Недостаточно прав. |
+| 404 | Не найдено (invalid, nonpositive, overflow, absent or foreign saved-entry ID). |
+| 409 | Такой адрес уже сохранён; errors.street has the same text. |
+| 503 | Вход временно недоступен. |
+| 500 | Внутренняя ошибка сервера. |
+
+Replaces all editable fields; omitted optional fields become empty strings. Preserves saved ID, creation timestamp and default flag. Explicitly editing a legacy entry clears needsReview. Shared address rows and order snapshots are never rewritten. Collision with another entry returns 409 without changes.
+
+#### PUT /customer/addresses/{id}/default
+
+Select the default saved address.
+
+- **Role:** customer user; authentication matrix above applies.
+- **Parameter:** `id`, positive int64 saved-entry ID belonging to the authenticated user.
+
+No request body is required.
+
+**Response 200**
+
+```json
+{"entry":{"id":3,"name":"","city":"Город","address":"Дом 4","street":"Дом 4","apartment":"","entrance":"","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.190288Z","updatedAt":"2026-11-05T13:07:41.192173Z"}}
+```
+
+**Errors**
+
+| Status | Message / condition |
+|---|---|
+| 401 | Требуется авторизация (including an owner that became merged/unavailable). |
+| 403 | Недостаточно прав. |
+| 404 | Не найдено (invalid, nonpositive, overflow, absent or foreign saved-entry ID). |
+| 503 | Вход временно недоступен. |
+| 500 | Внутренняя ошибка сервера. |
+
+Selection is idempotent and returns the fresh entry. Missing/foreign IDs leave the old default unchanged. Legacy entries may be selected but still require review before checkout autofill.
+
+#### DELETE /customer/addresses/{id}
+
+Delete a saved-address association.
+
+- **Role:** customer user; authentication matrix above applies.
+- **Parameter:** `id`, positive int64 saved-entry ID belonging to the authenticated user.
+
+No request body is required.
+
+**Response 204**
+
+No body.
+
+**Errors**
+
+| Status | Message / condition |
+|---|---|
+| 401 | Требуется авторизация (including an owner that became merged/unavailable). |
+| 403 | Недостаточно прав. |
+| 404 | Не найдено (invalid, nonpositive, overflow, absent or foreign saved-entry ID). |
+| 503 | Вход временно недоступен. |
+| 500 | Внутренняя ошибка сервера. |
+
+Absent/foreign entries return 404. Deleting a default leaves no default; shared addresses, other owners and orders survive.
+
 ### Delivery prices
 
 #### GET /delivery-prices

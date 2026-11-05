@@ -60,6 +60,73 @@ components:
         minimum: 1
         maximum: 500
   responses:
+    BookError400:
+      description: "Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          examples:
+            malformed:
+              value: {statusCode: 400, message: Некорректный JSON}
+            invalid:
+              value: {statusCode: 400, message: Проверьте адрес, errors: {city: Выберите населённый пункт, street: Укажите улицу и дом}}
+    BookError401:
+      description: "Требуется авторизация (including an owner that became merged/unavailable)."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {"statusCode":401,"message":"Требуется авторизация"}
+    BookError403:
+      description: "Недостаточно прав."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {"statusCode":403,"message":"Недостаточно прав"}
+    BookError404:
+      description: "Не найдено (invalid, nonpositive, overflow, absent or foreign saved-entry ID)."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {"statusCode":404,"message":"Не найдено"}
+    BookError409:
+      description: "Такой адрес уже сохранён; errors.street has the same text."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {"statusCode":409,"message":"Такой адрес уже сохранён","errors":{"street":"Такой адрес уже сохранён"}}
+    BookError503:
+      description: "Вход временно недоступен."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {"statusCode":503,"message":"Вход временно недоступен"}
+    BookError500:
+      description: "Внутренняя ошибка сервера."
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: ['private, no-store']}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+          example: {"statusCode":500,"message":"Внутренняя ошибка сервера"}
     CustomerDisabled:
       description: Customer authentication is disabled (`Вход временно недоступен`).
       content:
@@ -247,6 +314,56 @@ components:
             token:
               type: string
               description: JWT. Send it as `Authorization Bearer <token>`.
+    BookFields:
+      type: object
+      additionalProperties: false
+      required: [city, street]
+      description: Only these five non-null string fields are accepted. Unicode boundary whitespace is trimmed; limits count code points. Invalid fields return 400 Проверьте адрес with exact field errors.
+      properties:
+        name: {type: string, maxLength: 40, default: ''}
+        city: {type: string, minLength: 1, maxLength: 80}
+        street: {type: string, minLength: 3, maxLength: 120}
+        apartment: {type: string, maxLength: 20, default: ''}
+        entrance: {type: string, maxLength: 20, default: ''}
+    BookEntry:
+      type: object
+      additionalProperties: false
+      required: [id, name, city, address, street, apartment, entrance, isDefault, needsReview, createdAt, updatedAt]
+      description: Saved association ID; internal shared address/user IDs are never exposed. Legacy entries preserve address verbatim, street is empty and needsReview is true. A default legacy entry still requires review before checkout autofill.
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        name: {type: string}
+        city: {type: string}
+        address: {type: string}
+        street: {type: string}
+        apartment: {type: string}
+        entrance: {type: string}
+        isDefault: {type: boolean}
+        needsReview: {type: boolean}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    BookEntryResponse:
+      type: object
+      additionalProperties: false
+      required: [entry]
+      properties:
+        entry: {$ref: '#/components/schemas/BookEntry'}
+    BookCreate:
+      type: object
+      additionalProperties: false
+      required: [entry, created]
+      properties:
+        entry: {$ref: '#/components/schemas/BookEntry'}
+        created: {type: boolean}
+    BookList:
+      type: object
+      additionalProperties: false
+      required: [addresses]
+      properties:
+        addresses:
+          type: array
+          description: Ordered by ascending saved ID; empty is [].
+          items: {$ref: '#/components/schemas/BookEntry'}
     Address:
       type: object
       required: [id, city, address, createdAt, updatedAt]
@@ -1303,6 +1420,169 @@ components:
               description: Empty, or `X% Y%` with X and Y from 0 to 100.
               example: 50% 30%
 paths:
+  /customer/addresses:
+    get:
+      summary: List saved addresses
+      description: "All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring."
+      tags: [addresses]
+      security:
+        - customerSession: []
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Success.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: ['private, no-store']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BookList'}
+              example: {"addresses":[{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.090029Z","updatedAt":"2026-11-05T13:07:41.090029Z"},{"id":2,"name":"","city":"Город","address":"  старая строка  ","street":"","apartment":"","entrance":"","isDefault":false,"needsReview":true,"createdAt":"2026-11-05T13:07:41.092927Z","updatedAt":"2026-11-05T13:07:41.092927Z"}]}
+        '401':
+          $ref: '#/components/responses/BookError401'
+        '403':
+          $ref: '#/components/responses/BookError403'
+        '503':
+          $ref: '#/components/responses/BookError503'
+        '500':
+          $ref: '#/components/responses/BookError500'
+    post:
+      summary: Create or reuse a saved address
+      description: "All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Normalized duplicate creation returns the existing entry unchanged, including legacy metadata, with created=false. Only the first new link is default. Strict object JSON only, max 1 MiB; unknown/non-string/null fields and extra documents are malformed. Field errors exactly: name >40 Не больше 40 символов; empty city Выберите населённый пункт; city >80 Не больше 80 символов; street <3 Укажите улицу и дом; street >120 Слишком длинный адрес; apartment/entrance >20 Не больше 20 символов."
+      tags: [addresses]
+      security:
+        - customerSession: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BookFields'}
+            example: {"name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
+      responses:
+        '201':
+          description: New saved entry.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: ['private, no-store']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BookCreate'}
+              example: {"entry":{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":true}
+        '200':
+          description: Success.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: ['private, no-store']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BookCreate'}
+              example: {"entry":{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":false}
+        '400':
+          $ref: '#/components/responses/BookError400'
+        '401':
+          $ref: '#/components/responses/BookError401'
+        '403':
+          $ref: '#/components/responses/BookError403'
+        '503':
+          $ref: '#/components/responses/BookError503'
+        '500':
+          $ref: '#/components/responses/BookError500'
+  /customer/addresses/{id}:
+    put:
+      summary: Replace editable saved-address fields
+      description: "All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Replace all editable fields, preserving saved ID, createdAt and default. Collision changes nothing. Editing legacy data clears needsReview. Strict object JSON only, max 1 MiB; unknown/non-string/null fields and extra documents are malformed. Field errors exactly: name >40 Не больше 40 символов; empty city Выберите населённый пункт; city >80 Не больше 80 символов; street <3 Укажите улицу и дом; street >120 Слишком длинный адрес; apartment/entrance >20 Не больше 20 символов."
+      tags: [addresses]
+      security:
+        - customerSession: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BookFields'}
+            example: {"name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
+      responses:
+        '200':
+          description: Success.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: ['private, no-store']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BookEntryResponse'}
+              example: {"entry":{"id":1,"name":"","city":"Город","address":"Дом 3","street":"Дом 3","apartment":"","entrance":"","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.181725Z","updatedAt":"2026-11-05T13:07:41.187934Z"}}
+        '400':
+          $ref: '#/components/responses/BookError400'
+        '401':
+          $ref: '#/components/responses/BookError401'
+        '403':
+          $ref: '#/components/responses/BookError403'
+        '404':
+          $ref: '#/components/responses/BookError404'
+        '409':
+          $ref: '#/components/responses/BookError409'
+        '503':
+          $ref: '#/components/responses/BookError503'
+        '500':
+          $ref: '#/components/responses/BookError500'
+    delete:
+      summary: Delete a saved-address association
+      description: "All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Missing/foreign entry is 404. Deleting the default selects no replacement. Shared rows and order snapshots survive."
+      tags: [addresses]
+      security:
+        - customerSession: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '204':
+          description: Success; no body.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: ['private, no-store']}
+        '401':
+          $ref: '#/components/responses/BookError401'
+        '403':
+          $ref: '#/components/responses/BookError403'
+        '404':
+          $ref: '#/components/responses/BookError404'
+        '503':
+          $ref: '#/components/responses/BookError503'
+        '500':
+          $ref: '#/components/responses/BookError500'
+  /customer/addresses/{id}/default:
+    put:
+      summary: Select the default saved address
+      description: "All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Idempotent selection; missing/foreign entries do not clear the old default. No request body required."
+      tags: [addresses]
+      security:
+        - customerSession: []
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Success.
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: ['private, no-store']}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BookEntryResponse'}
+              example: {"entry":{"id":3,"name":"","city":"Город","address":"Дом 4","street":"Дом 4","apartment":"","entrance":"","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.190288Z","updatedAt":"2026-11-05T13:07:41.192173Z"}}
+        '401':
+          $ref: '#/components/responses/BookError401'
+        '403':
+          $ref: '#/components/responses/BookError403'
+        '404':
+          $ref: '#/components/responses/BookError404'
+        '503':
+          $ref: '#/components/responses/BookError503'
+        '500':
+          $ref: '#/components/responses/BookError500'
   /homepage-menu:
     get:
       summary: Read homepage menu selections
