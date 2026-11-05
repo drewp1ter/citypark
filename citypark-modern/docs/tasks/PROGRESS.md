@@ -165,3 +165,8 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
   - Added shared payment retry on website and Mini App history/details, authoritative backend eligibility, isolated surface sessions, signed history origin and cart-preserving payment returns.
   - Check (typecheck/ESLint/Steiger), fresh production build, isolated action/crypto/status/return-routing harness, production payment-retry flow (390/1440 px, light/dark) and applicable Telegram payment regressions pass against the available backend. No backend writes performed.
   - Owner explicitly accepted the remaining manual checks and requested completion/commit (2026-11-05). Authenticated retry/returns with existing owned orders, stale backend rejection, provider success/failure, and native Telegram/external-browser checks are handed off to the owner; they are not claimed as automated passes. QA setup is documented in scripts/qa/flows/payment-retry.mjs.
+
+## My addresses
+
+- [x] [55 Saved-address model and guest storage](55-guest-address-store.md) [website54; backend97]
+  - Versioned guest storage, backend-aligned Unicode validation, duplicate/default rules, revision-aware import cleanup and shared checkout formatting complete. Address-store harness, check and production build pass (2026-11-05). Owner approved a temporary address-only `fsd/insignificant-slice` exception; remove once later tasks add independent consumers. Existing dynamic-rendering build diagnostics remain; no backend writes.

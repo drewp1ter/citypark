@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { formatAddress } from '@/entities/address'
 import { getDeliveryTowns, getMenu, priceLines } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { phoneDigits } from '@/shared/lib'
@@ -105,8 +106,7 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 	}
 	if (when === 'scheduled') body.deliveryTime = time
 	if (order.data.method === 'delivery') {
-		const address = [street, apartment && `кв. ${apartment}`, entrance && `подъезд ${entrance}`].filter(Boolean)
-		body.address = { city, address: address.join(', ') }
+		body.address = { city, address: formatAddress({ name: '', city, street, apartment, entrance }) }
 	}
 
 	let redirectUrl: string
