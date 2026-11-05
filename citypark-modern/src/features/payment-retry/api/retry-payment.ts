@@ -1,7 +1,7 @@
 'use server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { customerRequest, CustomerApiError, getCustomerSessionToken, getMiniSessionToken, setPendingPaymentContext } from '@/shared/customer'
+import { customerRequest, CustomerApiError, getCustomerSessionToken, getMiniSessionToken, setPendingPaymentContext, transactionIdFromRedirect } from '@/shared/customer'
 import type { RetryState } from '../model/types'
 
 const fallback = 'Не удалось перейти к оплате. Попробуйте ещё раз.'
@@ -22,7 +22,9 @@ export async function retryPayment(orderId: number, surface: 'web' | 'mini', _pr
   if (result.orderId !== orderId || typeof result.redirectUrl !== 'string' || !result.redirectUrl.trim()) return { error: fallback }
   const url = new URL(result.redirectUrl)
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return { error: fallback }
-  await setPendingPaymentContext(orderId, surface, 'history')
+  const transactionId = transactionIdFromRedirect(result.redirectUrl)
+  if (transactionId) await setPendingPaymentContext(orderId, transactionId, surface, 'history')
+  else console.error('payment redirect without a valid MNT_TRANSACTION_ID')
   target = result.redirectUrl
  } catch (error) {
   if (error instanceof CustomerApiError) {

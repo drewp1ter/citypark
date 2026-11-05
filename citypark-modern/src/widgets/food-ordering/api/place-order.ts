@@ -7,7 +7,7 @@ import { CustomerApiError } from '@/shared/customer'
 import { getDeliveryTowns, getMenu, priceLines } from '@/entities/dish'
 import { getWorkingHours } from '@/shared/api'
 import { phoneDigits } from '@/shared/lib'
-import { setPendingPaymentContext } from '@/shared/customer'
+import { setPendingPaymentContext, transactionIdFromRedirect } from '@/shared/customer'
 import {
 	conditionalErrors,
 	linesSchema,
@@ -165,7 +165,9 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 			}
 		}
 		redirectUrl = result.redirectUrl
-		await setPendingPaymentContext(result.orderId, surface)
+		const transactionId = transactionIdFromRedirect(redirectUrl)
+		if (transactionId) await setPendingPaymentContext(result.orderId, transactionId, surface)
+		else console.error('payment redirect without a valid MNT_TRANSACTION_ID')
 	} catch (error) {
 		console.error(error)
 		errors.form = 'Не удалось отправить заказ. Попробуйте ещё раз через минуту.'

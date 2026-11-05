@@ -20,7 +20,7 @@ export async function CheckoutPage({
 		const context = await getPendingPaymentContext(returnedOrderId)
 		if (context?.origin === 'history')
 			redirect(`/${context.surface === 'mini' ? 'mini' : 'account'}/orders/${context.orderId}?payment=failed`)
-		if (context?.surface === 'mini') redirect(`/mini/checkout?payment=failed&MNT_TRANSACTION_ID=${context.orderId}`)
+		if (context?.surface === 'mini') redirect(`/mini/checkout?payment=failed&MNT_TRANSACTION_ID=${context.transactionId}`)
 	}
 	// Rendered per request: a build must not need the backend, and a backend failure must reach error.tsx.
 	await connection()

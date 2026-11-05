@@ -13,7 +13,16 @@ type GoogleAttempt = { key: string; token: string; intent: 'login' | 'link'; exp
 export const guestCookieName = 'citypark_guest_checkout_scope'
 const paymentName = '__Host-citypark_payment'
 const paymentDevName = 'citypark_payment_dev'
-export type PaymentContext = { orderId: number; surface: 'web' | 'mini'; issuedAt: number; origin?: 'checkout' | 'history' }
+export type PaymentContext = { orderId: number; transactionId: string; surface: 'web' | 'mini'; issuedAt: number; origin?: 'checkout' | 'history' }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+export function transactionIdFromRedirect(redirectUrl: string): string | undefined {
+ try {
+  const id = new URL(redirectUrl).searchParams.get('MNT_TRANSACTION_ID')?.toLowerCase()
+  return id && UUID_RE.test(id) ? id : undefined
+ } catch { return undefined }
+}
 
 function paymentCookieName() { return customerCookieName() === productionName ? paymentName : paymentDevName }
 
@@ -21,12 +30,13 @@ async function paymentKey(surface: 'web' | 'mini') {
  return surface === 'mini' ? getMiniSessionToken() : (await getCustomerSessionToken()) ?? getGuestCheckoutCookie()
 }
 
-export async function setPendingPaymentContext(orderId: number, surface: 'web' | 'mini', origin: 'checkout' | 'history' = 'checkout'): Promise<void> {
+export async function setPendingPaymentContext(orderId: number, transactionId: string, surface: 'web' | 'mini', origin: 'checkout' | 'history' = 'checkout'): Promise<void> {
  if (!Number.isSafeInteger(orderId) || orderId < 1) throw new Error('Invalid order id')
+ if (!UUID_RE.test(transactionId)) throw new Error('Invalid transaction id')
  if (origin !== 'checkout' && origin !== 'history') throw new Error('Invalid payment origin')
  const key = await paymentKey(surface)
  if (!key) throw new Error('Missing payment session')
- const context: PaymentContext = { orderId, surface, issuedAt: Date.now(), origin }
+ const context: PaymentContext = { orderId, transactionId, surface, issuedAt: Date.now(), origin }
  const payload = Buffer.from(JSON.stringify(context)).toString('base64url')
  const signature = createHmac('sha256', key).update(payload).digest('base64url')
  const name = paymentCookieName()
@@ -34,7 +44,7 @@ export async function setPendingPaymentContext(orderId: number, surface: 'web' |
 }
 
 export async function getPendingPaymentContext(returnedId?: string): Promise<PaymentContext | undefined> {
- if (!returnedId || !/^[1-9]\d*$/.test(returnedId) || !Number.isSafeInteger(Number(returnedId))) return undefined
+ if (!returnedId || !UUID_RE.test(returnedId.toLowerCase())) return undefined
  const raw = (await cookies()).get(paymentCookieName())?.value
  if (!raw) return undefined
  const [payload, signature, extra] = raw.split('.')
@@ -43,7 +53,7 @@ export async function getPendingPaymentContext(returnedId?: string): Promise<Pay
  try { value = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) } catch { return undefined }
  if (!value || typeof value !== 'object') return undefined
  const context = value as PaymentContext
- if ((context.surface !== 'web' && context.surface !== 'mini') || context.orderId !== Number(returnedId) || !Number.isSafeInteger(context.orderId) || typeof context.issuedAt !== 'number' || context.issuedAt > Date.now() || Date.now() - context.issuedAt > 86400_000) return undefined
+ if ((context.surface !== 'web' && context.surface !== 'mini') || typeof context.transactionId !== 'string' || context.transactionId !== returnedId.toLowerCase() || !Number.isSafeInteger(context.orderId) || typeof context.issuedAt !== 'number' || context.issuedAt > Date.now() || Date.now() - context.issuedAt > 86400_000) return undefined
  if (context.origin !== undefined && context.origin !== 'checkout' && context.origin !== 'history') return undefined
  const key = await paymentKey(context.surface)
  if (!key) return undefined

@@ -9,26 +9,33 @@ const require = createRequire(import.meta.url)
 function load(file, modules) {
  const source = ts.transpileModule(readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText
  const exports = {}
- vm.runInNewContext(source, { exports, require: name => { if (name in modules) return modules[name]; if (name === 'react/jsx-runtime') return require(name); throw Error(name) }, Buffer, Date, process: { env: { NODE_ENV: 'production' } }, URL, queueMicrotask })
+ vm.runInNewContext(source, { exports, require: name => { if (name in modules) return modules[name]; if (name === 'react/jsx-runtime') return require(name); throw Error(name) }, Buffer, Date, process: { env: { NODE_ENV: 'production' } }, URL, console, queueMicrotask })
  return exports
 }
+const jar = new Map()
+const session = load('src/shared/customer/customer-session.ts', {
+ 'server-only': {}, 'node:crypto': crypto, '@/shared/config': { serverEnv: () => ({ CUSTOMER_PUBLIC_ORIGIN: 'https://example.com' }) },
+ 'next/headers': { cookies: async () => ({ get: name => jar.has(name) ? { value: jar.get(name) } : undefined, set: (name, value) => jar.set(name, value) }) }
+})
+const transactionId = '12345678-abcd-abcd-abcd-123456789abc'
+const paymentUrl = `https://demo.moneta.ru/assistant.htm?MNT_TRANSACTION_ID=${transactionId}`
 const fallback = 'Не удалось перейти к оплате. Попробуйте ещё раз.'
 class ApiError extends Error { constructor(status, message) { super(message); this.status = status } }
 const redirect = path => { throw Object.assign(Error('redirect'), { path }) }
 let web = 'web-token', mini = 'mini-token', calls, result, failure, signed, refreshed
 const action = load('src/features/payment-retry/api/retry-payment.ts', {
  'next/navigation': { redirect }, 'next/cache': { revalidatePath: path => refreshed.push(path) },
- '@/shared/customer': { CustomerApiError: ApiError, getCustomerSessionToken: async () => web, getMiniSessionToken: async () => mini,
+ '@/shared/customer': { CustomerApiError: ApiError, transactionIdFromRedirect: session.transactionIdFromRedirect, getCustomerSessionToken: async () => web, getMiniSessionToken: async () => mini,
  customerRequest: async (path, init) => { calls.push({ path, init }); if (failure) throw failure; return result },
  setPendingPaymentContext: async (...args) => { signed = args } }
 }).retryPayment
-function reset() { calls = []; signed = null; refreshed = []; failure = null; result = { orderId: 7, redirectUrl: 'https://demo.moneta.ru/assistant.htm' }; web = 'web-token'; mini = 'mini-token' }
+function reset() { calls = []; signed = null; refreshed = []; failure = null; result = { orderId: 7, redirectUrl: paymentUrl }; web = 'web-token'; mini = 'mini-token' }
 for (const surface of ['web', 'mini']) {
  reset()
  await assert.rejects(action(7, surface, {}, new FormData()), e => e.path === result.redirectUrl)
  assert.equal(calls[0].path, '/orders/7/payment-retry'); assert.equal(calls[0].init.method, 'POST'); assert.equal(calls[0].init.body, undefined)
  assert.equal(calls[0].init.headers.Authorization, `Bearer ${surface}-token`)
- assert.equal(JSON.stringify(signed), JSON.stringify([7, surface, 'history']))
+ assert.equal(JSON.stringify(signed), JSON.stringify([7, transactionId, surface, 'history']))
  for (const status of [401, 404, 409, 500, 503]) {
   reset(); failure = new ApiError(status, 'denied')
   if (status === 401) await assert.rejects(action(7, surface, {}, new FormData()), e => e.path === (surface === 'mini' ? '/mini' : '/account/sign-in?returnTo=%2Faccount%2Forders%2F7'))
@@ -44,22 +51,17 @@ for (const malformed of [{}, { orderId: 8, redirectUrl: 'https://demo.moneta.ru'
 reset(); failure = Error('network'); assert.equal((await action(7, 'web', {}, new FormData())).error, fallback)
 console.log('PASS: action surface isolation, saved ID/no amount, success redirects, auth/denials, refresh, malformed/network failures')
 
-const jar = new Map()
-const session = load('src/shared/customer/customer-session.ts', {
- 'server-only': {}, 'node:crypto': crypto, '@/shared/config': { serverEnv: () => ({ CUSTOMER_PUBLIC_ORIGIN: 'https://example.com' }) },
- 'next/headers': { cookies: async () => ({ get: name => jar.has(name) ? { value: jar.get(name) } : undefined, set: (name, value) => jar.set(name, value) }) }
-})
 jar.set('__Host-citypark_customer', 'web-token'); jar.set('__Host-citypark_mini', 'mini-token')
 function cookie(context, key = 'web-token') { const payload = Buffer.from(JSON.stringify(context)).toString('base64url'); jar.set('__Host-citypark_payment', `${payload}.${crypto.createHmac('sha256', key).update(payload).digest('base64url')}`) }
 for (const surface of ['web', 'mini']) for (const origin of ['checkout', 'history']) {
- await session.setPendingPaymentContext(7, surface, origin)
- assert.equal((await session.getPendingPaymentContext('7')).origin, origin)
- assert.equal(await session.getPendingPaymentContext('8'), undefined)
- const raw = jar.get('__Host-citypark_payment'); jar.set('__Host-citypark_payment', raw + 'x'); assert.equal(await session.getPendingPaymentContext('7'), undefined)
+ await session.setPendingPaymentContext(7, transactionId, surface, origin)
+ assert.equal((await session.getPendingPaymentContext(transactionId)).origin, origin)
+ assert.equal(await session.getPendingPaymentContext('00000000-0000-0000-0000-000000000000'), undefined)
+ const raw = jar.get('__Host-citypark_payment'); jar.set('__Host-citypark_payment', raw + 'x'); assert.equal(await session.getPendingPaymentContext(transactionId), undefined)
 }
-cookie({ orderId: 7, surface: 'web', issuedAt: Date.now() }); assert.equal((await session.getPendingPaymentContext('7')).origin, 'checkout')
-for (const patch of [{ origin: 'evil' }, { issuedAt: Date.now() - 86400_001 }, { issuedAt: Date.now() + 60000 }, { surface: 'guest' }]) { cookie({ orderId: 7, surface: 'web', issuedAt: Date.now(), ...patch }); assert.equal(await session.getPendingPaymentContext('7'), undefined) }
-cookie({ orderId: 7, surface: 'web', issuedAt: Date.now(), origin: 'history' }, 'other-session'); assert.equal(await session.getPendingPaymentContext('7'), undefined)
+cookie({ orderId: 7, transactionId, surface: 'web', issuedAt: Date.now() }); assert.equal((await session.getPendingPaymentContext(transactionId)).origin, 'checkout')
+for (const patch of [{ origin: 'evil' }, { issuedAt: Date.now() - 86400_001 }, { issuedAt: Date.now() + 60000 }, { surface: 'guest' }]) { cookie({ orderId: 7, transactionId, surface: 'web', issuedAt: Date.now(), ...patch }); assert.equal(await session.getPendingPaymentContext(transactionId), undefined) }
+cookie({ orderId: 7, transactionId, surface: 'web', issuedAt: Date.now(), origin: 'history' }, 'other-session'); assert.equal(await session.getPendingPaymentContext(transactionId), undefined)
 console.log('PASS: signed origins, old cookies, tampering, expiry, transaction and session binding')
 
 const { renderToStaticMarkup } = require('react-dom/server')
@@ -81,16 +83,47 @@ for (const status of ['paid', 'confirmed', 'pending', 'canceled']) for (const pa
 }
 console.log('PASS: both surfaces eligibility/status matrix, unknown metadata, confirmed payment beats failure query')
 for (const [file, name, props, failed] of [
- ['src/pages/checkout/ui/checkout-done-page.tsx', 'CheckoutDonePage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: '7' }) }, false],
- ['src/pages/checkout/ui/checkout-page.tsx', 'CheckoutPage', { paymentFailed: true, returnedOrderId: '7' }, true],
- ['src/pages/mini/ui/mini-payment-return-page.tsx', 'MiniPaymentReturnPage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: '7' }) }, false],
- ['src/pages/mini/ui/mini-payment-return-page.tsx', 'MiniPaymentReturnPage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: '7' }), failed: true }, true]
+ ['src/pages/checkout/ui/checkout-done-page.tsx', 'CheckoutDonePage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: transactionId }) }, false],
+ ['src/pages/checkout/ui/checkout-page.tsx', 'CheckoutPage', { paymentFailed: true, returnedOrderId: transactionId }, true],
+ ['src/pages/mini/ui/mini-payment-return-page.tsx', 'MiniPaymentReturnPage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: transactionId }) }, false],
+ ['src/pages/mini/ui/mini-payment-return-page.tsx', 'MiniPaymentReturnPage', { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: transactionId }), failed: true }, true]
 ]) for (const surface of ['web', 'mini']) {
  const modules = {
- '@/entities/address/index.server': {}, 'next/navigation': { redirect }, 'next/server': {}, '@/shared/customer': { getPendingPaymentContext: async () => ({ orderId: 7, surface, origin: 'history' }) },
+ '@/entities/address/index.server': {}, 'next/navigation': { redirect }, 'next/server': {}, '@/shared/customer': { getPendingPaymentContext: async () => ({ orderId: 7, transactionId, surface, origin: 'history' }) },
  '@/entities/order': { getMyOrder: () => { throw Error('Must route history before checkout effects') } }, '@/shared/ui': {}, '@/shared/api': {}, '@/shared/lib': {}, '@/shared/config': {}, '@/entities/dish': {}, '@/widgets/food-ordering': {},
  './checkout-header': {}, './clear-cart': {}, './title-row': {}, './mini-clear-cart': {}, './pending-payment-refresh': {}
  }
  await assert.rejects(load(file, modules)[name](props), e => e.path === `/${surface === 'mini' ? 'mini' : 'account'}/orders/7?payment=${failed ? 'failed' : 'returned'}`)
 }
 console.log('PASS: both surfaces route signed history success/failure before checkout reads/cart effects')
+
+for (const surface of ['web', 'mini']) {
+ for (const id of [undefined, '7', 'invalid']) {
+  reset(); result.redirectUrl = `https://demo.moneta.ru/assistant.htm${id ? '?MNT_TRANSACTION_ID=' + id : ''}`
+  await assert.rejects(action(7, surface, {}, new FormData()), e => e.path === result.redirectUrl)
+  assert.equal(signed, null)
+ }
+}
+for (const id of [transactionId, transactionId.toUpperCase()]) {
+ assert.equal(session.transactionIdFromRedirect(`https://demo.moneta.ru/?MNT_TRANSACTION_ID=${id}`), transactionId)
+ await session.setPendingPaymentContext(7, transactionId, 'web')
+ assert.equal((await session.getPendingPaymentContext(id)).transactionId, transactionId)
+}
+for (const url of ['not a url', 'https://demo.moneta.ru/', 'https://demo.moneta.ru/?MNT_TRANSACTION_ID=7']) assert.equal(session.transactionIdFromRedirect(url), undefined)
+assert.equal(await session.getPendingPaymentContext('7'), undefined)
+cookie({ orderId: 7, surface: 'web', issuedAt: Date.now() })
+assert.equal(await session.getPendingPaymentContext(transactionId), undefined)
+await assert.rejects(session.setPendingPaymentContext(7, 'not-a-uuid', 'web'), /Invalid transaction id/)
+for (const failed of [false, true]) {
+ const file = `src/pages/checkout/ui/checkout${failed ? '' : '-done'}-page.tsx`
+ const name = failed ? 'CheckoutPage' : 'CheckoutDonePage'
+ const props = failed ? { paymentFailed: true, returnedOrderId: transactionId } : { searchParams: Promise.resolve({ MNT_TRANSACTION_ID: transactionId }) }
+ const modules = {
+  '@/entities/address/index.server': {}, 'next/navigation': { redirect }, 'next/server': {},
+  '@/shared/customer': { getPendingPaymentContext: async id => { assert.equal(id, transactionId); return { orderId: 7, transactionId, surface: 'mini', origin: 'checkout' } } },
+  '@/entities/order': {}, '@/shared/ui': {}, '@/shared/api': {}, '@/shared/lib': {}, '@/shared/config': {}, '@/entities/dish': {}, '@/widgets/food-ordering': {},
+  './checkout-header': {}, './clear-cart': {}, './title-row': {}
+ }
+ await assert.rejects(load(file, modules)[name](props), e => e.path === `/mini/checkout${failed ? '?payment=failed&' : '/done?'}MNT_TRANSACTION_ID=${transactionId}`)
+}
+console.log('PASS: UUID parsing/matching, legacy rejection, missing-ID payment handoff, and Mini checkout success/failure forwarding')

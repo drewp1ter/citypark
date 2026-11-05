@@ -198,7 +198,8 @@ class CustomerApiError extends Error {
 }
 const libs = { isValidRuPhone: () => true, hoursError: () => 'Hours', phoneDigits: (value) => value.replace(/\D/g, '') }
 const orderSchema = load('src/widgets/food-ordering/model/schema.ts', { '@/shared/lib': libs })
-let context, calls, saveFailure, orderFailure
+const transactionId = '12345678-abcd-abcd-abcd-123456789abc'
+let context, calls, saveFailure, orderFailure, missingTransactionId
 const action = load('src/widgets/food-ordering/api/place-order.ts', {
 	'next/navigation': {
 		redirect: (path) => {
@@ -226,6 +227,7 @@ const action = load('src/widgets/food-ordering/api/place-order.ts', {
 	'@/shared/lib': libs,
 	'@/shared/customer': {
 		CustomerApiError,
+		transactionIdFromRedirect: (url) => new URL(url).searchParams.get('MNT_TRANSACTION_ID'),
 		setPendingPaymentContext: async (...args) => calls.push(['payment', ...args]),
 	},
 	'../model/schema': orderSchema,
@@ -234,7 +236,7 @@ const action = load('src/widgets/food-ordering/api/place-order.ts', {
 			calls.push(['order', ...args])
 			return orderFailure
 				? { ok: false, message: 'Order failed' }
-				: { ok: true, orderId: 8, redirectUrl: 'https://demo.moneta.ru/assistant.htm' }
+				: { ok: true, orderId: 8, redirectUrl: `https://demo.moneta.ru/assistant.htm${missingTransactionId ? '' : '?MNT_TRANSACTION_ID=' + transactionId}` }
 		},
 	},
 })
@@ -267,6 +269,7 @@ for (const surface of ['web', 'mini']) {
 		calls = []
 		saveFailure = null
 		orderFailure = false
+		missingTransactionId = false
 	}
 	reset()
 	await assert.rejects(submit({}, form()), (e) => e.path?.startsWith('https://demo.moneta.ru'))
@@ -274,6 +277,11 @@ for (const surface of ['web', 'mini']) {
 	assert.equal(calls[1][1], surface)
 	assert.equal(calls[1][2], 7)
 	assert.equal(calls[2][2], surface)
+	assert.deepEqual(calls[3], ['payment', 8, transactionId, surface])
+	reset()
+	missingTransactionId = true
+	await assert.rejects(submit({}, form()), (e) => e.path === 'https://demo.moneta.ru/assistant.htm')
+	assert.equal(calls.some((c) => c[0] === 'payment'), false)
 	for (const changed of [
 		{ kind: 'auth-required', surface },
 		{ kind: 'account', surface, accountId: 8 },
