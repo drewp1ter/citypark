@@ -1,3 +1,4 @@
+import { ImportAddresses } from '@/features/import-addresses'
 import { loadAddressBook } from '@/entities/address/index.server'
 import { getDeliveryTowns } from '@/entities/dish'
 import { AddressManager } from '@/features/manage-addresses'
@@ -12,6 +13,13 @@ export async function AddressesPage() {
 				В меню
 			</Button>
 			<AddressManager
+				importSlot={
+					<ImportAddresses
+						manual
+						surface='web'
+						initialAccountId={book.context.kind === 'account' ? book.context.accountId : null}
+					/>
+				}
 				context={book.context}
 				initialEntries={book.entries}
 				loadError={book.error}

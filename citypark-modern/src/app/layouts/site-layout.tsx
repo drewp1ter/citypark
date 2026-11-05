@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
+import { AddressImportBridge } from '../addresses/address-import-bridge'
 import { MobileQuickActions } from '@/widgets/mobile-quick-actions'
 import { SiteFooter } from '@/widgets/site-footer'
 import { SiteHeader } from '@/widgets/site-header'
@@ -16,6 +17,9 @@ type SiteLayoutProps = {
 export function SiteLayout({ children, quickActions = true }: SiteLayoutProps) {
 	return (
 		<div className='flex min-h-dvh flex-col'>
+			<Suspense fallback={null}>
+				<AddressImportBridge surface='web' />
+			</Suspense>
 			<SiteHeader />
 			<div id='content' tabIndex={-1} className='flex-1 outline-none'>
 				{children}

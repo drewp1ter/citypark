@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
+import { AddressImportBridge } from '../addresses/address-import-bridge'
 import { getSiteSettings, getWorkingHours } from '@/shared/api'
 import { site } from '@/shared/config'
 import { formatHours } from '@/shared/lib'
@@ -9,6 +10,9 @@ export async function CheckoutLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<div className='flex min-h-dvh flex-col'>
+			<Suspense fallback={null}>
+				<AddressImportBridge surface='web' />
+			</Suspense>
 			<div id='content' tabIndex={-1} className='flex-1 outline-none'>
 				{children}
 			</div>

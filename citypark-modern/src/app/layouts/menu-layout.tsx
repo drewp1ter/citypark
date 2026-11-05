@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
+import { AddressImportBridge } from '../addresses/address-import-bridge'
 import { getMenu } from '@/entities/dish'
 import { CartBar } from '@/widgets/cart-summary'
 import { SiteFooter } from '@/widgets/site-footer'
@@ -17,6 +18,9 @@ export async function MenuLayout({ children }: { children: ReactNode }) {
 
 	return (
 		<div className='flex min-h-dvh flex-col'>
+			<Suspense fallback={null}>
+				<AddressImportBridge surface='web' />
+			</Suspense>
 			<SiteHeader cartDishes={dishes} />
 			<div id='content' tabIndex={-1} className='flex-1 outline-none'>
 				{children}

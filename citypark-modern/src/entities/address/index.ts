@@ -12,6 +12,7 @@ export { addressFieldsSchema } from './model/schema'
 export { formatAddress, addressDuplicateKey } from './model/format'
 export { useGuestAddresses } from './model/use-guest-addresses'
 export {
+	getGuestSnapshot,
 	saveGuestAddress,
 	deleteGuestAddress,
 	setGuestDefault,

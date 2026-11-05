@@ -1,3 +1,4 @@
+import { ImportAddresses } from '@/features/import-addresses'
 import { redirect } from 'next/navigation'
 import { loadAddressBook } from '@/entities/address/index.server'
 import { getDeliveryTowns } from '@/entities/dish'
@@ -14,6 +15,13 @@ export async function MiniAddressesPage() {
 				Аккаунт
 			</Button>
 			<AddressManager
+				importSlot={
+					<ImportAddresses
+						manual
+						surface='mini'
+						initialAccountId={book.context.kind === 'account' ? book.context.accountId : null}
+					/>
+				}
 				context={book.context}
 				initialEntries={book.entries}
 				loadError={book.error}
