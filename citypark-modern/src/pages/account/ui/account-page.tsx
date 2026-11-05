@@ -26,6 +26,6 @@ export async function AccountPage({ searchParams }: { searchParams: Promise<{ li
   <ProfileForm profile={profile} />
   <MethodsPanel methods={methods.methods} email={profile.email} />
   {!methods.methods.some(method => method.provider === 'telegram') && <PairingPanel />}
-  <div className='flex flex-wrap gap-3'><Button href='/account/orders'>История заказов</Button><form action={logoutAction}><Button type='submit' variant='outline'>Выйти</Button></form></div>
+  <div className='flex flex-wrap gap-3'><Button href='/account/addresses'>Мои адреса</Button><Button href='/account/orders'>История заказов</Button><form action={logoutAction}><Button type='submit' variant='outline'>Выйти</Button></form></div>
  </div></main>
 }

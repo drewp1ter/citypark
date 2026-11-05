@@ -53,6 +53,8 @@ export function MobileMenu() {
 				</nav>
 					<AppLink href='/account' className='mx-6 flex min-h-11 items-center font-semibold'>Личный кабинет</AppLink>
 
+				<AppLink href='/account/addresses' className='mx-6 flex min-h-11 items-center font-semibold'>Мои адреса</AppLink>
+
 				<div className='mt-auto flex flex-col gap-4 px-6 pt-8 pb-6'>
 					<ul className='flex flex-col'>
 						{[phones.restaurant, phones.hotel, phones.free].map((phone) => (

@@ -1,5 +1,7 @@
 # Progress
 
+Planned feature: [My addresses](../../../citypark-go/docs/tasks/MY_ADDRESSES.md). Tasks through 56 are complete; follow the remaining task queue. Follow the unchecked queue below.
+
 ## Homepage menu
 - [x] [51 Homepage category switching and curated dishes](51-homepage-menu.md) [website50; backend92]
   - Check/build, pure resolver checks, the real-backend homepage-menu flow and existing menu/cart regression pass. Browser QA covers saved/manual/default selections at 390/1440px in both themes, exact dish order, switching without navigation or scroll changes, keyboard/focus, cart persistence and no page overflow/errors. Original homepage configuration restored; no orders or payments.
@@ -168,7 +170,15 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 ## My addresses
 
+Implementation plan: [My addresses](../../../citypark-go/docs/tasks/MY_ADDRESSES.md). Backend task 97 must pass before website 55; all backend tasks through 98 must pass before management integration in 56.
+
 - [x] [55 Saved-address model and guest storage](55-guest-address-store.md) [website54; backend97]
   - Versioned guest storage, backend-aligned Unicode validation, duplicate/default rules, revision-aware import cleanup and shared checkout formatting complete. Address-store harness, check and production build pass (2026-11-05). Owner approved a temporary address-only `fsd/insignificant-slice` exception; remove once later tasks add independent consumers. Existing dynamic-rendering build diagnostics remain; no backend writes.
 - [x] [55b Address API adapters and reusable fields](55b-address-api-and-fields.md) [website55; backend97]
   - Explicit web/Mini App server adapters, ownership guards, validated envelopes and safe errors complete. Shared controlled fields retain old towns and distinguish manual edits from selection; checkout uses the extracted suggestion control. Address API/guest-store harnesses, check, production build, keyboard suggestion checks at 390/1440 px and production geolocation flow pass (2026-11-05). Corrected the geolocation QA selector to ignore empty native options. No live backend mutations; authenticated Mini App/device geolocation remains pending supplied access.
+- [x] [56 My addresses management screens](56-my-addresses-management.md) [website55b; backend98]
+  - Shared guest/account address management, web/Mini App routes and navigation complete; removed the temporary address-only Steiger exception. Isolated management/API/guest-store harness, check, production build and guest browser flows (390/1440 px, both themes) pass.
+  - Owner explicitly accepted manual verification (2026-11-05). Authenticated web/second-account/Mini App checks, legacy/unavailable fixtures, expired/changed-account browser acceptance and native Telegram checks are handed off to the owner, not claimed as passes. Required sessions and authorized mutation setup are documented in scripts/qa/flows/my-addresses.mjs. No backend mutations performed.
+- [ ] [57 Saved addresses and opt-in saving at checkout](57-checkout-saved-addresses.md) [website56; backend98]
+- [ ] [58 Import guest addresses after login](58-import-guest-addresses.md) [website57; backend98]
+- [ ] [59 Saved-address integration acceptance](59-my-addresses-acceptance.md) [website55–58 including55b; backend96–98 including96b/96c]

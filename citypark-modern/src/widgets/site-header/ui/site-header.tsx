@@ -48,8 +48,18 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 					<Logo className='h-11' />
 				</AppLink>
 				<NavLinks />
-				<div className='flex gap-2'>
-					<Button href='/account' variant='ghost'>Личный кабинет</Button>
+				<div className='flex items-center gap-2'>
+					<div className='flex flex-col text-sm'>
+						<AppLink
+							href='/account'
+							className='flex min-h-11 items-center justify-center font-semibold whitespace-nowrap'
+						>
+							Личный кабинет
+						</AppLink>
+						<AppLink href='/account/addresses' className='flex min-h-11 items-center justify-center font-semibold'>
+							Мои адреса
+						</AppLink>
+					</div>
 					<ThemeToggle />
 					{menuPage ? (
 						<CartPill dishes={cartDishes} />

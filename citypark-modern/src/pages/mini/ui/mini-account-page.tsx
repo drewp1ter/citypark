@@ -9,6 +9,7 @@ export async function MiniAccountPage() {
   <h1 className='heading text-3xl'>Аккаунт Telegram</h1>
   <p>Вы вошли как {profile.name}</p>
   <Button href='/mini/orders' className='self-start'>История заказов</Button>
+  <Button href='/mini/addresses' className='self-start'>Мои адреса</Button>
   <MiniPairingPanel />
   <p>Google можно подключить в <AppLink href='/account' className='underline'>личном кабинете на сайте</AppLink>.</p>
   <AppLink href='/mini' className='min-h-11 py-2 underline'>В меню</AppLink>
