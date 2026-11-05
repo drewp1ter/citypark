@@ -8,3 +8,4 @@ export {
 	type SiteSettings,
 } from './site-settings'
 export { SiteSettingsProvider, useSiteSettings } from './site-settings-provider'
+export { productionOrigin } from './search'

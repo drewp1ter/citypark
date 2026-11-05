@@ -200,3 +200,6 @@ Implementation plan: [My addresses](../../../citypark-go/docs/tasks/MY_ADDRESSES
 
 Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DISCOVERY.md).
   - Canonicals, Russian page descriptions, production metadata base, opt-in indexing and private-layout noindex implemented. Check/build pass; existing dynamic-rendering diagnostics remain. Deployed HTTP acceptance remains pending.
+
+- [x] [62 Public sitemap](62-public-sitemap.md) [61]
+  - Complete public sitemap and robots reference implemented using shared production origin. Harness, check, build and production HTTP checks pass: valid XML and 91 exact URLs from live backend lists. Backend failures propagate; no backend writes. Public deployment acceptance remains pending.

@@ -4,7 +4,7 @@ import { DeliveryProvider } from '@/app/delivery'
 import { RegisterServiceWorker } from '@/app/pwa'
 import { ThemeProvider } from '@/app/theme'
 import { getSiteSettings } from '@/shared/api'
-import { SiteSettingsProvider } from '@/shared/config'
+import { SiteSettingsProvider, productionOrigin } from '@/shared/config'
 import '@/app/styles/globals.css'
 
 const unbounded = Unbounded({
@@ -22,7 +22,7 @@ const onest = Onest({
 })
 
 export const metadata: Metadata = {
-	metadataBase: new URL('https://cityparkvip.ru'),
+	metadataBase: new URL(productionOrigin),
 	robots: { index: process.env.SITE_INDEXING_ENABLED === 'true', follow: true },
 	title: 'Сити Парк — отель, ресторан и доставка в Белореченске',
 	description: 'Отель-люкс на 12 номеров, ресторан и летнее кафе, банкеты и доставка еды. Белореченск, ул. Гоголя, 61.',
