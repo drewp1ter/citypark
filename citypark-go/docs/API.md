@@ -718,6 +718,8 @@ Confirms the calling side. When both sides confirm, ownership and identities mov
 
 A retry from the valid website session returns `completed` without merging again. The source session is revoked at completion. The Mini App must relaunch through Telegram to see the merged account.
 
+Saved addresses merge in the same transaction. Destination metadata wins for normalized city/address duplicates (the smallest destination association ID wins when legacy duplicates exist); existing destination duplicates remain visible. Unique source entries retain their association IDs, names, structured fields, review state and creation times. Source duplicates retain the smallest source ID. The destination default wins; otherwise the surviving equivalent of the source default becomes default. If neither book has a default, none is assigned. Shared address rows and historical order delivery snapshots are unchanged. Any failure rolls back the entire merge and pairing consumption.
+
 #### DELETE /customer/pairings/{id}
 
 Cancels a pending pairing. Canceling an already canceled or completed pairing is idempotent.

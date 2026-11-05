@@ -1,4 +1,4 @@
-package address
+package address_test
 
 import (
 	"bytes"
@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/drewp1ter/citypark-go/internal/address"
 	"github.com/drewp1ter/citypark-go/internal/auth"
 	"github.com/drewp1ter/citypark-go/internal/clock"
 	"github.com/drewp1ter/citypark-go/internal/customer"
@@ -41,7 +42,7 @@ func newBookAPI(t *testing.T, enabled bool) bookAPI {
 	tokens := auth.NewTokens("test", time.Hour, c)
 	adapter := &customer.Adapter{Sessions: sessions, Tokens: tokens, Enabled: enabled}
 	r := chi.NewRouter()
-	NewBookHandler(NewStore(db), NewService(db), adapter.Required(false)).Routes(r)
+	address.NewBookHandler(address.NewStore(db), address.NewService(db), adapter.Required(false)).Routes(r)
 	var token string
 	var err error
 	if enabled {
@@ -62,15 +63,15 @@ func (f bookAPI) call(t *testing.T, method, path string, body any, want int) *ht
 	}
 	return rec
 }
-func apiFields() Fields {
-	return Fields{Name: "Дом", City: "Белореченск", Street: "ул. Гоголя, 61", Apartment: "12", Entrance: "2, этаж 3"}
+func apiFields() address.Fields {
+	return address.Fields{Name: "Дом", City: "Белореченск", Street: "ул. Гоголя, 61", Apartment: "12", Entrance: "2, этаж 3"}
 }
-func (f bookAPI) create(t *testing.T, in Fields) Entry {
+func (f bookAPI) create(t *testing.T, in address.Fields) address.Entry {
 	t.Helper()
 	rec := f.call(t, "POST", "", in, 201)
 	var out struct {
-		Entry   Entry `json:"entry"`
-		Created bool  `json:"created"`
+		Entry   address.Entry `json:"entry"`
+		Created bool          `json:"created"`
 	}
 	testutil.Decode(t, rec, &out)
 	if !out.Created {
@@ -102,7 +103,7 @@ func TestBookAPIList(t *testing.T) {
 	bookExec(t, f.db, `INSERT INTO addresses(city,address) VALUES('Город','  старая строка  '); INSERT INTO user_addresses(user_id,address_id) SELECT 1,id FROM addresses WHERE city='Город'`)
 	rec := f.call(t, "GET", "", nil, 200)
 	var out struct {
-		Addresses []Entry `json:"addresses"`
+		Addresses []address.Entry `json:"addresses"`
 	}
 	testutil.Decode(t, rec, &out)
 	if len(out.Addresses) != 2 || out.Addresses[0] != e || out.Addresses[1].ID <= e.ID || !out.Addresses[1].NeedsReview || out.Addresses[1].Street != "" || out.Addresses[1].Address != "  старая строка  " {
@@ -127,8 +128,8 @@ func TestBookAPICreate(t *testing.T) {
 	f := newBookAPI(t, true)
 	e := f.create(t, apiFields())
 	data, _ := json.Marshal(struct {
-		Entry   Entry `json:"entry"`
-		Created bool  `json:"created"`
+		Entry   address.Entry `json:"entry"`
+		Created bool          `json:"created"`
 	}{e, true})
 	t.Logf("POST new example: %s", data)
 	in := apiFields()
@@ -137,8 +138,8 @@ func TestBookAPICreate(t *testing.T) {
 	in.Street = "УЛ. ГОГОЛЯ, 61"
 	rec := f.call(t, "POST", "", in, 200)
 	var out struct {
-		Entry   Entry `json:"entry"`
-		Created bool  `json:"created"`
+		Entry   address.Entry `json:"entry"`
+		Created bool          `json:"created"`
 	}
 	testutil.Decode(t, rec, &out)
 	if out.Created || out.Entry != e || testutil.Count(t, f.db, `SELECT count(*) FROM user_addresses`) != 1 {
@@ -150,19 +151,19 @@ func TestBookAPIUpdate(t *testing.T) {
 	f := newBookAPI(t, true)
 	e := f.create(t, apiFields())
 	shared := bookEntries(t, f.db, 1)[0]
-	other := createBookEntry(t, NewService(f.db), 2, apiFields())
+	other := createBookEntry(t, address.NewService(f.db), 2, apiFields())
 	bookExec(t, f.db, `INSERT INTO orders(customer_id,address_id,items_hash,delivery_address) VALUES(1,$1,'hash',$2)`, shared.AddressID, e.Address)
-	in := Fields{City: "Город", Street: "Дом 3"}
+	in := address.Fields{City: "Город", Street: "Дом 3"}
 	rec := f.call(t, "PUT", "/"+strconv.FormatInt(e.ID, 10), in, 200)
 	var out struct {
-		Entry Entry `json:"entry"`
+		Entry address.Entry `json:"entry"`
 	}
 	testutil.Decode(t, rec, &out)
 	if out.Entry.ID != e.ID || out.Entry.CreatedAt != e.CreatedAt || !out.Entry.IsDefault || out.Entry.Address != "Дом 3" {
 		t.Fatal(rec.Body)
 	}
 	t.Logf("PUT example: %s", rec.Body)
-	second := f.create(t, Fields{City: "Город", Street: "Дом 4"})
+	second := f.create(t, address.Fields{City: "Город", Street: "Дом 4"})
 	rec = f.call(t, "PUT", "/"+strconv.FormatInt(second.ID, 10)+"/default", nil, 200)
 	testutil.Decode(t, rec, &out)
 	if !out.Entry.IsDefault || out.Entry.ID != second.ID {
@@ -185,7 +186,7 @@ func TestBookAPIUpdate(t *testing.T) {
 func TestBookAPIValidation(t *testing.T) {
 	f := newBookAPI(t, true)
 	e := f.create(t, apiFields())
-	invalid := []Fields{{}, {City: " ", Street: " "}, {Name: strings.Repeat("я", 41), City: strings.Repeat("я", 81), Street: strings.Repeat("я", 121), Apartment: strings.Repeat("я", 21), Entrance: strings.Repeat("я", 21)}, {City: "Город", Street: "я"}}
+	invalid := []address.Fields{{}, {City: " ", Street: " "}, {Name: strings.Repeat("я", 41), City: strings.Repeat("я", 81), Street: strings.Repeat("я", 121), Apartment: strings.Repeat("я", 21), Entrance: strings.Repeat("я", 21)}, {City: "Город", Street: "я"}}
 	for _, in := range invalid {
 		for _, method := range []string{"POST", "PUT"} {
 			path := ""
@@ -193,7 +194,7 @@ func TestBookAPIValidation(t *testing.T) {
 				path = "/" + strconv.FormatInt(e.ID, 10)
 			}
 			rec := f.call(t, method, path, in, 400)
-			expectBookError(t, rec, "Проверьте адрес", FieldErrors(CleanFields(in)))
+			expectBookError(t, rec, "Проверьте адрес", address.FieldErrors(address.CleanFields(in)))
 		}
 	}
 	bodies := []string{"", "{", "null", "[]", "true", "1", `"text"`, `{} {}`, `{} trailing`, `{"city":1}`, `{"city":null}`, `{"city":[]}`, `{"city":{}}`, `{"userId":1}`, `{"id":1}`, `{"isDefault":true}`, `{"unknown":"x"}`, `{"name":null}`, `{"apartment":false}`, `{"entrance":null}`, `{"street":null}`, `{"name":"` + strings.Repeat("x", 1<<20) + `"}`}
@@ -220,7 +221,7 @@ func TestBookAPIValidation(t *testing.T) {
 func TestBookAPIIDs(t *testing.T) {
 	f := newBookAPI(t, true)
 	f.create(t, apiFields())
-	other := createBookEntry(t, NewService(f.db), 2, apiFields())
+	other := createBookEntry(t, address.NewService(f.db), 2, apiFields())
 	before := bookEntries(t, f.db, 1)
 	for _, id := range []string{"abc", "0", "-1", "9223372036854775808", "999", strconv.FormatInt(other.ID, 10)} {
 		for _, route := range []struct{ method, suffix string }{{"PUT", ""}, {"PUT", "/default"}, {"DELETE", ""}} {
@@ -235,7 +236,7 @@ func TestBookAPIIDs(t *testing.T) {
 func TestBookAPIConflict(t *testing.T) {
 	f := newBookAPI(t, true)
 	f.create(t, apiFields())
-	e := f.create(t, Fields{City: "Город", Street: "Дом 2"})
+	e := f.create(t, address.Fields{City: "Город", Street: "Дом 2"})
 	before := bookEntries(t, f.db, 1)
 	rec := f.call(t, "PUT", "/"+strconv.FormatInt(e.ID, 10), apiFields(), 409)
 	expectBookError(t, rec, "Такой адрес уже сохранён", map[string]string{"street": "Такой адрес уже сохранён"})
@@ -289,7 +290,7 @@ func TestBookAPIAuth(t *testing.T) {
 				next.ServeHTTP(w, r)
 			})
 		}
-		NewBookHandler(NewStore(db), NewService(db), access).Routes(r)
+		address.NewBookHandler(address.NewStore(db), address.NewService(db), access).Routes(r)
 		rec := testutil.DoJSON(t, r, "GET", "/customer/addresses", "", nil)
 		want := 403
 		if role == "" {
@@ -330,7 +331,7 @@ func TestBookAPIFailures(t *testing.T) {
 	f.router = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		original.ServeHTTP(w, r.WithContext(sentry.SetHubOnContext(r.Context(), sentry.NewHub(client, sentry.NewScope()))))
 	})
-	in := Fields{Name: "PRIVATE NAME", City: "PRIVATE CITY", Street: "PRIVATE STREET"}
+	in := address.Fields{Name: "PRIVATE NAME", City: "PRIVATE CITY", Street: "PRIVATE STREET"}
 	for _, route := range []struct{ method, path string }{{"POST", ""}, {"PUT", "/" + strconv.FormatInt(e.ID, 10)}} {
 		expectBookError(t, f.call(t, route.method, route.path, in, 500), "Внутренняя ошибка сервера", nil)
 	}
@@ -353,7 +354,7 @@ func TestBookAPIFailures(t *testing.T) {
 			next.ServeHTTP(w, r.WithContext(auth.NewContext(r.Context(), auth.Identity{UserID: 1, Role: auth.RoleUser})))
 		})
 	}
-	NewBookHandler(NewStore(broken), NewService(broken), access).Routes(r)
+	address.NewBookHandler(address.NewStore(broken), address.NewService(broken), access).Routes(r)
 	f.router = r
 	for _, route := range []struct{ method, path string }{{"GET", ""}, {"PUT", "/1/default"}, {"DELETE", "/1"}} {
 		expectBookError(t, f.call(t, route.method, route.path, nil, 500), "Внутренняя ошибка сервера", nil)
@@ -385,4 +386,35 @@ func TestBookAPIReadError(t *testing.T) {
 		t.Fatal(rec.Code, rec.Body)
 	}
 	expectBookError(t, rec, "Некорректный JSON", nil)
+}
+
+func bookFixture(t *testing.T) (*sqlx.DB, *address.Service) {
+	t.Helper()
+	db := testutil.NewDB(t)
+	if _, err := db.Exec(`INSERT INTO users(id,name,phone) VALUES(1,'One','1'),(2,'Two','2')`); err != nil {
+		t.Fatal(err)
+	}
+	return db, address.NewService(db)
+}
+func createBookEntry(t *testing.T, s *address.Service, user int64, in address.Fields) address.Entry {
+	t.Helper()
+	e, created, err := s.CreateEntry(context.Background(), user, in)
+	if err != nil || !created {
+		t.Fatalf("create: %+v %v %v", e, created, err)
+	}
+	return e
+}
+func bookExec(t *testing.T, db *sqlx.DB, q string, args ...any) {
+	t.Helper()
+	if _, err := db.Exec(q, args...); err != nil {
+		t.Fatal(err)
+	}
+}
+func bookEntries(t *testing.T, db *sqlx.DB, user int64) []address.Entry {
+	t.Helper()
+	e, err := address.NewStore(db).ListEntries(context.Background(), user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return e
 }

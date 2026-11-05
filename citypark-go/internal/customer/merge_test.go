@@ -3,6 +3,8 @@ package customer_test
 import (
 	"context"
 	"errors"
+	"github.com/drewp1ter/citypark-go/internal/address"
+	"reflect"
 	"testing"
 	"time"
 
@@ -254,5 +256,98 @@ func TestMergeBlocksConcurrentIssuance(t *testing.T) {
 	if testutil.Count(t, db, `SELECT count(*) FROM customer_sessions WHERE user_id=$1 AND revoked_at IS NULL`, source) != 0 ||
 		testutil.Count(t, db, `SELECT count(*) FROM customer_email_tokens WHERE user_id=$1 AND consumed_at IS NULL`, source) != 0 {
 		t.Fatal("source credentials revived")
+	}
+}
+
+func TestMergeAccountsAddressMetadata(t *testing.T) {
+	db := testutil.NewDB(t)
+	ctx := context.Background()
+	source := testutil.InsertUser(t, db, "Mini", "1", "user")
+	dest := testutil.InsertUser(t, db, "Web", "2", "user")
+	books := address.NewService(db)
+	original, _, err := books.CreateEntry(ctx, source, address.Fields{Name: "Home", City: "City", Street: "Street 1", Apartment: "2", Entrance: "3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, db, `INSERT INTO orders(customer_id,account_id,items_hash,delivery_address) VALUES($1,$1,'hash','historical snapshot')`, source)
+	session, _, err := mergeService(db).CreateSession(ctx, source, "telegram", "mini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := mergeService(db).MergeAccounts(ctx, source, dest); err != nil {
+		t.Fatal(err)
+	}
+	got, err := address.NewStore(db).EntryByID(ctx, dest, original.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	original.UpdatedAt = got.UpdatedAt
+	if got != original {
+		t.Fatalf("metadata changed: %+v", got)
+	}
+	if testutil.Count(t, db, `SELECT count(*) FROM orders WHERE account_id=$1 AND customer_id=$2 AND delivery_address='historical snapshot'`, dest, source) != 1 {
+		t.Fatal("order snapshot changed")
+	}
+	if _, err := mergeService(db).Authenticate(ctx, session); !errors.Is(err, customer.ErrInvalidSession) {
+		t.Fatal(err)
+	}
+}
+
+func TestMergeAccountsAddressRollback(t *testing.T) {
+	db := testutil.NewDB(t)
+	ctx := context.Background()
+	source := testutil.InsertUser(t, db, "Mini", "1", "user")
+	dest := testutil.InsertUser(t, db, "Web", "2", "user")
+	testutil.InsertAddress(t, db, source, "City", "One")
+	testutil.InsertAddress(t, db, source, "City", "Two")
+	mustExec(t, db, `INSERT INTO customer_identities(user_id,provider,subject) VALUES($1,'telegram','123')`, source)
+	mustExec(t, db, `INSERT INTO orders(customer_id,account_id,items_hash,delivery_address) VALUES($1,$1,'hash','snapshot')`, source)
+	before, err := address.NewStore(db).ListEntries(ctx, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, db, `CREATE FUNCTION fail_customer_address_merge() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.user_id<>OLD.user_id AND NEW.address_id=(SELECT max(address_id) FROM user_addresses) THEN RAISE EXCEPTION 'forced failure'; END IF; RETURN NEW; END $$`)
+	mustExec(t, db, `CREATE TRIGGER fail_customer_address_merge BEFORE UPDATE ON user_addresses FOR EACH ROW EXECUTE FUNCTION fail_customer_address_merge()`)
+	defer mustExec(t, db, `DROP FUNCTION fail_customer_address_merge() CASCADE`)
+	svc := mergeService(db)
+	miniToken, _, err := svc.CreateSession(ctx, source, "telegram", "mini")
+	if err != nil {
+		t.Fatal(err)
+	}
+	webToken, _, err := svc.CreateSession(ctx, dest, "password", "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	mini, err := svc.Authenticate(ctx, miniToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	web, err := svc.Authenticate(ctx, webToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pairing, err := svc.CreatePairing(ctx, mini)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.RedeemPairing(ctx, pairing.Code, web); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.ConfirmPairing(ctx, pairing.ID, mini); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.ConfirmPairing(ctx, pairing.ID, web); err == nil {
+		t.Fatal("merge succeeded")
+	}
+	status, err := svc.GetPairing(ctx, pairing.ID, web)
+	if err != nil || status.Status != "pending" || status.DestinationConfirmed {
+		t.Fatalf("pairing consumed: %+v %v", status, err)
+	}
+	after, err := address.NewStore(db).ListEntries(ctx, source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(before, after) || testutil.Count(t, db, `SELECT count(*) FROM users WHERE merged_into_user_id IS NOT NULL`) != 0 || testutil.Count(t, db, `SELECT count(*) FROM customer_identities WHERE user_id=$1`, source) != 1 || testutil.Count(t, db, `SELECT count(*) FROM orders WHERE account_id=$1 AND delivery_address='snapshot'`, source) != 1 {
+		t.Fatal("partial merge")
 	}
 }

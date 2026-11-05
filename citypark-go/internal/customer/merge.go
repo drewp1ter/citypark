@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/drewp1ter/citypark-go/internal/address"
 	"github.com/drewp1ter/citypark-go/internal/store"
 	"github.com/jmoiron/sqlx"
 )
@@ -118,12 +119,10 @@ func (s *Service) MergeAccountsInTx(ctx context.Context, tx *sqlx.Tx, sourceID, 
 	if _, err := tx.ExecContext(ctx, `UPDATE orders SET account_id=$2,updated_at=now() WHERE account_id=$1`, sourceID, destinationID); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO user_addresses(user_id,address_id) SELECT $2,address_id FROM user_addresses WHERE user_id=$1 ON CONFLICT DO NOTHING`, sourceID, destinationID); err != nil {
+	if err := address.NewStore(tx).MergeEntries(ctx, sourceID, destinationID); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, `DELETE FROM user_addresses WHERE user_id=$1`, sourceID); err != nil {
-		return err
-	}
+
 	now := s.clock.Now()
 	return revokeMergedProofs(ctx, tx, sourceID, now)
 }
