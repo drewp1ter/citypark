@@ -194,3 +194,9 @@ Implementation plan: [My addresses](../../../citypark-go/docs/tasks/MY_ADDRESSES
 - [x] [60 Payment return pages use the UUID transaction id](60-moneta-uuid-return.md) [backend99]
   - Signed payment cookie stores the UUID taken from `redirectUrl`; return pages match it instead of the order number (needs citypark-go task 99; deploy together).
   - Completed (2026-11-05): UUID-bound signed payment context, creation/retry URL parsing, and UUID-preserving Mini success/failure forwarding; history keeps numeric order routes. Both harnesses, npm run check and production build pass. After the owner started the configured backend, payment-retry (390/1440 px, both themes) and checkout-and-contacts browser flows pass against a fresh production server. Authenticated owned-order/session checks and native Telegram/MONETA handoff remain manual acceptance; no live orders or payments created.
+
+## Search and Alice discovery
+- [x] [61 Indexing foundations](61-indexing-foundations.md) [60]
+
+Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DISCOVERY.md).
+  - Canonicals, Russian page descriptions, production metadata base, opt-in indexing and private-layout noindex implemented. Check/build pass; existing dynamic-rendering diagnostics remain. Deployed HTTP acceptance remains pending.

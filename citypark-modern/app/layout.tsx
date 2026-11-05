@@ -22,6 +22,8 @@ const onest = Onest({
 })
 
 export const metadata: Metadata = {
+	metadataBase: new URL('https://cityparkvip.ru'),
+	robots: { index: process.env.SITE_INDEXING_ENABLED === 'true', follow: true },
 	title: 'Сити Парк — отель, ресторан и доставка в Белореченске',
 	description: 'Отель-люкс на 12 номеров, ресторан и летнее кафе, банкеты и доставка еды. Белореченск, ул. Гоголя, 61.',
 	applicationName: 'Сити Парк',

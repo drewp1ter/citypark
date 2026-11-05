@@ -19,8 +19,8 @@ async function findRoom(id: string): Promise<Room | undefined | null> {
 
 export async function generateRoomMetadata(id: string): Promise<Metadata> {
 	const room = await findRoom(id)
-	if (!room) return { title: 'Страница не найдена' }
-	return { title: `${room.name} — Сити Парк`, ...(room.summary && { description: room.summary }) }
+	if (!room) return { alternates: { canonical: `/rooms/${encodeURIComponent(id)}` }, title: 'Страница не найдена' }
+	return { alternates: { canonical: `/rooms/${encodeURIComponent(id)}` }, title: `${room.name} — Сити Парк`, ...(room.summary && { description: room.summary }) }
 }
 
 export async function RoomPage({ id }: { id: string }) {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { MenuPage } from '@/pages/menu'
 
-export const metadata: Metadata = { title: 'Доставка — Сити Парк' }
+export const metadata: Metadata = { alternates: { canonical: '/menu' }, description: 'Меню доставки Сити Парк в Белореченске: блюда, описание и цены.', title: 'Доставка — Сити Парк' }
 
 // The menu reads ?category=… on the server (and will read live prices from the POS), so it is rendered per request.
 export default async function Page({ searchParams }: PageProps<'/menu'>) {

@@ -15,7 +15,7 @@ async function findArticle(slug: string): Promise<Article | undefined> {
 
 export async function generateArticleMetadata(slug: string): Promise<Metadata> {
 	const article = await findArticle(slug)
-	return { title: article ? `${article.title} — Сити Парк` : 'Страница не найдена' }
+	return { alternates: { canonical: `/news/${encodeURIComponent(slug)}` }, title: article ? `${article.title} — Сити Парк` : 'Страница не найдена' }
 }
 
 export async function ArticlePage({ slug }: { slug: string }) {
