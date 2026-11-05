@@ -10,3 +10,7 @@ playwright-report
 docs
 *.md
 *.tsbuildinfo
+
+.env*
+*.pem
+*.key

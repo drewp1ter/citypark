@@ -1,0 +1,116 @@
+name: citypark-production
+
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  postgres:
+    <<: *defaults
+    image: citypark/postgres:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    pull_policy: never
+    environment:
+      POSTGRES_DB: citypark
+      POSTGRES_USER: citypark
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in deploy/production.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U citypark -d citypark']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    <<: *defaults
+    image: citypark/backend:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    pull_policy: never
+    env_file: ./deploy/backend.env
+    environment:
+      APP_ENV: production
+      PORT: "3000"
+      DEBUG: "false"
+      # Generate a hex password as documented; arbitrary passwords require URI encoding.
+      DATABASE_URL: postgres://citypark:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/citypark?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}
+      ADMIN_PHONE: ${ADMIN_PHONE:?Set ADMIN_PHONE}
+      UPLOAD_DIR: /data/uploads
+      PUBLIC_BASE_URL: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+      CUSTOMER_PUBLIC_ORIGIN: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+      MONETA_SUCCESS_URL: ${SITE_ORIGIN}/checkout/done
+      MONETA_FAIL_URL: ${SITE_ORIGIN}/checkout?payment=failed
+    ports:
+      - "127.0.0.1:3002:3000"
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    stop_grace_period: 30s
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1:3000/api/v1/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+
+  website:
+    <<: *defaults
+    image: citypark/website:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    pull_policy: never
+    env_file: ./deploy/website.env
+    environment:
+      MENU_API_URL: http://backend:3000/api/v1
+      CUSTOMER_PUBLIC_ORIGIN: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+      UPLOADS_ORIGIN: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+      MENU_IMAGE_HOST: ${MENU_IMAGE_HOST:-}
+      NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+      NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+      NEXT_PUBLIC_SENTRY_RELEASE: ${NEXT_PUBLIC_SENTRY_RELEASE:-}
+      NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE:-0.1}
+    ports:
+      - "127.0.0.1:3001:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3000/offline.html', {signal: AbortSignal.timeout(4000)}).then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  admin:
+    <<: *defaults
+    image: citypark/admin:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    pull_policy: never
+    environment:
+      API_ORIGIN: ${ADMIN_ORIGIN:?Set ADMIN_ORIGIN}
+      SITE_ORIGIN: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+    ports:
+      - "127.0.0.1:3003:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, 'http://127.0.0.1/index.html']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  pgdata:
+  uploads:
+

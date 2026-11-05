@@ -3,3 +3,7 @@ bin
 .env
 docs
 *.md
+
+.env*
+*.pem
+*.key

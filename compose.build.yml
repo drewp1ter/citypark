@@ -1,0 +1,34 @@
+# Local only: independent of production credentials and runtime env files.
+name: citypark-build
+services:
+  backend:
+    image: citypark/backend:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    build:
+      context: ./citypark-go
+  website:
+    image: citypark/website:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    build:
+      context: ./citypark-modern
+      args:
+        CUSTOMER_PUBLIC_ORIGIN: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+        UPLOADS_ORIGIN: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+        MENU_IMAGE_HOST: ${MENU_IMAGE_HOST:-}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
+        NEXT_PUBLIC_SENTRY_ENVIRONMENT: production
+        NEXT_PUBLIC_SENTRY_RELEASE: ${NEXT_PUBLIC_SENTRY_RELEASE:-}
+        NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: ${NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      secrets:
+        - sentry_auth_token
+  admin:
+    image: citypark/admin:${RELEASE_TAG:?Set RELEASE_TAG}
+    platform: linux/amd64
+    build:
+      context: ./citypark-admin
+      args:
+        VITE_API_URL: ${ADMIN_ORIGIN:?Set ADMIN_ORIGIN}/api/v1
+        VITE_SITE_URL: ${SITE_ORIGIN:?Set SITE_ORIGIN}
+secrets:
+  sentry_auth_token:
+    file: ./deploy/secrets/sentry_auth_token

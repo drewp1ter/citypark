@@ -4,3 +4,9 @@
 *.log
 .claude/settings.local.json
 .task-logs/
+
+# Local production configuration and backups
+/deploy/*.env
+/deploy/secrets/
+/deploy/backups/
+/deploy/releases/

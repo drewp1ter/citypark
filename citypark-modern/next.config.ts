@@ -24,6 +24,7 @@ const remotePatterns: RemotePattern[] = [
 ]
 
 const nextConfig: NextConfig = {
+	output: 'standalone',
 	// Dev only: hosts other than localhost that may open the dev server. Without this, Next 16
 	// blocks the HMR connection and the page never hydrates (buttons like ThemeToggle do nothing).
 	allowedDevOrigins: ['gpubox', '172.19.0.2', '192.168.2.15', '192.168.4.15', 'new.cityparkvip.ru'],

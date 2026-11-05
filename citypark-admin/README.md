@@ -40,6 +40,10 @@ or the browser blocks requests and images.
   `proxy_set_header Connection "upgrade"` and `proxy_read_timeout 75s` in nginx.
 - **Uploaded images:** the backend must have `PUBLIC_BASE_URL` set to its public origin, otherwise `/uploads` images do
   not load in the admin.
+- **iiko dish images:** `nginx/snippets/security-headers.conf.template` allows the storage origin
+  `https://16a9564f-f8ec-42ba-a998-3027aa809e50.selstorage.ru` in `img-src`. If iiko changes image hosts, update this
+  allowlist. Rebuild and redeploy the admin image after changing the template; restarting an existing image does not
+  apply source changes. Any CSP added by the outer reverse proxy must also allow the image origin.
 - **Old admin:** switch it off by hand, then redirect it in the main site's nginx:
 
 ```nginx

@@ -1,0 +1,11 @@
+.git
+node_modules
+.next
+out
+.env*
+*.pem
+*.key
+*.tsbuildinfo
+npm-debug.log*
+playwright-report
+test-results
