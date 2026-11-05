@@ -18,6 +18,7 @@ export {
 	PinIcon,
 	PlusIcon,
 	SearchIcon,
+	UserIcon,
 } from './icons'
 export { Logo } from './logo'
 export { PhoneField } from './phone-field'
