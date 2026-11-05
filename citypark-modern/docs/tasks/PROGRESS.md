@@ -206,3 +206,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [63 Public server HTML audit](63-server-html-audit.md) [62]
   - Read-only production HTTP audit, check and build pass. Contacts/hours, 5 room details and 24 linked categories with 246 dishes verified from parsed server HTML, excluding scripts/styles/templates. No rendering fixes needed. Query-category canonical and fallback freshness limitations documented in SEARCH_DISCOVERY.md; public deployment acceptance remains pending.
+
+- [x] [64 Hotel and restaurant structured data](64-business-structured-data.md) [63]
+  - Server-rendered Hotel/Restaurant graph on contacts uses the same settings/hours as visible facts, stable canonical IDs and script-safe serialization. Isolated/security harness, check/build, live-backend HTML agreement and task 63 content regression pass. Existing dynamic-rendering diagnostics and deployed-site acceptance remain documented; no backend writes.

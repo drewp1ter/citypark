@@ -27,3 +27,15 @@ Production-build HTTP acceptance passed against the configured live backend: con
 The acceptance script fetches HTML and uses an inert DOMParser, stripping scripts/styles/templates before checking main content; React payloads cannot satisfy text assertions. It does not execute website JavaScript, submit forms or modify backend data. Nonempty catalogs and successful backend responses are required. Run `node scripts/qa/public-content-http.mjs` against a production build using BASE_URL (default http://localhost:3112).
 
 Limitations: this proves server HTML availability, not mobile visibility of every responsive duplicate or search inclusion. Menu categories are reachable through ordinary query links and render independently; they currently canonicalize to /menu, so category-specific indexing is not established by this audit. Existing fallback hours/contacts may become stale during backend failures; this audit requires a healthy backend and checks current values. Public deployment checks and Yandex indexing/visibility remain pending.
+
+## Task 64 structured data (2026-11-05)
+
+The contacts page renders one native JSON-LD block with Schema.org Hotel and Restaurant nodes. Stable identifiers are https://cityparkvip.ru/hotel#business and https://cityparkvip.ru/restaurant#business; each points to its canonical page. Both use the shared brand name, postal address, email and respective telephone number. Restaurant openingHours follows the existing shared daily-hours model already displayed on the contacts page. No ratings, offers, live availability, geographic coordinates or unverified business claims are emitted.
+
+The serializer receives the same fetched settings/hours objects as the visible contacts, including existing fallback values. It escapes less-than characters to prevent backend text from closing the script element. This preserves the existing fallback behavior and its freshness limitations; it does not establish a new source of business facts.
+
+Validation passed: isolated normal/changed/empty data and malicious-text round-trip checks; typecheck, lint and FSD checks; production build; production HTTP agreement with live backend values, visible contact text/links and the logo accessible name; the task 63 raw-HTML audit (5 rooms, 24 categories, 246 dishes). Existing dynamic-rendering diagnostics remain during build. No live backend writes. External validator submission, deployed-site verification and Yandex inclusion remain pending.
+
+Commands: `node scripts/qa/business-json-ld-harness.mjs`, `node scripts/qa/business-json-ld-http.mjs`, `node scripts/qa/public-content-http.mjs`. HTTP checks use BASE_URL (default http://localhost:3112) and the configured live backend.
+
+References: [Schema.org Hotel](https://schema.org/Hotel), [Restaurant](https://schema.org/Restaurant); implementation follows the installed Next.js JSON-LD guide at node_modules/next/dist/docs/01-app/02-guides/json-ld.md.

@@ -4,6 +4,7 @@ import { getSiteSettings, getWorkingHours } from '@/shared/api'
 import { serverEnv, site } from '@/shared/config'
 import { NBSP, formatHours } from '@/shared/lib'
 import { AppLink, Button, PinIcon, YandexMap, cardClass } from '@/shared/ui'
+import { businessJsonLd } from '../model/business-json-ld'
 
 /** "8 918 311-97-91" -> ["8 918", "311-97-91"] (the number is set on two lines in the big cards). */
 const splitPhone = (display: string): [string, string] => {
@@ -54,16 +55,22 @@ function PhoneCard({ href, label, number, alt, variant = 'surface' }: PhoneCardP
 }
 
 export async function ContactsPage() {
-	const [{ phones, address, company, email, social, mapUrl }, workingHours] = await Promise.all([
+	const [settings, workingHours] = await Promise.all([
 		getSiteSettings(),
 		getWorkingHours(),
 	])
+	const { phones, address, company, email, social, mapUrl } = settings
 	const apiKey = serverEnv().YANDEX_MAPS_API_KEY
 	// Opening hours stay on one line.
 	const hours = <span className='whitespace-nowrap'>{formatHours(workingHours)}</span>
 
 	return (
 		<main>
+			<script
+				id='business-structured-data'
+				type='application/ld+json'
+				dangerouslySetInnerHTML={{ __html: businessJsonLd(settings, workingHours) }}
+			/>
 			<section className='max-w-page mx-auto w-full px-3 pt-4 md:px-6 md:pt-8'>
 				<h1 className='heading mx-1.5 my-2 text-4xl md:mx-0 md:mt-0 md:mb-6 md:text-[length:var(--text-h1)]'>
 					Контакты
