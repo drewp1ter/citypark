@@ -1,6 +1,6 @@
 import type { Dish } from '@/entities/dish'
 import { ThemeToggle } from './theme-toggle'
-import { AppLink, Button, Logo } from '@/shared/ui'
+import { AppLink, Button, IconButton, Logo, UserIcon } from '@/shared/ui'
 import { CartButton } from './cart-button'
 import { CartPill } from './cart-pill'
 import { MobileMenu } from './mobile-menu'
@@ -49,17 +49,9 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 				</AppLink>
 				<NavLinks />
 				<div className='flex items-center gap-2'>
-					<div className='flex flex-col text-sm'>
-						<AppLink
-							href='/account'
-							className='flex min-h-11 items-center justify-center font-semibold whitespace-nowrap'
-						>
-							Личный кабинет
-						</AppLink>
-						<AppLink href='/account/addresses' className='flex min-h-11 items-center justify-center font-semibold'>
-							Мои адреса
-						</AppLink>
-					</div>
+					<IconButton href='/account' aria-label='Личный кабинет'>
+						<UserIcon />
+					</IconButton>
 					<ThemeToggle />
 					{menuPage ? (
 						<CartPill dishes={cartDishes} />

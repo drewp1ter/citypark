@@ -200,50 +200,19 @@ export function CheckoutForm({
 							)}
 							{method === 'delivery' && (
 								<>
-									<SavedAddressSelector
-										entries={address.entries}
-										selected={address.selected}
-										towns={towns}
-										mini={mini}
-										onSelect={(key) => {
-											location.takeOver()
-											address.select(key)
-										}}
-									/>
-									{addressBook.error && (
-										<p role='status'>
-											{addressBook.error}{' '}
-											<button type='button' className='tap-area underline' onClick={() => router.refresh()}>
-												Повторить
-											</button>
-										</p>
-									)}
-									<CheckboxField
-										name='saveAddress'
-										checked={address.save}
-										onChange={(event) => address.setSave(event.target.checked)}
-									>
-										Сохранить адрес
-									</CheckboxField>
-									{address.save && (
-										<>
-											<TextField
-												label='Название адреса'
-												name='addressName'
-												value={address.name}
-												onChange={(event) => address.setName(event.target.value)}
-												error={errors.addressName}
-											/>
-											<p className='text-text-muted text-sm'>
-												Адрес будет сохранён при оформлении заказа, независимо от результата оплаты.
-											</p>
-										</>
-									)}
-									{(address.saveError || errors.addressSave) && (
-										<p role='alert' className='text-danger'>
-											{address.saveError || errors.addressSave}
-										</p>
-									)}
+									{address.entries.length ? (
+										<SavedAddressSelector
+											entries={address.entries}
+											selected={address.selected}
+											towns={towns}
+											mini={mini}
+											onSelect={(key) => {
+												location.takeOver()
+												address.select(key)
+											}}
+										/>
+									) : null}
+
 								</>
 							)}
 							<div className='grid gap-3 md:grid-cols-2'>
@@ -333,9 +302,46 @@ export function CheckoutForm({
 												error={errors.entrance}
 											/>
 										</div>
+
 									</>
 								)}
+
 							</div>
+							<CheckboxField
+								name='saveAddress'
+								checked={address.save}
+								onChange={(event) => address.setSave(event.target.checked)}
+							>
+								Сохранить адрес
+							</CheckboxField>
+							{addressBook.error && (
+								<p role='status'>
+									{addressBook.error}{' '}
+									<button type='button' className='tap-area underline' onClick={() => router.refresh()}>
+										Повторить
+									</button>
+								</p>
+							)}
+
+							{address.save && (
+								<>
+									<TextField
+										label='Название адреса'
+										name='addressName'
+										value={address.name}
+										onChange={(event) => address.setName(event.target.value)}
+										error={errors.addressName}
+									/>
+									<p className='text-text-muted text-sm'>
+										Адрес будет сохранён при оформлении заказа, независимо от результата оплаты.
+									</p>
+								</>
+							)}
+							{(address.saveError || errors.addressSave) && (
+								<p role='alert' className='text-danger'>
+									{address.saveError || errors.addressSave}
+								</p>
+							)}
 						</section>
 
 						{/* Контакты и оплата */}
@@ -434,10 +440,10 @@ export function CheckoutForm({
 							{(pricing.error ||
 								(!pricing.ready && errors.expectedPayableTotal) ||
 								(!promoCodesEnabled && errors.promoCode)) && (
-								<p role='alert' className='bg-surface text-danger rounded-sm p-3 text-sm'>
-									{pricing.error || errors.expectedPayableTotal || errors.promoCode}
-								</p>
-							)}
+									<p role='alert' className='bg-surface text-danger rounded-sm p-3 text-sm'>
+										{pricing.error || errors.expectedPayableTotal || errors.promoCode}
+									</p>
+								)}
 							<dl
 								aria-label='Расчёт заказа'
 								className='bg-inverse-bg text-inverse-text flex flex-col gap-2 rounded-lg p-4 md:p-0'

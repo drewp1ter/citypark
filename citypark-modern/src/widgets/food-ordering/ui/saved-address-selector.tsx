@@ -35,9 +35,6 @@ export function SavedAddressSelector({ entries, selected, towns, onSelect, mini 
 					}),
 				]}
 			/>
-			<button type='button' onClick={() => onSelect('')} className='tap-area self-start underline'>
-				Другой адрес
-			</button>
 			<AppLink href={mini ? '/mini/addresses' : '/account/addresses'} className='tap-area self-start underline'>
 				Мои адреса
 			</AppLink>
