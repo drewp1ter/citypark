@@ -156,10 +156,7 @@ function SuggestingField({
 			// DaData already matched the query; a local "contains" filter would hide «ул Гоголя, д 6» for «Гоголя 6».
 			defaultFilter={() => true}
 			inputValue={value}
-			onInputChange={(next) => {
-				onManualEdit()
-				onValueChange(next)
-			}}
+			onInputChange={onValueChange}
 			onSelectionChange={(key) => {
 				if (key === null) return
 				picked.current = true
@@ -179,6 +176,7 @@ function SuggestingField({
 			<OpenWhenReady count={items.length} input={inputRef} />
 			<Input
 				ref={inputRef}
+				onChange={onManualEdit}
 				autoComplete='off'
 				placeholder='Начните вводить адрес'
 				className={cn(

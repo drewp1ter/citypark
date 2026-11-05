@@ -5,7 +5,7 @@ import { useMenuRefresh } from '@/shared/lib'
 import { useActionState, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { cartActions, useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, townDeliveryPrice, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
-import { AddressField } from './address-field'
+import { AddressField } from '@/entities/address'
 import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
 import {
 	AppLink,

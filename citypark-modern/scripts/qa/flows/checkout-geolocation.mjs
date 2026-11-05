@@ -221,7 +221,7 @@ try {
 	await deniedPage.goto(base + '/checkout')
 	await expect(deniedPage.getByRole('status').filter({ hasText: 'Проверьте населённый пункт' })).toBeVisible()
 	const city = deniedPage.locator('select[name="city"]')
-	const firstTown = await city.locator('option').nth(1).getAttribute('value')
+	const firstTown = await city.locator('option:not([value=""])').first().getAttribute('value')
 	await expect(city).toHaveValue(firstTown)
 	await expect(deniedPage.getByRole('combobox', { name: 'Улица и дом' })).toHaveValue('')
 	await denied.close()

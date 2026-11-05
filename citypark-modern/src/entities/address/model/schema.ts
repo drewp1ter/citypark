@@ -25,3 +25,28 @@ export const guestBookSchema = z
 	.strict()
 	.refine((book) => new Set(book.entries.map((entry) => entry.id)).size === book.entries.length)
 	.refine((book) => book.entries.filter((entry) => entry.isDefault).length <= 1)
+
+export const addressIdSchema = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
+export const customerProfileSchema = z.object({
+	id: addressIdSchema,
+	name: z.string(),
+	email: z.string(),
+	phone: z.string(),
+	role: z.literal('user'),
+})
+export const savedAddressSchema = z.object({
+	id: addressIdSchema,
+	name: z.string(),
+	city: z.string(),
+	address: z.string(),
+	street: z.string(),
+	apartment: z.string(),
+	entrance: z.string(),
+	isDefault: z.boolean(),
+	needsReview: z.boolean(),
+	createdAt: z.iso.datetime({ offset: true }),
+	updatedAt: z.iso.datetime({ offset: true }),
+})
+export const addressListSchema = z.object({ addresses: z.array(savedAddressSchema) })
+export const addressEntrySchema = z.object({ entry: savedAddressSchema })
+export const addressCreatedSchema = addressEntrySchema.extend({ created: z.boolean() })
