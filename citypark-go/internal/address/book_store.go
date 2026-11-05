@@ -2,6 +2,7 @@ package address
 
 import (
 	"context"
+	"errors"
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
 
@@ -24,4 +25,25 @@ func (s *Store) EntryByID(ctx context.Context, userID, entryID int64) (Entry, er
 		return Entry{}, store.NotFound(err)
 	}
 	return entry, nil
+}
+
+func (s *Store) lockOwner(ctx context.Context, userID int64) error {
+	var id int64
+	err := s.db.GetContext(ctx, &id, `SELECT id FROM users WHERE id=$1 AND role='user' AND merged_into_user_id IS NULL FOR UPDATE`, userID)
+	if errors.Is(store.NotFound(err), store.ErrNotFound) {
+		return ErrOwnerUnavailable
+	}
+	return err
+}
+
+func (s *Store) insertEntry(ctx context.Context, userID, addressID int64, in Fields, isDefault bool) (int64, error) {
+	var id int64
+	err := s.db.GetContext(ctx, &id, `INSERT INTO user_addresses(user_id,address_id,name,street,apartment,entrance,is_default)
+ VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`, userID, addressID, in.Name, in.Street, in.Apartment, in.Entrance, isDefault)
+	return id, err
+}
+
+func (s *Store) updateEntry(ctx context.Context, userID, entryID, addressID int64, in Fields) error {
+	_, err := s.db.ExecContext(ctx, `UPDATE user_addresses SET address_id=$3,name=$4,street=$5,apartment=$6,entrance=$7,updated_at=now() WHERE user_id=$1 AND id=$2`, userID, entryID, addressID, in.Name, in.Street, in.Apartment, in.Entrance)
+	return err
 }
