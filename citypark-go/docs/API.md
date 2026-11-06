@@ -997,7 +997,7 @@ No request body is required.
 **Response 200**
 
 ```json
-{"addresses":[{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.090029Z","updatedAt":"2026-11-05T13:07:41.090029Z"},{"id":2,"name":"","city":"Город","address":"  старая строка  ","street":"","apartment":"","entrance":"","isDefault":false,"needsReview":true,"createdAt":"2026-11-05T13:07:41.092927Z","updatedAt":"2026-11-05T13:07:41.092927Z"}]}
+{"addresses":[{"id":1,"recipientName":"Иван","recipientPhone":"+79991234567","name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.090029Z","updatedAt":"2026-11-05T13:07:41.090029Z"},{"id":2,"recipientName":"","recipientPhone":"","name":"","city":"Город","address":"  старая строка  ","street":"","apartment":"","entrance":"","isDefault":false,"needsReview":true,"createdAt":"2026-11-05T13:07:41.092927Z","updatedAt":"2026-11-05T13:07:41.092927Z"}]}
 ```
 
 **Errors**
@@ -1017,10 +1017,12 @@ Create or reuse a saved address.
 
 **Request body**
 
-Only name, city, street, apartment and entrance are accepted, each as a non-null string. Unknown fields (including userId, id and isDefault), null/scalar/array documents, multiple documents, non-string fields and bodies larger than 1 MiB return 400 Некорректный JSON. Optional name/apartment/entrance default to empty strings. Unicode boundary whitespace is trimmed; limits count code points. City and street are required. Default changes use the separate route.
+Only recipientName, recipientPhone, name, city, street, apartment and entrance are accepted, each as a non-null string. Unknown fields (including userId, id and isDefault), null/scalar/array documents, multiple documents, non-string fields and bodies larger than 1 MiB return 400 Некорректный JSON. Optional name/apartment/entrance default to empty strings. Unicode boundary whitespace is trimmed; limits count code points. Recipient name, recipient phone, city and street are required. Default changes use the separate route.
 
 | Field | Limits | Exact field error |
 |---|---|---|
+| recipientName | required, 2–80 | `Укажите имя`; `Слишком длинное имя` |
+| recipientPhone | required Russian phone, normalized to +7XXXXXXXXXX | `Введите номер полностью: +7 ___ ___-__-__` |
 | name | at most 40 | `Не больше 40 символов` |
 | city | required, at most 80 | empty: `Выберите населённый пункт`; too long: `Не больше 80 символов` |
 | street | 3–120 | short: `Укажите улицу и дом`; long: `Слишком длинный адрес` |
@@ -1028,19 +1030,19 @@ Only name, city, street, apartment and entrance are accepted, each as a non-null
 | entrance | at most 20 | `Не больше 20 символов` |
 
 ```json
-{"name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
+{"recipientName":"Иван","recipientPhone":"+79991234567","name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
 ```
 
 **Response 201**
 
 ```json
-{"entry":{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":true}
+{"entry":{"id":1,"recipientName":"Иван","recipientPhone":"+79991234567","name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":true}
 ```
 
 **Response 200**
 
 ```json
-{"entry":{"id":1,"name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":false}
+{"entry":{"id":1,"recipientName":"Иван","recipientPhone":"+79991234567","name":"Дом","city":"Белореченск","address":"ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3","isDefault":true,"needsReview":false,"createdAt":"2026-11-05T13:07:41.135643Z","updatedAt":"2026-11-05T13:07:41.135643Z"},"created":false}
 ```
 
 **Errors**
@@ -1064,10 +1066,12 @@ Replace editable saved-address fields.
 
 **Request body**
 
-Only name, city, street, apartment and entrance are accepted, each as a non-null string. Unknown fields (including userId, id and isDefault), null/scalar/array documents, multiple documents, non-string fields and bodies larger than 1 MiB return 400 Некорректный JSON. Optional name/apartment/entrance default to empty strings. Unicode boundary whitespace is trimmed; limits count code points. City and street are required. Default changes use the separate route.
+Only recipientName, recipientPhone, name, city, street, apartment and entrance are accepted, each as a non-null string. Unknown fields (including userId, id and isDefault), null/scalar/array documents, multiple documents, non-string fields and bodies larger than 1 MiB return 400 Некорректный JSON. Optional name/apartment/entrance default to empty strings. Unicode boundary whitespace is trimmed; limits count code points. Recipient name, recipient phone, city and street are required. Default changes use the separate route.
 
 | Field | Limits | Exact field error |
 |---|---|---|
+| recipientName | required, 2–80 | `Укажите имя`; `Слишком длинное имя` |
+| recipientPhone | required Russian phone, normalized to +7XXXXXXXXXX | `Введите номер полностью: +7 ___ ___-__-__` |
 | name | at most 40 | `Не больше 40 символов` |
 | city | required, at most 80 | empty: `Выберите населённый пункт`; too long: `Не больше 80 символов` |
 | street | 3–120 | short: `Укажите улицу и дом`; long: `Слишком длинный адрес` |
@@ -1075,7 +1079,7 @@ Only name, city, street, apartment and entrance are accepted, each as a non-null
 | entrance | at most 20 | `Не больше 20 символов` |
 
 ```json
-{"name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
+{"recipientName":"Иван","recipientPhone":"+79991234567","name":"Дом","city":"Белореченск","street":"ул. Гоголя, 61","apartment":"12","entrance":"2, этаж 3"}
 ```
 
 **Response 200**
@@ -3746,3 +3750,7 @@ Validation fields (first error returned; rejected saves leave configuration unch
 - `categories`: `Укажите список категорий` (missing/null).
 - `categories[i].categoryId`: `Укажите уникальную категорию` (non-positive/duplicate) or `Категория недоступна` (missing/deleted/hidden).
 - `categories[i].productIds`: `Укажите список из не более трёх блюд` (missing/null or more than three), `Укажите уникальные блюда` (non-positive/duplicate), or `Блюдо недоступно или относится к другой категории` (missing/deleted/moved).
+
+### Saved address recipient fields
+
+Customer address create/update requests require `recipientName` (trimmed, 2–80 Unicode characters) and `recipientPhone` (valid Russian phone, normalized to `+7XXXXXXXXXX`). Responses include both strings; existing entries return empty strings until edited. These belong to each user-address association. Missing/invalid values return 400 `Проверьте адрес`, with `errors.recipientName` (`Укажите имя` / `Слишком длинное имя`) or `errors.recipientPhone` (`Введите номер полностью: +7 ___ ___-__-__`). Duplicate creation preserves existing contacts; account merges preserve survivor contacts. Coordinate backend/frontend deployment because old clients omit required fields.

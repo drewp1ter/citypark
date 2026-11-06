@@ -31,8 +31,8 @@ func mergeBooks(t *testing.T, db *sqlx.DB) {
 
 func TestMergeEntriesUnique(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{Name: "Home", City: "City", Street: "Street 1", Apartment: "2", Entrance: "3"})
-	b := createBookEntry(t, s, 2, Fields{Name: "Work", City: "City", Street: "Street 2"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Home", City: "City", Street: "Street 1", Apartment: "2", Entrance: "3"})
+	b := createBookEntry(t, s, 2, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Work", City: "City", Street: "Street 2"})
 	mergeBooks(t, db)
 	got := bookEntries(t, db, 2)
 	a.IsDefault = false
@@ -44,9 +44,9 @@ func TestMergeEntriesUnique(t *testing.T) {
 
 func TestMergeEntriesDuplicate(t *testing.T) {
 	db, s := bookFixture(t)
-	createBookEntry(t, s, 1, Fields{Name: "Source", City: " CITY ", Street: "STREET  1", Apartment: "2"})
-	b := createBookEntry(t, s, 2, Fields{Name: "Destination", City: "city", Street: "street 1", Apartment: "2"})
-	c := createBookEntry(t, s, 1, Fields{City: "city", Street: "street 1", Apartment: "3"})
+	createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Source", City: " CITY ", Street: "STREET  1", Apartment: "2"})
+	b := createBookEntry(t, s, 2, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Destination", City: "city", Street: "street 1", Apartment: "2"})
+	c := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "city", Street: "street 1", Apartment: "3"})
 	mergeBooks(t, db)
 	got := bookEntries(t, db, 2)
 	c.UpdatedAt = got[1].UpdatedAt
@@ -65,12 +65,12 @@ func TestMergeEntriesDefaults(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			db, s := bookFixture(t)
-			a := createBookEntry(t, s, 1, Fields{City: "City", Street: "Street 1"})
+			a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "City", Street: "Street 1"})
 			street := "Street 2"
 			if tc.duplicate {
 				street = "Street 1"
 			}
-			b := createBookEntry(t, s, 2, Fields{City: "City", Street: street})
+			b := createBookEntry(t, s, 2, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "City", Street: street})
 			bookExec(t, db, `UPDATE user_addresses SET is_default=false`)
 			if tc.dest {
 				bookExec(t, db, `UPDATE user_addresses SET is_default=true WHERE id=$1`, b.ID)
@@ -156,8 +156,8 @@ func TestMergeEntriesSourceDuplicates(t *testing.T) {
 
 func TestMergeEntriesRollback(t *testing.T) {
 	db, s := bookFixture(t)
-	createBookEntry(t, s, 1, Fields{City: "City", Street: "Street 1"})
-	bad := createBookEntry(t, s, 1, Fields{City: "City", Street: "Street 2"})
+	createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "City", Street: "Street 1"})
+	bad := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "City", Street: "Street 2"})
 	before := bookEntries(t, db, 1)
 	bookExec(t, db, `CREATE FUNCTION fail_address_merge() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.id=`+strconv.FormatInt(bad.ID, 10)+` AND NEW.user_id=2 THEN RAISE EXCEPTION 'forced move failure'; END IF; RETURN NEW; END $$`)
 	bookExec(t, db, `CREATE TRIGGER fail_address_merge BEFORE UPDATE ON user_addresses FOR EACH ROW EXECUTE FUNCTION fail_address_merge()`)
@@ -170,7 +170,7 @@ func TestMergeEntriesRollback(t *testing.T) {
 
 func TestMergeEntriesConcurrentWrite(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "City", Street: "Street 1"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "City", Street: "Street 1"})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	tx, err := db.BeginTxx(ctx, nil)
@@ -184,7 +184,7 @@ func TestMergeEntriesConcurrentWrite(t *testing.T) {
 	}
 	result := make(chan error, 1)
 	go func() {
-		_, err := s.UpdateEntry(ctx, 1, a.ID, Fields{Name: "Changed", City: "City", Street: "Street 1"})
+		_, err := s.UpdateEntry(ctx, 1, a.ID, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Changed", City: "City", Street: "Street 1"})
 		result <- err
 	}()
 	// The mutation cannot pass the owner lock held by this transaction.
@@ -270,7 +270,7 @@ func (r mergeResult) RowsAffected() (int64, error) {
 
 func TestMergeEntriesDatabaseFailures(t *testing.T) {
 	db, s := bookFixture(t)
-	createBookEntry(t, s, 1, Fields{City: "City", Street: "Street 1"})
+	createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "City", Street: "Street 1"})
 	legacyMergeEntry(t, db, 1, "CITY", " STREET 1 ", "Duplicate", false)
 	before := bookEntries(t, db, 1)
 	for _, tc := range []struct {

@@ -85,7 +85,7 @@ func decodeBookFields(w http.ResponseWriter, r *http.Request) (Fields, error) {
 		return bad()
 	}
 	var in Fields
-	allowed := map[string]*string{"name": &in.Name, "city": &in.City, "street": &in.Street, "apartment": &in.Apartment, "entrance": &in.Entrance}
+	allowed := map[string]*string{"recipientName": &in.RecipientName, "recipientPhone": &in.RecipientPhone, "name": &in.Name, "city": &in.City, "street": &in.Street, "apartment": &in.Apartment, "entrance": &in.Entrance}
 	for key, raw := range object {
 		target, ok := allowed[key]
 		if !ok || bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {

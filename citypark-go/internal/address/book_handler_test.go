@@ -64,7 +64,7 @@ func (f bookAPI) call(t *testing.T, method, path string, body any, want int) *ht
 	return rec
 }
 func apiFields() address.Fields {
-	return address.Fields{Name: "Дом", City: "Белореченск", Street: "ул. Гоголя, 61", Apartment: "12", Entrance: "2, этаж 3"}
+	return address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Дом", City: "Белореченск", Street: "ул. Гоголя, 61", Apartment: "12", Entrance: "2, этаж 3"}
 }
 func (f bookAPI) create(t *testing.T, in address.Fields) address.Entry {
 	t.Helper()
@@ -111,7 +111,7 @@ func TestBookAPIList(t *testing.T) {
 	}
 	var raw map[string][]map[string]any
 	testutil.Decode(t, rec, &raw)
-	want := []string{"id", "name", "city", "address", "street", "apartment", "entrance", "isDefault", "needsReview", "createdAt", "updatedAt"}
+	want := []string{"recipientName", "recipientPhone", "id", "name", "city", "address", "street", "apartment", "entrance", "isDefault", "needsReview", "createdAt", "updatedAt"}
 	for _, item := range raw["addresses"] {
 		if len(item) != len(want) {
 			t.Fatal(item)
@@ -153,7 +153,7 @@ func TestBookAPIUpdate(t *testing.T) {
 	shared := bookEntries(t, f.db, 1)[0]
 	other := createBookEntry(t, address.NewService(f.db), 2, apiFields())
 	bookExec(t, f.db, `INSERT INTO orders(customer_id,address_id,items_hash,delivery_address) VALUES(1,$1,'hash',$2)`, shared.AddressID, e.Address)
-	in := address.Fields{City: "Город", Street: "Дом 3"}
+	in := address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 3"}
 	rec := f.call(t, "PUT", "/"+strconv.FormatInt(e.ID, 10), in, 200)
 	var out struct {
 		Entry address.Entry `json:"entry"`
@@ -163,7 +163,7 @@ func TestBookAPIUpdate(t *testing.T) {
 		t.Fatal(rec.Body)
 	}
 	t.Logf("PUT example: %s", rec.Body)
-	second := f.create(t, address.Fields{City: "Город", Street: "Дом 4"})
+	second := f.create(t, address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 4"})
 	rec = f.call(t, "PUT", "/"+strconv.FormatInt(second.ID, 10)+"/default", nil, 200)
 	testutil.Decode(t, rec, &out)
 	if !out.Entry.IsDefault || out.Entry.ID != second.ID {
@@ -236,7 +236,7 @@ func TestBookAPIIDs(t *testing.T) {
 func TestBookAPIConflict(t *testing.T) {
 	f := newBookAPI(t, true)
 	f.create(t, apiFields())
-	e := f.create(t, address.Fields{City: "Город", Street: "Дом 2"})
+	e := f.create(t, address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	before := bookEntries(t, f.db, 1)
 	rec := f.call(t, "PUT", "/"+strconv.FormatInt(e.ID, 10), apiFields(), 409)
 	expectBookError(t, rec, "Такой адрес уже сохранён", map[string]string{"street": "Такой адрес уже сохранён"})
@@ -331,7 +331,7 @@ func TestBookAPIFailures(t *testing.T) {
 	f.router = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		original.ServeHTTP(w, r.WithContext(sentry.SetHubOnContext(r.Context(), sentry.NewHub(client, sentry.NewScope()))))
 	})
-	in := address.Fields{Name: "PRIVATE NAME", City: "PRIVATE CITY", Street: "PRIVATE STREET"}
+	in := address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "PRIVATE NAME", City: "PRIVATE CITY", Street: "PRIVATE STREET"}
 	for _, route := range []struct{ method, path string }{{"POST", ""}, {"PUT", "/" + strconv.FormatInt(e.ID, 10)}} {
 		expectBookError(t, f.call(t, route.method, route.path, in, 500), "Внутренняя ошибка сервера", nil)
 	}

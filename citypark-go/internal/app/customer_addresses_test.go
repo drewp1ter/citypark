@@ -25,7 +25,7 @@ func TestAppCustomerAddresses(t *testing.T) {
 	if _, err := db.Exec(`SELECT setval(pg_get_serial_sequence('user_addresses','id'),100,false)`); err != nil {
 		t.Fatal(err)
 	}
-	rec := testutil.DoJSON(t, a.Handler, "POST", "/api/v1/customer/addresses", token, address.Fields{City: "Город", Street: "Дом"})
+	rec := testutil.DoJSON(t, a.Handler, "POST", "/api/v1/customer/addresses", token, address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
 	if rec.Code != 201 || rec.Header().Get("Cache-Control") != "private, no-store" {
 		t.Fatal(rec.Code, rec.Body)
 	}
@@ -50,7 +50,7 @@ func TestAppCustomerAddresses(t *testing.T) {
 	for _, path := range []string{entryPath, entryPath + "/default"} {
 		var body any
 		if path == entryPath {
-			body = address.Fields{Name: "Работа", City: "Город", Street: "Дом 2"}
+			body = address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Работа", City: "Город", Street: "Дом 2"}
 		}
 		rec = testutil.DoJSON(t, a.Handler, "PUT", path, token, body)
 		if rec.Code != 200 {

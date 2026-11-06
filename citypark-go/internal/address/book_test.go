@@ -13,7 +13,7 @@ import (
 )
 
 func TestBookFields(t *testing.T) {
-	valid := Fields{City: "Город", Street: "Дом"}
+	valid := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"}
 	if got := FieldErrors(valid); len(got) != 0 {
 		t.Fatal(got)
 	}
@@ -46,11 +46,11 @@ func TestBookFields(t *testing.T) {
 			}
 		}
 	}
-	if got := FieldErrors(Fields{}); !reflect.DeepEqual(got, map[string]string{"city": "Выберите населённый пункт", "street": "Укажите улицу и дом"}) {
+	if got := FieldErrors(Fields{}); !reflect.DeepEqual(got, map[string]string{"recipientName": "Укажите имя", "recipientPhone": "Введите номер полностью: +7 ___ ___-__-__", "city": "Выберите населённый пункт", "street": "Укажите улицу и дом"}) {
 		t.Fatal(got)
 	}
-	in := Fields{Name: "\u00a0Дом  мой\t", City: " Город ", Street: " Дом ", Apartment: " 1 ", Entrance: " 2 "}
-	want := Fields{"Дом  мой", "Город", "Дом", "1", "2"}
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "\u00a0Дом  мой\t", City: " Город ", Street: " Дом ", Apartment: " 1 ", Entrance: " 2 "}
+	want := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Дом  мой", City: "Город", Street: "Дом", Apartment: "1", Entrance: "2"}
 	if got := CleanFields(in); got != want {
 		t.Fatal(got)
 	}

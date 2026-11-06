@@ -2,6 +2,7 @@ package address
 
 import (
 	"encoding/json"
+	"github.com/drewp1ter/citypark-go/internal/validate"
 	"golang.org/x/text/unicode/norm"
 	"strings"
 	"time"
@@ -9,29 +10,37 @@ import (
 )
 
 type Fields struct {
-	Name      string `json:"name" db:"name" validate:"max=40"`
-	City      string `json:"city" db:"city" validate:"required,max=80"`
-	Street    string `json:"street" db:"street" validate:"required,min=3,max=120"`
-	Apartment string `json:"apartment" db:"apartment" validate:"max=20"`
-	Entrance  string `json:"entrance" db:"entrance" validate:"max=20"`
+	RecipientName  string `json:"recipientName" db:"recipient_name"`
+	RecipientPhone string `json:"recipientPhone" db:"recipient_phone"`
+	Name           string `json:"name" db:"name" validate:"max=40"`
+	City           string `json:"city" db:"city" validate:"required,max=80"`
+	Street         string `json:"street" db:"street" validate:"required,min=3,max=120"`
+	Apartment      string `json:"apartment" db:"apartment" validate:"max=20"`
+	Entrance       string `json:"entrance" db:"entrance" validate:"max=20"`
 }
 
 type Entry struct {
-	ID          int64     `json:"id" db:"id"`
-	AddressID   int64     `json:"-" db:"address_id"`
-	Name        string    `json:"name" db:"name"`
-	City        string    `json:"city" db:"city"`
-	Address     string    `json:"address" db:"address"`
-	Street      string    `json:"street" db:"street"`
-	Apartment   string    `json:"apartment" db:"apartment"`
-	Entrance    string    `json:"entrance" db:"entrance"`
-	IsDefault   bool      `json:"isDefault" db:"is_default"`
-	NeedsReview bool      `json:"needsReview" db:"needs_review"`
-	CreatedAt   time.Time `json:"createdAt" db:"created_at"`
-	UpdatedAt   time.Time `json:"updatedAt" db:"updated_at"`
+	RecipientName  string    `json:"recipientName" db:"recipient_name"`
+	RecipientPhone string    `json:"recipientPhone" db:"recipient_phone"`
+	ID             int64     `json:"id" db:"id"`
+	AddressID      int64     `json:"-" db:"address_id"`
+	Name           string    `json:"name" db:"name"`
+	City           string    `json:"city" db:"city"`
+	Address        string    `json:"address" db:"address"`
+	Street         string    `json:"street" db:"street"`
+	Apartment      string    `json:"apartment" db:"apartment"`
+	Entrance       string    `json:"entrance" db:"entrance"`
+	IsDefault      bool      `json:"isDefault" db:"is_default"`
+	NeedsReview    bool      `json:"needsReview" db:"needs_review"`
+	CreatedAt      time.Time `json:"createdAt" db:"created_at"`
+	UpdatedAt      time.Time `json:"updatedAt" db:"updated_at"`
 }
 
 func CleanFields(in Fields) Fields {
+	in.RecipientName = strings.TrimSpace(in.RecipientName)
+	if phone, ok := validate.NormalizePhone(in.RecipientPhone); ok {
+		in.RecipientPhone = phone
+	}
 	in.Name = strings.TrimSpace(in.Name)
 	in.City = strings.TrimSpace(in.City)
 	in.Street = strings.TrimSpace(in.Street)
@@ -42,11 +51,15 @@ func CleanFields(in Fields) Fields {
 
 func FieldErrors(in Fields) map[string]string {
 	errors := map[string]string{}
+	if _, ok := validate.NormalizePhone(in.RecipientPhone); !ok {
+		errors["recipientPhone"] = "Введите номер полностью: +7 ___ ___-__-__"
+	}
 	for _, f := range []struct {
 		key, value    string
 		min, max      int
 		missing, long string
 	}{
+		{"recipientName", in.RecipientName, 2, 80, "Укажите имя", "Слишком длинное имя"},
 		{"name", in.Name, 0, 40, "", "Не больше 40 символов"},
 		{"city", in.City, 1, 80, "Выберите населённый пункт", "Не больше 80 символов"},
 		{"street", in.Street, 3, 120, "Укажите улицу и дом", "Слишком длинный адрес"},

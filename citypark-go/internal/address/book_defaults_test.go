@@ -22,8 +22,8 @@ import (
 func TestSetDefault(t *testing.T) {
 	db, s := bookFixture(t)
 	ctx := context.Background()
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	for _, id := range []int64{a.ID, a.ID, b.ID, b.ID} {
 		e, err := s.SetDefault(ctx, 1, id)
 		if err != nil || !e.IsDefault || e.ID != id {
@@ -52,8 +52,8 @@ func TestSetDefault(t *testing.T) {
 }
 func TestSetDefaultForeign(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 2, Fields{City: "Город", Street: "Дом 2"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 2, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	before := bookEntries(t, db, 1)
 	for _, id := range []int64{b.ID, 999} {
 		if _, err := s.SetDefault(context.Background(), 1, id); !errors.Is(err, store.ErrNotFound) {
@@ -67,10 +67,10 @@ func TestSetDefaultForeign(t *testing.T) {
 func TestDeleteEntry(t *testing.T) {
 	db, s := bookFixture(t)
 	ctx := context.Background()
-	in := Fields{City: "Город", Street: "Дом"}
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"}
 	a := createBookEntry(t, s, 1, in)
 	b := createBookEntry(t, s, 2, in)
-	c := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	c := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	bookExec(t, db, `INSERT INTO orders(customer_id,address_id,items_hash,delivery_city,delivery_address) VALUES(1,$1,'hash','Город','Дом')`, a.AddressID)
 	for _, id := range []int64{c.ID, a.ID} {
 		if err := s.DeleteEntry(ctx, 1, id); err != nil {
@@ -91,8 +91,8 @@ func TestDeleteEntry(t *testing.T) {
 }
 func TestConcurrentDefaults(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	var wg sync.WaitGroup
 	errs := make(chan error, 21)
 	for i := 0; i < 20; i++ {
@@ -149,7 +149,7 @@ func TestLegacyBookCreate(t *testing.T) {
 	if !a.IsDefault || !a.NeedsReview || int64(body["id"].(float64)) != a.AddressID {
 		t.Fatal(a)
 	}
-	if _, err := s.UpdateEntry(context.Background(), 1, a.ID, Fields{Name: "Домой", City: "Город", Street: "Дом"}); err != nil {
+	if _, err := s.UpdateEntry(context.Background(), 1, a.ID, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Домой", City: "Город", Street: "Дом"}); err != nil {
 		t.Fatal(err)
 	}
 	before := bookEntries(t, db, 1)
@@ -174,10 +174,10 @@ func TestLegacyBookDelete(t *testing.T) {
 	db, s := bookFixture(t)
 	bookExec(t, db, `SELECT setval(pg_get_serial_sequence('user_addresses','id'),100,false)`)
 	ctx := context.Background()
-	createBookEntry(t, s, 2, Fields{City: "Город", Street: "Другой"})
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 2, Fields{City: "Город", Street: "Дом"})
-	c := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	createBookEntry(t, s, 2, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Другой"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 2, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	c := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	if c.ID == c.AddressID {
 		t.Fatal("fixture needs distinct IDs")
 	}
@@ -242,8 +242,8 @@ func TestLegacyBookPermissions(t *testing.T) {
 func TestBookDefaultFailures(t *testing.T) {
 	db, s := bookFixture(t)
 	ctx := context.Background()
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	before := bookEntries(t, db, 1)
 	operations := func(s *Service, ctx context.Context, owner int64) []error {
 		_, set := s.SetDefault(ctx, owner, b.ID)
@@ -291,8 +291,8 @@ func TestBookDefaultFailures(t *testing.T) {
 func TestBookDefaultMutationRollback(t *testing.T) {
 	db, s := bookFixture(t)
 	ctx := context.Background()
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	before := bookEntries(t, db, 1)
 	bookExec(t, db, `CREATE FUNCTION test_book_defaults_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'address mutation failed'; END $$;
  CREATE TRIGGER test_book_defaults_failure BEFORE INSERT OR UPDATE OR DELETE ON user_addresses FOR EACH ROW EXECUTE FUNCTION test_book_defaults_failure()`)

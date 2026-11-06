@@ -45,30 +45,30 @@ func bookEntries(t *testing.T, db *sqlx.DB, user int64) []Entry {
 }
 func TestCreateEntry(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: " Город ", Street: " Дом ", Name: " "})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: " Город ", Street: " Дом ", Name: " "})
 	if !a.IsDefault || a.NeedsReview || a.Name != "" || a.City != "Город" || a.Street != "Дом" {
 		t.Fatal(a)
 	}
-	b := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	b := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	if b.IsDefault {
 		t.Fatal(b)
 	}
 	bookExec(t, db, `UPDATE user_addresses SET is_default=false,updated_at=now()`)
-	c := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 3"})
+	c := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 3"})
 	if c.IsDefault {
 		t.Fatal(c)
 	}
 	bookExec(t, db, `DELETE FROM user_addresses WHERE id=$1`, a.ID)
-	d := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 4"})
+	d := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 4"})
 	if d.IsDefault || len(bookEntries(t, db, 1)) != 3 {
 		t.Fatal(d)
 	}
 }
 func TestCreateEntryDuplicate(t *testing.T) {
 	db, s := bookFixture(t)
-	in := Fields{Name: "Домой", City: "Й город", Street: "Дом", Apartment: "1", Entrance: "2"}
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Домой", City: "Й город", Street: "Дом", Apartment: "1", Entrance: "2"}
 	a := createBookEntry(t, s, 1, in)
-	for _, candidate := range []Fields{in, {Name: "Другое", City: "и\u0306\u00a0ГОРОД", Street: "ДОМ", Apartment: "1", Entrance: "2"}} {
+	for _, candidate := range []Fields{in, {RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Другое", City: "и\u0306\u00a0ГОРОД", Street: "ДОМ", Apartment: "1", Entrance: "2"}} {
 		e, created, err := s.CreateEntry(context.Background(), 1, candidate)
 		if err != nil || created || e != a {
 			t.Fatal(e, created, err)
@@ -86,7 +86,7 @@ func TestCreateLegacyDuplicate(t *testing.T) {
 	db, s := bookFixture(t)
 	bookExec(t, db, `INSERT INTO addresses(id,city,address) VALUES(1,'Город','Дом'),(2,' ГОРОД ',' ДОМ '); INSERT INTO user_addresses(user_id,address_id) VALUES(1,1),(1,2)`)
 	before := bookEntries(t, db, 1)
-	e, created, err := s.CreateEntry(context.Background(), 1, Fields{Name: "Новое", City: "город", Street: "дом"})
+	e, created, err := s.CreateEntry(context.Background(), 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Новое", City: "город", Street: "дом"})
 	if err != nil || created || e != before[0] || !e.NeedsReview {
 		t.Fatal(e, created, err)
 	}
@@ -96,8 +96,8 @@ func TestCreateLegacyDuplicate(t *testing.T) {
 }
 func TestUpdateEntry(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	in := Fields{Name: " Работа ", City: "Новый", Street: "Улица 2", Apartment: "5", Entrance: "3"}
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: " Работа ", City: "Новый", Street: "Улица 2", Apartment: "5", Entrance: "3"}
 	b, err := s.UpdateEntry(context.Background(), 1, a.ID, in)
 	if err != nil || b.ID != a.ID || b.CreatedAt != a.CreatedAt || !b.IsDefault || b.Name != "Работа" || b.Address != "Улица 2, кв. 5, подъезд 3" || b.City != "Новый" || b.UpdatedAt.Before(a.UpdatedAt) {
 		t.Fatal(b, err)
@@ -114,7 +114,7 @@ func TestUpdateLegacyEntry(t *testing.T) {
 	db, s := bookFixture(t)
 	bookExec(t, db, `INSERT INTO addresses(id,city,address) VALUES(1,'Город','неструктурированный текст'); SELECT setval(pg_get_serial_sequence('addresses','id'),1); INSERT INTO user_addresses(user_id,address_id) VALUES(1,1)`)
 	a := bookEntries(t, db, 1)[0]
-	b, err := s.UpdateEntry(context.Background(), 1, a.ID, Fields{City: "Город", Street: "Дом 3"})
+	b, err := s.UpdateEntry(context.Background(), 1, a.ID, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 3"})
 	if err != nil || b.NeedsReview || b.IsDefault || b.ID != a.ID || b.CreatedAt != a.CreatedAt || b.Street != "Дом 3" {
 		t.Fatal(b, err)
 	}
@@ -124,10 +124,10 @@ func TestUpdateLegacyEntry(t *testing.T) {
 }
 func TestUpdateEntryConflict(t *testing.T) {
 	db, s := bookFixture(t)
-	createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
-	b := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом 2"})
+	createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
+	b := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"})
 	before := bookEntries(t, db, 1)
-	_, err := s.UpdateEntry(context.Background(), 1, b.ID, Fields{Name: "Коллизия", City: " ГОРОД ", Street: "ДОМ"})
+	_, err := s.UpdateEntry(context.Background(), 1, b.ID, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Коллизия", City: " ГОРОД ", Street: "ДОМ"})
 	if !errors.Is(err, ErrDuplicate) {
 		t.Fatal(err)
 	}
@@ -140,14 +140,14 @@ func TestUpdateEntryConflict(t *testing.T) {
 }
 func TestBookOwnerIsolation(t *testing.T) {
 	db, s := bookFixture(t)
-	in := Fields{City: "Город", Street: "Дом"}
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"}
 	a := createBookEntry(t, s, 1, in)
 	b := createBookEntry(t, s, 2, in)
 	if a.AddressID != b.AddressID {
 		t.Fatal(a, b)
 	}
 	bookExec(t, db, `INSERT INTO orders(customer_id,account_id,address_id,items_hash,delivery_city,delivery_address) VALUES(1,1,$1,'hash','Город','Дом')`, a.AddressID)
-	if _, err := s.UpdateEntry(context.Background(), 1, a.ID, Fields{City: "Новый", Street: "Дом 3"}); err != nil {
+	if _, err := s.UpdateEntry(context.Background(), 1, a.ID, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Новый", Street: "Дом 3"}); err != nil {
 		t.Fatal(err)
 	}
 	if got := bookEntries(t, db, 2); len(got) != 1 || got[0] != b {
@@ -168,7 +168,7 @@ func TestBookOwnerIsolation(t *testing.T) {
 }
 func TestBookWriteValidation(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
 	before := bookEntries(t, db, 1)
 	inputs := []Fields{{}, {City: " ", Street: " \u00a0 "}, {Name: strings.Repeat("я", 41), City: strings.Repeat("я", 81), Street: strings.Repeat("я", 121), Apartment: strings.Repeat("я", 21), Entrance: strings.Repeat("я", 21)}}
 	for _, in := range inputs {
@@ -184,7 +184,7 @@ func TestBookWriteValidation(t *testing.T) {
 		}
 	}
 	bookExec(t, db, `INSERT INTO users(id,name,phone,role) VALUES(3,'Staff','3','admin'),(4,'Merged','4','user'); UPDATE users SET merged_into_user_id=2,updated_at=now() WHERE id=4`)
-	valid := Fields{City: "Город", Street: "Дом 2"}
+	valid := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"}
 	for _, user := range []int64{99, 3, 4} {
 		if _, _, err := s.CreateEntry(context.Background(), user, valid); !errors.Is(err, ErrOwnerUnavailable) {
 			t.Fatal(err)
@@ -218,7 +218,7 @@ func TestBookConcurrentCreates(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			<-start
-			entries[i], created[i], errs[i] = s.CreateEntry(context.Background(), 1, Fields{City: "Город", Street: "Дом"})
+			entries[i], created[i], errs[i] = s.CreateEntry(context.Background(), 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
 		}()
 	}
 	close(start)
@@ -238,11 +238,11 @@ func TestBookConcurrentCreates(t *testing.T) {
 }
 func TestBookWriteRollback(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
 	before := bookEntries(t, db, 1)
 	bookExec(t, db, `ALTER TABLE user_addresses ADD CONSTRAINT test_book_write_failure CHECK(name <> 'fail')`)
 	t.Cleanup(func() { bookExec(t, db, `ALTER TABLE user_addresses DROP CONSTRAINT test_book_write_failure`) })
-	in := Fields{Name: "fail", City: "Частный город", Street: "Частная улица"}
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "fail", City: "Частный город", Street: "Частная улица"}
 	if e, created, err := s.CreateEntry(context.Background(), 1, in); err == nil || created || e.ID != 0 || strings.Contains(err.Error(), in.Street) {
 		t.Fatal(e, created, err)
 	}
@@ -254,10 +254,10 @@ func TestBookWriteRollback(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, _, err := s.CreateEntry(ctx, 1, Fields{City: "Город", Street: "Дом 2"}); !errors.Is(err, context.Canceled) {
+	if _, _, err := s.CreateEntry(ctx, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"}); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
-	if _, err := s.UpdateEntry(ctx, 1, a.ID, Fields{City: "Город", Street: "Дом 2"}); !errors.Is(err, context.Canceled) {
+	if _, err := s.UpdateEntry(ctx, 1, a.ID, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом 2"}); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 	if got := bookEntries(t, db, 1); !reflect.DeepEqual(got, before) {
@@ -279,14 +279,14 @@ func TestBookWriteRollback(t *testing.T) {
 
 func TestBookCommitRollback(t *testing.T) {
 	db, s := bookFixture(t)
-	a := createBookEntry(t, s, 1, Fields{City: "Город", Street: "Дом"})
+	a := createBookEntry(t, s, 1, Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Дом"})
 	before := bookEntries(t, db, 1)
 	bookExec(t, db, `CREATE FUNCTION test_book_commit_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'saved address commit failed'; END $$;
  CREATE CONSTRAINT TRIGGER test_book_commit_failure AFTER INSERT OR UPDATE ON user_addresses DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION test_book_commit_failure()`)
 	t.Cleanup(func() {
 		bookExec(t, db, `DROP TRIGGER test_book_commit_failure ON user_addresses; DROP FUNCTION test_book_commit_failure()`)
 	})
-	in := Fields{City: "Город", Street: "Новый дом"}
+	in := Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", City: "Город", Street: "Новый дом"}
 	if entry, created, err := s.CreateEntry(context.Background(), 1, in); err == nil || created || entry.ID != 0 {
 		t.Fatal(entry, created, err)
 	}

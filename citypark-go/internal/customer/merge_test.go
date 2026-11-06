@@ -265,7 +265,7 @@ func TestMergeAccountsAddressMetadata(t *testing.T) {
 	source := testutil.InsertUser(t, db, "Mini", "1", "user")
 	dest := testutil.InsertUser(t, db, "Web", "2", "user")
 	books := address.NewService(db)
-	original, _, err := books.CreateEntry(ctx, source, address.Fields{Name: "Home", City: "City", Street: "Street 1", Apartment: "2", Entrance: "3"})
+	original, _, err := books.CreateEntry(ctx, source, address.Fields{RecipientName: "Иван", RecipientPhone: "+79991234567", Name: "Home", City: "City", Street: "Street 1", Apartment: "2", Entrance: "3"})
 	if err != nil {
 		t.Fatal(err)
 	}

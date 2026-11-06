@@ -233,3 +233,6 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [ ] [101 Telegram-only SOCKS proxy](101-telegram-socks-proxy.md) [100]
   - Implemented optional Telegram-only SOCKS5 transport, validated configuration, docs and fake SOCKS tests. Formatting/build/vet and targeted config/Telegram tests pass. Completion blocked (2026-11-06): TEST_DB_DSN from .env.development refuses connections at host.docker.internal:5433; full suite and app coverage cannot pass. Per AGENTS.md, stopped without starting a database, ticking the task or committing.
+
+- [x] [102 Address recipient contacts](102-address-recipients.md) [97, 98]
+  - Recipient fields persisted per association, normalized and required for writes; migration and API/OpenAPI updated. Full serial Go suite, build, vet and formatting pass; address coverage 96.3%. Coordinate deployment with website task 69.

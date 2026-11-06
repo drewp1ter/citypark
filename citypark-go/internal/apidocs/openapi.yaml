@@ -317,9 +317,11 @@ components:
     BookFields:
       type: object
       additionalProperties: false
-      required: [city, street]
-      description: Only these five non-null string fields are accepted. Unicode boundary whitespace is trimmed; limits count code points. Invalid fields return 400 Проверьте адрес with exact field errors.
+      required: [recipientName, recipientPhone, city, street]
+      description: Only these seven non-null string fields are accepted. Unicode boundary whitespace is trimmed; limits count code points. Invalid fields return 400 Проверьте адрес with exact field errors.
       properties:
+        recipientName: {type: string, minLength: 2, maxLength: 80}
+        recipientPhone: {type: string, description: 'Russian phone, normalized to +7XXXXXXXXXX.'}
         name: {type: string, maxLength: 40, default: ''}
         city: {type: string, minLength: 1, maxLength: 80}
         street: {type: string, minLength: 3, maxLength: 120}
@@ -328,10 +330,12 @@ components:
     BookEntry:
       type: object
       additionalProperties: false
-      required: [id, name, city, address, street, apartment, entrance, isDefault, needsReview, createdAt, updatedAt]
+      required: [id, recipientName, recipientPhone, name, city, address, street, apartment, entrance, isDefault, needsReview, createdAt, updatedAt]
       description: Saved association ID; internal shared address/user IDs are never exposed. Legacy entries preserve address verbatim, street is empty and needsReview is true. A default legacy entry still requires review before checkout autofill.
       properties:
         id: {type: integer, format: int64, minimum: 1}
+        recipientName: {type: string, description: 'Empty for legacy entries.'}
+        recipientPhone: {type: string, description: 'Empty for legacy entries.'}
         name: {type: string}
         city: {type: string}
         address: {type: string}
