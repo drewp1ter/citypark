@@ -5,7 +5,7 @@ import { useState } from 'react'
 import type { Dish } from '@/entities/dish'
 import { AddToCartButton } from '@/features/add-to-cart'
 import { cn, formatPrice } from '@/shared/lib'
-import { Card } from '@/shared/ui'
+import { AppLink, Card } from '@/shared/ui'
 
 /** "500 г / 1 кг" switch of a dish that comes in more than one size. */
 function SizeSwitch({ dish, value, onChange }: { dish: Dish; value: string; onChange: (id: string) => void }) {
@@ -33,7 +33,7 @@ function SizeSwitch({ dish, value, onChange }: { dish: Dish; value: string; onCh
  * Menu card. Compact on mobile (2 columns, the price is inside the add button), roomier from 768 px
  * (photo, description, price and a round "+").
  */
-export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean }) {
+export function DishCard({ dish, eager = false, linked = false }: { dish: Dish; eager?: boolean; linked?: boolean }) {
 	const [variantId, setVariantId] = useState(dish.variants[0].id)
 	const variant = dish.variants.find((v) => v.id === variantId) ?? dish.variants[0]
 	const hasSizes = dish.variants.length > 1
@@ -42,6 +42,13 @@ export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean 
 	return (
 		<Card as='article' className='rounded-md p-1.5 md:rounded-lg md:p-2'>
 			<div className='relative h-[130px] overflow-hidden rounded-sm md:h-[180px]'>
+				{linked && (
+					<AppLink
+						href={`/menu/${encodeURIComponent(dish.id)}`}
+						aria-label={dish.name}
+						className='absolute inset-0 z-10'
+					/>
+				)}
 				<Image
 					src={dish.photo.src}
 					alt={dish.photo.alt}
@@ -54,7 +61,9 @@ export function DishCard({ dish, eager = false }: { dish: Dish; eager?: boolean 
 			</div>
 
 			<div className='flex flex-1 flex-col px-1.5 pt-2.5 pb-1 md:gap-1 md:px-2.5 md:pt-3 md:pb-1.5'>
-				<h3 className='text-[15px] leading-[1.3] font-bold md:text-[17px] md:leading-normal'>{dish.name}</h3>
+				<h3 className='text-[15px] leading-[1.3] font-bold md:text-[17px] md:leading-normal'>
+					{linked ? <AppLink href={`/menu/${encodeURIComponent(dish.id)}`}>{dish.name}</AppLink> : dish.name}
+				</h3>
 
 				{dish.composition && (
 					<p className='text-text-muted mt-0.5 line-clamp-2 text-[13px] break-words md:mt-0 md:text-sm'>

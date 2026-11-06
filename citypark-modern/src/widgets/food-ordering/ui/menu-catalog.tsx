@@ -73,7 +73,7 @@ export function MenuCatalog({ categories, dishes, categoryId, aside, basePath }:
 					{visible.length > 0 ? (
 						<div className='grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3'>
 							{visible.map((dish, index) => (
-								<DishCard key={dish.id} dish={dish} eager={index < 3} />
+								<DishCard key={dish.id} dish={dish} eager={index < 3} linked={!basePath || basePath === '/menu'} />
 							))}
 						</div>
 					) : (

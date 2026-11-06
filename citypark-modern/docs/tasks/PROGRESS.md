@@ -224,3 +224,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [69 Saved address recipient contacts](69-address-recipients.md) [59; backend 102]
   - Required per-address contacts in guest/account editing, display, imports and checkout saving/autofill. Legacy guest entries preserved; delivery-only save controls corrected. Check/build and all address harnesses pass; production guest browser flows pass at 390/1440 px in both themes. Authenticated mutations/provider login/native Telegram acceptance remain owner-dependent and were not run. Deploy with backend task 102.
+
+- [x] [70 Shareable dish pages](70-shareable-dishes.md) [68]
+  - Stable public dish pages, menu links, ordering controls, copy feedback/fallback, canonical social metadata and sitemap entries implemented. Check/build and read-only production browser/HTTP QA pass (390/1440 px, both themes, direct links, reload/category return, metadata, sitemap, unknown-ID 404, clipboard success/failure). Existing dynamic-rendering build diagnostics remain. Live data has single portions; multi-portion and unavailable branches reviewed against existing controls. Cart persistence/keyboard and hidden-category fixtures were not independently exercised. External social previews remain deployment-dependent. No backend writes.
