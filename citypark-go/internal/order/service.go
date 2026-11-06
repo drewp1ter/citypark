@@ -38,6 +38,8 @@ type Notifier interface {
 }
 
 type PaymentRequest struct {
+	SubscriberID string // authenticated account identity; empty for guests
+
 	TransactionID string // the order's PaymentUUID
 	Amount        money.Kopecks
 }
@@ -210,7 +212,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if in.ExpectedPayableTotal != nil && *in.ExpectedPayableTotal != o.Total+o.DeliveryPrice {
 		return CreateResult{}, changedTotalError()
 	}
-	form := s.payments.Form(PaymentRequest{TransactionID: o.PaymentUUID, Amount: o.Total + o.DeliveryPrice})
+	form := s.payments.Form(PaymentRequest{TransactionID: o.PaymentUUID, Amount: o.Total + o.DeliveryPrice, SubscriberID: paymentSubscriberID(scope.AccountID)})
 	if o.Status == StatusNew {
 		if err := orders.SetStatus(ctx, o.ID, StatusPending); err != nil {
 			return CreateResult{}, err
@@ -564,3 +566,11 @@ func changedTotalError() error {
 // ConfigurePromo sets the deployment's RMS discount ID before serving requests.
 // Empty disables new promo orders; saved pending retries still use their snapshots.
 func (s *Service) ConfigurePromo(discountTypeID string) { s.promoDiscountTypeID = discountTypeID }
+
+// paymentSubscriberID never uses recipient contact records as payment identity.
+func paymentSubscriberID(accountID *int64) string {
+	if accountID == nil {
+		return ""
+	}
+	return fmt.Sprintf("citypark-user-%d", *accountID)
+}

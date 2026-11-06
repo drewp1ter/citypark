@@ -711,6 +711,8 @@ components:
         `redirectUrl` is the Moneta payment page (full MONETA.Assistant address with every `MNT_*`
         parameter and the signature). `MNT_TRANSACTION_ID` in it is the order's random payment UUID, not
         `orderId`; Moneta appends it to the success URL, so the frontend must not read the order number from it.
+        Authenticated customer links include a signed MNT_SUBSCRIBER_ID derived from the account;
+        guest links omit it. Saving and reusing cards is handled on MONETA checkout.
       required: [orderId, redirectUrl]
       properties:
         orderId:

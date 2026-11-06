@@ -84,7 +84,7 @@ func TestRetryPayment(t *testing.T) {
 			t.Fatalf("%+v %v", got, err)
 		}
 		req := e.payments.requests[len(e.payments.requests)-1]
-		if req.TransactionID != before.PaymentUUID || req.Amount != before.Total+before.DeliveryPrice {
+		if req.SubscriberID != fmt.Sprintf("citypark-user-%d", e.userID) || req.TransactionID != before.PaymentUUID || req.Amount != before.Total+before.DeliveryPrice {
 			t.Fatalf("%+v", req)
 		}
 	}

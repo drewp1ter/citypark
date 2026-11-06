@@ -205,6 +205,11 @@ func TestPaymentsAdapter(t *testing.T) {
 		t.Errorf("Form.URL = %q", form.URL)
 	}
 
+	form = p.Form(order.PaymentRequest{TransactionID: "15", Amount: 79000, SubscriberID: "citypark-user-42"})
+	if !strings.Contains(form.URL, "MNT_SUBSCRIBER_ID=citypark-user-42") || form.Signature != "cafb6506a7d4dd62c2966c456f5df0b9" {
+		t.Fatalf("subscriber not signed by adapter: %+v", form)
+	}
+
 	good := order.PaymentCallback{MerchantID: "100", Currency: "RUB", TestMode: "0", TransactionID: "15", OperationID: "555", Amount: "790.00", Signature: "998b6268fe3a6c7f4eeb8ccec65a9566"}
 	if !p.Verify(good) {
 		t.Error("Verify rejected a correct callback")

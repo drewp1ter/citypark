@@ -236,3 +236,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [x] [102 Address recipient contacts](102-address-recipients.md) [97, 98]
   - Recipient fields persisted per association, normalized and required for writes; migration and API/OpenAPI updated. Full serial Go suite, build, vet and formatting pass; address coverage 96.3%. Coordinate deployment with website task 69.
+
+## Saved cards
+
+- [x] [103 Saved cards through MONETA checkout](103-moneta-saved-card-checkout.md) [99, 100]
+  - Subscriber-aware hosted redirects implemented for authenticated creation, duplicate responses and owner-authorized retries; guest signatures remain compatible. API/OpenAPI updated. Formatting, build, vet and full serial suite pass; coverage: moneta 100%, order 92.1%, app 98.9%, apidocs 100%. MONETA demo acceptance remains required before production release; no financial transactions or deployment performed.

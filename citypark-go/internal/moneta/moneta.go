@@ -40,25 +40,29 @@ func FormatAmount(k money.Kopecks) string {
 
 // RequestSignature signs the payment form for an order. transactionID is the order's payment UUID;
 // amount comes from FormatAmount.
-func (s *Signer) RequestSignature(transactionID, amount string) string {
-	return s.sum(s.id + transactionID + amount + Currency + s.testMode + s.secret)
+func (s *Signer) RequestSignature(transactionID, amount, subscriberID string) string {
+	return s.sum(s.id + transactionID + amount + Currency + subscriberID + s.testMode + s.secret)
 }
 
 // PaymentURL returns the MONETA.Assistant address for an order: base followed by the query
 // MNT_ID, MNT_AMOUNT, MNT_TRANSACTION_ID, MNT_CURRENCY_CODE, MNT_TEST_MODE, MNT_SIGNATURE and,
-// when not empty, MNT_SUCCESS_URL and MNT_FAIL_URL. amount comes from FormatAmount.
-func (s *Signer) PaymentURL(base, transactionID, amount, successURL, failURL string) string {
+// when not empty, MNT_SUBSCRIBER_ID, MNT_SUCCESS_URL and MNT_FAIL_URL. amount comes from FormatAmount.
+func (s *Signer) PaymentURL(base, transactionID, amount, successURL, failURL, subscriberID string) string {
 	u, err := url.Parse(base)
 	if err != nil {
 		return ""
 	}
 	q := u.Query()
+	q.Del("MNT_SUBSCRIBER_ID")
+	if subscriberID != "" {
+		q.Set("MNT_SUBSCRIBER_ID", subscriberID)
+	}
 	q.Set("MNT_ID", s.id)
 	q.Set("MNT_AMOUNT", amount)
 	q.Set("MNT_TRANSACTION_ID", transactionID)
 	q.Set("MNT_CURRENCY_CODE", Currency)
 	q.Set("MNT_TEST_MODE", s.testMode)
-	q.Set("MNT_SIGNATURE", s.RequestSignature(transactionID, amount))
+	q.Set("MNT_SIGNATURE", s.RequestSignature(transactionID, amount, subscriberID))
 	if successURL != "" {
 		q.Set("MNT_SUCCESS_URL", successURL)
 	}

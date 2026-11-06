@@ -24,8 +24,8 @@ func (p *MonetaPayments) Form(r order.PaymentRequest) order.PaymentForm {
 	amount := moneta.FormatAmount(r.Amount)
 	return order.PaymentForm{
 		Amount:    amount,
-		Signature: p.signer.RequestSignature(r.TransactionID, amount),
-		URL:       p.signer.PaymentURL(p.pages.Base, r.TransactionID, amount, p.pages.Success, p.pages.Fail),
+		Signature: p.signer.RequestSignature(r.TransactionID, amount, r.SubscriberID),
+		URL:       p.signer.PaymentURL(p.pages.Base, r.TransactionID, amount, p.pages.Success, p.pages.Fail, r.SubscriberID),
 	}
 }
 

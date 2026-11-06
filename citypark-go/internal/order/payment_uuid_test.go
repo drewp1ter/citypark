@@ -162,7 +162,7 @@ type signingPayments struct {
 func (p signingPayments) Form(r PaymentRequest) PaymentForm {
 	p.fakePayments.requests = append(p.fakePayments.requests, r)
 	amount := moneta.FormatAmount(r.Amount)
-	return PaymentForm{Amount: amount, URL: p.signer.PaymentURL("https://pay.test/", r.TransactionID, amount, "", "")}
+	return PaymentForm{Amount: amount, URL: p.signer.PaymentURL("https://pay.test/", r.TransactionID, amount, "", "", r.SubscriberID)}
 }
 
 func TestRetryPaymentSignsSameUUID(t *testing.T) {

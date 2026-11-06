@@ -129,9 +129,20 @@ func TestDuplicateIsolation(t *testing.T) {
 				}
 			}
 			firstIDs[tt.name] = first.OrderID
+			requestStart := len(e.payments.requests) - 1
 			second, err := e.svc.Create(ctx, in)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			wantSubscriber := ""
+			if tt.account != 0 {
+				wantSubscriber = fmt.Sprintf("citypark-user-%d", tt.account)
+			}
+			for _, req := range e.payments.requests[requestStart:] {
+				if req.SubscriberID != wantSubscriber {
+					t.Fatalf("subscriber = %q, want %q", req.SubscriberID, wantSubscriber)
+				}
 			}
 			if (second.OrderID == first.OrderID) != (tt.account != 0 || tt.guest != "") {
 				t.Fatalf("retry IDs: %d, %d", first.OrderID, second.OrderID)
@@ -145,6 +156,9 @@ func TestDuplicateIsolation(t *testing.T) {
 			}
 			in.Name = "Changed contact"
 			changed, err := e.svc.Create(ctx, in)
+			if got := e.payments.requests[len(e.payments.requests)-1].SubscriberID; got != wantSubscriber {
+				t.Fatalf("contact changed subscriber: %q", got)
+			}
 			if err != nil || changed.OrderID == first.OrderID {
 				t.Fatalf("changed contact reused order: %+v %v", changed, err)
 			}

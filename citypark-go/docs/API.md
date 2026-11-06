@@ -2540,6 +2540,21 @@ Promo orders require a confirmed quote total. A mismatch returns 409 before any 
 
 **Notes**
 
+
+**Saved cards on MONETA checkout**
+
+For authenticated customers, `POST /orders` (including duplicate responses) and
+`POST /orders/{id}/payment-retry` include a signed `MNT_SUBSCRIBER_ID=citypark-user-<accountID>`
+in `redirectUrl`. The identifier comes only from the authenticated account, never recipient contacts
+or request fields. Guest checkout omits it. Public request/response shapes are unchanged.
+MONETA hosts card entry and the choice to save/reuse a card; no card metadata is returned by our API.
+After an account merge, new links use the surviving account identifier; source-account saved cards
+are not migrated. Existing signed links and delayed callbacks remain valid under existing payment rules.
+
+Release acceptance: confirm merchant support and verify in MONETA's test environment that saving is
+optional, reuse works for the same account, and another account cannot see the saved card. Do not
+advertise saved cards until these checks pass. No card-management page or guaranteed one-click flow.
+
 Orders are paid only online. The frontend sends the customer to `redirectUrl`, the Moneta payment page; after paying, Moneta sends the customer to `MONETA_SUCCESS_URL` (or `MONETA_FAIL_URL`) with `MNT_TRANSACTION_ID` appended. That value is now the order's random payment UUID (lowercase, with dashes), not the order number: `orderId` in the response stays the numeric id, and the frontend must not read the order number from `MNT_TRANSACTION_ID`. Deploy note: payment links created before the deploy fail at the callback, because old numeric transaction ids are rejected. Repeating an identical order (same checkout name, phone, address, comment, `deliveryTime` and items) while the previous one is still new/pending returns the same `orderId` only within the same authenticated account or the same guest checkout scope. Phone alone never finds an earlier order. `paymentType` is not a field any more: responses do not have it, and a request that still sends it is accepted (the field is ignored). The message of the working-hours error contains a real newline (`\n` in JSON); show it as two lines. Identical orders for different times are separate orders. The same product listed twice is merged into one item. `deliveryPrice` is the town's `price`, or 0 when `total` is at least the town's `freeFrom` (when `freeFrom` is above 0); pickup orders have 0.
 
 Authentication with a customer Bearer token assigns the order to that account regardless of the checkout phone. Admin checkout remains unowned. Guests never acquire ownership, even when their phone matches an account. Contact names/phones and delivery text are saved as snapshots for order responses, notifications and iiko; later profile/address changes do not rewrite them.
@@ -2582,7 +2597,7 @@ Obtain a payment link for an existing owned order. **Role:** authenticated custo
 | 503 | Outside restaurant opening hours | `Оплата доступна только в часы работы ресторана.` |
 | 500 | Database/hours failure, missing hours configuration or empty generated payment URL | `Внутренняя ошибка сервера` |
 
-**Notes:** Ownership is checked before eligibility. Only `new`/`pending` orders without a payment ID, created today in `APP_TIMEZONE` (default `Europe/Moscow`), are eligible during current opening hours (start inclusive, end exclusive). Future creation dates are also rejected. Uses the original order ID and saved `total + deliveryPrice`, including saved discounts. No repricing, order/status updates, promo consumption or staff notifications occur. Repeated calls sign the same transaction. A link is not a reservation: subsequent Moneta CHECK can reject it after closing or midnight. Payment confirmations for money already collected retain their existing validation and idempotence, even when delayed. All responses, including errors, send `Cache-Control: private, no-store`.
+**Notes:** The signed redirect includes the authenticated account’s `MNT_SUBSCRIBER_ID` as described under saved cards above. Ownership is checked before eligibility. Only `new`/`pending` orders without a payment ID, created today in `APP_TIMEZONE` (default `Europe/Moscow`), are eligible during current opening hours (start inclusive, end exclusive). Future creation dates are also rejected. Uses the original order ID and saved `total + deliveryPrice`, including saved discounts. No repricing, order/status updates, promo consumption or staff notifications occur. Repeated calls sign the same transaction. A link is not a reservation: subsequent Moneta CHECK can reject it after closing or midnight. Payment confirmations for money already collected retain their existing validation and idempotence, even when delayed. All responses, including errors, send `Cache-Control: private, no-store`.
 
 #### GET /orders/my
 
