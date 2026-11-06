@@ -1416,6 +1416,23 @@ Product responses include boolean `isOrderBlocked` (default false). Blocked prod
 
 POST /orders rejects a blocked product with 503 and `Заказ блюда «<name>» временно недоступен.`, including duplicate retries before returning a payment link. It does not silently omit items or cancel existing orders/payments.
 
+#### PUT /products/{id}/full-description
+
+Role: admin. `id` is a positive product ID. Body requires `fullDescription` (string, not null).
+Example: `{"fullDescription":"<p>Нежное мясо <strong>на углях</strong>.</p>"}`.
+HTML is sanitized with the short rich-text profile (paragraphs, line breaks, bold, italic, lists and safe links).
+At most 10000 visible characters after sanitization. Empty/whitespace-only markup clears the field.
+
+Success: 200, updated Product, including `fullDescription` (sanitized HTML) and images, as in GET /products.
+The ordinary `description` remains the iiko-managed plain text. iiko sync preserves `fullDescription`.
+Render the full description only on the dish detail page; if empty, render `description` as plain text.
+All public product lists (including category lists) include `fullDescription`, defaulting to `""`.
+
+Errors: 400 `Ошибка валидации, пожалуйста проверьте введенные вами данные`, with
+`errors.fullDescription`: `Укажите полное описание` (missing/null) or `Не более 10000 символов` (too long).
+Malformed JSON/type errors use the standard 400 response. 401 `Требуется авторизация`, 403 `Недостаточно прав`,
+404 `Не найдено` (invalid ID, missing or deleted product), 500 `Внутренняя ошибка сервера`.
+
 #### GET /products
 
 Searches products across all categories. Without `query` it returns every product.

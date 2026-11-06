@@ -22,6 +22,8 @@ export type Dish = {
 	categoryId: string
 	/** "Свекла, чеснок, грецкий орех" */
 	composition?: string
+	/** Sanitized HTML managed in the admin; only rendered on the dish page. */
+	fullDescription?: string
 	photo: Photo
 	variants: readonly [DishVariant, ...DishVariant[]]
 	/** False = stop-list. */

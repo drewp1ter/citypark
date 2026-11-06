@@ -594,6 +594,7 @@ components:
         - categoryId
         - name
         - description
+        - fullDescription
         - measureUnit
         - weight
         - proteins
@@ -620,6 +621,9 @@ components:
           example: Шашлык из баранины
         description:
           type: string
+        fullDescription:
+          type: string
+          description: Sanitized short-profile HTML, empty when unset. Preserved by iiko sync.
         measureUnit:
           type: string
         weight:
@@ -2638,6 +2642,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /products/{id}/full-description:
+    put:
+      summary: Set full dish description (admin only)
+      tags: [catalog]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fullDescription]
+              properties:
+                fullDescription:
+                  type: string
+                  description: Short-profile HTML, at most 10000 visible characters after sanitization. Empty markup clears the value.
+      responses:
+        '200':
+          description: Updated product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
   /products/{id}/ordering-block:

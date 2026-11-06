@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getMenu } from '@/entities/dish'
 import { productionOrigin, socialMetadata } from '@/shared/config'
-import { Breadcrumbs } from '@/shared/ui'
+import { Breadcrumbs, RichText } from '@/shared/ui'
 import { DishControls } from './dish-controls'
 
 async function findDish(id: string) {
@@ -47,9 +47,11 @@ export async function DishPage({ id }: { id: string }) {
 					/>
 				</div>
 				<div className='flex min-w-0 flex-col gap-6'>
-					{dish.composition && (
+					{dish.fullDescription ? (
+						<RichText html={dish.fullDescription} variant='short' className='text-text-muted break-words md:text-lg' />
+					) : dish.composition ? (
 						<p className='text-text-muted break-words whitespace-pre-line md:text-lg'>{dish.composition}</p>
-					)}
+					) : null}
 					<DishControls dish={dish} url={productionOrigin + path} />
 				</div>
 			</div>

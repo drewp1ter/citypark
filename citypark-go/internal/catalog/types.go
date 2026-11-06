@@ -29,22 +29,23 @@ type Category struct {
 }
 
 type Product struct {
-	IsOrderBlocked bool          `db:"is_order_blocked"`
-	ID             int64         `db:"id"`
-	CategoryID     int64         `db:"category_id"`
-	Name           string        `db:"name"`
-	Description    string        `db:"description"`
-	MeasureUnit    string        `db:"measure_unit"`
-	Weight         float64       `db:"weight"`
-	Proteins       float64       `db:"proteins"`
-	Fats           float64       `db:"fats"`
-	Carbohydrates  float64       `db:"carbohydrates"`
-	Calories       float64       `db:"calories"`
-	Flags          int           `db:"flags"`
-	Price          money.Kopecks `db:"price_kopecks"`
-	SaleStart      *int          `db:"sale_start"`
-	SaleEnd        *int          `db:"sale_end"`
-	SaleDays       string        `db:"sale_days"`
+	FullDescription string        `db:"full_description"`
+	IsOrderBlocked  bool          `db:"is_order_blocked"`
+	ID              int64         `db:"id"`
+	CategoryID      int64         `db:"category_id"`
+	Name            string        `db:"name"`
+	Description     string        `db:"description"`
+	MeasureUnit     string        `db:"measure_unit"`
+	Weight          float64       `db:"weight"`
+	Proteins        float64       `db:"proteins"`
+	Fats            float64       `db:"fats"`
+	Carbohydrates   float64       `db:"carbohydrates"`
+	Calories        float64       `db:"calories"`
+	Flags           int           `db:"flags"`
+	Price           money.Kopecks `db:"price_kopecks"`
+	SaleStart       *int          `db:"sale_start"`
+	SaleEnd         *int          `db:"sale_end"`
+	SaleDays        string        `db:"sale_days"`
 
 	CategoryName      string `db:"category_name"`
 	CategorySaleStart *int   `db:"category_sale_start"`
@@ -68,6 +69,7 @@ type CategoryView struct {
 
 // ProductView is the JSON shape of a product.
 type ProductView struct {
+	FullDescription     string        `json:"fullDescription"`
 	IsOrderBlocked      bool          `json:"isOrderBlocked"`
 	ID                  int64         `json:"id"`
 	CategoryID          int64         `json:"categoryId"`
@@ -138,6 +140,7 @@ func (p Product) View(now time.Time) ProductView {
 		CategoryID:          p.CategoryID,
 		Name:                p.Name,
 		Description:         p.Description,
+		FullDescription:     p.FullDescription,
 		MeasureUnit:         p.MeasureUnit,
 		Weight:              p.Weight,
 		Proteins:            p.Proteins,

@@ -227,3 +227,8 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [70 Shareable dish pages](70-shareable-dishes.md) [68]
   - Stable public dish pages, menu links, ordering controls, copy feedback/fallback, canonical social metadata and sitemap entries implemented. Check/build and read-only production browser/HTTP QA pass (390/1440 px, both themes, direct links, reload/category return, metadata, sitemap, unknown-ID 404, clipboard success/failure). Existing dynamic-rendering build diagnostics remain. Live data has single portions; multi-portion and unavailable branches reviewed against existing controls. Cart persistence/keyboard and hidden-category fixtures were not independently exercised. External social previews remain deployment-dependent. No backend writes.
+
+## Full dish descriptions
+
+- [x] [71 Full dish descriptions](71-dish-full-description.md)
+  - Completed (2026-11-06). Dish-page rich text and plain-text fallback implemented; check and production build pass (existing dynamic-rendering diagnostics). After the owner restarted the backend, all four real-backend browser flows pass at 390/1440 px in both themes: save/reload, clear, network-error draft preservation, public dish rendering, menu-card exclusion and ordinary-description fallback. The original dish HTML was restored; no orders or payments created.

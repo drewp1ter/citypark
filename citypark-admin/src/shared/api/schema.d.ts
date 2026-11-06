@@ -4,6 +4,342 @@
  */
 
 export interface paths {
+    "/customer/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List saved addresses
+         * @description All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success. */
+                200: {
+                    headers: {
+                        "Cache-Control"?: "private, no-store";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "addresses": [
+                         *         {
+                         *           "id": 1,
+                         *           "name": "Дом",
+                         *           "city": "Белореченск",
+                         *           "address": "ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3",
+                         *           "street": "ул. Гоголя, 61",
+                         *           "apartment": "12",
+                         *           "entrance": "2, этаж 3",
+                         *           "isDefault": true,
+                         *           "needsReview": false,
+                         *           "createdAt": "2026-11-05T13:07:41.090029Z",
+                         *           "updatedAt": "2026-11-05T13:07:41.090029Z"
+                         *         },
+                         *         {
+                         *           "id": 2,
+                         *           "name": "",
+                         *           "city": "Город",
+                         *           "address": "  старая строка  ",
+                         *           "street": "",
+                         *           "apartment": "",
+                         *           "entrance": "",
+                         *           "isDefault": false,
+                         *           "needsReview": true,
+                         *           "createdAt": "2026-11-05T13:07:41.092927Z",
+                         *           "updatedAt": "2026-11-05T13:07:41.092927Z"
+                         *         }
+                         *       ]
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BookList"];
+                    };
+                };
+                401: components["responses"]["BookError401"];
+                403: components["responses"]["BookError403"];
+                500: components["responses"]["BookError500"];
+                503: components["responses"]["BookError503"];
+            };
+        };
+        put?: never;
+        /**
+         * Create or reuse a saved address
+         * @description All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Normalized duplicate creation returns the existing entry unchanged, including legacy metadata, with created=false. Only the first new link is default. Strict object JSON only, max 1 MiB; unknown/non-string/null fields and extra documents are malformed. Field errors exactly: name >40 Не больше 40 символов; empty city Выберите населённый пункт; city >80 Не больше 80 символов; street <3 Укажите улицу и дом; street >120 Слишком длинный адрес; apartment/entrance >20 Не больше 20 символов.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Дом",
+                     *       "city": "Белореченск",
+                     *       "street": "ул. Гоголя, 61",
+                     *       "apartment": "12",
+                     *       "entrance": "2, этаж 3"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["BookFields"];
+                };
+            };
+            responses: {
+                /** @description Success. */
+                200: {
+                    headers: {
+                        "Cache-Control"?: "private, no-store";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "entry": {
+                         *         "id": 1,
+                         *         "name": "Дом",
+                         *         "city": "Белореченск",
+                         *         "address": "ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3",
+                         *         "street": "ул. Гоголя, 61",
+                         *         "apartment": "12",
+                         *         "entrance": "2, этаж 3",
+                         *         "isDefault": true,
+                         *         "needsReview": false,
+                         *         "createdAt": "2026-11-05T13:07:41.135643Z",
+                         *         "updatedAt": "2026-11-05T13:07:41.135643Z"
+                         *       },
+                         *       "created": false
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BookCreate"];
+                    };
+                };
+                /** @description New saved entry. */
+                201: {
+                    headers: {
+                        "Cache-Control"?: "private, no-store";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "entry": {
+                         *         "id": 1,
+                         *         "name": "Дом",
+                         *         "city": "Белореченск",
+                         *         "address": "ул. Гоголя, 61, кв. 12, подъезд 2, этаж 3",
+                         *         "street": "ул. Гоголя, 61",
+                         *         "apartment": "12",
+                         *         "entrance": "2, этаж 3",
+                         *         "isDefault": true,
+                         *         "needsReview": false,
+                         *         "createdAt": "2026-11-05T13:07:41.135643Z",
+                         *         "updatedAt": "2026-11-05T13:07:41.135643Z"
+                         *       },
+                         *       "created": true
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BookCreate"];
+                    };
+                };
+                400: components["responses"]["BookError400"];
+                401: components["responses"]["BookError401"];
+                403: components["responses"]["BookError403"];
+                500: components["responses"]["BookError500"];
+                503: components["responses"]["BookError503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace editable saved-address fields
+         * @description All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Replace all editable fields, preserving saved ID, createdAt and default. Collision changes nothing. Editing legacy data clears needsReview. Strict object JSON only, max 1 MiB; unknown/non-string/null fields and extra documents are malformed. Field errors exactly: name >40 Не больше 40 символов; empty city Выберите населённый пункт; city >80 Не больше 80 символов; street <3 Укажите улицу и дом; street >120 Слишком длинный адрес; apartment/entrance >20 Не больше 20 символов.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "Дом",
+                     *       "city": "Белореченск",
+                     *       "street": "ул. Гоголя, 61",
+                     *       "apartment": "12",
+                     *       "entrance": "2, этаж 3"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["BookFields"];
+                };
+            };
+            responses: {
+                /** @description Success. */
+                200: {
+                    headers: {
+                        "Cache-Control"?: "private, no-store";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "entry": {
+                         *         "id": 1,
+                         *         "name": "",
+                         *         "city": "Город",
+                         *         "address": "Дом 3",
+                         *         "street": "Дом 3",
+                         *         "apartment": "",
+                         *         "entrance": "",
+                         *         "isDefault": true,
+                         *         "needsReview": false,
+                         *         "createdAt": "2026-11-05T13:07:41.181725Z",
+                         *         "updatedAt": "2026-11-05T13:07:41.187934Z"
+                         *       }
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BookEntryResponse"];
+                    };
+                };
+                400: components["responses"]["BookError400"];
+                401: components["responses"]["BookError401"];
+                403: components["responses"]["BookError403"];
+                404: components["responses"]["BookError404"];
+                409: components["responses"]["BookError409"];
+                500: components["responses"]["BookError500"];
+                503: components["responses"]["BookError503"];
+            };
+        };
+        post?: never;
+        /**
+         * Delete a saved-address association
+         * @description All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Missing/foreign entry is 404. Deleting the default selects no replacement. Shared rows and order snapshots survive.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success; no body. */
+                204: {
+                    headers: {
+                        "Cache-Control"?: "private, no-store";
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["BookError401"];
+                403: components["responses"]["BookError403"];
+                404: components["responses"]["BookError404"];
+                500: components["responses"]["BookError500"];
+                503: components["responses"]["BookError503"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customer/addresses/{id}/default": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Select the default saved address
+         * @description All responses, including errors, send Cache-Control: private, no-store. With CUSTOMER_AUTH_ENABLED=true, active web/password or Google and Mini App/Telegram cs_ sessions work; absent, invalid, revoked or expired credentials and all legacy/staff JWTs return 401. With the flag false, a legacy user JWT works, staff returns 403, invalid/unknown-role JWT returns 401, and any cs_ flow returns 503. Authenticated non-user identities reaching the group return 403. Owner is derived only from authentication. Saved IDs identify user-address associations, unlike legacy /addresses shared IDs. Address storage does not prove delivery eligibility. Unexpected errors never include submitted fields in logs or monitoring. Idempotent selection; missing/foreign entries do not clear the old default. No request body required.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Success. */
+                200: {
+                    headers: {
+                        "Cache-Control"?: "private, no-store";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "entry": {
+                         *         "id": 3,
+                         *         "name": "",
+                         *         "city": "Город",
+                         *         "address": "Дом 4",
+                         *         "street": "Дом 4",
+                         *         "apartment": "",
+                         *         "entrance": "",
+                         *         "isDefault": true,
+                         *         "needsReview": false,
+                         *         "createdAt": "2026-11-05T13:07:41.190288Z",
+                         *         "updatedAt": "2026-11-05T13:07:41.192173Z"
+                         *       }
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BookEntryResponse"];
+                    };
+                };
+                401: components["responses"]["BookError401"];
+                403: components["responses"]["BookError403"];
+                404: components["responses"]["BookError404"];
+                500: components["responses"]["BookError500"];
+                503: components["responses"]["BookError503"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/homepage-menu": {
         parameters: {
             query?: never;
@@ -2118,6 +2454,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/products/{id}/full-description": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set full dish description (admin only) */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @description Short-profile HTML, at most 10000 visible characters after sanitization. Empty markup clears the value. */
+                        fullDescription: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated product. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Product"];
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/products/{id}/ordering-block": {
         parameters: {
             query?: never;
@@ -3264,11 +3649,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["OrderList"];
+                        "application/json": components["schemas"]["CustomerOrderList"];
                     };
                 };
                 400: components["responses"]["BadRequest"];
                 401: components["responses"]["Unauthorized"];
+                /** @description Database or payment-hours lookup failed. */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3342,17 +3736,26 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description The order. */
+                /** @description Customers receive CustomerOrder with paymentRetry; admins receive Order without this metadata. */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["Order"];
+                        "application/json": components["schemas"]["CustomerOrder"] | components["schemas"]["Order"];
                     };
                 };
                 401: components["responses"]["Unauthorized"];
                 404: components["responses"]["NotFound"];
+                /** @description Database or payment-hours lookup failed. */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3384,6 +3787,89 @@ export interface paths {
                 404: components["responses"]["NotFound"];
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/payment-retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry payment for an owned unpaid order
+         * @description Authenticated customer only (website or Mini App); no guest or admin bypass. No body. Uses the original ID and saved discounted total plus delivery without writes or notifications. Only new/pending orders with no payment ID created today in APP_TIMEZONE (default Europe/Moscow) qualify during current restaurant opening hours [start, end). Ownership is checked first. Repeated requests sign the same order. Responses including errors send Cache-Control private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: components["parameters"]["Id"];
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Payment link for the existing order. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            orderId: number;
+                            /** Format: uri */
+                            redirectUrl: string;
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                /** @description Invalid ID, missing, guest or foreign order. Не найдено */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Этот заказ уже оплачен или недоступен для оплаты. / Срок оплаты заказа истёк. Оформите новый заказ. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Внутренняя ошибка сервера */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Оплата доступна только в часы работы ресторана. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -3764,7 +4250,7 @@ export interface paths {
                         /** @enum {string} */
                         MNT_TEST_MODE: "0" | "1";
                         MNT_SUBSCRIBER_ID?: string;
-                        /** @description Our order id. */
+                        /** @description Our payment UUID of the order (lowercase, with dashes). A numeric order id is rejected. */
                         MNT_TRANSACTION_ID: string;
                         /** @description Moneta's id of the payment. */
                         MNT_OPERATION_ID: string;
@@ -3828,7 +4314,7 @@ export interface paths {
         };
         /**
          * Validate Moneta order without changing payment state
-         * @description Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500.
+         * @description Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500. Unpaid orders must be created today in APP_TIMEZONE and within restaurant hours, including previously issued links; otherwise code 500. Recorded payments retain code 200 except canceled orders. Valid delayed payment confirmations remain accepted. Missing hours configuration or lookup failure is an HTTP 500 error.
          */
         get: {
             parameters: {
@@ -3884,7 +4370,7 @@ export interface paths {
         put?: never;
         /**
          * Validate Moneta order without changing payment state
-         * @description Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500.
+         * @description Signed CHECK request; returns signed MNT_RESPONSE XML with result code 100, 200, 402 or 500. Unpaid orders must be created today in APP_TIMEZONE and within restaurant hours, including previously issued links; otherwise code 500. Recorded payments retain code 200 except canceled orders. Valid delayed payment confirmations remain accepted. Missing hours configuration or lookup failure is an HTTP 500 error.
          */
         post: {
             parameters: {
@@ -4623,6 +5109,52 @@ export interface components {
             /** @description JWT. Send it as `Authorization Bearer <token>`. */
             token: string;
         };
+        /** @description Only these seven non-null string fields are accepted. Unicode boundary whitespace is trimmed; limits count code points. Invalid fields return 400 Проверьте адрес with exact field errors. */
+        BookFields: {
+            recipientName: string;
+            /** @description Russian phone, normalized to +7XXXXXXXXXX. */
+            recipientPhone: string;
+            /** @default  */
+            name: string;
+            city: string;
+            street: string;
+            /** @default  */
+            apartment: string;
+            /** @default  */
+            entrance: string;
+        };
+        /** @description Saved association ID; internal shared address/user IDs are never exposed. Legacy entries preserve address verbatim, street is empty and needsReview is true. A default legacy entry still requires review before checkout autofill. */
+        BookEntry: {
+            /** Format: int64 */
+            id: number;
+            /** @description Empty for legacy entries. */
+            recipientName: string;
+            /** @description Empty for legacy entries. */
+            recipientPhone: string;
+            name: string;
+            city: string;
+            address: string;
+            street: string;
+            apartment: string;
+            entrance: string;
+            isDefault: boolean;
+            needsReview: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        BookEntryResponse: {
+            entry: components["schemas"]["BookEntry"];
+        };
+        BookCreate: {
+            entry: components["schemas"]["BookEntry"];
+            created: boolean;
+        };
+        BookList: {
+            /** @description Ordered by ascending saved ID; empty is []. */
+            addresses: components["schemas"]["BookEntry"][];
+        };
         Address: {
             /** @example 1 */
             id: number;
@@ -4775,6 +5307,8 @@ export interface components {
             /** @example Шашлык из баранины */
             name: string;
             description: string;
+            /** @description Sanitized short-profile HTML, empty when unset. Preserved by iiko sync. */
+            fullDescription: string;
             measureUnit: string;
             weight: number;
             proteins: number;
@@ -4826,11 +5360,11 @@ export interface components {
             address?: components["schemas"]["AddressInput"];
             items: components["schemas"]["OrderItemInput"][];
         };
-        /** @description `redirectUrl` is the Moneta payment page (full MONETA.Assistant address with every `MNT_*` parameter and the signature). */
+        /** @description `redirectUrl` is the Moneta payment page (full MONETA.Assistant address with every `MNT_*` parameter and the signature). `MNT_TRANSACTION_ID` in it is the order's random payment UUID, not `orderId`; Moneta appends it to the success URL, so the frontend must not read the order number from it. Authenticated customer links include a signed MNT_SUBSCRIBER_ID derived from the account; guest links omit it. Saving and reusing cards is handled on MONETA checkout. */
         CreateOrderResult: {
             /** @example 1 */
             orderId: number;
-            /** @example https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_ID=100&MNT_TRANSACTION_ID=1 */
+            /** @example https://assistant.demo.moneta.ru/?MNT_AMOUNT=790.00&MNT_ID=100&MNT_TRANSACTION_ID=3f2b8c1e-9d4a-4e7b-a1c6-5d0e8f7a2b94 */
             redirectUrl: string;
         };
         LiveOrderEvent: {
@@ -4852,7 +5386,7 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             /** @enum {string} */
-            status: "new" | "paid" | "confirmed" | "canceled";
+            status: "new" | "pending" | "paid" | "confirmed" | "canceled";
             comment: string;
             /**
              * @description `HH:MM`, or an empty string when the customer wants the order as soon as possible.
@@ -4888,6 +5422,19 @@ export interface components {
                 /** @description Rubles. The price the item was ordered at. */
                 offeredPrice: number;
             }[];
+        };
+        /** @description Fresh backend eligibility. Only same-day new/pending orders without a payment ID are payable during restaurant hours in APP_TIMEZONE (default Europe/Moscow). */
+        PaymentRetryEligibility: {
+            allowed: boolean;
+            /** @enum {string} */
+            reason: "" | "not_payable" | "expired" | "closed";
+        };
+        CustomerOrder: components["schemas"]["Order"] & {
+            paymentRetry: components["schemas"]["PaymentRetryEligibility"];
+        };
+        CustomerOrderList: {
+            orders: components["schemas"]["CustomerOrder"][];
+            count: number;
         };
         OrderList: {
             orders: components["schemas"]["Order"][];
@@ -5289,6 +5836,115 @@ export interface components {
         };
     };
     responses: {
+        /** @description Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field. */
+        BookError400: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Требуется авторизация (including an owner that became merged/unavailable). */
+        BookError401: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 401,
+                 *       "message": "Требуется авторизация"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Недостаточно прав. */
+        BookError403: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 403,
+                 *       "message": "Недостаточно прав"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Не найдено (invalid, nonpositive, overflow, absent or foreign saved-entry ID). */
+        BookError404: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 404,
+                 *       "message": "Не найдено"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Такой адрес уже сохранён; errors.street has the same text. */
+        BookError409: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 409,
+                 *       "message": "Такой адрес уже сохранён",
+                 *       "errors": {
+                 *         "street": "Такой адрес уже сохранён"
+                 *       }
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Вход временно недоступен. */
+        BookError503: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 503,
+                 *       "message": "Вход временно недоступен"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Внутренняя ошибка сервера. */
+        BookError500: {
+            headers: {
+                "Cache-Control"?: "private, no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 500,
+                 *       "message": "Внутренняя ошибка сервера"
+                 *     }
+                 */
+                "application/json": components["schemas"]["Error"];
+            };
+        };
         /** @description Customer authentication is disabled (`Вход временно недоступен`). */
         CustomerDisabled: {
             headers: {

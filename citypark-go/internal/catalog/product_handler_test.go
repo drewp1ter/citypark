@@ -95,7 +95,7 @@ func TestProductKeys(t *testing.T) {
 	}
 	sort.Strings(keys)
 	want := []string{
-		"calories", "carbohydrates", "categoryId", "description", "endTime", "fats", "flags", "id",
+		"calories", "carbohydrates", "categoryId", "description", "endTime", "fats", "flags", "fullDescription", "id",
 		"images", "isAvailableForOrder", "isOrderBlocked", "measureUnit", "name", "price", "proteins", "salesDays",
 		"startTime", "weight",
 	}

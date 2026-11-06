@@ -56,3 +56,15 @@ export function useSaveProductBlock(id: number) {
 		},
 	})
 }
+
+export function useSaveProductDescription(id: number) {
+	const queryClient = useQueryClient()
+	return useMutation({
+		mutationFn: (fullDescription: string) =>
+			unwrap(api.PUT('/products/{id}/full-description', { params: { path: { id } }, body: { fullDescription } })),
+		onSuccess: () => {
+			toastSuccess('Полное описание сохранено')
+			return queryClient.invalidateQueries({ queryKey: ['menu'] })
+		},
+	})
+}

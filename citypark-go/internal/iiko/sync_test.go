@@ -822,3 +822,21 @@ func TestSyncPreservesHomepageMenu(t *testing.T) {
 		t.Fatal(after, err)
 	}
 }
+
+func TestSyncPreservesProductFullDescription(t *testing.T) {
+	db := testutil.NewDB(t)
+	s := NewSyncer(db, &fakeSource{n: baseMenu()})
+	if _, err := s.Sync(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`UPDATE products SET full_description='<p>Описание</p>' WHERE iiko_id='p-shashlik'`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Sync(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	var description string
+	if err := db.Get(&description, `SELECT full_description FROM products WHERE iiko_id='p-shashlik'`); err != nil || description != "<p>Описание</p>" {
+		t.Fatalf("%q %v", description, err)
+	}
+}

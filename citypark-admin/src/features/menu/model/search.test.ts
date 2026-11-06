@@ -8,6 +8,11 @@ describe('parseMenuSearch', () => {
 		expect(parseMenuSearch({ q: 123 })).toEqual({ q: '123' })
 	})
 
+	it('reads the selected dish', () => {
+		expect(parseMenuSearch({ dish: '12' })).toEqual({ dish: 12 })
+		for (const dish of [0, -1, 1.5, 'bad', Infinity]) expect(parseMenuSearch({ dish })).toEqual({})
+	})
+
 	it('drops invalid values', () => {
 		expect(parseMenuSearch({ category: -1, q: '  ' })).toEqual({})
 		expect(parseMenuSearch({ category: 1.5 })).toEqual({})

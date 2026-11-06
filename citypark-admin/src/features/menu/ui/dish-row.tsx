@@ -1,12 +1,12 @@
 import { useSaveProductBlock } from '../api'
 import { toastError } from '../../../shared/ui/toast'
 import { ApiError } from '../../../shared/api'
-import { Chip } from '@heroui/react'
+import { Button, Chip } from '@heroui/react'
 import { formatRub } from '../../../shared/lib/format'
 import type { ApiProduct } from '../model/group'
 import { formatWeight } from '../model/weight'
 
-export function DishRow({ dish }: { dish: ApiProduct }) {
+export function DishRow({ dish, onEdit }: { dish: ApiProduct; onEdit: () => void }) {
 	const save = useSaveProductBlock(dish.id)
 	const photo = dish.images[0]?.url
 	const weight = formatWeight(dish.weight, dish.measureUnit)
@@ -49,6 +49,9 @@ export function DishRow({ dish }: { dish: ApiProduct }) {
 					{save.error.fields.isOrderBlocked}
 				</p>
 			)}
+			<Button variant='secondary' onPress={onEdit} aria-label={`Полное описание: ${dish.name}`}>
+				Полное описание
+			</Button>
 			<div className='shrink-0 font-medium'>{formatRub(dish.price)}</div>
 		</li>
 	)

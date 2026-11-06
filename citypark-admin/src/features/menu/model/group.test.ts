@@ -21,6 +21,7 @@ function product(id: number, categoryId: number, name = `Блюдо ${id}`): Api
 		isOrderBlocked: false,
 		name,
 		description: '',
+		fullDescription: '',
 		measureUnit: '',
 		weight: 0,
 		proteins: 0,

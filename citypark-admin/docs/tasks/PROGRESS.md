@@ -77,3 +77,8 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 - [x] [30 Editable delivery information](30-delivery-settings.md) [admin29; backend91]
   - Add cooking text and outskirts label/range editing to «Доставка»; reuse existing town price/threshold controls.
   - API generation, check (303 tests), build and delivery-settings Playwright flow (5 tests) pass. Verified 390/1440 px, both themes, real saves/reloads, field errors, pending/transport failures, dirty refetch preservation, loading/retry, working-hours visibility, city search and tariff dialog. Owner-authorized settings writes restored original values; no orders or payments.
+
+## Full dish descriptions
+
+- [x] [31 Full dish descriptions](31-dish-full-description.md)
+  - Completed (2026-11-06). Generated API types, editor, URL selection and browser acceptance script implemented; check (306 tests) and build pass. After the owner restarted the backend, all four real-backend browser flows pass at 390/1440 px in both themes: save/reload, clear, network-error draft preservation, public dish rendering, menu-card exclusion and ordinary-description fallback. The original dish HTML was restored; no orders or payments created.

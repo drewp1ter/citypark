@@ -241,3 +241,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [x] [103 Saved cards through MONETA checkout](103-moneta-saved-card-checkout.md) [99, 100]
   - Subscriber-aware hosted redirects implemented for authenticated creation, duplicate responses and owner-authorized retries; guest signatures remain compatible. API/OpenAPI updated. Formatting, build, vet and full serial suite pass; coverage: moneta 100%, order 92.1%, app 98.9%, apidocs 100%. MONETA demo acceptance remains required before production release; no financial transactions or deployment performed.
+
+## Full dish descriptions
+
+- [x] [104 Full dish descriptions](104-dish-full-description.md)
+  - Completed (2026-11-06). Formatting, build, vet and full serial suite pass; catalog 88.1%, iiko 94.1%, apidocs 100% coverage. After the owner restarted the backend, all four real-backend browser flows pass at 390/1440 px in both themes: save/reload, clear, network-error draft preservation, public dish rendering, menu-card exclusion and ordinary-description fallback. The original dish HTML was restored; no orders or payments created.

@@ -32,6 +32,7 @@ export function toDish(p: ApiProduct): Dish {
 		name: p.name,
 		categoryId: String(p.categoryId),
 		composition: p.description.trim() || undefined,
+		fullDescription: p.fullDescription?.trim() || undefined,
 		photo: { src: photoSrc(p.images[0]?.url), alt: p.name },
 		variants: [{ id: 'default', label: weight, weight, price: p.price > 0 ? p.price : null }],
 		orderBlocked: p.isOrderBlocked,

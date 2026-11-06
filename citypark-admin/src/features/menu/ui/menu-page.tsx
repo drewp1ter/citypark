@@ -8,6 +8,7 @@ import { filterDishes, findGroup, groupMenu } from '../model/group'
 import type { MenuSearch } from '../model/search'
 import { CategorySettings } from './category-settings'
 import { CategoryList } from './category-list'
+import { DishDescription } from './dish-description'
 import { DishRow } from './dish-row'
 import { SyncButton } from './sync-button'
 
@@ -59,6 +60,7 @@ export function MenuPage() {
 		const selected = findGroup(groups, search.category)
 		const pool = selected !== undefined ? selected.dishes : groups.flatMap((g) => g.dishes)
 		const dishes = filterDishes(pool, search.q)
+		const editingDish = products.data.find((dish) => dish.id === search.dish)
 		const category = categories.data.find((c) => c.id === selected?.id)
 		content = (
 			<div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6'>
@@ -71,6 +73,9 @@ export function MenuPage() {
 					/>
 				</div>
 				<div className='flex min-w-0 flex-1 flex-col gap-3'>
+					{editingDish && (
+						<DishDescription key={editingDish.id} dish={editingDish} onClose={() => setSearch({ dish: undefined })} />
+					)}
 					{category && (
 						<CategorySettings
 							key={`${category.id}:${category.startTime}:${category.endTime}:${category.salesDays}`}
@@ -95,7 +100,7 @@ export function MenuPage() {
 					) : (
 						<ul className='flex flex-col gap-2'>
 							{dishes.map((dish) => (
-								<DishRow key={dish.id} dish={dish} />
+								<DishRow key={dish.id} dish={dish} onEdit={() => setSearch({ dish: dish.id })} />
 							))}
 						</ul>
 					)}
