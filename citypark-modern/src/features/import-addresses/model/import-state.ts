@@ -138,8 +138,16 @@ export function createImportCoordinator(surface: AddressSurface, deps: Dependenc
 		try {
 			for (const entry of snapshot) {
 				if (!valid() || !(await currentAccount()) || !valid()) return
-				const { name, city, street, apartment, entrance } = entry
-				const result = await deps.importOne(surface, accountId, { name, city, street, apartment, entrance })
+				const { recipientName, recipientPhone, name, city, street, apartment, entrance } = entry
+				const result = await deps.importOne(surface, accountId, {
+					recipientName,
+					recipientPhone,
+					name,
+					city,
+					street,
+					apartment,
+					entrance,
+				})
 				if (!valid()) return
 				if (!result.ok) {
 					emit({ phase: 'error', message: [result.message, ...Object.values(result.fields ?? {})].join(' ') })

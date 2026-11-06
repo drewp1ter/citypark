@@ -9,7 +9,15 @@ const require = createRequire(import.meta.url)
 const generic = 'Не удалось сохранить адрес. Попробуйте ещё раз.'
 const signIn = 'Войдите повторно, чтобы сохранить адрес'
 const loadError = 'Не удалось загрузить адреса. Попробуйте ещё раз.'
-const fields = { name: 'Дом', city: 'Белореченск', street: 'ул. Гоголя, 61', apartment: '12', entrance: '2' }
+const fields = {
+	recipientName: 'Иван',
+	recipientPhone: '+79991234567',
+	name: 'Дом',
+	city: 'Белореченск',
+	street: 'ул. Гоголя, 61',
+	apartment: '12',
+	entrance: '2',
+}
 const entry = {
 	...fields,
 	id: 1,
@@ -65,7 +73,11 @@ function load(file) {
 						return tokens.mini
 					},
 				}
-			return name.startsWith('.') ? load(resolve(dirname(file), name + '.ts')) : require(name)
+			return name.startsWith('.')
+				? load(resolve(dirname(file), name + '.ts'))
+				: name === '@/shared/lib'
+					? load('src/shared/lib/phone.ts')
+					: require(name)
 		},
 	})
 	cache.set(file, exports)
@@ -238,7 +250,7 @@ vm.runInNewContext(
 		require: (name) => {
 			if (name === '@/shared/ui') return { Select: 'Select', TextField: 'TextField' }
 			if (name === './address-field') return { AddressField: 'AddressField' }
-			return require(name)
+			return name === '@/shared/lib' ? load('src/shared/lib/phone.ts') : require(name)
 		},
 	}
 )

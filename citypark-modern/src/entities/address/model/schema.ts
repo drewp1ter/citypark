@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isValidRuPhone, phoneDigits } from '@/shared/lib'
 
 // Go's boundary trimming and rune limits use Unicode White_Space and code points.
 const field = (min: number, max: number, short: string, long: string) =>
@@ -9,6 +10,11 @@ const field = (min: number, max: number, short: string, long: string) =>
 		.refine((value) => [...value].length <= max, long)
 
 export const addressFieldsSchema = z.object({
+	recipientName: field(2, 80, 'Укажите имя', 'Слишком длинное имя'),
+	recipientPhone: z
+		.string()
+		.refine(isValidRuPhone, 'Введите номер полностью: +7 ___ ___-__-__')
+		.transform((value) => `+${phoneDigits(value)}`),
 	name: field(0, 40, '', 'Не больше 40 символов'),
 	city: field(1, 80, 'Выберите населённый пункт', 'Не больше 80 символов'),
 	street: field(3, 120, 'Укажите улицу и дом', 'Слишком длинный адрес'),
@@ -20,7 +26,17 @@ export const guestBookSchema = z
 	.object({
 		version: z.literal(1),
 		revision: z.uuid(),
-		entries: z.array(addressFieldsSchema.extend({ id: z.uuid(), revision: z.uuid(), isDefault: z.boolean() }).strict()),
+		entries: z.array(
+			addressFieldsSchema
+				.extend({
+					recipientName: z.string().default(''),
+					recipientPhone: z.string().default(''),
+					id: z.uuid(),
+					revision: z.uuid(),
+					isDefault: z.boolean(),
+				})
+				.strict()
+		),
 	})
 	.strict()
 	.refine((book) => new Set(book.entries.map((entry) => entry.id)).size === book.entries.length)
@@ -35,6 +51,8 @@ export const customerProfileSchema = z.object({
 	role: z.literal('user'),
 })
 export const savedAddressSchema = z.object({
+	recipientName: z.string(),
+	recipientPhone: z.string(),
 	id: addressIdSchema,
 	name: z.string(),
 	city: z.string(),

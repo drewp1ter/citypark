@@ -16,13 +16,22 @@ function load(file, modules = {}, globals = {}) {
 	}).outputText
 	vm.runInNewContext(source, {
 		exports,
-		require: (name) => (name in modules ? modules[name] : require(name)),
+		require: (name) =>
+			name in modules ? modules[name] : name === '@/shared/lib' ? load('src/shared/lib/phone.ts') : require(name),
 		...globals,
 	})
 	return exports
 }
 const { createImportCoordinator } = load('src/features/import-addresses/model/import-state.ts')
-const base = { name: 'Дом', city: 'Белореченск', street: 'Гоголя, 61', apartment: '12', entrance: '2' }
+const base = {
+	recipientName: 'Иван',
+	recipientPhone: '+79991234567',
+	name: 'Дом',
+	city: 'Белореченск',
+	street: 'Гоголя, 61',
+	apartment: '12',
+	entrance: '2',
+}
 function deferred() {
 	let resolve
 	const promise = new Promise((done) => {
@@ -78,7 +87,15 @@ async function fixture(surface = 'web', count = 3) {
 	async function importOne(actualSurface, expectedAccountId, fields) {
 		calls.push({ surface: actualSurface, accountId: expectedAccountId, fields: { ...fields } })
 		assert.equal(actualSurface, surface)
-		assert.deepEqual(Object.keys(fields).sort(), ['apartment', 'city', 'entrance', 'name', 'street'])
+		assert.deepEqual(Object.keys(fields).sort(), [
+			'apartment',
+			'city',
+			'entrance',
+			'name',
+			'recipientName',
+			'recipientPhone',
+			'street',
+		])
 		if (failureAt === calls.length) return { ok: false, kind: 'request', message: 'Request failed' }
 		if (expectedAccountId !== accountId)
 			return { ok: false, kind: 'auth', message: 'Войдите повторно, чтобы добавить адреса' }

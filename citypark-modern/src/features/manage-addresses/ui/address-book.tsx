@@ -17,7 +17,15 @@ import type { AddressEntry, ManagementProps, ManagementResult } from '../model/t
 import { AddressEditor } from './address-editor'
 import { AddressCard } from './address-card'
 
-const empty: AddressFields = { name: '', city: '', street: '', apartment: '', entrance: '' }
+const empty: AddressFields = {
+	name: '',
+	recipientName: '',
+	recipientPhone: '',
+	city: '',
+	street: '',
+	apartment: '',
+	entrance: '',
+}
 export function AddressBook({
 	context,
 	initialEntries,
@@ -130,6 +138,8 @@ export function AddressBook({
 				? empty
 				: {
 						name: entry.name,
+						recipientName: entry.recipientName,
+						recipientPhone: entry.recipientPhone,
 						city: entry.city,
 						street: 'needsReview' in entry && entry.needsReview ? '' : entry.street,
 						apartment: entry.apartment,

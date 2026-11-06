@@ -221,3 +221,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [68 Page-specific Open Graph previews](68-open-graph.md) [61]
   - Complete Russian Open Graph/Twitter cards for public static pages and room/news details. Existing photos with public fallback for HTTP, SVG or missing images; HTTP backend news photo was unreachable from the crawler. Check, build and production crawler checks pass for ten public pages and room/news details, including query canonical and image responses. External social previews remain deployment-dependent; no backend writes. Missing-record/private-page browser regression checks were not run.
+
+- [x] [69 Saved address recipient contacts](69-address-recipients.md) [59; backend 102]
+  - Required per-address contacts in guest/account editing, display, imports and checkout saving/autofill. Legacy guest entries preserved; delivery-only save controls corrected. Check/build and all address harnesses pass; production guest browser flows pass at 390/1440 px in both themes. Authenticated mutations/provider login/native Telegram acceptance remain owner-dependent and were not run. Deploy with backend task 102.

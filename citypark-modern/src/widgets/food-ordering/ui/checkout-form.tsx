@@ -212,7 +212,6 @@ export function CheckoutForm({
 											}}
 										/>
 									) : null}
-
 								</>
 							)}
 							<div className='grid gap-3 md:grid-cols-2'>
@@ -302,45 +301,47 @@ export function CheckoutForm({
 												error={errors.entrance}
 											/>
 										</div>
-
 									</>
 								)}
-
 							</div>
-							<CheckboxField
-								name='saveAddress'
-								checked={address.save}
-								onChange={(event) => address.setSave(event.target.checked)}
-							>
-								Сохранить адрес
-							</CheckboxField>
-							{addressBook.error && (
-								<p role='status'>
-									{addressBook.error}{' '}
-									<button type='button' className='tap-area underline' onClick={() => router.refresh()}>
-										Повторить
-									</button>
-								</p>
-							)}
-
-							{address.save && (
+							{method === 'delivery' && (
 								<>
-									<TextField
-										label='Название адреса'
-										name='addressName'
-										value={address.name}
-										onChange={(event) => address.setName(event.target.value)}
-										error={errors.addressName}
-									/>
-									<p className='text-text-muted text-sm'>
-										Адрес будет сохранён при оформлении заказа, независимо от результата оплаты.
-									</p>
+									{' '}
+									<CheckboxField
+										name='saveAddress'
+										checked={address.save}
+										onChange={(event) => address.setSave(event.target.checked)}
+									>
+										Сохранить адрес
+									</CheckboxField>
+									{addressBook.error && (
+										<p role='status'>
+											{addressBook.error}{' '}
+											<button type='button' className='tap-area underline' onClick={() => router.refresh()}>
+												Повторить
+											</button>
+										</p>
+									)}
+									{address.save && (
+										<>
+											<TextField
+												label='Название адреса'
+												name='addressName'
+												value={address.name}
+												onChange={(event) => address.setName(event.target.value)}
+												error={errors.addressName}
+											/>
+											<p className='text-text-muted text-sm'>
+												Адрес будет сохранён при оформлении заказа, независимо от результата оплаты.
+											</p>
+										</>
+									)}
+									{(address.saveError || errors.addressSave) && (
+										<p role='alert' className='text-danger'>
+											{address.saveError || errors.addressSave}
+										</p>
+									)}
 								</>
-							)}
-							{(address.saveError || errors.addressSave) && (
-								<p role='alert' className='text-danger'>
-									{address.saveError || errors.addressSave}
-								</p>
 							)}
 						</section>
 
@@ -352,8 +353,21 @@ export function CheckoutForm({
 							)}
 						>
 							<h2 className='text-xl font-bold max-md:sr-only md:col-span-2 md:mb-1'>Контакты и оплата</h2>
-							<TextField label='Имя' name='name' autoComplete='name' defaultValue={values?.name} error={errors.name} />
-							<PhoneField label='Телефон' name='phone' defaultValue={values?.phone} error={errors.phone} />
+							<TextField
+								label='Имя'
+								name='name'
+								autoComplete='name'
+								value={address.contact.name}
+								onChange={(event) => address.editContact('name', event.target.value)}
+								error={errors.name}
+							/>
+							<PhoneField
+								label='Телефон'
+								name='phone'
+								value={address.contact.phone}
+								onValueChange={(value) => address.editContact('phone', value)}
+								error={errors.phone}
+							/>
 							<TextareaField
 								label='Пожелания'
 								name='comment'
@@ -440,10 +454,10 @@ export function CheckoutForm({
 							{(pricing.error ||
 								(!pricing.ready && errors.expectedPayableTotal) ||
 								(!promoCodesEnabled && errors.promoCode)) && (
-									<p role='alert' className='bg-surface text-danger rounded-sm p-3 text-sm'>
-										{pricing.error || errors.expectedPayableTotal || errors.promoCode}
-									</p>
-								)}
+								<p role='alert' className='bg-surface text-danger rounded-sm p-3 text-sm'>
+									{pricing.error || errors.expectedPayableTotal || errors.promoCode}
+								</p>
+							)}
 							<dl
 								aria-label='Расчёт заказа'
 								className='bg-inverse-bg text-inverse-text flex flex-col gap-2 rounded-lg p-4 md:p-0'

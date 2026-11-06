@@ -15,7 +15,8 @@ function load(path, modules) {
 	}).outputText
 	vm.runInNewContext(source, {
 		exports,
-		require: (name) => (name in modules ? modules[name] : require(name)),
+		require: (name) =>
+			name in modules ? modules[name] : name === '@/shared/lib' ? load('src/shared/lib/phone.ts') : require(name),
 		queueMicrotask,
 		console: { error() {} },
 		FormData,
@@ -26,6 +27,8 @@ function load(path, modules) {
 const schemas = load('src/entities/address/model/schema.ts', {})
 const first = {
 	id: '1',
+	recipientName: 'Иван',
+	recipientPhone: '+79991234567',
 	name: 'Дом',
 	city: 'Белореченск',
 	street: 'Гоголя, 61',
@@ -37,6 +40,8 @@ const second = {
 	...first,
 	id: '2',
 	name: 'Работа',
+	recipientName: 'Мария',
+	recipientPhone: '+79991234568',
 	street: 'Ленина, 20',
 	apartment: '',
 	entrance: '4',
@@ -111,6 +116,8 @@ assert.equal(a.ready, false)
 assert.equal(a.locationAllowed, false)
 snapshot = { status: 'ready', book: { entries: [first, second] } }
 a = await h.settle()
+assert.equal(a.contact.name, first.recipientName)
+assert.equal(a.contact.phone, first.recipientPhone)
 assert.equal(a.selected, 'guest:1')
 assert.equal(a.locationAllowed, false)
 assert.equal(
@@ -119,6 +126,7 @@ assert.equal(
 )
 a.select('guest:2')
 a = h.render()
+assert.equal(a.contact.name, second.recipientName)
 assert.equal(a.fields.apartment, '')
 assert.equal(a.fields.entrance, '4')
 a.edit('street', 'Manual')
@@ -236,7 +244,11 @@ const action = load('src/widgets/food-ordering/api/place-order.ts', {
 			calls.push(['order', ...args])
 			return orderFailure
 				? { ok: false, message: 'Order failed' }
-				: { ok: true, orderId: 8, redirectUrl: `https://demo.moneta.ru/assistant.htm${missingTransactionId ? '' : '?MNT_TRANSACTION_ID=' + transactionId}` }
+				: {
+						ok: true,
+						orderId: 8,
+						redirectUrl: `https://demo.moneta.ru/assistant.htm${missingTransactionId ? '' : '?MNT_TRANSACTION_ID=' + transactionId}`,
+					}
 		},
 	},
 })
@@ -281,7 +293,10 @@ for (const surface of ['web', 'mini']) {
 	reset()
 	missingTransactionId = true
 	await assert.rejects(submit({}, form()), (e) => e.path === 'https://demo.moneta.ru/assistant.htm')
-	assert.equal(calls.some((c) => c[0] === 'payment'), false)
+	assert.equal(
+		calls.some((c) => c[0] === 'payment'),
+		false
+	)
 	for (const changed of [
 		{ kind: 'auth-required', surface },
 		{ kind: 'account', surface, accountId: 8 },

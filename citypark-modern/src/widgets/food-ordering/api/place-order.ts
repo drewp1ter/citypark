@@ -98,6 +98,8 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 	if (order.data.method === 'delivery' && values.saveAddress === 'on') {
 		const fields = addressFieldsSchema.safeParse({
 			name: values.addressName,
+			recipientName: values.name,
+			recipientPhone: values.phone,
 			city: values.city,
 			street: values.street,
 			apartment: values.apartment,
@@ -147,7 +149,18 @@ async function submitOrder(surface: 'web' | 'mini', _previous: OrderState, formD
 	}
 	if (when === 'scheduled') body.deliveryTime = time
 	if (order.data.method === 'delivery') {
-		body.address = { city, address: formatAddress({ name: '', city, street, apartment, entrance }) }
+		body.address = {
+			city,
+			address: formatAddress({
+				name: '',
+				recipientName: order.data.name,
+				recipientPhone: order.data.phone,
+				city,
+				street,
+				apartment,
+				entrance,
+			}),
+		}
 	}
 
 	let redirectUrl: string

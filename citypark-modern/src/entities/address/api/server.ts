@@ -69,7 +69,7 @@ function failure(error: unknown): never {
 		if (error.status === 401) throw new CustomerApiError(401, signIn)
 		if (knownMessages[error.status]?.includes(error.message)) {
 			const fields: Record<string, string> = {}
-			for (const key of ['name', 'city', 'street', 'apartment', 'entrance']) {
+			for (const key of ['recipientName', 'recipientPhone', 'name', 'city', 'street', 'apartment', 'entrance']) {
 				const message = error.fields[key]
 				if (
 					[

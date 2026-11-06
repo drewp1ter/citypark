@@ -5,6 +5,8 @@ import { addressFieldsSchema, saveGuestAddress, useGuestAddresses, type AddressB
 
 export type CheckoutAddress = { city: string; street: string; apartment: string; entrance: string }
 export type CheckoutAddressEntry = CheckoutAddress & {
+	recipientName: string
+	recipientPhone: string
 	key: string
 	name: string
 	isDefault: boolean
@@ -20,6 +22,14 @@ export function useCheckoutAddress(book: AddressBookLoad, towns: readonly { name
 			? guest.book.entries.map((entry) => ({ ...entry, key: `guest:${entry.id}`, needsReview: false }))
 			: book.entries.map((entry) => ({ ...entry, key: `account:${entry.id}` }))
 	const [fields, setFields] = useState<CheckoutAddress>(empty)
+	const [contact, setContact] = useState({ name: '', phone: '' })
+	const contactTouched = useRef({ name: false, phone: false })
+	const applyContact = (entry: CheckoutAddressEntry, automatic = false) =>
+		setContact((current) => ({
+			name: entry.recipientName && (!automatic || !contactTouched.current.name) ? entry.recipientName : current.name,
+			phone:
+				entry.recipientPhone && (!automatic || !contactTouched.current.phone) ? entry.recipientPhone : current.phone,
+		}))
 	const [selection, setSelection] = useState('')
 	const [settled, setSettled] = useState(false)
 	const [locked, setLocked] = useState(false)
@@ -29,7 +39,9 @@ export function useCheckoutAddress(book: AddressBookLoad, towns: readonly { name
 	const protectedDraft = useRef(false)
 	const initialized = useRef(false)
 	const eligible = (entry: CheckoutAddressEntry) =>
-		!entry.needsReview && addressFieldsSchema.safeParse(entry).success && towns.some((town) => town.name === entry.city)
+		!entry.needsReview &&
+		addressFieldsSchema.omit({ recipientName: true, recipientPhone: true }).safeParse(entry).success &&
+		towns.some((town) => town.name === entry.city)
 	const defaultEntry = entries.find((entry) => entry.isDefault && eligible(entry))
 	useEffect(() => {
 		if (!ready || initialized.current) return
@@ -44,6 +56,7 @@ export function useCheckoutAddress(book: AddressBookLoad, towns: readonly { name
 					apartment: defaultEntry.apartment,
 					entrance: defaultEntry.entrance,
 				})
+				applyContact(defaultEntry, true)
 				setSelection(defaultEntry.key)
 			}
 			setSettled(true)
@@ -73,6 +86,7 @@ export function useCheckoutAddress(book: AddressBookLoad, towns: readonly { name
 		protectedDraft.current = true
 		setLocked(true)
 		setSelection(key)
+		if (entry) applyContact(entry)
 		setFields(
 			entry ? { city: entry.city, street: entry.street, apartment: entry.apartment, entrance: entry.entrance } : empty
 		)
@@ -92,7 +106,12 @@ export function useCheckoutAddress(book: AddressBookLoad, towns: readonly { name
 		setLocked(true)
 		setSaveError('')
 		if (method !== 'delivery' || !save) return true
-		const parsed = addressFieldsSchema.safeParse({ ...fields, name })
+		const parsed = addressFieldsSchema.safeParse({
+			...fields,
+			name,
+			recipientName: contact.name,
+			recipientPhone: contact.phone,
+		})
 		if (!parsed.success) {
 			setSaveError(parsed.error.issues[0].message)
 			return false
@@ -107,6 +126,11 @@ export function useCheckoutAddress(book: AddressBookLoad, towns: readonly { name
 		return true
 	}
 	return {
+		contact,
+		editContact: (field: 'name' | 'phone', value: string) => {
+			contactTouched.current[field] = true
+			setContact((current) => ({ ...current, [field]: value }))
+		},
 		fields,
 		entries,
 		selected,

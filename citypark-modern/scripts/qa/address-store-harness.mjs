@@ -41,7 +41,12 @@ function environment() {
 			exports,
 			window,
 			crypto: { randomUUID },
-			require: (name) => (name.startsWith('.') ? load(resolve(dirname(file), name + '.ts')) : require(name)),
+			require: (name) =>
+				name.startsWith('.')
+					? load(resolve(dirname(file), name + '.ts'))
+					: name === '@/shared/lib'
+						? load('src/shared/lib/phone.ts')
+						: require(name),
 		})
 		cache.set(file, exports)
 		return exports
@@ -61,7 +66,15 @@ function environment() {
 		reload: () => cache.clear(),
 	}
 }
-const fields = { name: 'Дом', city: 'Белореченск', street: 'ул. Гоголя, 61', apartment: '12', entrance: '2, этаж 3' }
+const fields = {
+	recipientName: 'Иван',
+	recipientPhone: '+79991234567',
+	name: 'Дом',
+	city: 'Белореченск',
+	street: 'ул. Гоголя, 61',
+	apartment: '12',
+	entrance: '2, этаж 3',
+}
 const fixture = environment()
 const { addressFieldsSchema } = fixture.load('src/entities/address/model/schema.ts')
 const { formatAddress, addressDuplicateKey } = fixture.load('src/entities/address/model/format.ts')
@@ -297,6 +310,8 @@ console.log(
 		'id',
 		'isDefault',
 		'name',
+		'recipientName',
+		'recipientPhone',
 		'revision',
 		'street',
 	])
@@ -304,3 +319,23 @@ console.log(
 	assert.equal(/private|secret|latitude|account/.test(env.data.get(KEY)), false)
 }
 console.log('PASS guestPrivacy: only declared guest fields and the single versioned guest envelope serialized')
+
+{
+	const legacy = { ...fields }
+	delete legacy.recipientName
+	delete legacy.recipientPhone
+	const env = environment()
+	env.data.set(
+		KEY,
+		JSON.stringify({
+			version: 1,
+			revision: randomUUID(),
+			entries: [{ ...legacy, id: randomUUID(), revision: randomUUID(), isDefault: true }],
+		})
+	)
+	const store = loadStore(env)
+	assert.equal(store.getGuestSnapshot().status, 'ready')
+	assert.equal(store.getGuestSnapshot().book.entries[0].recipientName, '')
+	assert.equal((await store.saveGuestAddress(legacy)).ok, false)
+}
+console.log('PASS legacy contacts: old guest entries load, new saves require contacts')

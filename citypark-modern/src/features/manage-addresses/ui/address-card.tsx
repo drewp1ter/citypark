@@ -27,6 +27,9 @@ export function AddressCard({
 					{entry.city}, {address}
 				</p>
 			)}
+			<p>
+				{entry.recipientName} {entry.recipientPhone}
+			</p>
 			{entry.isDefault && <p className='font-semibold'>Основной адрес</p>}
 			{'needsReview' in entry && entry.needsReview && <p>Проверьте и уточните адрес</p>}
 			{unavailable && <p>Доставка в этот населённый пункт сейчас недоступна</p>}

@@ -9,8 +9,13 @@ const compile = (path) =>
 	ts.transpileModule(readFileSync(path, 'utf8'), {
 		compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.CommonJS },
 	}).outputText
+const phones = {}
+vm.runInNewContext(compile('src/shared/lib/phone.ts'), { exports: phones, require })
 const schemas = {}
-vm.runInNewContext(compile('src/entities/address/model/schema.ts'), { exports: schemas, require })
+vm.runInNewContext(compile('src/entities/address/model/schema.ts'), {
+	exports: schemas,
+	require: (name) => (name === '@/shared/lib' ? phones : require(name)),
+})
 class CustomerApiError extends Error {
 	constructor(status, message, fields = {}) {
 		super(message)
@@ -23,6 +28,8 @@ const calls = [],
 let failure
 const entry = {
 	id: 1,
+	recipientName: 'Иван',
+	recipientPhone: '+79991234567',
 	name: 'Дом',
 	city: 'Белореченск',
 	street: 'Гоголя, 61',
@@ -31,7 +38,15 @@ const entry = {
 	isDefault: true,
 	needsReview: false,
 }
-const fields = { name: entry.name, city: entry.city, street: entry.street, apartment: '', entrance: '' }
+const fields = {
+	recipientName: entry.recipientName,
+	recipientPhone: entry.recipientPhone,
+	name: entry.name,
+	city: entry.city,
+	street: entry.street,
+	apartment: '',
+	entrance: '',
+}
 let created = true
 const helpers = Object.fromEntries(
 	['createSavedAddress', 'updateSavedAddress', 'deleteSavedAddress', 'setSavedDefault'].map((name) => [

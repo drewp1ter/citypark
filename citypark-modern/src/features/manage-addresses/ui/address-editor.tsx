@@ -44,6 +44,23 @@ export function AddressEditor({
 					onChange={(event) => onChange({ ...values, name: event.target.value })}
 					error={errors?.name}
 				/>
+				<TextField
+					label='Имя получателя'
+					name='recipientName'
+					autoComplete='name'
+					value={values.recipientName}
+					onChange={(event) => onChange({ ...values, recipientName: event.target.value })}
+					error={errors?.recipientName}
+				/>
+				<TextField
+					label='Телефон получателя'
+					name='recipientPhone'
+					type='tel'
+					autoComplete='tel'
+					value={values.recipientPhone}
+					onChange={(event) => onChange({ ...values, recipientPhone: event.target.value })}
+					error={errors?.recipientPhone}
+				/>
 				<AddressFields
 					values={values}
 					onChange={onChange}

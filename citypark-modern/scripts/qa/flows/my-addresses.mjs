@@ -28,6 +28,8 @@ const browser = await chromium.launch()
 const key = 'citypark.addresses.v1'
 async function fill(page, name, street) {
 	await page.getByLabel('Название адреса', { exact: true }).fill(name)
+	await page.getByLabel('Имя получателя', { exact: true }).fill('Иван')
+	await page.getByLabel('Телефон получателя', { exact: true }).fill('+79991234567')
 	// React Aria Select opens a listbox; native hidden select is deliberately ignored.
 	await page.getByRole('button', { name: /Населённый пункт/ }).click()
 	await page.getByRole('option', { name: 'Белореченск', exact: true }).click()
@@ -51,6 +53,8 @@ try {
 	const anonymous = await browser.newContext()
 	await anonymous.addInitScript(() => {
 		const entry = {
+			recipientName: 'Иван',
+			recipientPhone: '+79991234567',
 			name: 'Дом',
 			city: 'Белореченск',
 			street: 'Гоголя, 61',
@@ -198,6 +202,8 @@ try {
 				id: randomUUID(),
 				revision: randomUUID(),
 				isDefault: true,
+				recipientName: 'Иван',
+				recipientPhone: '+79991234567',
 				name: 'Дом',
 				city: 'Белореченск',
 				street: 'Гоголя, 61',
@@ -267,16 +273,16 @@ try {
 			await page.getByLabel('Название адреса', { exact: true }).fill('Новый дом')
 			const submit = page.getByRole('button', { name: /^Оплатить/ }).filter({ visible: true })
 			await expect(submit).toBeEnabled({ timeout: 10000 })
-			// Missing name, phone and consent guarantee validation stops order dispatch.
+			// Missing consent guarantees validation stops order dispatch. Saved contacts are prefilled.
 			await submit.click()
 			await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).entries.length === 2, key)
-			await expect(page.getByText('Укажите имя', { exact: true })).toBeVisible()
+			await expect(page.getByText('Нужно согласие с политикой конфиденциальности', { exact: true })).toBeVisible()
 			await expect(street).toHaveValue(home.street)
 			await expect(apartment).toHaveValue('12')
 			await expect(entrance).toHaveValue('2')
 			await expect(page.getByLabel('Название адреса', { exact: true })).toHaveValue('Новый дом')
 			await submit.click()
-			await expect(page.getByText('Укажите имя', { exact: true })).toBeVisible()
+			await expect(page.getByText('Нужно согласие с политикой конфиденциальности', { exact: true })).toBeVisible()
 			assert.equal(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)).entries.length, key), 2)
 			await page.evaluate((key) => {
 				const original = Storage.prototype.setItem
@@ -290,7 +296,10 @@ try {
 			await expect(page.getByText('Не удалось сохранить адрес в этом браузере', { exact: true })).toBeVisible()
 			await expect(street).toHaveValue('Совсем новая, 5')
 			await page.getByLabel('Сохранить адрес', { exact: true }).uncheck()
-			await page.getByText('Самовывоз', { exact: true }).click()
+			await expect(submit).toBeEnabled()
+			await page.getByRole('radio', { name: 'Самовывоз', exact: true }).focus()
+			await page.keyboard.press('Space')
+			await expect(page.getByRole('radio', { name: 'Самовывоз', exact: true })).toBeChecked()
 			await expect(page.getByLabel('Сохранить адрес', { exact: true })).toHaveCount(0)
 			assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true)
 			console.log(

@@ -1,4 +1,12 @@
-export type AddressFields = { name: string; city: string; street: string; apartment: string; entrance: string }
+export type AddressFields = {
+	name: string
+	recipientName: string
+	recipientPhone: string
+	city: string
+	street: string
+	apartment: string
+	entrance: string
+}
 export type SavedAddress = AddressFields & {
 	id: number
 	address: string
