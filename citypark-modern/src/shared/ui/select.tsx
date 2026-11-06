@@ -68,7 +68,7 @@ export function Select({
 			<Button
 				className={cn(
 					controlClass,
-					'group data-[focus-visible]:outline-accent flex items-center justify-between gap-2 text-left data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2',
+					'group data-[focus-visible]:outline-accent flex cursor-pointer items-center justify-between gap-2 text-left data-[focus-visible]:outline-2 data-[focus-visible]:outline-offset-2',
 					'data-[invalid]:border-danger'
 				)}
 			>
