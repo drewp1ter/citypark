@@ -74,3 +74,14 @@ func stripURL(err error) error {
 	}
 	return err
 }
+
+// NewProxyHTTPClient creates an isolated Telegram transport. A configured proxy
+// takes precedence over environment proxy settings and never falls back to direct.
+// proxyURL must be validated by config.Load.
+func NewProxyHTTPClient(proxyURL *url.URL) *http.Client {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	if proxyURL != nil {
+		transport.Proxy = http.ProxyURL(proxyURL)
+	}
+	return &http.Client{Transport: transport, Timeout: 15 * time.Second}
+}

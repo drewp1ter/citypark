@@ -57,6 +57,7 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `IIKO_ADDRESS_STREET` | `Гоголя` | Street of the placeholder address |
 | `IIKO_ADDRESS_HOUSE` | `61` | House of the placeholder address |
 | `TELEGRAM_BASE_URL` | `https://api.telegram.org` | Telegram Bot API base URL |
+| `TELEGRAM_PROXY_URL` | empty | Telegram-only SOCKS5 proxy, e.g. `socks5h://user:password@proxy-host:1080`; proxy failure never falls back to direct access. Both schemes resolve the target through the proxy. Empty preserves environment proxy behavior. |
 | `TELEGRAM_TOKEN` | empty | Bot token |
 | `TELEGRAM_STAFF_CHAT_ID` | empty | Staff chat for paid orders and iiko alerts |
 | `MONETA_ID` | empty | Moneta shop id (`MNT_ID`) |

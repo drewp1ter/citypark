@@ -228,3 +228,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
   - New `orders.payment_uuid` is sent as `MNT_TRANSACTION_ID`; callbacks and CHECK find orders by it, old numeric ids are rejected; `orderId` in the API is unchanged. Formatting/build/vet and full serial suite pass; coverage: moneta 100%, order 91.9%, app 98.9% (2026-11-05). Deploy together with citypark-modern task 60.
 - [x] [100 MONETA CHECK diagnostics and Sentry reports](100-moneta-check-diagnostics.md) [93, 99]
   - Every CHECK logs one `moneta check` line (Info on success, Warn on failure, no signature); each failed CHECK sends one Sentry warning grouped by a fixed reason, and `scrub` lets only the nine allow-listed reasons through. `PaymentCheck` returns a `CheckOutcome`; HTTP responses are unchanged. Formatting/build/vet and full serial suite pass; coverage: order 92.1%, monitoring 100%, app 98.9% (2026-11-05).
+
+## Telegram proxy
+
+- [ ] [101 Telegram-only SOCKS proxy](101-telegram-socks-proxy.md) [100]
+  - Implemented optional Telegram-only SOCKS5 transport, validated configuration, docs and fake SOCKS tests. Formatting/build/vet and targeted config/Telegram tests pass. Completion blocked (2026-11-06): TEST_DB_DSN from .env.development refuses connections at host.docker.internal:5433; full suite and app coverage cannot pass. Per AGENTS.md, stopped without starting a database, ticking the task or committing.

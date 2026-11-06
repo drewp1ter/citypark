@@ -56,7 +56,10 @@ type Iiko struct {
 	// Placeholder address of the iiko order: iiko's legacy address needs a street and a house of its own.
 	AddressCity, AddressStreet, AddressHouse string
 }
-type Telegram struct{ BaseURL, Token, StaffChatID string }
+type Telegram struct {
+	BaseURL, Token, StaffChatID string
+	ProxyURL                    *url.URL
+}
 type Moneta struct {
 	ID         string // shop id, sent to Moneta as MNT_ID
 	Secret     string // integrity code from the Moneta cabinet
@@ -220,6 +223,18 @@ func Load(lookup LookupFunc) (Config, error) {
 		BaseURL:     str("TELEGRAM_BASE_URL", "https://api.telegram.org"),
 		Token:       str("TELEGRAM_TOKEN", ""),
 		StaffChatID: str("TELEGRAM_STAFF_CHAT_ID", ""),
+	}
+	proxyRaw := str("TELEGRAM_PROXY_URL", "")
+	if proxyRaw != "" {
+		u, parseErr := url.Parse(proxyRaw)
+		if parseErr != nil || (u.Scheme != "socks5" && u.Scheme != "socks5h") || u.Hostname() == "" || u.Port() == "" || u.Path != "" || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.Opaque != "" {
+			return Config{}, errors.New("TELEGRAM_PROXY_URL must be a SOCKS5 URL with host and port")
+		}
+		port, portErr := strconv.Atoi(u.Port())
+		if portErr != nil || port < 1 || port > 65535 {
+			return Config{}, errors.New("TELEGRAM_PROXY_URL port must be between 1 and 65535")
+		}
+		c.Telegram.ProxyURL = u
 	}
 	c.CustomerTelegramBotToken = str("CUSTOMER_TELEGRAM_BOT_TOKEN", "")
 	c.Moneta = Moneta{

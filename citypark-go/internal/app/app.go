@@ -63,7 +63,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	}
 	adapter := &customer.Adapter{Sessions: sessions, Tokens: tokens, Enabled: cfg.CustomerAuthEnabled}
 
-	telegramClient := telegram.NewClient(cfg.Telegram.BaseURL, cfg.Telegram.Token, nil)
+	telegramClient := telegram.NewClient(cfg.Telegram.BaseURL, cfg.Telegram.Token, telegram.NewProxyHTTPClient(cfg.Telegram.ProxyURL))
 	notifier := NewTelegramNotifier(telegramClient, cfg.Telegram.StaffChatID, log)
 	payments := NewMonetaPayments(
 		moneta.New(cfg.Moneta.ID, cfg.Moneta.Secret, cfg.Moneta.TestMode),

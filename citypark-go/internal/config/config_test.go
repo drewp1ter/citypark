@@ -160,7 +160,7 @@ func TestLoadOverrides(t *testing.T) {
 		{"SMTP", c.SMTP, SMTP{Host: "smtp.example", Port: 587, Username: "user", Password: "secret", From: "mail@example.com", TLSMode: "starttls", Enabled: true}},
 		{"Admin", c.Admin, Admin{"a@b.c", "pw", "+70000000000"}},
 		{"Iiko", c.Iiko, Iiko{"", "http://iiko", "key", "app", "secret", "org", "menu", "tok", 30 * time.Minute, "tg1", "pt1", "External", "Майкоп", "Мира", "1"}},
-		{"Telegram", c.Telegram, Telegram{"http://tg", "tgtok", "2"}},
+		{"Telegram", c.Telegram, Telegram{BaseURL: "http://tg", Token: "tgtok", StaffChatID: "2"}},
 		{"Moneta", c.Moneta, Moneta{"100", "s", true, "https://pay.example/", "https://site/ok", "https://site/fail"}},
 		{"Hotel", c.Hotel, Hotel{"hotel"}},
 		{"OneC", c.OneC, OneC{"http://1c.local/CityParkHotel/ru_RU", "reports", "pw1c"}},
@@ -367,5 +367,26 @@ func TestConfigSentry(t *testing.T) {
 				t.Fatalf("unexpected settings: %+v", cfg.Sentry)
 			}
 		})
+	}
+}
+
+func TestTelegramProxyConfig(t *testing.T) {
+	for _, raw := range []string{"", "socks5://localhost:1080", "socks5h://user:password@localhost:1080"} {
+		c, err := Load(lookupMap(map[string]string{"TELEGRAM_PROXY_URL": raw}))
+		if err != nil {
+			t.Fatalf("valid proxy rejected: %v", err)
+		}
+		if raw != "" && (c.Telegram.ProxyURL == nil || c.Telegram.ProxyURL.String() != raw) {
+			t.Fatal("proxy not preserved")
+		}
+	}
+	for _, raw := range []string{"%", "http://localhost:1080", "socks5://:1080", "socks5://localhost", "socks5://localhost:abc", "socks5://localhost:0", "socks5://localhost:65536", "socks5://localhost:1080/path", "socks5://localhost:1080?", "socks5://localhost:1080#fragment", "socks5:opaque"} {
+		_, err := Load(lookupMap(map[string]string{"TELEGRAM_PROXY_URL": raw}))
+		if err == nil {
+			t.Fatalf("accepted invalid proxy %q", raw)
+		}
+		if strings.Contains(err.Error(), "password") {
+			t.Fatal("credentials leaked")
+		}
 	}
 }
