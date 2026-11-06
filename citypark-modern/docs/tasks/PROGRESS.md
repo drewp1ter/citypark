@@ -218,3 +218,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [67 Production search acceptance](67-production-search-acceptance.md) — **Skipped for now by owner (2026-11-05)** [64–66; production deployment]
   - Blocked (2026-11-05, 22:12 UTC): cityparkvip.ru still serves the previous application's identical HTML shell at /, /contacts, /robots.txt and /sitemap.xml (HTTP 200 text/html). New frontend deployment is required before acceptance. Existing legacy Yandex verification meta tag needs continuity review; account status is unknown. Evidence in SEARCH_DISCOVERY.md. No deployment, account operations or backend writes performed.
+
+- [x] [68 Page-specific Open Graph previews](68-open-graph.md) [61]
+  - Complete Russian Open Graph/Twitter cards for public static pages and room/news details. Existing photos with public fallback for HTTP, SVG or missing images; HTTP backend news photo was unreachable from the crawler. Check, build and production crawler checks pass for ten public pages and room/news details, including query canonical and image responses. External social previews remain deployment-dependent; no backend writes. Missing-record/private-page browser regression checks were not run.

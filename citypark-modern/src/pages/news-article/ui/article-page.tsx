@@ -1,3 +1,4 @@
+import { socialMetadata } from '@/shared/config'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -5,17 +6,35 @@ import { getNewsItem } from '@/entities/article'
 import { formatDate, type Photo } from '@/shared/lib'
 import { AppLink, Button, RichText } from '@/shared/ui'
 
-type Article = { title: string; meta: string; photo: Photo; bodyHtml: string }
+type Article = { title: string; meta: string; excerpt?: string; photo: Photo; bodyHtml: string }
 
 async function findArticle(slug: string): Promise<Article | undefined> {
 	const item = await getNewsItem(slug)
 	if (!item) return undefined
-	return { title: item.title, meta: formatDate(item.date), photo: item.photo, bodyHtml: item.bodyHtml }
+	return {
+		title: item.title,
+		excerpt: item.excerpt,
+		meta: formatDate(item.date),
+		photo: item.photo,
+		bodyHtml: item.bodyHtml,
+	}
 }
 
 export async function generateArticleMetadata(slug: string): Promise<Metadata> {
 	const article = await findArticle(slug)
-	return { alternates: { canonical: `/news/${encodeURIComponent(slug)}` }, title: article ? `${article.title} — Сити Парк` : 'Страница не найдена' }
+	return {
+		...(article &&
+			socialMetadata(
+				`${article.title} — Сити Парк`,
+				article.excerpt || 'Новости отеля и ресторана Сити Парк в Белореченске.',
+				`/news/${encodeURIComponent(slug)}`,
+				article.photo.src,
+				article.photo.alt,
+				'article'
+			)),
+		alternates: { canonical: `/news/${encodeURIComponent(slug)}` },
+		title: article ? `${article.title} — Сити Парк` : 'Страница не найдена',
+	}
 }
 
 export async function ArticlePage({ slug }: { slug: string }) {

@@ -9,3 +9,4 @@ export {
 } from './site-settings'
 export { SiteSettingsProvider, useSiteSettings } from './site-settings-provider'
 export { productionOrigin } from './search'
+export { socialMetadata } from './social'
