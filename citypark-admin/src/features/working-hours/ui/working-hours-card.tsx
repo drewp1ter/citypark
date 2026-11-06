@@ -66,7 +66,7 @@ function WorkingHoursFormView({ hours }: { hours: Hours }) {
 				className='w-full sm:w-40'
 			>
 				<Label>{label}</Label>
-				<Input inputMode='numeric' placeholder='09:00' />
+				<Input inputMode='text' placeholder='09:00' />
 				<FieldError>{errors[name]}</FieldError>
 			</TextField>
 		)

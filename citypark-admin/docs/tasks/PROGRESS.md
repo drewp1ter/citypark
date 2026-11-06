@@ -82,3 +82,8 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [31 Full dish descriptions](31-dish-full-description.md)
   - Completed (2026-11-06). Generated API types, editor, URL selection and browser acceptance script implemented; check (306 tests) and build pass. After the owner restarted the backend, all four real-backend browser flows pass at 390/1440 px in both themes: save/reload, clear, network-error draft preservation, public dish rendering, menu-card exclusion and ordinary-description fallback. The original dish HTML was restored; no orders or payments created.
+
+## Mobile time input
+
+- [x] [32 Fix time-field keyboards on mobile](32-mobile-time-input.md)
+  - Check (306 tests), build and all five menu/working-hours Playwright tests pass. At 390 px, time fields request the text keyboard; save/reload, category `24:00`, empty limits and invalid working-hours ordering verified. Original settings restored.

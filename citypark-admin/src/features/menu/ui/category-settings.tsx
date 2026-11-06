@@ -37,12 +37,12 @@ export function CategorySettings({ category }: { category: ApiCategory }) {
 				<div className='flex flex-col gap-3 sm:flex-row'>
 					<TextField name='startTime' value={startTime} onChange={setStartTime} isInvalid={!!errors.startTime}>
 						<Label>Начало заказа</Label>
-						<Input placeholder='09:00' inputMode='numeric' />
+						<Input placeholder='09:00' inputMode='text' />
 						<FieldError>{errors.startTime}</FieldError>
 					</TextField>
 					<TextField name='endTime' value={endTime} onChange={setEndTime} isInvalid={!!errors.endTime}>
 						<Label>Окончание заказа</Label>
-						<Input placeholder='21:00' inputMode='numeric' />
+						<Input placeholder='21:00' inputMode='text' />
 						<FieldError>{errors.endTime}</FieldError>
 					</TextField>
 				</div>
