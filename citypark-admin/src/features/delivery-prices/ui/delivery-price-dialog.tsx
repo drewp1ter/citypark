@@ -1,4 +1,16 @@
-import { Button, Description, FieldError, Form, Input, Label, Modal, Spinner, TextField } from '@heroui/react'
+import {
+	Button,
+	Description,
+	FieldError,
+	Form,
+	Input,
+	Label,
+	Modal,
+	Select,
+	ListBox,
+	Spinner,
+	TextField,
+} from '@heroui/react'
 import { useState, type FormEvent } from 'react'
 import { ApiError } from '../../../shared/api'
 import { toastError, toastSuccess } from '../../../shared/ui/toast'
@@ -76,28 +88,35 @@ export function DeliveryPriceDialog({ item, onClose }: { item?: DeliveryPrice; o
 								</Description>
 								<FieldError>{errors.name}</FieldError>
 							</TextField>
-							<div className='flex flex-col gap-2'>
-								<label htmlFor='town-region'>Регион</label>
-								<select
-									id='town-region'
-									name='regionCode'
-									value={form.regionCode}
-									onChange={(event) =>
-										setForm((current) => ({ ...current, regionCode: event.target.value as 'RU-KDA' | 'RU-AD' }))
-									}
-									aria-invalid={errors.regionCode !== undefined}
-									aria-describedby={errors.regionCode ? 'town-region-error' : undefined}
-									className='rounded-lg border border-border bg-surface p-3'
-								>
-									<option value='RU-KDA'>Краснодарский край</option>
-									<option value='RU-AD'>Республика Адыгея</option>
-								</select>
-								{errors.regionCode && (
-									<p id='town-region-error' role='alert'>
-										{errors.regionCode}
-									</p>
-								)}
-							</div>
+
+							<Select
+								name='regionCode'
+								value={form.regionCode}
+								isRequired
+								isInvalid={errors.regionCode !== undefined}
+								onChange={(key) => {
+									if (key === 'RU-KDA' || key === 'RU-AD') setForm((current) => ({ ...current, regionCode: key }))
+								}}
+							>
+								<Label>Регион</Label>
+								<Select.Trigger>
+									<Select.Value />
+									<Select.Indicator />
+								</Select.Trigger>
+								<Select.Popover>
+									<ListBox>
+										<ListBox.Item id='RU-KDA' textValue='Краснодарский край'>
+											Краснодарский край
+											<ListBox.ItemIndicator />
+										</ListBox.Item>
+										<ListBox.Item id='RU-AD' textValue='Республика Адыгея'>
+											Республика Адыгея
+											<ListBox.ItemIndicator />
+										</ListBox.Item>
+									</ListBox>
+								</Select.Popover>
+								<FieldError>{errors.regionCode}</FieldError>
+							</Select>
 							<TextField name='value' value={form.value} onChange={set('value')} isInvalid={errors.value !== undefined}>
 								<Label>Описание</Label>
 								<Input />

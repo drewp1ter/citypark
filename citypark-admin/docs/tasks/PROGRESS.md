@@ -90,3 +90,6 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [33 Delivery-town regions](33-delivery-town-regions.md)
   - Implemented dropdown, list labels, generated API types and regression coverage. Check (307 tests) and build pass. After the backend restart, all six real-backend delivery-price browser tests pass in light/dark themes: create, duplicate rejection, region edit/reopen persistence, validation draft preservation and mobile cards. Temporary towns deleted; existing towns remain RU-KDA. Deploy backend task 105 first.
+
+- [x] [34 Styled region select](34-region-select.md)
+  - Replaced native select with HeroUI v3 Select/ListBox and field errors. Check (307 tests), build and six real-backend browser tests pass in both themes, including region persistence and mobile cards. Visually verified the open menu at 390 px in dark theme and keyboard selection; no existing town regions changed.

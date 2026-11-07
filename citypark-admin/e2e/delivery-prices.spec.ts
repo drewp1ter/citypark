@@ -38,8 +38,9 @@ for (const theme of ['light', 'dark']) {
 
 			await page.getByRole('button', { name: `Изменить ${name}` }).click()
 			const edit = page.getByRole('dialog')
-			await expect(edit.getByLabel('Регион')).toHaveValue('RU-KDA')
-			await edit.getByLabel('Регион').selectOption('RU-AD')
+			await expect(edit.getByRole('button', { name: 'Регион' })).toContainText('Краснодарский край')
+			await edit.getByRole('button', { name: 'Регион' }).click()
+			await page.getByRole('option', { name: 'Республика Адыгея' }).click()
 			await edit.getByLabel('Цена доставки, ₽').fill('150')
 			await edit.getByRole('button', { name: 'Сохранить' }).click()
 			await expect(row).toContainText('150 ₽')
@@ -47,7 +48,7 @@ for (const theme of ['light', 'dark']) {
 			await expect(row.getByRole('gridcell').nth(1)).toContainText('500 ₽')
 
 			await page.getByRole('button', { name: `Изменить ${name}` }).click()
-			await expect(page.getByRole('dialog').getByLabel('Регион')).toHaveValue('RU-AD')
+			await expect(page.getByRole('dialog').getByRole('button', { name: 'Регион' })).toContainText('Республика Адыгея')
 			const threshold = page.getByRole('dialog').getByLabel('Бесплатная доставка от, ₽')
 			await expect(threshold).toHaveValue('500')
 			await threshold.fill('')
