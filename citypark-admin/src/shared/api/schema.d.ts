@@ -5232,6 +5232,12 @@ export interface components {
             id: number;
         };
         DeliveryPrice: {
+            /**
+             * @description Region of the town. Defaults to RU-KDA on creation; omission on update preserves the region.
+             * @example RU-KDA
+             * @enum {string}
+             */
+            regionCode: "RU-KDA" | "RU-AD";
             /** @example 1 */
             id: number;
             /** @example Белореченск */
@@ -5254,6 +5260,12 @@ export interface components {
             updatedAt: string;
         };
         DeliveryPriceInput: {
+            /**
+             * @description Region of the town. Defaults to RU-KDA on creation; omission on update preserves the region.
+             * @example RU-KDA
+             * @enum {string}
+             */
+            regionCode?: "RU-KDA" | "RU-AD";
             /**
              * @description Must be unique.
              * @example Белореченск

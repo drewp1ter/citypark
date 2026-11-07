@@ -13,6 +13,7 @@ export function DeliveryPriceDialog({ item, onClose }: { item?: DeliveryPrice; o
 	const create = useCreateDeliveryPrice()
 	const update = useUpdateDeliveryPrice()
 	const [form, setForm] = useState<DeliveryPriceForm>({
+		regionCode: item?.regionCode ?? 'RU-KDA',
 		name: item?.name ?? '',
 		value: item?.value ?? '',
 		price: item === undefined ? '' : String(item.price),
@@ -75,6 +76,28 @@ export function DeliveryPriceDialog({ item, onClose }: { item?: DeliveryPrice; o
 								</Description>
 								<FieldError>{errors.name}</FieldError>
 							</TextField>
+							<div className='flex flex-col gap-2'>
+								<label htmlFor='town-region'>Регион</label>
+								<select
+									id='town-region'
+									name='regionCode'
+									value={form.regionCode}
+									onChange={(event) =>
+										setForm((current) => ({ ...current, regionCode: event.target.value as 'RU-KDA' | 'RU-AD' }))
+									}
+									aria-invalid={errors.regionCode !== undefined}
+									aria-describedby={errors.regionCode ? 'town-region-error' : undefined}
+									className='rounded-lg border border-border bg-surface p-3'
+								>
+									<option value='RU-KDA'>Краснодарский край</option>
+									<option value='RU-AD'>Республика Адыгея</option>
+								</select>
+								{errors.regionCode && (
+									<p id='town-region-error' role='alert'>
+										{errors.regionCode}
+									</p>
+								)}
+							</div>
 							<TextField name='value' value={form.value} onChange={set('value')} isInvalid={errors.value !== undefined}>
 								<Label>Описание</Label>
 								<Input />

@@ -25,6 +25,9 @@ function Name({ item }: { item: DeliveryPrice }) {
 	return (
 		<>
 			<div>{item.name}</div>
+			<div className='text-sm text-muted'>
+				{item.regionCode === 'RU-AD' ? 'Республика Адыгея' : 'Краснодарский край'}
+			</div>
 			{item.value !== '' && <div className='text-sm text-muted'>{item.value}</div>}
 		</>
 	)

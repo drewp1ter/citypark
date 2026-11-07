@@ -1,4 +1,10 @@
-export type DeliveryPriceForm = { name: string; value: string; price: string; freeFrom: string }
+export type DeliveryPriceForm = {
+	regionCode?: 'RU-KDA' | 'RU-AD'
+	name: string
+	value: string
+	price: string
+	freeFrom: string
+}
 type FormErrors = Partial<Record<keyof DeliveryPriceForm, string>>
 
 const MAX_TEXT = 255
@@ -17,6 +23,7 @@ function normalizePrice(price: string): string {
 /** Mirrors the backend rules for one delivery price; returns Russian messages by field (empty object when valid). */
 export function validateDeliveryPrice(f: DeliveryPriceForm): FormErrors {
 	const errors: FormErrors = {}
+	if (f.regionCode !== undefined && !['RU-KDA', 'RU-AD'].includes(f.regionCode)) errors.regionCode = 'Выберите регион'
 	const name = f.name.trim()
 	if (name === '') errors.name = 'Укажите название города'
 	else if (length(name) > MAX_TEXT) errors.name = MAX_TEXT_MESSAGE
@@ -35,8 +42,15 @@ export function validateDeliveryPrice(f: DeliveryPriceForm): FormErrors {
 }
 
 /** Trims the texts and parses the numbers: "150,5" → 150.5, an empty threshold → 0. Call it only after validation. */
-export function toRequest(f: DeliveryPriceForm): { name: string; value: string; price: number; freeFrom: number } {
+export function toRequest(f: DeliveryPriceForm): {
+	regionCode: 'RU-KDA' | 'RU-AD'
+	name: string
+	value: string
+	price: number
+	freeFrom: number
+} {
 	return {
+		regionCode: f.regionCode ?? 'RU-KDA',
 		name: f.name.trim(),
 		value: f.value.trim(),
 		price: Number(normalizePrice(f.price)),
@@ -44,7 +58,7 @@ export function toRequest(f: DeliveryPriceForm): { name: string; value: string; 
 	}
 }
 
-const SERVER_FIELD = /^(?:deliveryPrices\[\d+\]\.)?(name|value|price|freeFrom)$/
+const SERVER_FIELD = /^(?:deliveryPrices\[\d+\]\.)?(name|regionCode|value|price|freeFrom)$/
 
 /** Maps the backend's `errors` keys (`deliveryPrices[0].name` or `name`) to form fields; unknown keys are dropped. */
 export function mapServerFields(fields: Record<string, string>): FormErrors {

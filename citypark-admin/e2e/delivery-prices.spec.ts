@@ -33,12 +33,16 @@ test('add, duplicate, edit and delete a delivery price', async ({ page }) => {
 
 	await page.getByRole('button', { name: `Изменить ${name}` }).click()
 	const edit = page.getByRole('dialog')
+	await expect(edit.getByLabel('Регион')).toHaveValue('RU-KDA')
+	await edit.getByLabel('Регион').selectOption('RU-AD')
 	await edit.getByLabel('Цена доставки, ₽').fill('150')
 	await edit.getByRole('button', { name: 'Сохранить' }).click()
 	await expect(row).toContainText('150 ₽')
+	await expect(row).toContainText('Республика Адыгея')
 	await expect(row.getByRole('gridcell').nth(1)).toContainText('500 ₽')
 
 	await page.getByRole('button', { name: `Изменить ${name}` }).click()
+	await expect(page.getByRole('dialog').getByLabel('Регион')).toHaveValue('RU-AD')
 	const threshold = page.getByRole('dialog').getByLabel('Бесплатная доставка от, ₽')
 	await expect(threshold).toHaveValue('500')
 	await threshold.fill('')

@@ -36,6 +36,7 @@ describe('validateDeliveryPrice', () => {
 describe('toRequest', () => {
 	it('trims the texts and reads a comma as the decimal separator', () => {
 		expect(toRequest({ name: '  Сочи ', value: ' Россия ', price: ' 150,5 ', freeFrom: '' })).toEqual({
+			regionCode: 'RU-KDA',
 			name: 'Сочи',
 			value: 'Россия',
 			price: 150.5,
@@ -64,4 +65,10 @@ describe('mapServerFields', () => {
 	it('ignores unknown keys', () => {
 		expect(mapServerFields({ deliveryPrices: 'empty' })).toEqual({})
 	})
+})
+
+it('sends and maps the selected region', () => {
+	expect(toRequest({ ...valid, regionCode: 'RU-AD' }).regionCode).toBe('RU-AD')
+	expect(mapServerFields({ 'deliveryPrices[0].regionCode': 'bad' })).toEqual({ regionCode: 'bad' })
+	expect(validateDeliveryPrice({ ...valid, regionCode: 'RU-AD' })).toEqual({})
 })
