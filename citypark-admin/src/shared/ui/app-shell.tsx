@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { useSyncExternalStore, type ReactNode } from 'react'
 import { clearSession, getSession, onSessionChange } from '../api'
 import { contentNavItems, mainNavItems, tailNavItems, type NavItem } from './nav-items'
+import { InstallApp } from './install-app'
 import { ThemeToggle } from './theme-toggle'
 
 const linkClass = 'block rounded-lg px-3 py-2 text-sm text-foreground hover:bg-default'
@@ -53,6 +54,7 @@ function UserBlock() {
 
 	return (
 		<div className='flex flex-col gap-3'>
+			<InstallApp />
 			<p className='truncate text-sm text-muted' title={email}>
 				{email}
 			</p>

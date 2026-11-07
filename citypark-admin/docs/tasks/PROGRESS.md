@@ -96,3 +96,8 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [35 Remove town description input](35-remove-town-description-input.md)
   - Removed description input from create/edit dialog; existing API values preserved when editing other fields. Check (307 tests), build and six real-backend delivery-price browser tests pass in both themes and mobile layout.
+
+## Admin PWA
+
+- [x] [36 Admin PWA](36-admin-pwa.md)
+  - Check (307 unit tests), production build, five production PWA browser tests and five real-backend authentication flows pass. Verified offline fallback/retry, cache ownership cleanup and install controls at 390/1440px in both themes. Physical Android/iPhone/iPad and desktop browser installation was not available in this environment and remains a manual deployment check. No backend changes or admin data writes.

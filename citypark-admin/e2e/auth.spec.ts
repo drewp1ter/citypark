@@ -15,7 +15,7 @@ test('a wrong password shows the error and keeps the form filled', async ({ page
 test('the dev admin lands on orders, keeps the session on reload and signs out', async ({ page }) => {
 	await signIn(page)
 	await expect(page).toHaveURL(/\/orders$/)
-	await expect(page.getByRole('link', { name: 'Заказы' })).toHaveAttribute('aria-current', 'page')
+	await expect(page.getByRole('link', { name: 'Заказы', exact: true })).toHaveAttribute('aria-current', 'page')
 	await expect(page.getByText(ADMIN_EMAIL)).toBeVisible()
 
 	await page.reload()

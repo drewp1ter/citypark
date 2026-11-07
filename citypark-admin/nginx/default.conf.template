@@ -18,6 +18,13 @@ server {
         add_header Cache-Control "no-cache";
     }
 
+    location ~ ^/(sw\.js|manifest\.webmanifest|offline\.html|pwa/.*)$ {
+        include /etc/nginx/conf.d/snippets/security-headers.conf;
+        types { application/manifest+json webmanifest; application/javascript js; text/html html; image/png png; }
+        add_header Cache-Control "no-cache";
+        try_files $uri =404;
+    }
+
     # SPA fallback: any other path is a client-side route.
     location / {
         include /etc/nginx/conf.d/snippets/security-headers.conf;

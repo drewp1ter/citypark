@@ -9,3 +9,9 @@ createRoot(document.getElementById('root')!).render(
 		<RouterProvider router={router} />
 	</StrictMode>
 )
+
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+	void navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch((error: unknown) => {
+		console.error('Service worker registration failed', error)
+	})
+}

@@ -49,3 +49,21 @@ or the browser blocks requests and images.
 ```nginx
 location /manage { return 301 https://admin.<domain>/; }
 ```
+
+## Installable admin app
+
+Production builds include a manifest and service worker. Serve the admin at the root of its
+own HTTPS origin (localhost works for testing). Android and desktop Chromium can install
+through the browser menu or «Установить приложение». On iPhone/iPad use Safari:
+«Поделиться» → «На экран Домой». The control is hidden in standalone mode.
+
+Admin work requires internet. Only `/offline.html` is stored by the worker; failed page
+navigations show a retry page. API data and mutations are not cached or queued. Login uses
+sessionStorage as before and does not become persistent after installation.
+
+Workers update without forcing a page reload; the next activation removes obsolete
+`citypark-admin-offline-*` caches. Bump the cache version in `public/sw.js` when changing
+the offline page. Keep worker, manifest and offline files revalidated at the outer proxy.
+
+Run `npm run build` then `npx playwright test --config playwright.pwa.config.ts` to test
+production PWA behavior. Real installation still needs checking on physical devices.
