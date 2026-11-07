@@ -117,11 +117,7 @@ export function DeliveryPriceDialog({ item, onClose }: { item?: DeliveryPrice; o
 								</Select.Popover>
 								<FieldError>{errors.regionCode}</FieldError>
 							</Select>
-							<TextField name='value' value={form.value} onChange={set('value')} isInvalid={errors.value !== undefined}>
-								<Label>Описание</Label>
-								<Input />
-								<FieldError>{errors.value}</FieldError>
-							</TextField>
+
 							<TextField
 								name='price'
 								inputMode='decimal'
