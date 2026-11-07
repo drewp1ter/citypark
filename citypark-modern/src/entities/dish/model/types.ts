@@ -44,6 +44,7 @@ export type Menu = { categories: readonly MenuCategory[]; dishes: readonly Dish[
 
 /** A town the restaurant delivers to, with its flat delivery price. From GET /delivery-prices. */
 export type DeliveryTown = {
+	regionCode?: 'RU-KDA' | 'RU-AD'
 	name: string
 	/** Rubles. */
 	price: number

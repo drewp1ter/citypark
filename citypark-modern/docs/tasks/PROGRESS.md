@@ -232,3 +232,6 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [x] [71 Full dish descriptions](71-dish-full-description.md)
   - Completed (2026-11-06). Dish-page rich text and plain-text fallback implemented; check and production build pass (existing dynamic-rendering diagnostics). After the owner restarted the backend, all four real-backend browser flows pass at 390/1440 px in both themes: save/reload, clear, network-error draft preservation, public dish rendering, menu-card exclusion and ordinary-description fallback. The original dish HTML was restored; no orders or payments created.
+
+- [ ] [72 Delivery-town regions](72-delivery-town-regions.md)
+  - Implemented town regions in suggestions and region-aware geolocation. Check/build, suggestion payload harness and geolocation handler regressions pass. Production browser flow is blocked: configured MENU_API_URL backend refuses connections. No backend writes or deployment performed.

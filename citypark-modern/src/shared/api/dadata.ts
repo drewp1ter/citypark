@@ -4,7 +4,7 @@ import { dadataDebug } from './dadata-debug'
 
 const ENDPOINT = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address'
 const GEOLOCATE_ENDPOINT = 'https://suggestions.dadata.ru/suggestions/api/4_1/rs/geolocate/address'
-const REGION = 'Краснодарский'
+const REGIONS = { 'RU-KDA': 'Краснодарский', 'RU-AD': 'Адыгея' } as const
 
 type DadataAddress = {
 	street_with_type: string | null
@@ -25,7 +25,7 @@ function streetAndHouse({ value, data }: { value: string; data: DadataAddress })
 }
 
 /** Street and house suggestions (up to 5) inside one town. No API key → no suggestions. */
-export async function suggestAddress(query: string, town: string): Promise<string[]> {
+export async function suggestAddress(query: string, town: string, regionCode: keyof typeof REGIONS): Promise<string[]> {
 	const key = serverEnv().DADATA_API_KEY
 	if (!key) return []
 
@@ -44,8 +44,8 @@ export async function suggestAddress(query: string, town: string): Promise<strin
 				query,
 				count: 5,
 				locations: [
-					{ region: REGION, city: name },
-					{ region: REGION, settlement: name },
+					{ region: REGIONS[regionCode], city: name },
+					{ region: REGIONS[regionCode], settlement: name },
 				],
 				restrict_value: true,
 				from_bound: { value: 'street' },
@@ -66,6 +66,7 @@ export async function suggestAddress(query: string, town: string): Promise<strin
 }
 
 export type ReverseAddress = {
+	region_iso_code: string | null
 	region: string | null
 	region_type: string | null
 	city: string | null
@@ -129,6 +130,7 @@ export async function reverseGeocode(lat: number, lon: number): Promise<ReverseA
 	}
 	const data = first.data as Record<string, unknown>
 	const fields = [
+		'region_iso_code',
 		'region',
 		'region_type',
 		'city',

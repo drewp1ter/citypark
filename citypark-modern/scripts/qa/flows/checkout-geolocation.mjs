@@ -12,6 +12,7 @@ const towns = [
 	{ name: 'п. Семёновка', price: 100, freeFrom: 0 },
 ]
 const address = {
+	region_iso_code: 'RU-KDA',
 	region: 'Краснодарский',
 	region_type: 'край',
 	city: 'Белореченск',
@@ -50,6 +51,25 @@ for (const [value, expected] of [
 assert.equal(matchDeliveryTown('г. Белореченск', [...towns, { name: 'Белореченск' }]), undefined)
 assert.equal(matchDeliveryTown('Белореченск', [{ name: 'Краснодар' }]), undefined)
 assert.equal(matchDeliveryTown('Белореченск', [{ name: 'г. Белореченск' }, { name: 'Белореченск' }]), undefined)
+
+for (const name of ['Майкоп', 'п. Гончарка']) {
+	const adTown = { name, regionCode: 'RU-AD', price: 100, freeFrom: 0 }
+	const geocode = async () => ({
+		...address,
+		region_iso_code: 'RU-AD',
+		region: 'Адыгея',
+		region_type: 'Респ',
+		city: name,
+		settlement: null,
+	})
+	const result = await post('{"lat":44,"lon":39}', deps({ geocode, towns: async () => [adTown] }))
+	assert.equal((await result.json()).status, 'matched')
+	const mismatch = await post(
+		'{"lat":44,"lon":39}',
+		deps({ geocode, towns: async () => [{ ...adTown, regionCode: 'RU-KDA' }] })
+	)
+	assert.equal((await mismatch.json()).status, 'unmatched')
+}
 const matched = await post('{"lat":44.77,"lon":39.87}')
 assert.equal(matched.status, 200)
 assert.equal(matched.headers.get('Cache-Control'), 'no-store')
@@ -88,7 +108,10 @@ assert.deepEqual(
 )
 assert.deepEqual(
 	await (
-		await post('{"lat":44,"lon":39}', deps({ geocode: async () => ({ ...address, region: 'Ростовский' }) }))
+		await post(
+			'{"lat":44,"lon":39}',
+			deps({ geocode: async () => ({ ...address, region_iso_code: 'RU-ROS', region: 'Ростовский' }) })
+		)
 	).json(),
 	{ status: 'unmatched' }
 )
@@ -105,7 +128,7 @@ assert.deepEqual(
 for (const [overrides, reason] of [
 	[{ key: () => undefined }, 'configuration'],
 	[{ geocode: async () => null }, 'empty_results'],
-	[{ geocode: async () => ({ ...address, region: 'other' }) }, 'unsupported_region'],
+	[{ geocode: async () => ({ ...address, region_iso_code: 'other', region: 'other' }) }, 'unsupported_region'],
 	[{ towns: async () => [] }, 'no_town'],
 	[{ towns: async () => [towns[0], towns[0]] }, 'ambiguous_town'],
 	[

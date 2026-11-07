@@ -11,11 +11,12 @@ export async function GET(request: Request) {
 	const town = params.get('town') ?? ''
 
 	const towns = await getDeliveryTowns()
-	if (!towns.some((item) => item.name === town)) return Response.json([], { status: 400 })
+	const selectedTown = towns.find((item) => item.name === town)
+	if (!selectedTown) return Response.json([], { status: 400 })
 	if (query.length < MIN_QUERY || query.length > MAX_QUERY) return Response.json([])
 
 	try {
-		const suggestions = await suggestAddress(query, town)
+		const suggestions = await suggestAddress(query, town, selectedTown.regionCode ?? 'RU-KDA')
 		return Response.json(suggestions, { headers: { 'Cache-Control': 'private, max-age=300' } })
 	} catch {
 		return Response.json([], { status: 502 })

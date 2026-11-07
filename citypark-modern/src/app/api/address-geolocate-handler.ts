@@ -1,6 +1,7 @@
 import type { AutofillReason, AutofillDetails } from '@/shared/monitoring'
 
 export type GeolocateAddress = {
+	region_iso_code?: string | null
 	region: string | null
 	region_type: string | null
 	city: string | null
@@ -11,7 +12,7 @@ export type GeolocateAddress = {
 	block_type: string | null
 	block: string | null
 }
-export type GeolocateTown = { name: string; price: number; freeFrom: number }
+export type GeolocateTown = { regionCode?: 'RU-KDA' | 'RU-AD'; name: string; price: number; freeFrom: number }
 export type GeolocateDependencies = {
 	report?: (reason: AutofillReason, details: AutofillDetails) => void
 	key: () => string | undefined
@@ -88,14 +89,14 @@ export async function postAddressGeolocate(request: Request, deps: GeolocateDepe
 			city: address.city,
 			settlement: address.settlement,
 		})
-		if (address.region !== 'Краснодарский' || address.region_type !== 'край') {
+		if (!['RU-KDA', 'RU-AD'].includes(address.region_iso_code ?? '')) {
 			report('unsupported_region', 'matching')
 			deps.debug?.('selection rejected', { reason: 'Unsupported region' })
 			return json({ status: 'unmatched' })
 		}
 		const locality = address.settlement?.trim() ? address.settlement : address.city
 		stage = 'delivery-list lookup'
-		const towns = await deps.towns()
+		const towns = (await deps.towns()).filter((town) => (town.regionCode ?? 'RU-KDA') === address.region_iso_code)
 		stage = 'town matching'
 		const town = deps.match(locality, towns)
 		const normalize = deps.normalize
