@@ -88,5 +88,5 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 - [x] [32 Fix time-field keyboards on mobile](32-mobile-time-input.md)
   - Check (306 tests), build and all five menu/working-hours Playwright tests pass. At 390 px, time fields request the text keyboard; save/reload, category `24:00`, empty limits and invalid working-hours ordering verified. Original settings restored.
 
-- [ ] [33 Delivery-town regions](33-delivery-town-regions.md)
-  - Implemented dropdown, list labels, generated API types and regression coverage. Check (307 tests) and build pass. Real-backend create/edit/reload browser acceptance is blocked: configured backend 192.168.4.15:3000 refuses connections. Deploy backend task 105 first.
+- [x] [33 Delivery-town regions](33-delivery-town-regions.md)
+  - Implemented dropdown, list labels, generated API types and regression coverage. Check (307 tests) and build pass. After the backend restart, all six real-backend delivery-price browser tests pass in light/dark themes: create, duplicate rejection, region edit/reopen persistence, validation draft preservation and mobile cards. Temporary towns deleted; existing towns remain RU-KDA. Deploy backend task 105 first.
