@@ -246,3 +246,6 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [x] [104 Full dish descriptions](104-dish-full-description.md)
   - Completed (2026-11-06). Formatting, build, vet and full serial suite pass; catalog 88.1%, iiko 94.1%, apidocs 100% coverage. After the owner restarted the backend, all four real-backend browser flows pass at 390/1440 px in both themes: save/reload, clear, network-error draft preservation, public dish rendering, menu-card exclusion and ordinary-description fallback. The original dish HTML was restored; no orders or payments created.
+
+- [x] [105 Delivery-town regions](105-delivery-town-regions.md)
+  - Migration, persistence, API/OpenAPI, production seed compatibility and regressions implemented. Formatting/build/vet and full serial Go suite pass; deliveryprice coverage 93.8%. Existing towns remain RU-KDA for manual reassignment. Deploy before admin 33 and website 72.

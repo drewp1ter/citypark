@@ -495,8 +495,13 @@ components:
             id: {type: integer, format: int64}
     DeliveryPrice:
       type: object
-      required: [id, name, value, price, freeFrom, createdAt, updatedAt]
+      required: [id, name, regionCode, value, price, freeFrom, createdAt, updatedAt]
       properties:
+        regionCode:
+          type: string
+          enum: [RU-KDA, RU-AD]
+          description: Region of the town. Defaults to RU-KDA on creation; omission on update preserves the region.
+          example: RU-KDA
         id:
           type: integer
           example: 1
@@ -525,6 +530,11 @@ components:
       type: object
       required: [name, price]
       properties:
+        regionCode:
+          type: string
+          enum: [RU-KDA, RU-AD]
+          description: Region of the town. Defaults to RU-KDA on creation; omission on update preserves the region.
+          example: RU-KDA
         name:
           type: string
           maxLength: 255

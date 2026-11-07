@@ -1166,14 +1166,14 @@ Returns the delivery price of every town, ordered by `id`.
 
 ```json
 [
-  { "id": 1, "name": "Белореченск", "value": "", "price": 100, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
-  { "id": 2, "name": "п. Родники", "value": "", "price": 250, "freeFrom": 0, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
+  { "id": 1, "name": "Белореченск", "regionCode": "RU-KDA", "value": "", "price": 100, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
+  { "id": 2, "name": "п. Родники", "regionCode": "RU-KDA", "value": "", "price": 250, "freeFrom": 0, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
 ]
 ```
 
 **Notes**
 
-The list is `[]` when there are no delivery prices. An order is matched to a price by comparing the address `city` with `name`. `freeFrom` is the order total (rubles, without delivery) from which delivery to this town is free; `0` means never free. After `make migrate` the list holds the 58 towns of the old site.
+Each town includes `regionCode`: `RU-KDA` (Краснодарский край) or `RU-AD` (Республика Адыгея). Existing towns default to RU-KDA and are reassigned manually. The list is `[]` when there are no delivery prices. An order is matched to a price by comparing the address `city` with `name`. `freeFrom` is the order total (rubles, without delivery) from which delivery to this town is free; `0` means never free. After `make migrate` the list holds the 58 towns of the old site.
 
 #### POST /delivery-prices
 
@@ -1187,6 +1187,7 @@ Creates one or more delivery prices.
 |---|---|---|---|
 | `deliveryPrices` | array | yes | at least one item |
 | `deliveryPrices[].name` | string | yes | at most 255 characters; surrounding spaces are removed; must be unique |
+| `deliveryPrices[].regionCode` | string | no | RU-KDA or RU-AD; default RU-KDA |
 | `deliveryPrices[].value` | string | no | at most 255 characters; surrounding spaces are removed |
 | `deliveryPrices[].price` | number | yes | rubles, greater than 0 |
 | `deliveryPrices[].freeFrom` | number | no | rubles, 0 or more; order total from which delivery is free; `0` (default) = never free |
@@ -1199,8 +1200,8 @@ Creates one or more delivery prices.
 
 ```json
 [
-  { "id": 1, "name": "Белореченск", "value": "", "price": 100, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
-  { "id": 2, "name": "п. Родники", "value": "", "price": 250, "freeFrom": 0, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
+  { "id": 1, "name": "Белореченск", "regionCode": "RU-KDA", "value": "", "price": 100, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" },
+  { "id": 2, "name": "п. Родники", "regionCode": "RU-KDA", "value": "", "price": 250, "freeFrom": 0, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:01:55.36535Z" }
 ]
 ```
 
@@ -1235,18 +1236,19 @@ Replaces the name, description, price and free-delivery threshold of a delivery 
 | Field | Type | Required | Rules |
 |---|---|---|---|
 | `name` | string | yes | at most 255 characters; surrounding spaces are removed; must be unique |
+| `regionCode` | string | no | RU-KDA or RU-AD; omission preserves the current region |
 | `value` | string | no | at most 255 characters; surrounding spaces are removed |
 | `price` | number | yes | rubles, greater than 0 |
 | `freeFrom` | number | no | rubles, 0 or more; `0` (default) = never free |
 
 ```json
-{ "name": "Белореченск", "value": "", "price": 120, "freeFrom": 500 }
+{ "name": "Белореченск", "regionCode": "RU-KDA", "value": "", "price": 120, "freeFrom": 500 }
 ```
 
 **Response 200**
 
 ```json
-{ "id": 1, "name": "Белореченск", "value": "", "price": 120, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:05:10.1182Z" }
+{ "id": 1, "name": "Белореченск", "regionCode": "RU-KDA", "value": "", "price": 120, "freeFrom": 500, "createdAt": "2026-10-13T17:01:55.36535Z", "updatedAt": "2026-10-13T17:05:10.1182Z" }
 ```
 
 **Errors**

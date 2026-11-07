@@ -83,10 +83,10 @@ func TestList(t *testing.T) {
 		t.Fatalf("len = %d, want 2", len(list))
 	}
 	first := list[0]
-	if len(first) != 7 {
-		t.Errorf("keys = %v, want exactly id, name, value, price, freeFrom, createdAt, updatedAt", first)
+	if len(first) != 8 {
+		t.Errorf("keys = %v, want exactly id, name, regionCode, value, price, freeFrom, createdAt, updatedAt", first)
 	}
-	for _, key := range []string{"id", "name", "value", "price", "freeFrom", "createdAt", "updatedAt"} {
+	for _, key := range []string{"id", "name", "regionCode", "value", "price", "freeFrom", "createdAt", "updatedAt"} {
 		if _, ok := first[key]; !ok {
 			t.Errorf("missing key %q in %v", key, first)
 		}
@@ -443,5 +443,38 @@ func TestByName(t *testing.T) {
 		if !errors.Is(err, store.ErrNotFound) {
 			t.Errorf("ByName(%q) error = %v, want store.ErrNotFound", name, err)
 		}
+	}
+}
+
+func TestRegionCode(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	s := deliveryprice.NewStore(e.db)
+	d, err := s.Create(ctx, deliveryprice.Input{Name: "Майкоп", Price: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.RegionCode != "RU-KDA" {
+		t.Fatalf("default: %s", d.RegionCode)
+	}
+	region := "RU-AD"
+	d, err = s.Update(ctx, d.ID, deliveryprice.Input{Name: d.Name, Price: 100, RegionCode: &region})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, err = s.Update(ctx, d.ID, deliveryprice.Input{Name: d.Name, Price: 100})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.RegionCode != region {
+		t.Fatalf("preserved: %s", d.RegionCode)
+	}
+	listed, err := s.List(ctx)
+	if err != nil || len(listed) != 1 || listed[0].RegionCode != region {
+		t.Fatalf("list: %+v, %v", listed, err)
+	}
+	for _, code := range []string{"", "RU-ROS"} {
+		rec := e.do(t, "PATCH", "/delivery-prices/"+strconv.FormatInt(d.ID, 10), e.admin, map[string]any{"name": d.Name, "price": 100, "regionCode": code})
+		wantStatus(t, rec, 400)
 	}
 }
