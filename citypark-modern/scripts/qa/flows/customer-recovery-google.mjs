@@ -35,8 +35,8 @@ try {
 	for (const suffix of ['', '?state=invalid&code=fake', '?state=invalid&error=access_denied']) {
 		const response = await context.request.get(`${base}/account/google/callback${suffix}`, { maxRedirects: 0 })
 		assert.equal(response.status(), 303)
-		assert.equal(new URL(response.headers().location).pathname, '/account/sign-in')
-		assert.equal(new URL(response.headers().location).searchParams.get('google'), 'failed')
+		assert.equal(new URL(response.headers().location, base).pathname, '/account/sign-in')
+		assert.equal(new URL(response.headers().location, base).searchParams.get('google'), 'failed')
 		assert.match(response.headers()['cache-control'], /no-store/)
 		assert.equal(response.headers()['referrer-policy'], 'no-referrer')
 	}

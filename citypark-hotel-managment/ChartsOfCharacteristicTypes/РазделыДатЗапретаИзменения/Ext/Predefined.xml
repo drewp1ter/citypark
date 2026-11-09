@@ -1,0 +1,48 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<PredefinedData xmlns="http://v8.1c.ru/8.3/xcf/predef" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="PlanOfCharacteristicKindPredefinedItems" version="2.5">
+	<Item id="9786cda3-ef89-4325-a58f-ed02070c8200">
+		<Name>ПоГостиничнымКорпусам</Name>
+		<Code/>
+		<Description>По гостиничным корпусам</Description>
+		<Type>
+			<v8:Type xmlns:d4p1="http://v8.1c.ru/8.1/data/enterprise/current-config">d4p1:CatalogRef.ГостиничныеКорпуса</v8:Type>
+		</Type>
+		<IsFolder>false</IsFolder>
+	</Item>
+	<Item id="8bf87f3d-ca50-47f9-bb7d-21b39f845393">
+		<Name>ПоКассам</Name>
+		<Code/>
+		<Description>По кассам</Description>
+		<Type>
+			<v8:Type xmlns:d4p1="http://v8.1c.ru/8.1/data/enterprise/current-config">d4p1:CatalogRef.Кассы</v8:Type>
+		</Type>
+		<IsFolder>false</IsFolder>
+	</Item>
+	<Item id="668c4c08-67e7-474a-8fdf-f07f5c541929">
+		<Name>ПоОрганизациям</Name>
+		<Code/>
+		<Description>По организациям</Description>
+		<Type>
+			<v8:Type xmlns:d4p1="http://v8.1c.ru/8.1/data/enterprise/current-config">d4p1:CatalogRef.Организации</v8:Type>
+		</Type>
+		<IsFolder>false</IsFolder>
+	</Item>
+	<Item id="3a90cf86-3a19-431d-a1a9-10add568a5f5">
+		<Name>ПоСкладам</Name>
+		<Code/>
+		<Description>По складам</Description>
+		<Type>
+			<v8:Type xmlns:d4p1="http://v8.1c.ru/8.1/data/enterprise/current-config">d4p1:CatalogRef.Склады</v8:Type>
+		</Type>
+		<IsFolder>false</IsFolder>
+	</Item>
+	<Item id="cd4a9dc9-1f8f-4026-a3ff-7a6911b3a6dd">
+		<Name>ПоТорговымТочкам</Name>
+		<Code/>
+		<Description>По торговым точкам</Description>
+		<Type>
+			<v8:Type xmlns:d4p1="http://v8.1c.ru/8.1/data/enterprise/current-config">d4p1:CatalogRef.ТорговыеТочки</v8:Type>
+		</Type>
+		<IsFolder>false</IsFolder>
+	</Item>
+</PredefinedData>

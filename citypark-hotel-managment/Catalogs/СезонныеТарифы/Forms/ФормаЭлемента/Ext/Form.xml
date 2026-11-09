@@ -1,0 +1,143 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Form xmlns="http://v8.1c.ru/8.3/xcf/logform" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:dcscor="http://v8.1c.ru/8.1/data-composition-system/core" xmlns:dcsset="http://v8.1c.ru/8.1/data-composition-system/settings" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5">
+	<WindowOpeningMode>LockOwnerWindow</WindowOpeningMode>
+	<UseForFoldersAndItems>Items</UseForFoldersAndItems>
+	<AutoCommandBar name="ФормаКоманднаяПанель" id="-1"/>
+	<ChildItems>
+		<UsualGroup name="Группа5" id="51">
+			<Group>Horizontal</Group>
+			<Representation>None</Representation>
+			<ShowTitle>false</ShowTitle>
+			<ExtendedTooltip name="Группа5РасширеннаяПодсказка" id="52"/>
+			<ChildItems>
+				<InputField name="Наименование" id="4">
+					<DataPath>Объект.Description</DataPath>
+					<EditMode>EnterOnInput</EditMode>
+					<Width>1</Width>
+					<ContextMenu name="НаименованиеКонтекстноеМеню" id="5"/>
+					<ExtendedTooltip name="НаименованиеРасширеннаяПодсказка" id="6"/>
+				</InputField>
+				<InputField name="Код" id="1">
+					<DataPath>Объект.Code</DataPath>
+					<ReadOnly>true</ReadOnly>
+					<EditMode>EnterOnInput</EditMode>
+					<ContextMenu name="КодКонтекстноеМеню" id="2"/>
+					<ExtendedTooltip name="КодРасширеннаяПодсказка" id="3"/>
+				</InputField>
+			</ChildItems>
+		</UsualGroup>
+		<UsualGroup name="Группа6" id="53">
+			<Group>Horizontal</Group>
+			<Representation>None</Representation>
+			<ShowTitle>false</ShowTitle>
+			<ExtendedTooltip name="Группа6РасширеннаяПодсказка" id="54"/>
+			<ChildItems>
+				<UsualGroup name="Группа4" id="49">
+					<Group>Vertical</Group>
+					<Representation>None</Representation>
+					<ShowTitle>false</ShowTitle>
+					<ExtendedTooltip name="Группа4РасширеннаяПодсказка" id="50"/>
+					<ChildItems>
+						<InputField name="Январь" id="7">
+							<DataPath>Объект.Январь</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="ЯнварьКонтекстноеМеню" id="8"/>
+							<ExtendedTooltip name="ЯнварьРасширеннаяПодсказка" id="9"/>
+						</InputField>
+						<InputField name="Апрель" id="16">
+							<DataPath>Объект.Апрель</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="АпрельКонтекстноеМеню" id="17"/>
+							<ExtendedTooltip name="АпрельРасширеннаяПодсказка" id="18"/>
+						</InputField>
+						<InputField name="Июль" id="25">
+							<DataPath>Объект.Июль</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="ИюльКонтекстноеМеню" id="26"/>
+							<ExtendedTooltip name="ИюльРасширеннаяПодсказка" id="27"/>
+						</InputField>
+						<InputField name="Октябрь" id="34">
+							<DataPath>Объект.Октябрь</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="ОктябрьКонтекстноеМеню" id="35"/>
+							<ExtendedTooltip name="ОктябрьРасширеннаяПодсказка" id="36"/>
+						</InputField>
+					</ChildItems>
+				</UsualGroup>
+				<UsualGroup name="Группа2" id="45">
+					<Group>Vertical</Group>
+					<Representation>None</Representation>
+					<ShowTitle>false</ShowTitle>
+					<ExtendedTooltip name="Группа2РасширеннаяПодсказка" id="46"/>
+					<ChildItems>
+						<InputField name="Февраль" id="10">
+							<DataPath>Объект.Февраль</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="ФевральКонтекстноеМеню" id="11"/>
+							<ExtendedTooltip name="ФевральРасширеннаяПодсказка" id="12"/>
+						</InputField>
+						<InputField name="Май" id="19">
+							<DataPath>Объект.Май</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="МайКонтекстноеМеню" id="20"/>
+							<ExtendedTooltip name="МайРасширеннаяПодсказка" id="21"/>
+						</InputField>
+						<InputField name="Август" id="28">
+							<DataPath>Объект.Август</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="АвгустКонтекстноеМеню" id="29"/>
+							<ExtendedTooltip name="АвгустРасширеннаяПодсказка" id="30"/>
+						</InputField>
+						<InputField name="Ноябрь" id="37">
+							<DataPath>Объект.Ноябрь</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="НоябрьКонтекстноеМеню" id="38"/>
+							<ExtendedTooltip name="НоябрьРасширеннаяПодсказка" id="39"/>
+						</InputField>
+					</ChildItems>
+				</UsualGroup>
+				<UsualGroup name="Группа3" id="47">
+					<Group>Vertical</Group>
+					<Representation>None</Representation>
+					<ShowTitle>false</ShowTitle>
+					<ExtendedTooltip name="Группа3РасширеннаяПодсказка" id="48"/>
+					<ChildItems>
+						<InputField name="Март" id="13">
+							<DataPath>Объект.Март</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="МартКонтекстноеМеню" id="14"/>
+							<ExtendedTooltip name="МартРасширеннаяПодсказка" id="15"/>
+						</InputField>
+						<InputField name="Июнь" id="22">
+							<DataPath>Объект.Июнь</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="ИюньКонтекстноеМеню" id="23"/>
+							<ExtendedTooltip name="ИюньРасширеннаяПодсказка" id="24"/>
+						</InputField>
+						<InputField name="Сентябрь" id="31">
+							<DataPath>Объект.Сентябрь</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="СентябрьКонтекстноеМеню" id="32"/>
+							<ExtendedTooltip name="СентябрьРасширеннаяПодсказка" id="33"/>
+						</InputField>
+						<InputField name="Декабрь" id="40">
+							<DataPath>Объект.Декабрь</DataPath>
+							<EditMode>EnterOnInput</EditMode>
+							<ContextMenu name="ДекабрьКонтекстноеМеню" id="41"/>
+							<ExtendedTooltip name="ДекабрьРасширеннаяПодсказка" id="42"/>
+						</InputField>
+					</ChildItems>
+				</UsualGroup>
+			</ChildItems>
+		</UsualGroup>
+	</ChildItems>
+	<Attributes>
+		<Attribute name="Объект" id="1">
+			<Type>
+				<v8:Type>cfg:CatalogObject.СезонныеТарифы</v8:Type>
+			</Type>
+			<MainAttribute>true</MainAttribute>
+			<SavedData>true</SavedData>
+		</Attribute>
+	</Attributes>
+</Form>

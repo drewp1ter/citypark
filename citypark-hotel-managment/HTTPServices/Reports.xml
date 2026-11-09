@@ -1,0 +1,107 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5">
+	<HTTPService uuid="05e800d5-ef45-4086-850d-cb24a08e272c">
+		<Properties>
+			<Name>Reports</Name>
+			<Synonym>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Reports</v8:content>
+				</v8:item>
+			</Synonym>
+			<Comment/>
+			<RootURL>reports</RootURL>
+			<ReuseSessions>AutoUse</ReuseSessions>
+			<SessionMaxAge>20</SessionMaxAge>
+		</Properties>
+		<ChildObjects>
+			<URLTemplate uuid="e693be71-de26-484d-a1c7-a6ac5b44fa22">
+				<Properties>
+					<Name>sales</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Sales</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Template>/v1/sales</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="7ba9f6c6-b1e1-43d9-900d-eac4942b6d16">
+						<Properties>
+							<Name>getReport</Name>
+							<Synonym>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>Get report</v8:content>
+								</v8:item>
+							</Synonym>
+							<Comment/>
+							<HTTPMethod>GET</HTTPMethod>
+							<Handler>salesgetReport</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="7f9365f9-f8fb-4bf2-a04c-a4d0b0931d24">
+				<Properties>
+					<Name>room_sales</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Room sales</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Template>/v1/room_sales</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="4d1695c8-e4ff-4929-bb13-6c22bb0b0c0b">
+						<Properties>
+							<Name>getReport</Name>
+							<Synonym>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>Get report</v8:content>
+								</v8:item>
+							</Synonym>
+							<Comment/>
+							<HTTPMethod>GET</HTTPMethod>
+							<Handler>room_salesgetReport</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+			<URLTemplate uuid="79f882a3-4353-4c0a-9fba-cc2b26532301">
+				<Properties>
+					<Name>month_sales</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Month sales</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Template>/v1/month_sales</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="f19e5d7b-2f1b-4a11-982a-c4158b78f368">
+						<Properties>
+							<Name>getReport</Name>
+							<Synonym>
+								<v8:item>
+									<v8:lang>ru</v8:lang>
+									<v8:content>Get report</v8:content>
+								</v8:item>
+							</Synonym>
+							<Comment/>
+							<HTTPMethod>GET</HTTPMethod>
+							<Handler>month_salesgetReport</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
+		</ChildObjects>
+	</HTTPService>
+</MetaDataObject>

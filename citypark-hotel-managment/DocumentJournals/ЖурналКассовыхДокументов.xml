@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5">
+	<DocumentJournal uuid="39d29ad9-4b47-4fb0-91eb-036cd19ad1bc">
+		<InternalInfo>
+			<xr:GeneratedType name="DocumentJournalSelection.ЖурналКассовыхДокументов" category="Selection">
+				<xr:TypeId>d0bc035e-9d94-41cd-9706-811d51deefb3</xr:TypeId>
+				<xr:ValueId>6eba2a30-d479-420e-9421-8b9d5738c4fe</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="DocumentJournalList.ЖурналКассовыхДокументов" category="List">
+				<xr:TypeId>8950ca4c-7b7d-4ed0-bff5-521c272a45b2</xr:TypeId>
+				<xr:ValueId>6b3e9915-2e6a-4e87-9fc8-47b4ebee9810</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="DocumentJournalManager.ЖурналКассовыхДокументов" category="Manager">
+				<xr:TypeId>894c695e-abef-4913-99f8-d0ab404527b8</xr:TypeId>
+				<xr:ValueId>7db1bec0-0c6a-49ca-9e49-f5502ca2b883</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
+		<Properties>
+			<Name>ЖурналКассовыхДокументов</Name>
+			<Synonym>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Журнал кассовых документов</v8:content>
+				</v8:item>
+			</Synonym>
+			<Comment/>
+			<DefaultForm/>
+			<AuxiliaryForm/>
+			<UseStandardCommands>true</UseStandardCommands>
+			<RegisteredDocuments>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены</xr:Item>
+			</RegisteredDocuments>
+			<IncludeHelpInContents>false</IncludeHelpInContents>
+			<ListPresentation/>
+			<ExtendedListPresentation/>
+			<Explanation/>
+		</Properties>
+		<ChildObjects>
+			<Column uuid="468eed34-5d48-4a81-b721-e7471a86be90">
+				<Properties>
+					<Name>Организация</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Организация</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.Организация</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.Организация</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены.Attribute.Организация</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="9132b9e2-ce53-442b-9e0f-bb014b7b005c">
+				<Properties>
+					<Name>ВидОперации</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Вид операции</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.ВидОперации</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.ВидОперации</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="f6fcd14c-5c61-443b-95c9-be763cfc1b58">
+				<Properties>
+					<Name>Касса</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Касса</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.Касса</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.Касса</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены.Attribute.Касса</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="8ed662f4-5867-400e-b580-711acd74f85d">
+				<Properties>
+					<Name>Сумма</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Сумма</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.Сумма</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.Сумма</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены.Attribute.НаКонецФакт</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="6f1d9d49-9044-49e9-9992-806b7b189cfe">
+				<Properties>
+					<Name>СтатьяДвижения</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Статья движения</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.СтатьяДвижения</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.СтатьяДвижения</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="b9ba2d09-4a68-4cb1-ae67-2be2faf32f79">
+				<Properties>
+					<Name>СтатусДокумента</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Статус документа</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.СтатусДокумента</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.СтатусДокумента</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены.Attribute.СтатусДокумента</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="6151daa7-792f-469f-bae0-600a89c609c7">
+				<Properties>
+					<Name>Ответственный</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Ответственный</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.Ответственный</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.Ответственный</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены.Attribute.Ответственный</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="a36e6af0-feeb-478d-b2d4-c8d03326f3ac">
+				<Properties>
+					<Name>Комментарий</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Комментарий</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ПриходныйКассовыйОрдер.Attribute.Комментарий</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.РасходныйКассовыйОрдер.Attribute.Комментарий</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеКассовойСмены.Attribute.Комментарий</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+		</ChildObjects>
+	</DocumentJournal>
+</MetaDataObject>

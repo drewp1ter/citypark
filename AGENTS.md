@@ -4,15 +4,17 @@ This file provides guidance to AGENTS Code (AGENTS.ai/code) when working with co
 
 ## Layout
 
-This folder is not a repository itself. It holds two independent projects for «Сити Парк» (hotel, restaurant and
-food delivery in Белореченск). Each one has its own git repository and its own `AGENTS.md`, which hold the real rules.
-Read the project's `AGENTS.md` before you change anything in it, and run git commands inside the project folder.
+This folder holds four projects for «Сити Парк» (hotel, restaurant and food delivery in Белореченск).
+Each project has its own `AGENTS.md`, which holds its detailed rules. The Go backend, public website and admin panel
+have separate git repositories; the hotel management configuration is a subtree of the parent repository.
+Read the project's `AGENTS.md` before you change anything in it, and scope git commands to the relevant project.
 
 | Folder | What it is | Stack | Detailed rules |
 |---|---|---|---|
 | `citypark-go/` | Backend for food ordering: menu synced from the iiko POS, payments through MONETA.RU, staff notifications through Telegram | Go, PostgreSQL 17 (Docker), embedded migrations | `citypark-go/AGENTS.md`, `docs/tasks/CONVENTIONS.md` |
 | `citypark-modern/` | Public website (in Russian), built from a finished design | Next.js 16 App Router, React 19, TypeScript, Tailwind v4, Feature-Sliced Design | `citypark-modern/AGENTS.md`, `AGENTS.md`, `docs/PLAN.md` |
 | `citypark-admin/` | Admin panel (in Russian): delivery prices, orders, menu photos and sync, site content, hotel reports | Vite SPA, React 19, HeroUI v3, TanStack Router + Query, types from the backend's OpenAPI | `citypark-admin/AGENTS.md`, `docs/tasks/CONVENTIONS.md` |
+| `citypark-hotel-managment/` | Hotel management: XML export of the `УправлениеГостиницей` (SORC) configuration | 1C:Enterprise, BSL, XML metadata | `citypark-hotel-managment/AGENTS.md`, local `.codex/skills/` |
 
 Cross-project decisions are in `docs/adr/` (start with `0001-admin-panel.md`) and terms in `GLOSSARY.md`.
 
@@ -43,7 +45,11 @@ node scripts/qa/flows/menu.mjs    # a single flow
 
 The QA scripts use `BASE_URL` (default `http://localhost:3111`) and need `npx playwright install chromium` once.
 
-## How the two projects relate
+Hotel management (`citypark-hotel-managment/`): no local npm or Make entry point. Load the configuration from
+files in 1C Designer, check it, update a development information base, and exercise the changed behavior in
+1C:Enterprise. Consult the project's local skills before using automation.
+
+## How the website and backend relate
 
 - They are **not connected yet**. The website has no backend: forms are Server Actions that send through
   `citypark-modern/src/shared/api/leads.ts`, which only logs. Menu, rooms and articles are typed data files read through
@@ -65,6 +71,9 @@ The QA scripts use `BASE_URL` (default `http://localhost:3111`) and need `npx pl
 - `citypark-admin` uses the same numbered-task workflow. It uses HeroUI **v3**, which differs a lot from v2: read its
   docs before using a component. Many of its tasks need a citypark-go task first (noted in its `PROGRESS.md`). The admin's
   dev server runs on `:5173` (Vite default) and expects the backend at `VITE_API_URL`.
+- `citypark-hotel-managment` contains exported 1C configuration files. Preserve encoding, BOM, line endings,
+  XML namespaces, UUIDs and object references; follow the surrounding Russian BSL style and tab indentation.
+  Validate changes in 1C Designer and manually test affected behavior; XML validation alone does not verify runtime behavior.
 
 ## Agent skills
 

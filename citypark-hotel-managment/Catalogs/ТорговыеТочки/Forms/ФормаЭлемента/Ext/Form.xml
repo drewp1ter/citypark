@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Form xmlns="http://v8.1c.ru/8.3/xcf/logform" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:dcscor="http://v8.1c.ru/8.1/data-composition-system/core" xmlns:dcsset="http://v8.1c.ru/8.1/data-composition-system/settings" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5">
+	<WindowOpeningMode>LockOwnerWindow</WindowOpeningMode>
+	<UseForFoldersAndItems>Items</UseForFoldersAndItems>
+	<AutoCommandBar name="ФормаКоманднаяПанель" id="-1"/>
+	<ChildItems>
+		<InputField name="Код" id="1">
+			<DataPath>Объект.Code</DataPath>
+			<EditMode>EnterOnInput</EditMode>
+			<ContextMenu name="КодКонтекстноеМеню" id="2"/>
+			<ExtendedTooltip name="КодРасширеннаяПодсказка" id="3"/>
+		</InputField>
+		<InputField name="Наименование" id="4">
+			<DataPath>Объект.Description</DataPath>
+			<EditMode>EnterOnInput</EditMode>
+			<ContextMenu name="НаименованиеКонтекстноеМеню" id="5"/>
+			<ExtendedTooltip name="НаименованиеРасширеннаяПодсказка" id="6"/>
+		</InputField>
+		<InputField name="Склад" id="7">
+			<DataPath>Объект.Склад</DataPath>
+			<EditMode>EnterOnInput</EditMode>
+			<ContextMenu name="СкладКонтекстноеМеню" id="8"/>
+			<ExtendedTooltip name="СкладРасширеннаяПодсказка" id="9"/>
+		</InputField>
+		<InputField name="Касса" id="10">
+			<DataPath>Объект.Касса</DataPath>
+			<EditMode>EnterOnInput</EditMode>
+			<ContextMenu name="КассаКонтекстноеМеню" id="11"/>
+			<ExtendedTooltip name="КассаРасширеннаяПодсказка" id="12"/>
+		</InputField>
+		<InputField name="ТипЦен" id="41">
+			<DataPath>Объект.ТипЦен</DataPath>
+			<ContextMenu name="ТипЦенКонтекстноеМеню" id="42"/>
+			<ExtendedTooltip name="ТипЦенРасширеннаяПодсказка" id="43"/>
+		</InputField>
+		<InputField name="ГостиничныйКорпус" id="44">
+			<DataPath>Объект.ГостиничныйКорпус</DataPath>
+			<ContextMenu name="ГостиничныйКорпусКонтекстноеМеню" id="45"/>
+			<ExtendedTooltip name="ГостиничныйКорпусРасширеннаяПодсказка" id="46"/>
+		</InputField>
+		<Table name="Ассортимент" id="16">
+			<Representation>List</Representation>
+			<AutoInsertNewRow>true</AutoInsertNewRow>
+			<EnableStartDrag>true</EnableStartDrag>
+			<EnableDrag>true</EnableDrag>
+			<DataPath>Объект.Ассортимент</DataPath>
+			<SearchStringLocation>None</SearchStringLocation>
+			<ViewStatusLocation>None</ViewStatusLocation>
+			<SearchControlLocation>None</SearchControlLocation>
+			<RowFilter xsi:nil="true"/>
+			<ContextMenu name="АссортиментКонтекстноеМеню" id="17"/>
+			<AutoCommandBar name="АссортиментКоманднаяПанель" id="18"/>
+			<ExtendedTooltip name="АссортиментРасширеннаяПодсказка" id="19"/>
+			<SearchStringAddition name="АссортиментСтрокаПоиска" id="47">
+				<AdditionSource>
+					<Item>Ассортимент</Item>
+					<Type>SearchStringRepresentation</Type>
+				</AdditionSource>
+				<ContextMenu name="АссортиментСтрокаПоискаКонтекстноеМеню" id="48"/>
+				<ExtendedTooltip name="АссортиментСтрокаПоискаРасширеннаяПодсказка" id="49"/>
+			</SearchStringAddition>
+			<ViewStatusAddition name="АссортиментСостояниеПросмотра" id="50">
+				<AdditionSource>
+					<Item>Ассортимент</Item>
+					<Type>ViewStatusRepresentation</Type>
+				</AdditionSource>
+				<ContextMenu name="АссортиментСостояниеПросмотраКонтекстноеМеню" id="51"/>
+				<ExtendedTooltip name="АссортиментСостояниеПросмотраРасширеннаяПодсказка" id="52"/>
+			</ViewStatusAddition>
+			<SearchControlAddition name="АссортиментУправлениеПоиском" id="53">
+				<AdditionSource>
+					<Item>Ассортимент</Item>
+					<Type>SearchControl</Type>
+				</AdditionSource>
+				<ContextMenu name="АссортиментУправлениеПоискомКонтекстноеМеню" id="54"/>
+				<ExtendedTooltip name="АссортиментУправлениеПоискомРасширеннаяПодсказка" id="55"/>
+			</SearchControlAddition>
+			<ChildItems>
+				<LabelField name="АссортиментНомерСтроки" id="35">
+					<DataPath>Объект.Ассортимент.LineNumber</DataPath>
+					<EditMode>EnterOnInput</EditMode>
+					<ContextMenu name="АссортиментНомерСтрокиКонтекстноеМеню" id="36"/>
+					<ExtendedTooltip name="АссортиментНомерСтрокиРасширеннаяПодсказка" id="37"/>
+				</LabelField>
+				<InputField name="АссортиментНоменклатура" id="38">
+					<DataPath>Объект.Ассортимент.Номенклатура</DataPath>
+					<EditMode>EnterOnInput</EditMode>
+					<ContextMenu name="АссортиментНоменклатураКонтекстноеМеню" id="39"/>
+					<ExtendedTooltip name="АссортиментНоменклатураРасширеннаяПодсказка" id="40"/>
+				</InputField>
+			</ChildItems>
+		</Table>
+	</ChildItems>
+	<Attributes>
+		<Attribute name="Объект" id="1">
+			<Type>
+				<v8:Type>cfg:CatalogObject.ТорговыеТочки</v8:Type>
+			</Type>
+			<MainAttribute>true</MainAttribute>
+			<SavedData>true</SavedData>
+		</Attribute>
+	</Attributes>
+</Form>

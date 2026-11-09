@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MetaDataObject xmlns="http://v8.1c.ru/8.3/MDClasses" xmlns:app="http://v8.1c.ru/8.2/managed-application/core" xmlns:cfg="http://v8.1c.ru/8.1/data/enterprise/current-config" xmlns:cmi="http://v8.1c.ru/8.2/managed-application/cmi" xmlns:ent="http://v8.1c.ru/8.1/data/enterprise" xmlns:lf="http://v8.1c.ru/8.2/managed-application/logform" xmlns:style="http://v8.1c.ru/8.1/data/ui/style" xmlns:sys="http://v8.1c.ru/8.1/data/ui/fonts/system" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:v8ui="http://v8.1c.ru/8.1/data/ui" xmlns:web="http://v8.1c.ru/8.1/data/ui/colors/web" xmlns:win="http://v8.1c.ru/8.1/data/ui/colors/windows" xmlns:xen="http://v8.1c.ru/8.3/xcf/enums" xmlns:xpr="http://v8.1c.ru/8.3/xcf/predef" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.5">
+	<DocumentJournal uuid="465a8fc5-0a33-43c8-aedc-e2543a299d5a">
+		<InternalInfo>
+			<xr:GeneratedType name="DocumentJournalSelection.ЖурналДокументовГостиницы" category="Selection">
+				<xr:TypeId>5f51f534-86e7-42b5-b55d-4635fde41534</xr:TypeId>
+				<xr:ValueId>9859a9cf-ba9e-489c-9adc-29311d772a53</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="DocumentJournalList.ЖурналДокументовГостиницы" category="List">
+				<xr:TypeId>6461a779-3fe0-4b73-857d-948e9039edd9</xr:TypeId>
+				<xr:ValueId>1aa7f0d5-a87e-424b-8368-ceb303c57b7e</xr:ValueId>
+			</xr:GeneratedType>
+			<xr:GeneratedType name="DocumentJournalManager.ЖурналДокументовГостиницы" category="Manager">
+				<xr:TypeId>f64cf519-68a7-4ba1-9420-e50645d99eca</xr:TypeId>
+				<xr:ValueId>46c3523e-776c-4916-96cf-1ddd00b88555</xr:ValueId>
+			</xr:GeneratedType>
+		</InternalInfo>
+		<Properties>
+			<Name>ЖурналДокументовГостиницы</Name>
+			<Synonym>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Журнал документов гостиницы</v8:content>
+				</v8:item>
+			</Synonym>
+			<Comment/>
+			<DefaultForm/>
+			<AuxiliaryForm/>
+			<UseStandardCommands>true</UseStandardCommands>
+			<RegisteredDocuments>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования</xr:Item>
+				<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеСменыАдминистратораГостиницы</xr:Item>
+			</RegisteredDocuments>
+			<IncludeHelpInContents>false</IncludeHelpInContents>
+			<ListPresentation/>
+			<ExtendedListPresentation/>
+			<Explanation/>
+		</Properties>
+		<ChildObjects>
+			<Column uuid="c891f6a0-5486-43a4-8913-4636a35cb78b">
+				<Properties>
+					<Name>Организация</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Организация</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение.Attribute.Организация</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение.Attribute.Организация</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование.Attribute.Организация</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования.Attribute.Организация</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеСменыАдминистратораГостиницы.Attribute.Организация</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="a6155e19-2be4-4241-9bbb-ad4b90a708cf">
+				<Properties>
+					<Name>ГостиничныйКорпус</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Гостиничный корпус</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение.Attribute.ГостиничныйКорпус</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение.Attribute.ГостиничныйКорпус</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование.Attribute.ГостиничныйКорпус</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования.Attribute.ГостиничныйКорпус</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеСменыАдминистратораГостиницы.Attribute.ГостиничныйКорпус</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="b2d1c0bc-7cab-4a9f-a610-ea79db21e364">
+				<Properties>
+					<Name>ГостиничныйНомер</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Гостиничный номер</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение.Attribute.ГостиничныйНомер</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение.Attribute.ГостиничныйНомер</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование.Attribute.ГостиничныйНомер</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования.Attribute.ГостиничныйНомер</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="283a7585-606a-47d4-b1cd-a81772be1bc1">
+				<Properties>
+					<Name>Ответственный</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Ответственный</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение.Attribute.Ответственный</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение.Attribute.Ответственный</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование.Attribute.Ответственный</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования.Attribute.Ответственный</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеСменыАдминистратораГостиницы.Attribute.Ответственный</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="14bff528-76e3-4295-b6bf-601f0c850c04">
+				<Properties>
+					<Name>СтатусДокумента</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Статус документа</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование.Attribute.СтатусДокумента</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение.Attribute.СтатусДокумента</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеСменыАдминистратораГостиницы.Attribute.СтатусДокумента</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение.Attribute.СтатусДокумента</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования.Attribute.СтатусДокумента</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+			<Column uuid="0c54c8f4-1f5b-4f1d-9ab5-4cbb4281c4bf">
+				<Properties>
+					<Name>Комментарий</Name>
+					<Synonym>
+						<v8:item>
+							<v8:lang>ru</v8:lang>
+							<v8:content>Комментарий</v8:content>
+						</v8:item>
+					</Synonym>
+					<Comment/>
+					<Indexing>DontIndex</Indexing>
+					<References>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Бронирование.Attribute.Комментарий</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Выселение.Attribute.Комментарий</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ЗакрытиеСменыАдминистратораГостиницы.Attribute.Комментарий</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.Заселение.Attribute.Комментарий</xr:Item>
+						<xr:Item xsi:type="xr:MDObjectRef">Document.ОтменаБронирования.Attribute.Комментарий</xr:Item>
+					</References>
+				</Properties>
+			</Column>
+		</ChildObjects>
+	</DocumentJournal>
+</MetaDataObject>

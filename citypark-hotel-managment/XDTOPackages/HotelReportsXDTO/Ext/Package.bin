@@ -1,0 +1,15 @@
+﻿<package xmlns="http://v8.1c.ru/8.1/xdto" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" targetNamespace="http://www.sorc.ru/hotel/reports">
+	<objectType name="ReportRow">
+		<property name="Group1" type="xs:string"/>
+		<property name="Group2" type="xs:string"/>
+		<property name="Group3" type="xs:string"/>
+		<property name="Group4" type="xs:string"/>
+		<property name="Group5" type="xs:string"/>
+		<property name="Group6" type="xs:string"/>
+		<property name="Count" type="xs:decimal"/>
+		<property name="Sum" type="xs:decimal"/>
+	</objectType>
+	<objectType name="Report">
+		<property xmlns:d3p1="http://www.sorc.ru/hotel/reports" name="Rows" type="d3p1:ReportRow" lowerBound="0" upperBound="-1"/>
+	</objectType>
+</package>

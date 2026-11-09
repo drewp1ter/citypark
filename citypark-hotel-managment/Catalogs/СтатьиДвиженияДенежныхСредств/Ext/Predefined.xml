@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<PredefinedData xmlns="http://v8.1c.ru/8.3/xcf/predef" xmlns:v8="http://v8.1c.ru/8.1/data/core" xmlns:xr="http://v8.1c.ru/8.3/xcf/readable" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="CatalogPredefinedItems" version="2.5">
+	<Item id="f9604967-bca5-498d-b861-581be5c622ab">
+		<Name>Приход</Name>
+		<Code>00000000005</Code>
+		<Description>Приход</Description>
+		<IsFolder>true</IsFolder>
+		<ChildItems>
+			<Item id="4ebe71a8-7d1b-4bd3-b2e6-ff5e58ef6d8c">
+				<Name>ОплатаПроживания</Name>
+				<Code>00000000004</Code>
+				<Description>Оплата проживания</Description>
+				<IsFolder>false</IsFolder>
+			</Item>
+			<Item id="6b8d0ba2-9acd-4e2b-8ab8-dee92495ee1c">
+				<Name>ОплатаЧеков</Name>
+				<Code>00000000003</Code>
+				<Description>Оплата розничных чеков</Description>
+				<IsFolder>false</IsFolder>
+			</Item>
+			<Item id="ded701b4-26fa-4b75-8d3c-21fecd0027ff">
+				<Name>ОприходованиеИзлишков</Name>
+				<Code>00000000002</Code>
+				<Description>Оприходование излишков</Description>
+				<IsFolder>false</IsFolder>
+			</Item>
+		</ChildItems>
+	</Item>
+	<Item id="a17ce9c0-fc81-4d6e-934f-594952dec844">
+		<Name>Расход</Name>
+		<Code>00000000006</Code>
+		<Description>Расход</Description>
+		<IsFolder>true</IsFolder>
+		<ChildItems>
+			<Item id="a84e7e3e-e25f-45ea-8d53-cfd92bcbb00c">
+				<Name>ВозвратОплатыЗаПроживание</Name>
+				<Code>00000000007</Code>
+				<Description>Возврат оплаты за проживание</Description>
+				<IsFolder>false</IsFolder>
+			</Item>
+			<Item id="fcc8c0dd-bc1b-43bf-9e0e-3f391a3ed6c4">
+				<Name>СписаниеНедостач</Name>
+				<Code>00000000001</Code>
+				<Description>Списание недостач</Description>
+				<IsFolder>false</IsFolder>
+			</Item>
+		</ChildItems>
+	</Item>
+</PredefinedData>
