@@ -236,3 +236,5 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 - [x] [72 Delivery-town regions](72-delivery-town-regions.md)
   - Implemented town regions in suggestions and region-aware geolocation. Check/build, suggestion payload harness and geolocation handler regressions pass. Production browser acceptance completed after the backend restart (details below). No deployment performed.
   - Backend restarted (2026-11-07): confirmed regionCode on all 58 towns. Production checkout geolocation browser flow passes at 390/1440 px in light/dark themes, including delayed-response edit preservation, guest default hydration and malformed-request handling. Suggestion payload harness passes for Краснодарский край, Майкоп and prefixed Гончарка. Authenticated native Telegram permission acceptance remains device-dependent; no orders created or existing town regions changed.
+
+- [ ] [73 Implement hotel reservation flow](73-hotel-booking.md) [backend 107; 1C task 01]

@@ -249,3 +249,7 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [x] [105 Delivery-town regions](105-delivery-town-regions.md)
   - Migration, persistence, API/OpenAPI, production seed compatibility and regressions implemented. Formatting/build/vet and full serial Go suite pass; deliveryprice coverage 93.8%. Existing towns remain RU-KDA for manual reassignment. Deploy before admin 33 and website 72.
+
+- [ ] [106 Implement 1C booking client](106-hotel-booking-client.md) [1C tasks 01–02]
+
+- [ ] [107 Expose hotel booking API](107-hotel-booking-api.md) [backend 106; 1C task 01]
