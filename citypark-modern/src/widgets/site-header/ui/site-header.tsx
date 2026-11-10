@@ -12,8 +12,8 @@ const logo = 'inline-flex min-h-11 items-center'
 
 type SiteHeaderProps = {
 	/**
-	 * Menu page variant: wider, with a "Корзина [total]" pill instead of the phone, cart and book buttons.
-	 * Pass the menu's dishes so the pill can add up the cart.
+	 * Menu page variant: wider, with a "Корзина [count]" pill instead of the phone, cart and book buttons.
+	 * Pass the menu's dishes so the pill counts available portions.
 	 */
 	cartDishes?: readonly Dish[]
 }
