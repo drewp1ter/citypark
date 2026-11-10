@@ -231,7 +231,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 ## Telegram proxy
 
-- [ ] [101 Telegram-only SOCKS proxy](101-telegram-socks-proxy.md) [100]
+- [x] [101 Telegram-only SOCKS proxy](101-telegram-socks-proxy.md) [100]
+  - Verification blocked: the configured TEST_DB_DSN database at host.docker.internal:5433 refuses connections. Existing implementation remains unchecked until all required checks pass.
   - Implemented optional Telegram-only SOCKS5 transport, validated configuration, docs and fake SOCKS tests. Formatting/build/vet and targeted config/Telegram tests pass. Completion blocked (2026-11-06): TEST_DB_DSN from .env.development refuses connections at host.docker.internal:5433; full suite and app coverage cannot pass. Per AGENTS.md, stopped without starting a database, ticking the task or committing.
 
 - [x] [102 Address recipient contacts](102-address-recipients.md) [97, 98]
@@ -251,5 +252,6 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
   - Migration, persistence, API/OpenAPI, production seed compatibility and regressions implemented. Formatting/build/vet and full serial Go suite pass; deliveryprice coverage 93.8%. Existing towns remain RU-KDA for manual reassignment. Deploy before admin 33 and website 72.
 
 - [ ] [106 Implement 1C booking client](106-hotel-booking-client.md) [1C tasks 01–02]
+  - Blocked (2026-11-09): prerequisite 1C tasks 01 and 02 are both unchecked in `../citypark-hotel-managment/docs/tasks/PROGRESS.md`. The booking contract is not frozen and the 1C HTTP service is not complete. Per AGENTS.md, stopped without inventing client interfaces or marking this task complete. Next prerequisite: 1C task 01, booking-rule discovery and integration-contract agreement.
 
 - [ ] [107 Expose hotel booking API](107-hotel-booking-api.md) [backend 106; 1C task 01]

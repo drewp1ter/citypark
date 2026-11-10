@@ -102,6 +102,25 @@
 					</Method>
 				</ChildObjects>
 			</URLTemplate>
+			<URLTemplate uuid="00b0af5b-b864-48b9-bd04-b72e8b7bc826">
+				<Properties>
+					<Name>booking_references</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/v1/booking-references</Template>
+				</Properties>
+				<ChildObjects>
+					<Method uuid="eae1d961-52a5-4979-bd8c-430a10d9631f">
+						<Properties>
+							<Name>getReferences</Name>
+							<Synonym/>
+							<Comment/>
+							<HTTPMethod>GET</HTTPMethod>
+							<Handler>bookingReferencesGet</Handler>
+						</Properties>
+					</Method>
+				</ChildObjects>
+			</URLTemplate>
 		</ChildObjects>
 	</HTTPService>
 </MetaDataObject>
