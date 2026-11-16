@@ -1,9 +1,10 @@
-# Hotel booking integration contract — discovery draft
+# Hotel booking integration contract v1
 
-Status: **not frozen**. Source inspection performed on 2026-11-09. Owner decisions,
-live reference mappings and development-base verification are pending. Owner confirmed
-that guest name, email and phone are required and no separate development base currently exists. This document
-does not clear task 01 or authorize downstream implementation against a final API.
+Status: **frozen for implementation, 2026-11-16**. Product decisions are from the
+owner; technical defaults below resolve the implementation details. This is a
+documentation/discovery completion, not runtime or deployment acceptance. A
+separate development information base does not yet exist. Task 02 cannot pass
+runtime acceptance until one is provided.
 
 ## Scope
 
@@ -12,8 +13,7 @@ entire stay, instantly confirmed only after the reservation transaction commits.
 No prepayment, multi-room cart or guest cancellation/change API.
 1C remains authoritative for inventory. **Owner decision (2026-11-09): Go calculates
 online booking prices, not 1C.** This supersedes tariff ownership in the original
-task specifications. The source of backend rates and persistence of the accepted
-price into 1C must be finalized before freezing the contract.
+task specifications. Go uses `rooms.price_kopecks`; the accepted snapshot is persisted in 1C as specified below.
 
 ## Verified source behavior
 
@@ -36,25 +36,42 @@ Paths below are relative to the hotel project root.
 These are static observations, not runtime test results. In particular, existing
 availability checks do not establish that concurrent posting is safe.
 
-## Decisions required from owner
+## Agreed product rules and implementation defaults
 
-| Decision | Pending information |
-| --- | --- |
-| Guest identity/contact | **Owner confirmed: only name, email and phone are required guest/contact fields (2026-11-09).** Validation limits and counterparty creation/reuse policy remain to specify. Do not add required identity-document fields to online booking. |
-| Occupancy | **Owner confirmed: do not ask guests about children or extra beds (2026-11-09).** Do not add these form questions or require child ages/extra-bed selections in requests. Internal room capacity/allocation still needs a verified 1C source; the inspected room metadata provides no explicit capacity attribute. |
-| Dates | **Owner confirmed: dates only, no exact-time input; check-in after 12:00, check-out before 12:00; no maximum stay length; bookings six months ahead (2026-11-09).** Treat the advance horizon as an arrival-date constraint, independently of stay duration; this interpretation and exact calendar-month boundary need final specification. Do not introduce a maximum-night or checkout-within-horizon restriction. Verify actual 1C constants against noon. **Owner confirmed hotel timezone: Moscow (`Europe/Moscow`, 2026-11-09).** Interpret guest dates and noon boundaries in this timezone, independently of the Go host timezone. **Owner confirmed: same-day bookings are unavailable (2026-11-09).** Earliest arrival is tomorrow in `Europe/Moscow`; reject arrival dates on or before the current hotel-local date. Revalidate this rule when creating a reservation, including when a quote crosses Moscow midnight. Actual 1C timezone configuration, minimum stay and early/late arrival handling remain pending. |
-| Confirmation | **Owner confirmed: send confirmation to the guest's email (2026-11-09).** Delivery ownership, retries and failure handling after a committed reservation remain to specify; email failure must not duplicate or undo a booking. |
-| Abuse prevention | Anonymous versus signed-in access, rate limits, verification, duplicate contact policy and retention period for idempotency data. |
-| Pricing | **Owner confirmed: Go calculates booking prices, not 1C (2026-11-09).** **Owner confirmed: use room prices managed in the admin panel (2026-11-09).** Nightly calculation, rate changes, rounding and missing-price handling remain to specify. Define how the backend's accepted price populates 1C reservation cost rows and survives staff check-in/repricing; existing 1C recalculation must not silently replace the online price. |
-| Availability | Maintenance/dirty-room exclusion policy and which room states block online allocation. |
-
-Only the explicit owner confirmations above are approved. Remaining technical
-policies must be specified without reintroducing rejected contact/date defaults.
-Rate limiting and other abuse-prevention details remain to finalize.
+- Required guest/contact fields: name, email, phone. No passport fields, child-age
+  or extra-bed questions. Keep one exact total `guests` count from the room search.
+  Capacity limits: single/single-balcony 1, twin/Euro 2; VIP 4, matching the existing
+  site description. Do not derive capacity from the shared 1C room-type reference.
+- Dates only; minimum one night and no business maximum stay. Earliest arrival is
+  tomorrow in `Europe/Moscow`; latest arrival is today plus six calendar months,
+  inclusive, clamping to the target month's last day. Checkout may exceed the
+  arrival horizon. Use noon-to-noon intervals `[arrival 12:00, departure 12:00)`;
+  customer copy remains check-in after 12:00, check-out before 12:00. No early/late
+  options in v1. Dates must be valid Gregorian dates representable by 1C.
+- Anonymous guest booking allowed; no prior email verification. Confirmation goes
+  to the supplied email after 1C commits. Email failure cannot undo the booking.
+- Go computes `nights × rooms.price_kopecks` using checked integer arithmetic,
+  independent of guests. No extras, seasonal schedules or discounts in v1. Reject
+  missing/nonpositive rates and overflow. Public JSON money uses rubles, following
+  existing `money.Kopecks` serialization; internal 1C requests use integer kopecks.
+- One physical room must cover the complete interval. Reuse existing availability
+  semantics, including blocking non-free occupancy; retain the staff housekeeping
+  policy rather than inventing a new cleaning buffer. Disabled/deleted references
+  never allocate. Quote availability is advisory until creation commits.
+- Technical validation: trim name (1–150 Unicode characters), trim and validate
+  email (max 254 bytes, preserve local-part case and lowercase domain), normalize
+  phone to `+` followed by 8–15 digits (strip spaces, parentheses and hyphens;
+  Russian 8 plus ten digits becomes +7). Reject control characters and unknown JSON
+  fields. No identity/account linking or counterparty matching by unverified email.
+- Rate limits: availability/quote 30/minute/IP; creation attempts 5/hour/IP plus
+  3/hour/normalized contact-pair hash. Existing-key recovery/replay 30/minute/IP,
+  outside new-creation quotas. Persist counters in PostgreSQL for multiple workers;
+  hash contacts, trust forwarded IP only from configured trusted proxies. No PII
+  or request bodies in logs. These are technical defaults, not email verification.
 
 ## Stable mapping required
 
-Use data-reference UUIDs from the development base, not metadata UUIDs, labels or
+Use data-reference UUIDs from the intended information base, not metadata UUIDs, labels or
 mutable display numbers. Each enabled room type must map to an organization,
 building, 1C room type and an explicit eligible physical-room set. Identify any
 1C tariff/price-type references required for document structure separately from
@@ -66,91 +83,301 @@ identify the intended inventory for reference lookup; they are not stable API ke
 
 | Website ID | Room numbers | Owner description | Physical-room reference UUIDs |
 | --- | --- | --- | --- |
-| `vip` | 301 | VIP-номер; две комнаты (гостиная + спальня), балкон; 45 кв. м + балкон 7 кв. м | Pending lookup |
-| `single-balcony` | 201 | Одноместный номер с двуспальной кроватью и балконом; 23 кв. м + балкон 7 кв. м | Pending lookup |
-| `single` | 204, 304 | Одноместные номера с двуспальной кроватью; 19 кв. м | Pending lookup |
-| `double-twin` | 203, 206, 302, 303 | Двухместные номера с двумя односпальными кроватями, которые можно сдвинуть; 23–25 кв. м | Pending lookup |
-| `double-euro` | 202, 205, 305, 306 | Двухместные номера с двуспальной кроватью евро; 23–25 кв. м | Pending lookup |
+| `vip` | 301 | VIP-номер; две комнаты (гостиная + спальня), балкон; 45 кв. м + балкон 7 кв. м | 301: `fb170aba-5e75-11e4-80cd-b8a38697f1fc` |
+| `single-balcony` | 201 | Одноместный номер с двуспальной кроватью и балконом; 23 кв. м + балкон 7 кв. м | 201: `fb170ab4-5e75-11e4-80cd-b8a38697f1fc` |
+| `single` | 204, 304 | Одноместные номера с двуспальной кроватью; 19 кв. м | 204: `fb170ab7-5e75-11e4-80cd-b8a38697f1fc`; 304: `fb170abd-5e75-11e4-80cd-b8a38697f1fc` |
+| `double-twin` | 203, 206, 302, 303 | Двухместные номера с двумя односпальными кроватями, которые можно сдвинуть; 23–25 кв. м | 203: `fb170ab6-5e75-11e4-80cd-b8a38697f1fc`; 206: `fb170ab9-5e75-11e4-80cd-b8a38697f1fc`; 302: `fb170abb-5e75-11e4-80cd-b8a38697f1fc`; 303: `fb170abc-5e75-11e4-80cd-b8a38697f1fc` |
+| `double-euro` | 202, 205, 305, 306 | Двухместные номера с двуспальной кроватью евро; 23–25 кв. м | 202: `fb170ab5-5e75-11e4-80cd-b8a38697f1fc`; 205: `fb170ab8-5e75-11e4-80cd-b8a38697f1fc`; 305: `fb170abe-5e75-11e4-80cd-b8a38697f1fc`; 306: `fb170abf-5e75-11e4-80cd-b8a38697f1fc` |
 
-The mapping contains 12 distinct physical rooms across five types. Organization,
-building and catalog-reference relationships remain to verify against 1C data.
+Owner supplied the reference response on 2026-11-16: all 12 room UUIDs above are
+unique, match the expected printed numbers, and have `deletionMark: false`.
+All supplied room types, buildings and complexes also have false deletion marks.
+
+The five website types do **not** map one-to-one to 1C room types:
+
+| Website types | Supplied 1C room-type UUID |
+| --- | --- |
+| `single-balcony`, `double-twin`, `double-euro` | `fb170ab1-5e75-11e4-80cd-b8a38697f1fc` |
+| `single` | `fb170ab2-5e75-11e4-80cd-b8a38697f1fc` |
+| `vip` | `fb170ab3-5e75-11e4-80cd-b8a38697f1fc` |
+
+Allocate from the explicit physical-room UUID set for each website type. Filtering
+only by 1C room type would mix balcony, twin and Euro rooms.
+
+The response also supplies building `fb170ab0-5e75-11e4-80cd-b8a38697f1fc`,
+complex `fb170aaf-5e75-11e4-80cd-b8a38697f1fc` for all rooms, and one
+organization candidate `fb170aae-5e75-11e4-80cd-b8a38697f1fc`. The presence of
+one organization does not prove it is the booking organization; confirm during
+integration setup rather than inferring an ownership relationship.
+
+The pasted response contained question marks in Cyrillic labels. A direct,
+owner-authorized GET on 2026-11-16 returned HTTP 200 with
+`Content-Type: application/json; charset=utf-8`; the body parsed as UTF-8 JSON
+and contained `Номер 201` and `Двухместный (обычный)`. Server-side Cyrillic
+serialization is working in the observed deployment. The earlier corruption
+occurred after response delivery; the exact client/display/save step is unknown.
+Do not use display labels as mapping keys.
+The response contains building/complex/organization fields absent from the latest
+local exporter, indicating a different deployed/export revision; exact cause is
+unverified. This evidence is not a runtime pass for the latest export revision.
 Do not infer VIP capacity from its floor area or number of rooms.
 
 Website IDs were checked in `../citypark-modern/src/entities/room/api/get-rooms.ts`.
 Source XML contains catalog structure, not the live hotel room records.
 
-## Proposed wire protocol for review
+## HTTP contract
 
-Everything in this section is a proposal. Paths are relative to a future dedicated
-1C HTTP service publication; the existing `reports` service remains unchanged.
-Exact validation, examples and limits must be finalized after the decisions above.
+All bodies are UTF-8 JSON; unknown fields are rejected. Success examples below
+specify the exact keys. Private responses use `Cache-Control: no-store`. The public
+API is under `/api/v1/hotel`; internal 1C service root is `/hs/booking/v1` under the
+existing publication. Do not expose internal routes through public Next.js proxies.
+1C uses publication Basic authentication and a dedicated restricted role, without
+privileged mode. Credentials are server-only; production activation requires HTTPS
+or a protected transport. Current HTTP discovery access is not production approval.
 
-* `POST /booking/v1/quotes`: proposed internal availability operation taking room
-  type, hotel-local arrival/departure dates and any approved occupancy fields,
-  without child/extra-bed questions. Returns availability for one continuous room
-  and resolved check-in/out timestamps. **1C does not calculate or return a price
-  quote.** The final operation name should reflect availability. Go builds the
-  customer-facing price quote and expiry from backend rates. Neither operation
-  reserves inventory.
-* `POST /booking/v1/reservations`: same stay details, required contacts, quote
-  backend quote reference, accepted price snapshot and UUID idempotency key.
-  Go validates pricing/consent before dispatch; 1C rechecks inventory and persists
-  the trusted backend price without calculating it;
-  return confirmed only after commit. The public client cannot nominate arbitrary
-  internal catalog references or prices.
-* `GET /booking/v1/reservations/{idempotencyKey}`: authenticated server-only
-  recovery of a committed result. The key is not a public authorization credential.
-  Go must bind any public recovery operation to its original booking context.
+### Internal 1C availability
 
-Proposed responses contain an opaque reservation reference, room-type ID, stay,
-guest count, total/currency and confirmation state. Do not expose physical-room
-UUIDs, counterparty records, credentials, staff names or raw 1C exceptions.
-Public responses use `Cache-Control: no-store`.
+`POST /availability`, handler `availabilityPost`:
 
-Candidate error vocabulary to finalize (not an implemented API):
+```json
+{"roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1}
+```
+
+200:
+
+```json
+{"roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"available":true}
+```
+
+Unavailable inventory returns the same shape with `available:false`, not a price
+or physical-room list. Use explicit room sets from the mapping above. Configuration
+resolves the organization and service responsible-user references; derive building
+from the selected room internally. Organization candidate above must be verified
+by the installer before activation, not guessed from the catalog's row count.
+
+### Internal 1C creation and recovery
+
+`POST /reservations`, handler `reservationsPost`:
+
+```json
+{"idempotencyKey":"eaf9d7d3-2b21-43a9-8e27-e718b65d2588","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"guest":{"name":"Иван Иванов","email":"ivan@example.com","phone":"+79180000000"},"price":{"currency":"RUB","nights":2,"nightlyPriceKopecks":400000,"totalKopecks":800000}}
+```
+
+201 for first committed creation; 200 for same-payload replay:
+
+```json
+{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"nightlyPriceKopecks":400000,"totalKopecks":800000}}
+```
+
+`GET /reservations/{idempotencyKey}`, handler `reservationGet`, returns 200 with
+exactly the saved creation result, including after staff cancellation; this is a
+creation-recovery API, not current cancellation status. Missing committed key:
+404. Reject noncanonical UUID keys. Creation replay identity compares all normalized
+request values above (including price) independent of JSON key order. Store
+canonical JSON for equality, not only a collision-prone digest. Retain key/result
+records for the reservation lifetime; no automatic expiry/reuse in v1.
+
+Reuse `Документы.Бронирование.СоздатьДокумент()`, filling and normal posting.
+After filling, explicitly replace default dates/guest count and `Проживание` rows.
+Populate daily `Сутки` row with nights, noon boundaries and backend price in
+`Стоимость`/`Сумма`; do not invoke the 1C price calculator for online reservations.
+Create a separate counterparty per new reservation, with the required name; save
+email/phone in restricted online-booking metadata, not a public comment. Replays
+create neither another counterparty nor another document. Preserve the accepted
+cost rows during `Заселение` creation and automatic form recalculation for these
+online reservations; explicit staff edits remain staff responsibility. Do not
+change default pricing of ordinary staff-created bookings.
+
+### Public Go API
+
+`POST /quotes` accepts the internal availability request shape. 200:
+
+```json
+{"quoteId":"97a98c7c-109f-4d01-aac1-3bdce27cbf47","expiresAt":"2026-11-16T12:10:00Z","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"available":true,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000}}
+```
+
+No availability: 409 `ROOM_UNAVAILABLE`, no quote. The same `X-Hotel-Booking-Context` header described below is required on quotes
+and recovery as well as creation. Persist a 10-minute quote and price snapshot. Read rate through the existing room store; `nights` is a calendar
+date difference, not elapsed UTC hours. Recheck dates and current rate on initial
+creation; changed rate returns 409 before any 1C write. Never send a new total
+without obtaining a fresh quote and explicit customer submission.
+
+`POST /reservations` accepts exactly `idempotencyKey` (UUID), `quoteId` (UUID) and
+`guest` (shape above). The website server supplies an opaque booking-context token
+in `X-Hotel-Booking-Context`; it is 32 cryptographically random bytes encoded as
+base64url, hashed in Go storage and kept in a signed HttpOnly SameSite=Lax cookie
+in the browser. Bind quote/key records to this context. No public caller sends a
+physical-room reference or authoritative price. Public response 201/200:
+
+```json
+{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000},"confirmationEmailStatus":"pending"}
+```
+
+Email status is `pending` or `sent`; failed attempts remain pending for retry.
+`GET /reservations/{idempotencyKey}` requires the same context, returns the same
+public result, or 202 `{"status":"pending"}` for an unresolved creation. Wrong
+context/unknown key returns 404 without revealing another booking. Replay after
+expiry/rate change uses the persisted original request/result; no fresh repricing.
+
+### Errors and bounds
+
+Error JSON: `{"statusCode":409,"code":"ROOM_UNAVAILABLE","message":"На выбранные даты нет свободного номера"}`.
+Use this envelope for both services (publication authentication errors may be
+platform-generated). Exact codes/messages:
 
 | Status | Code | Russian message |
 | --- | --- | --- |
-| 400 | `INVALID_REQUEST` | `Проверьте данные бронирования` |
-| 401 | `UNAUTHORIZED` | `Требуется авторизация` |
-| 403 | `FORBIDDEN` | `Доступ запрещён` |
-| 404 | `RESERVATION_NOT_FOUND` | `Бронирование не найдено` |
-| 409 | `ROOM_UNAVAILABLE` | `На выбранные даты нет свободного номера` |
-| 409 | `PRICE_CHANGED` | `Стоимость проживания изменилась. Подтвердите новую стоимость` |
-| 409 | `IDEMPOTENCY_CONFLICT` | `Ключ бронирования уже использован с другими данными` |
-| 409 | `QUOTE_EXPIRED` | `Расчёт стоимости устарел. Обновите стоимость` |
-| 429 | `RATE_LIMITED` | `Слишком много запросов. Попробуйте позже` |
-| 503 | `BOOKING_UNAVAILABLE` | `Бронирование временно недоступно` |
+| 400 | INVALID_REQUEST | Проверьте данные бронирования |
+| 401 | UNAUTHORIZED | Требуется авторизация |
+| 403 | FORBIDDEN | Доступ запрещён |
+| 404 | RESERVATION_NOT_FOUND | Бронирование не найдено |
+| 409 | ROOM_UNAVAILABLE | На выбранные даты нет свободного номера |
+| 409 | PRICE_CHANGED | Стоимость проживания изменилась. Подтвердите новую стоимость |
+| 409 | IDEMPOTENCY_CONFLICT | Ключ бронирования уже использован с другими данными |
+| 409 | QUOTE_EXPIRED | Расчёт стоимости устарел. Обновите стоимость |
+| 429 | RATE_LIMITED | Слишком много запросов. Попробуйте позже |
+| 503 | BOOKING_UNAVAILABLE | Бронирование временно недоступно |
 
-## Required transaction and recovery invariants
+Invalid/oversized body: 400; maximum 16 KiB. Transport/parse/unexpected upstream
+failure before creation: 503. After ambiguous creation: 202 pending, never a
+claim that booking failed. Bound internal responses to 64 KiB and HTTP timeout
+to 15 seconds; context cancellation is honored. Disable redirects so credentials
+cannot be forwarded. Never log credentials, contacts or response bodies.
 
-1. Persist the canonical request identity and reservation reference under a unique
-   idempotency key in the same transaction as document posting and occupancy writes.
-   Define canonicalization, contact normalization and exact compared fields in the
-   final contract; a different request under the same key is a conflict.
-2. Serialize duplicate keys before allocating inventory. A successful replay returns
-   the original reservation, even if current prices or availability have changed.
-3. Use one shared room-lock protocol for HTTP allocation, staff booking/check-in,
-   edits, reposting, unposting and cancellation/undo paths. Acquire locks before the
-   authoritative availability check; hold them through commit. Lock old and new
-   rooms in deterministic order for moves. Final lock namespace and acquisition
-   order need verification against actual managed-lock behavior in the dev base.
-4. One candidate room must cover every instant of the complete stay. Combining
-   different rooms across nights is forbidden. Quotes do not guarantee allocation.
-5. Go calculates and validates the complete price before reservation creation.
-   Persist an immutable accepted price snapshot with the reservation and include
-   it in idempotency comparison. 1C receives prices only from the authenticated Go
-   service, never directly from browser input, and must not independently reprice
-   online reservations. Finalize rate-version/quote-expiry and cross-system failure
-   handling without assuming a shared Go/1C database transaction. A price change
-   requires explicit new consent; never silently replace the accepted total.
-6. On rollback, neither the idempotency result nor occupancy/document writes survive.
-   On timeout after commit, lookup and retries with the **same** key recover the
-   saved result. A missing lookup after a timeout does not prove creation failed:
-   the original request may still be running. Never switch to a new key automatically.
-7. Confirmation delivery failure does not undo a committed booking or trigger a new
-   creation. Define lookup behavior for subsequent staff cancellation separately
-   from replay of the original creation result.
+## Atomicity, locking, uncertain results and email
+
+- Add independent information register `КлючиОнлайнБронирования`: UUID-string key,
+  canonical request, document reference, immutable JSON result and contacts. Acquire
+  exclusive managed key lock before reading/writing; persist in the same transaction
+  as counterparty creation, reservation posting and occupancy movements.
+- Add independent information register `БлокировкиНомеровБронирования` with room
+  reference dimension as the shared managed-lock namespace (no business rows
+  needed). Lock all affected old/new room references in UUID order before checking
+  occupancy and hold to transaction end. All posting/unposting paths for booking,
+  check-in, cancellation/undo and checkout/undo acquire the same locks, including
+  staff edits. HTTP creation locks candidate room sets in that same order after
+  locking its idempotency key. Staff paths never acquire idempotency locks. Query
+  old document room before mutation; protect against concurrent edits/recheck it.
+- Reuse the full-interval availability helper with basis exclusion for reposting;
+  fix any helper slice/self-conflict defects found by required runtime tests instead
+  of duplicating occupancy logic in HTTP. Shared room locks serialize competing
+  allocations even across organizations. Cancel/unpost/create rollback is atomic.
+- Go persists the normalized attempt and its context before dispatch. Never hold a
+  PostgreSQL transaction across HTTP. On timeout, retain pending and recover by
+  internal same-key GET; 404 can mean the original request is still executing.
+  Background recovery checks every 30 seconds and may resend the identical saved
+  create using the same key. Never regenerate a key or reprice a pending request.
+- On confirmation, Go saves result and one uniquely keyed email-outbox row in the
+  same local transaction. Reconciliation after a lost local commit recreates this
+  using the same key. Use existing SMTP mailer; retries with bounded backoff continue
+  while pending. SMTP delivery is at-least-once: a lost acknowledgement may cause
+  duplicate email, never duplicate booking. Confirmation includes reservation
+  reference, room type, dates, guests, RUB total and hotel contact phone; no payment
+  link. Worker owns retries so browser refresh is not required.
+
+## Implementation map and named acceptance scenarios
+
+### 1C task 02
+
+Create `HTTPServices/Booking.xml`, `HTTPServices/Booking/Ext/Module.bsl`,
+`CommonModules/ОнлайнБронирование.xml` and its `Ext/Module.bsl`, the two independent
+registers named above (root `.xml` files under `InformationRegisters/`), and
+`Roles/ОнлайнБронированиеСервис.xml` with `Roles/ОнлайнБронированиеСервис/Ext/Rights.xml`.
+Register metadata in `Configuration.xml` and `ConfigDumpInfo.xml` following the
+existing export format. Preserve existing object UUIDs.
+
+HTTP exports: `availabilityPost(Запрос)`, `reservationsPost(Запрос)`,
+`reservationGet(Запрос)`, returning `HTTPСервисОтвет`. Shared server exports:
+`ПроверитьДоступность(Данные)`, `СоздатьБронирование(Данные)`,
+`ПолучитьРезультат(Ключ)`, `ЗаблокироватьНомера(Номера)`.
+Use a dedicated configured service user/organization and explicit room mapping;
+store setup values in restricted service configuration, never HTTP request fields
+or source-code credentials. Start disabled until references are verified.
+
+Update object modules for `Бронирование`, `Заселение`, `ОтменаБронирования`,
+`Выселение` to share locks. Adapt booking/check-in form recalculation to preserve
+online prices. Store online origin/accepted snapshot through the idempotency
+register's document reference; staff documents without a matching record retain
+normal pricing. Use the existing daily predefined tariff (not a guessed UUID).
+
+Record platform and results under `docs/BOOKING_RUNTIME_RESULTS.md`. Named scenarios:
+`BookingValid`, `FullStayOneRoom`, `AdjacentStays`, `OverlapVariants`,
+`WebsiteStaffRace`, `ConcurrentRoomMove`, `DuplicateKeyRace`, `KeyPayloadConflict`,
+`PostingRollback`, `CommitTimeoutRecovery`, `CancellationUndoRace`,
+`RepostSelfExclusion`, `BackendPriceAtCheckIn`, `UnauthorizedAccess`, `RestrictedRole`.
+Each includes document/register assertions. Freeze metadata lock compatibility in
+Designer testing; failure blocks task 02 rather than weakening the lock invariant.
+
+### Backend tasks 106–107
+
+Task 106 creates `internal/hotelbooking/client.go`, `types.go` and `client_test.go`.
+`NewClient(baseURL, user, password string, httpClient *http.Client) *Client`;
+`Availability(ctx context.Context, req AvailabilityRequest) (AvailabilityResponse, error)`;
+`Create(ctx context.Context, req CreateRequest) (Reservation, error)`;
+`Lookup(ctx context.Context, key string) (Reservation, error)`.
+Types follow the internal JSON shapes above; timestamps are not fabricated by 1C.
+Use typed errors for protocol status/code and ambiguous create transport outcomes.
+Add `HOTEL_BOOKING_ENABLED` (false), `ONEC_BOOKING_URL` (service root ending
+`/hs/booking/v1`), `ONEC_BOOKING_USER`, `ONEC_BOOKING_PASSWORD` in config/env docs;
+validate all required integration and SMTP settings when enabled. Keep reporting
+credentials/config independent. Tests: `TestClientAvailability`, `TestClientCreate`,
+`TestClientLookup`, `TestClientProtocolErrors`, `TestClientResponseLimit`,
+`TestClientTimeoutCancellation`, `TestClientCredentialIsolation`,
+`TestClientAmbiguousCreateRecovery`, `TestBookingConfig`.
+
+Task 107 adds `handler.go`, `service.go`, `store.go`, `worker.go` and corresponding
+`*_test.go` in that package. Constructors inject store, room-price reader, client,
+clock and mailer. Handler `Routes(r chi.Router)` registers the public paths above;
+`Quote`, `Create`, `Lookup` use existing error-returning HTTP handler conventions.
+Service signatures: `Quote(ctx context.Context, contextToken string, req QuoteRequest) (QuoteResponse, error)`, `Create(ctx context.Context, contextToken string, req PublicCreateRequest) (PublicReservationResponse, error)` and `Lookup(ctx context.Context, contextToken, key string) (PublicReservationResponse, error)`. PublicReservationResponse represents pending or confirmed with conditional fields matching the wire shapes; never serialize empty confirmed fields for pending. Typed DTOs are derived
+from the exact wire shapes above. Store methods take context first.
+
+Add the next available embedded migration (do not reserve an already-used number):
+`hotel_booking_quotes` (UUID, context hash, stay/guests, immutable rate/total and
+expiry), `hotel_booking_attempts` (key primary key, quote FK, context hash,
+canonical request, pending/confirmed/rejected state, saved result),
+`hotel_booking_email_outbox` (attempt key unique, delivery state/attempt count,
+next attempt time), `hotel_booking_rate_limits` (scope/hash/window counters).
+Quote rows referenced by attempts and attempt/key records have no automatic
+expiry deletion. Money columns are bigint kopecks. Store sensitive request/result
+JSON only as needed for recovery/delivery, with restricted DB access.
+
+Worker supports multiple processes via row claims/leases and retry backoff
+30s, 1m, 5m, then 30m; recovery remains pending on persistent upstream failures.
+Worker stops on application context cancellation. Document operational monitoring
+of pending age and email backlog without PII. Add app wiring and `docs/API.md` /
+`internal/apidocs/openapi.yaml` from real handler test examples.
+Tests: `TestQuoteCalendarBounds`, `TestQuoteCapacity`, `TestQuoteMoney`,
+`TestCreateRateChange`, `TestCreateIdempotency`, `TestConcurrentCreate`,
+`TestPendingRecovery`, `TestContextIsolation`, `TestGuestValidation`,
+`TestRateLimits`, `TestOutboxRecovery`, `TestMailerRetry`, `TestNoPIILogging`.
+Backend serial DB tests and changed-package coverage requirements apply.
+
+### Website task 73
+
+Create `app/(site)/booking/page.tsx` re-exporting `src/pages/booking`, with
+`api/actions.ts`, `model/schema.ts`, `ui/booking-page.tsx`, `ui/booking-form.tsx`
+and `index.ts` in that page slice. Put the signed booking-context cookie helper
+and server-only backend requests in that slice's `api/` segment.
+`getQuoteAction` / `createReservationAction` / `lookupReservationAction` preserve
+values, UUID key and pending status. Load guest form from selected room type,
+check-in/out and exact total guests; no child/extra-bed options. Search exact
+counts 1–4 (replace ambiguous 3–4); server validates against selected capacity.
+Update rooms search/detail links to `/booking` carrying these stay parameters.
+A price refresh never automatically resubmits creation. Pending UI polls the
+same key every five seconds while visible; reload recovers from signed context
+and a saved key. Recovery works independently through the Go worker.
+
+Use existing room content/photos/tokens and Russian labels `Имя`, `Электронная
+почта`, `Телефон`, `Забронировать`, `Проверяем бронирование`,
+`Бронирование подтверждено`. State that confirmation is sent by email; never
+claim successful delivery while pending. No payment UI. Server-only integration;
+no 1C credentials/references in client code. Private booking route is noindex.
+QA `scripts/qa/flows/hotel-booking.mjs` stages: `search`, `guest-validation`,
+`quote`, `confirm`, `double-submit`, `sold-out`, `price-change`, `pending-recovery`,
+`outage-preservation`, `keyboard`. Run at 390/1440 px in both themes. Writes only
+in an authorized isolated development environment; production builds/checks remain
+required. None of these runtime scenarios has passed merely by writing this spec.
 
 ## Development acceptance matrix (all unrun)
 
@@ -176,10 +403,13 @@ Candidate error vocabulary to finalize (not an implemented API):
 | Unauthorized service access | Missing/incorrect credentials and unrelated roles cannot quote/create/read booking data. |
 | Guest data isolation | Public recovery cannot retrieve another context's reservation; logs/errors contain no contact data or secrets. |
 
-## Completion gate
+## Completion and release boundary
 
-Freeze exact JSON schemas, examples, limits, authentication and error envelopes;
-resolve every owner decision and reference mapping; record the environment in
-[BOOKING_ENVIRONMENT.md](BOOKING_ENVIRONMENT.md). Then expand downstream task 02,
-backend 106/107 and website 73 with exact paths, signatures and named tests.
-Until then those tasks remain blocked; this discovery draft is not task completion.
+Task 01 is documentation complete with the explicit schemas/defaults above, stable
+room sets, source inspection and environment prerequisites. Examples are normative
+contracts, not captured runtime responses. Task 02 implements and tests them in a
+separate development base. No such base is available yet; provisioning, account
+rights, organization selection, timezone/constant verification, publication/TLS,
+Designer checks and concurrent runtime acceptance remain release requirements.
+The discovery endpoint's earlier deployment is not booking-service acceptance.
+See [BOOKING_ENVIRONMENT.md](BOOKING_ENVIRONMENT.md).

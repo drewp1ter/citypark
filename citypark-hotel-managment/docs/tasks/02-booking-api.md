@@ -1,7 +1,7 @@
 # Task 02: Implement 1C booking HTTP service
 
 ## Goal
-Implement 1C booking HTTP service for one-room, instantly confirmed hotel reservations without prepayment. 1C is authoritative for inventory and tariffs.
+Implement 1C booking HTTP service for one-room, instantly confirmed hotel reservations without prepayment. 1C is authoritative for inventory; Go calculates prices from admin-managed room rates.
 
 ## Depends on
 1C task 01
@@ -29,3 +29,7 @@ Dependencies are complete; all specified scenarios pass. Follow project checks (
 
 ## Out of scope
 Online payment, multi-room carts, guest self-service cancellation or changes, and automatic production deployment. Do not implement another task in this session.
+
+## Frozen implementation specification (2026-11-16)
+
+Follow [Booking contract v1](../BOOKING_CONTRACT.md), including its exact HTTP shapes, implementation map, paths, signatures and named acceptance scenarios for this task. The contract supersedes the original 1C-pricing wording. Runtime validation and environment gates remain mandatory; this expansion does not mark this task complete.
