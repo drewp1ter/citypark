@@ -67,7 +67,7 @@ comparison. One read-only authenticated GET was executed by the agent; no creden
 Static source inspection: performed. Designer configuration checks, development
 database update, HTTP publication, concurrency tests and runtime scenarios: **unrun**.
 Owner confirmed required guest name/email/phone, date-only input, noon check-in/out
-boundary, unlimited stay length, six-month booking horizon, no child/extra-bed
+boundary, unlimited stay length and advance booking (revised 2026-11-16), no child/extra-bed
 questions, email confirmation and the absence of a separate development base on
 2026-11-09. Guest booking with rate limits and no prior email verification was
 confirmed on 2026-11-16. Task 01 contract/documentation is complete.
