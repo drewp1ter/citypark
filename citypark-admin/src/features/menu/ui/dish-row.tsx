@@ -27,7 +27,12 @@ export function DishRow({ dish, onEdit }: { dish: ApiProduct; onEdit: () => void
 				<div className='font-medium'>{dish.name}</div>
 				<div className='mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted'>
 					{weight !== '' && <span>{weight}</span>}
-					{(dish.isOrderBlocked || !dish.isAvailableForOrder) && (
+					{dish.isHidden && (
+						<Chip size='sm' color='warning' variant='soft'>
+							Скрыто в iiko
+						</Chip>
+					)}
+					{(dish.isOrderBlocked || (!dish.isHidden && !dish.isAvailableForOrder)) && (
 						<Chip size='sm' color='warning' variant='soft'>
 							{dish.isOrderBlocked ? 'Заказ заблокирован' : 'Не в продаже сейчас'}
 						</Chip>

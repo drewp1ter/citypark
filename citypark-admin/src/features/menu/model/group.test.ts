@@ -18,6 +18,7 @@ function product(id: number, categoryId: number, name = `Блюдо ${id}`): Api
 	return {
 		id,
 		categoryId,
+		isHidden: false,
 		isOrderBlocked: false,
 		name,
 		description: '',
@@ -39,6 +40,12 @@ function product(id: number, categoryId: number, name = `Блюдо ${id}`): Api
 }
 
 describe('groupMenu', () => {
+	it('keeps individually hidden dishes in their category for staff', () => {
+		const dish = { ...product(10, 1), isHidden: true, isAvailableForOrder: false }
+		const groups = groupMenu([category(1)], [dish])
+		expect(groups[0]?.dishes).toEqual([dish])
+		expect(filterDishes(groups[0]!.dishes, 'Блюдо')).toEqual([dish])
+	})
 	it('puts products into their categories, in category order', () => {
 		const groups = groupMenu([category(2), category(1)], [product(10, 1), product(11, 2), product(12, 1)])
 		expect(groups.map((g) => g.id)).toEqual([2, 1])

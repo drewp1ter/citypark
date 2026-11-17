@@ -3886,7 +3886,7 @@ export interface paths {
         put?: never;
         /**
          * Add a product to an order or change its amount
-         * @description Role: admin. A new item is stored with the product's current price. For a product that is already in the order only the amount is replaced. Sale windows are not checked.
+         * @description Role: admin. A new item is stored with the product's current price. For a product that is already in the order only the amount is replaced. Hidden dishes are rejected. Sale windows are not checked.
          */
         post: {
             parameters: {
@@ -3918,6 +3918,15 @@ export interface paths {
                 404: components["responses"]["NotFound"];
                 /** @description Нельзя изменять состав заказа с промокодом. */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Заказ блюда «{name}» временно недоступен. (hidden in iiko) */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5334,9 +5343,11 @@ export interface components {
              */
             price: number;
             images: components["schemas"]["Image"][];
+            /** @description Item visibility imported from iiko. Hidden products remain listed for staff; customer clients must omit them. */
+            isHidden: boolean;
             /** @description Persistent manual ordering block, preserved during iiko sync. */
             isOrderBlocked: boolean;
-            /** @description True only when not manually blocked and both the product's own window and its category's window are open now. */
+            /** @description True only when not hidden in iiko, not manually blocked and both the product's own window and its category's window are open now. */
             isAvailableForOrder: boolean;
             /** @description The product's own sale window. Empty string when it has none. */
             salesDays: string;
