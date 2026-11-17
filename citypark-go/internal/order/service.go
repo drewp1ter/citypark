@@ -450,14 +450,15 @@ func mergeItems(in []ItemInput) []ItemInput {
 	return out
 }
 
-// checkWindows returns a 503 when the product or its category is closed at now.
+// checkProductBlock rejects dishes hidden in iiko or manually blocked by staff.
 func checkProductBlock(p catalog.Product) error {
-	if p.IsOrderBlocked {
+	if p.IsHidden || p.IsOrderBlocked {
 		return httpx.NewError(http.StatusServiceUnavailable, fmt.Sprintf("Заказ блюда «%s» временно недоступен.", p.Name))
 	}
 	return nil
 }
 
+// checkWindows also checks the product and category sale windows at now.
 func checkWindows(p catalog.Product, now time.Time) error {
 	if err := checkProductBlock(p); err != nil {
 		return err

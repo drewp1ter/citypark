@@ -1377,6 +1377,7 @@ Returns the products of one category, ordered by sort order and then by `id`. De
     "categoryId": 1,
     "name": "Шашлык из баранины",
     "description": "",
+    "fullDescription": "",
     "measureUnit": "",
     "weight": 0,
     "proteins": 0,
@@ -1386,6 +1387,8 @@ Returns the products of one category, ordered by sort order and then by `id`. De
     "flags": 0,
     "price": 320,
     "images": [],
+    "isHidden": false,
+    "isOrderBlocked": false,
     "isAvailableForOrder": true,
     "salesDays": "",
     "startTime": "",
@@ -1402,7 +1405,7 @@ Returns the products of one category, ordered by sort order and then by `id`. De
 
 **Notes**
 
-An unknown or deleted category gives `200` with `[]`, not `404`. `price` is in rubles. `isAvailableForOrder` is `true` only when `isOrderBlocked` is false and both the product's own sale window and its category's window are open now; `salesDays`, `startTime` and `endTime` describe the product's own window and are empty strings when it has none.
+An unknown or deleted category gives `200` with `[]`, not `404`. `price` is in rubles. `isAvailableForOrder` is `true` only when `isHidden` and `isOrderBlocked` are false and both the product's own sale window and its category's window are open now; `salesDays`, `startTime` and `endTime` describe the product's own window and are empty strings when it has none.
 
 #### PUT /products/{id}/ordering-block
 
@@ -1458,6 +1461,7 @@ Searches products across all categories. Without `query` it returns every produc
     "categoryId": 1,
     "name": "Шашлык из баранины",
     "description": "",
+    "fullDescription": "",
     "measureUnit": "",
     "weight": 0,
     "proteins": 0,
@@ -1467,6 +1471,8 @@ Searches products across all categories. Without `query` it returns every produc
     "flags": 0,
     "price": 320,
     "images": [],
+    "isHidden": false,
+    "isOrderBlocked": false,
     "isAvailableForOrder": true,
     "salesDays": "",
     "startTime": "",
@@ -1484,6 +1490,8 @@ Searches products across all categories. Without `query` it returns every produc
 **Notes**
 
 A product matches when any of the words matches its name, its category name or one of its tags. `?query=хачапури+салат` and `?query=хачапури%20салат` both give two words. Results are ordered by sort order and then by `id`. The list is `[]` when nothing matches or the page is past the end.
+
+Both product listing endpoints include dishes hidden in iiko so staff can manage them. `isHidden` is the item-level iiko flag; customer clients must omit these dishes entirely. A hidden dish always has `isAvailableForOrder: false`. Visibility changes take effect after a successful menu sync; manual ordering blocks and full descriptions are preserved.
 
 ### Hotel
 
@@ -2553,6 +2561,7 @@ Promo orders require a confirmed quote total. A mismatch returns 409 before any 
 | 409 | Current or saved payable amount differs from confirmation | `Сумма заказа изменилась. Проверьте итог и повторите оформление.` |
 | 500 | Database error or monetary overflow | `Внутренняя ошибка сервера` |
 | 503 | New promo order with missing RMS/terminal/payment configuration | `Заказы с промокодом временно недоступны.` |
+| 503 | the product is hidden in iiko or manually blocked (also for duplicate submissions) | `Заказ блюда «{name}» временно недоступен.` |
 | 503 | the current time is outside the working hours | `Извините, но мы не можем принять ваш заказ.` followed by a newline and `Заказы принимаются с 9:00 до 22:00` (the hours from `GET /working-hours`) |
 | 503 | the product's or its category's weekday limit excludes today | `Возможность заказа "<name>" доступна только в следующие дни недели: Пн, Вт, Ср, Чт, Пт` |
 | 503 | the product's or its category's time limit excludes now | `Время заказа "<name>" ограничено с 9:00 до 21:00.` |
@@ -3111,6 +3120,7 @@ The updated order, in the same format as the admin response of `GET /orders/{id}
 | 401 | no token or invalid token | `Требуется авторизация` |
 | 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
 | 404 | the order does not exist or `id` is not a valid id | `Не найдено` |
+| 503 | the product is hidden in iiko | `Заказ блюда «{name}» временно недоступен.` |
 
 **Notes**
 
@@ -3681,7 +3691,7 @@ Items retain original unit offeredPrice and merged quantity; discount is per lin
 | 400 | No eligible positive food spend | `В корзине нет блюд для этого промокода.` |
 | 400 | Eligible subtotal below minimum | `Недостаточная сумма подходящих блюд для промокода.` |
 | 401 | Invalid supplied credential | `Требуется авторизация` |
-| 503 | Manually blocked dish | `Заказ блюда «{name}» временно недоступен.` |
+| 503 | Dish manually blocked or hidden in iiko | `Заказ блюда «{name}» временно недоступен.` |
 | 503 | Category or product closed by day | `Возможность заказа "{name}" доступна только в следующие дни недели: {days}` |
 | 503 | Category or product closed by time | `Время заказа "{name}" ограничено с {start} до {end}.` |
 | 500 | Database errors or unrepresentable monetary totals | `Внутренняя ошибка сервера` |

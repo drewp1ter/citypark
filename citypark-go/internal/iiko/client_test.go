@@ -335,6 +335,31 @@ const menuJSON = `{"id":"94764","name":"test","overrideTaxCategories":[],
  "products":[{"id":"p-1","sku":"01117","measureUnit":"кг"},{"id":"p-2","sku":"00047","measureUnit":"кг"}],
  "taxCategories":[],"productCategories":[],"allergenGroups":[]}`
 
+func TestMenuItemHidden(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		json string
+		want bool
+	}{
+		{"hidden", `{"isHidden":true}`, true},
+		{"visible", `{"isHidden":false}`, false},
+		{"omitted", `{}`, false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Write([]byte(`{"itemsGroups":[{"items":[` + tt.json + `]}]}`))
+			}))
+			m, err := c.Menu(context.Background(), "t1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := m.ItemsGroups[0].Items[0].IsHidden; got != tt.want {
+				t.Fatalf("IsHidden = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMenu(t *testing.T) {
 	c := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost || r.URL.Path != "/menu/v3/by_id" {

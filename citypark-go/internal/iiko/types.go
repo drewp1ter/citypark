@@ -17,6 +17,7 @@ type ItemsGroup struct {
 }
 
 type MenuItem struct {
+	IsHidden    bool            `json:"isHidden"`
 	ProductID   string          `json:"productId"`
 	Name        string          `json:"name"`
 	Description string          `json:"description"`

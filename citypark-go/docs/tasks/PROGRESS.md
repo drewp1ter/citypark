@@ -255,3 +255,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
   - Blocked (2026-11-09): prerequisite 1C tasks 01 and 02 are both unchecked in `../citypark-hotel-managment/docs/tasks/PROGRESS.md`. The booking contract is not frozen and the 1C HTTP service is not complete. Per AGENTS.md, stopped without inventing client interfaces or marking this task complete. Next prerequisite: 1C task 01, booking-rule discovery and integration-contract agreement.
 
 - [ ] [107 Expose hotel booking API](107-hotel-booking-api.md) [backend 106; 1C task 01]
+
+## Dish visibility
+
+- [x] [108 Import dish visibility from iiko](108-dish-visibility.md) [104]
+  - Added migration 38, item-level sync, Product.isHidden and availability/ordering enforcement, preserving staff edits and historical orders/payments. API/OpenAPI updated. Formatting/build/vet and full serial coverage suite pass: catalog 88.1%, iiko 94.1%, order 92.1%, apidocs 100%. Targeted checks pass after final regression refinements. No live sync, orders, payments or deployment performed. Deploy before website 74/admin 37.

@@ -324,6 +324,9 @@ func (h *Handler) addItem(w http.ResponseWriter, r *http.Request) error {
 	if len(products) == 0 {
 		return httpx.BadRequest("Продукт не найден.")
 	}
+	if products[0].IsHidden {
+		return checkProductBlock(products[0])
+	}
 	err = orders.UpsertItem(ctx, id, InsertItem{ProductID: in.ProductID, Amount: in.Amount, OfferedPrice: products[0].Price})
 	if err != nil {
 		return err

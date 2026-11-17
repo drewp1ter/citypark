@@ -29,6 +29,7 @@ type Category struct {
 }
 
 type Product struct {
+	IsHidden        bool          `db:"is_hidden"`
 	FullDescription string        `db:"full_description"`
 	IsOrderBlocked  bool          `db:"is_order_blocked"`
 	ID              int64         `db:"id"`
@@ -69,6 +70,7 @@ type CategoryView struct {
 
 // ProductView is the JSON shape of a product.
 type ProductView struct {
+	IsHidden            bool          `json:"isHidden"`
 	FullDescription     string        `json:"fullDescription"`
 	IsOrderBlocked      bool          `json:"isOrderBlocked"`
 	ID                  int64         `json:"id"`
@@ -132,10 +134,11 @@ func (c Category) View(now time.Time) CategoryView {
 }
 
 // View builds the JSON shape. now must already be in the restaurant's time zone.
-// The product is available only when both its own window and its category's window are open.
+// The product must be visible, unblocked and inside both sale windows.
 func (p Product) View(now time.Time) ProductView {
 	w := p.Window()
 	return ProductView{
+		IsHidden:            p.IsHidden,
 		ID:                  p.ID,
 		CategoryID:          p.CategoryID,
 		Name:                p.Name,
@@ -151,7 +154,7 @@ func (p Product) View(now time.Time) ProductView {
 		Price:               p.Price,
 		Images:              images(p.Images),
 		IsOrderBlocked:      p.IsOrderBlocked,
-		IsAvailableForOrder: !p.IsOrderBlocked && open(w, now) && open(p.CategoryWindow(), now),
+		IsAvailableForOrder: !p.IsHidden && !p.IsOrderBlocked && open(w, now) && open(p.CategoryWindow(), now),
 		SalesDays:           w.DaysString(),
 		StartTime:           w.StartString(),
 		EndTime:             w.EndString(),

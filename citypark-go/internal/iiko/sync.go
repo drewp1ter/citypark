@@ -180,15 +180,15 @@ func pickSize(sizes []ItemSizePrice) (size ItemSizePrice, ok bool) {
 func syncProducts(ctx context.Context, tx *sqlx.Tx, menu *Menu, categoryIDs map[string]int64) (map[string]int64, error) {
 	const upsert = `
 INSERT INTO products (iiko_id, category_id, name, description, measure_unit, weight, sort_order, is_deleted,
-                      fats, proteins, carbohydrates, calories, price_kopecks, sale_start, sale_end, sale_days)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                      fats, proteins, carbohydrates, calories, price_kopecks, sale_start, sale_end, sale_days, is_hidden)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 ON CONFLICT (iiko_id) DO UPDATE SET
     category_id = EXCLUDED.category_id, name = EXCLUDED.name, description = EXCLUDED.description,
     measure_unit = EXCLUDED.measure_unit, weight = EXCLUDED.weight, sort_order = EXCLUDED.sort_order,
     is_deleted = EXCLUDED.is_deleted, fats = EXCLUDED.fats, proteins = EXCLUDED.proteins,
     carbohydrates = EXCLUDED.carbohydrates, calories = EXCLUDED.calories,
     price_kopecks = EXCLUDED.price_kopecks, sale_start = EXCLUDED.sale_start,
-    sale_end = EXCLUDED.sale_end, sale_days = EXCLUDED.sale_days, updated_at = now()
+    sale_end = EXCLUDED.sale_end, sale_days = EXCLUDED.sale_days, is_hidden = EXCLUDED.is_hidden, updated_at = now()
 RETURNING id`
 
 	measureUnits := make(map[string]string, len(menu.Products))
@@ -211,7 +211,7 @@ RETURNING id`
 			err := tx.GetContext(ctx, &id, upsert,
 				item.ProductID, categoryIDs[g.ID], item.Name, strings.TrimSpace(item.Description), measureUnits[item.ProductID], size.Weight/1000, j, false,
 				size.Nutritions.Fats, size.Nutritions.Proteins, size.Nutritions.Carbs, size.Nutritions.Energy,
-				int64(price), w.Start, w.End, w.Days)
+				int64(price), w.Start, w.End, w.Days, item.IsHidden)
 			if err != nil {
 				return nil, fmt.Errorf("upsert product %q: %w", item.ProductID, err)
 			}

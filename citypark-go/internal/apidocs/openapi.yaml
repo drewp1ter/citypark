@@ -614,6 +614,7 @@ components:
         - flags
         - price
         - images
+        - isHidden
         - isOrderBlocked
         - isAvailableForOrder
         - salesDays
@@ -656,12 +657,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        isHidden:
+          type: boolean
+          description: Item visibility imported from iiko. Hidden products remain listed for staff; customer clients must omit them.
         isOrderBlocked:
           type: boolean
           description: Persistent manual ordering block, preserved during iiko sync.
         isAvailableForOrder:
           type: boolean
-          description: True only when not manually blocked and both the product's own window and its category's window are open now.
+          description: True only when not hidden in iiko, not manually blocked and both the product's own window and its category's window are open now.
         salesDays:
           type: string
           description: The product's own sale window. Empty string when it has none.
@@ -3609,7 +3613,7 @@ paths:
       summary: Add a product to an order or change its amount
       description: >-
         Role: admin. A new item is stored with the product's current price. For a product that is
-        already in the order only the amount is replaced. Sale windows are not checked.
+        already in the order only the amount is replaced. Hidden dishes are rejected. Sale windows are not checked.
       tags: [orders]
       security:
         - bearerAuth: []
@@ -3636,6 +3640,12 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '503':
+          description: Заказ блюда «{name}» временно недоступен. (hidden in iiko)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '409':
           description: Нельзя изменять состав заказа с промокодом.
           content:
