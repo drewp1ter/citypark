@@ -8,8 +8,11 @@ import { toCategory, toDish } from './to-dish'
 export const getMenu = cache(async (): Promise<Menu> => {
 	const [categories, products] = await Promise.all([fetchCategories(), fetchProducts()])
 	const ids = new Set(categories.map((c) => c.id))
-	// GET /products also returns the products of hidden categories.
-	return { categories: categories.map(toCategory), dishes: products.filter((p) => ids.has(p.categoryId)).map(toDish) }
+	// The shared staff/public API includes hidden dishes and products of hidden categories.
+	return {
+		categories: categories.map(toCategory),
+		dishes: products.filter((p) => !p.isHidden && ids.has(p.categoryId)).map(toDish),
+	}
 })
 
 export async function getDishesByIds(ids: readonly string[]): Promise<readonly Dish[]> {

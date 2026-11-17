@@ -238,3 +238,9 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
   - Backend restarted (2026-11-07): confirmed regionCode on all 58 towns. Production checkout geolocation browser flow passes at 390/1440 px in light/dark themes, including delayed-response edit preservation, guest default hydration and malformed-request handling. Suggestion payload harness passes for Краснодарский край, Майкоп and prefixed Гончарка. Authenticated native Telegram permission acceptance remains device-dependent; no orders created or existing town regions changed.
 
 - [ ] [73 Implement hotel reservation flow](73-hotel-booking.md) [backend 107; 1C task 01]
+
+## Dish visibility
+
+- [x] [74 Hide dishes marked hidden in iiko](74-dish-visibility.md) [backend 108]
+  - Implementation, visibility harness, check and production build pass (2026-11-17). Harness covers pagination, hidden categories/items, saved homepage selections, ID lookups, stale carts and restoration.
+  - Owner-started backend is reachable and exposes isHidden on all 259 products. Read-only production browser checks pass at 390/1440px in light/dark themes: menu search, dish detail and unknown-ID 404. Sitemap includes the visible dish. Live menu has 246 dishes in visible categories and no individually hidden dishes; hidden cases are covered by the harness and backend tests. No catalog sync/writes, orders, payments or deployment performed.

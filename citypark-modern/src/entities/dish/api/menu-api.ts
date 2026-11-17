@@ -10,6 +10,7 @@ export type ApiCategory = {
 	isAvailableForOrder: boolean
 }
 export type ApiProduct = {
+	isHidden: boolean
 	fullDescription?: string
 	isOrderBlocked: boolean
 	id: number
