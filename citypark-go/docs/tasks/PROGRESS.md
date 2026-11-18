@@ -260,3 +260,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [x] [108 Import dish visibility from iiko](108-dish-visibility.md) [104]
   - Added migration 38, item-level sync, Product.isHidden and availability/ordering enforcement, preserving staff edits and historical orders/payments. API/OpenAPI updated. Formatting/build/vet and full serial coverage suite pass: catalog 88.1%, iiko 94.1%, order 92.1%, apidocs 100%. Targeted checks pass after final regression refinements. No live sync, orders, payments or deployment performed. Deploy before website 74/admin 37.
+
+## Shared dish images
+
+- [x] [109 Preserve shared dish images](109-shared-dish-images.md) [108]
+  - Migration 39 preserves image rows and allows shared URLs per product; sync keeps stable associations and removes stale associations independently while preserving manual images. Catalog read, repeat-sync, cleanup, rollback and database-error regressions pass. Formatting/build/vet and fresh full serial suite pass; iiko coverage 95.1%. No live sync or deployment performed; deploy backend/migration together and sync the menu to restore missing images.
