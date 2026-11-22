@@ -390,3 +390,68 @@ func TestTelegramProxyConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestBookingConfig(t *testing.T) {
+	valid := map[string]string{"HOTEL_BOOKING_ENABLED": "true", "ONEC_BOOKING_URL": "https://hotel.example/base/hs/booking/v1", "ONEC_BOOKING_USER": "booking", "ONEC_BOOKING_PASSWORD": "private", "SMTP_HOST": "smtp.example", "SMTP_USERNAME": "mail", "SMTP_PASSWORD": "mail-secret", "SMTP_FROM": "hotel@example.com"}
+	c, err := Load(lookupMap(valid))
+	if err != nil || !c.HotelBooking.Enabled || !c.SMTP.Enabled || c.OneC != (OneC{}) || c.HotelBooking.User != "booking" {
+		t.Fatalf("valid configuration: %v", err)
+	}
+	c, err = Load(lookupMap(nil))
+	if err != nil || c.HotelBooking.Enabled {
+		t.Fatal("booking must default to disabled")
+	}
+	for _, key := range []string{"ONEC_BOOKING_URL", "ONEC_BOOKING_USER", "ONEC_BOOKING_PASSWORD", "SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD", "SMTP_FROM"} {
+		t.Run(key, func(t *testing.T) {
+			env := map[string]string{}
+			for k, v := range valid {
+				env[k] = v
+			}
+			env[key] = ""
+			env["ONEC_HOTEL_URL"] = "https://reports.example"
+			env["ONEC_USER"] = "reports"
+			env["ONEC_PASSWORD"] = "reports-secret"
+			if _, err := Load(lookupMap(env)); err == nil {
+				t.Fatal("accepted incomplete booking configuration")
+			}
+		})
+	}
+	for _, raw := range []string{"%", "https://user:private@hotel/hs/booking/v1", "https://hotel/hs/booking/v1?private", "https://hotel/hs/booking/v1?", "https://hotel/hs/booking/v1#private", "https://hotel/wrong", "https:///hs/booking/v1", "ftp://hotel/hs/booking/v1"} {
+		env := map[string]string{}
+		for k, v := range valid {
+			env[k] = v
+		}
+		env["ONEC_BOOKING_URL"] = raw
+		if _, err := Load(lookupMap(env)); err == nil || strings.Contains(err.Error(), "private") {
+			t.Fatal("unsafe URL accepted or leaked")
+		}
+	}
+	for _, user := range []string{"name:private", "name\r\nprivate"} {
+		env := map[string]string{}
+		for k, v := range valid {
+			env[k] = v
+		}
+		env["ONEC_BOOKING_USER"] = user
+		if _, err := Load(lookupMap(env)); err == nil {
+			t.Fatal("unsafe user accepted")
+		}
+	}
+	valid["ONEC_BOOKING_URL"] = "http://hotel/base/hs/booking/v1"
+	if _, err := Load(lookupMap(valid)); err != nil {
+		t.Fatal(err)
+	}
+	valid["APP_ENV"] = "production"
+	valid["JWT_SECRET"] = "safe"
+	valid["CUSTOMER_PUBLIC_ORIGIN"] = "https://site.example"
+	if _, err := Load(lookupMap(valid)); err == nil {
+		t.Fatal("production HTTP accepted")
+	}
+	valid["ONEC_BOOKING_URL"] = "https://hotel/base/hs/booking/v1"
+	if _, err := Load(lookupMap(valid)); err != nil {
+		t.Fatal(err)
+	}
+	valid["HOTEL_BOOKING_ENABLED"] = "yes"
+	if _, err := Load(lookupMap(valid)); err == nil {
+		t.Fatal("invalid flag accepted")
+	}
+}

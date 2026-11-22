@@ -251,8 +251,9 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 - [x] [105 Delivery-town regions](105-delivery-town-regions.md)
   - Migration, persistence, API/OpenAPI, production seed compatibility and regressions implemented. Formatting/build/vet and full serial Go suite pass; deliveryprice coverage 93.8%. Existing towns remain RU-KDA for manual reassignment. Deploy before admin 33 and website 72.
 
-- [ ] [106 Implement 1C booking client](106-hotel-booking-client.md) [1C tasks 01–02]
-  - Dependency update (2026-11-16): 1C task 01 documentation/contract v1 is complete. 1C task 02 (booking service implementation/runtime acceptance) remains incomplete and blocks task 106. Follow the exact interfaces and named tests in the frozen booking contract; do not mark this backend task complete.
+- [x] [106 Implement 1C booking client](106-hotel-booking-client.md) [1C tasks 01–02]
+  - Completed (2026-11-22): prerequisites 1C 01–02 are ticked, with the owner-approved Designer baseline exception and runtime limits recorded in the 1C acceptance review. Added frozen availability/create/lookup DTOs and authenticated client, integer-kopeck wire encoding, strict bounded responses, 15-second timeout, disabled redirects, sanitized typed errors and original-key recovery for uncertain creation outcomes.
+  - Booking defaults to disabled; enabling validates independent booking credentials, service URL, SMTP settings and production HTTPS. Reporting configuration is unchanged. Formatting, build, vet and the full serial suite pass against the configured test database; hotelbooking coverage 99.1%, config 100%. Named client/config scenarios pass using local HTTP fakes. No live 1C calls, bookings, email or deployment; public booking API/wiring remains task 107.
 
 - [ ] [107 Expose hotel booking API](107-hotel-booking-api.md) [backend 106; 1C task 01]
 

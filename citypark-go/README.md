@@ -60,6 +60,10 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `TELEGRAM_PROXY_URL` | empty | Telegram-only SOCKS5 proxy, e.g. `socks5h://user:password@proxy-host:1080`; proxy failure never falls back to direct access. Both schemes resolve the target through the proxy. Empty preserves environment proxy behavior. |
 | `TELEGRAM_TOKEN` | empty | Bot token |
 | `TELEGRAM_STAFF_CHAT_ID` | empty | Staff chat for paid orders and iiko alerts |
+| `HOTEL_BOOKING_ENABLED` | `false` | Enable hotel booking integration; requires all booking credentials and SMTP settings |
+| `ONEC_BOOKING_URL` | empty | Private service root ending `/hs/booking/v1`; HTTPS required in production |
+| `ONEC_BOOKING_USER` | empty | Dedicated restricted booking service user; independent of reporting credentials |
+| `ONEC_BOOKING_PASSWORD` | empty | Server-only booking password |
 | `MONETA_ID` | empty | Moneta shop id (`MNT_ID`) |
 | `MONETA_SECRET` | empty | Moneta integrity code |
 | `MONETA_TEST_MODE` | `false` | `true` marks payments as test payments |
@@ -103,6 +107,25 @@ Frontend developers: see [`docs/API.md`](docs/API.md).
 - **Orders in iiko**: when Moneta confirms a payment, the order is created in iiko in the background (up to 3 attempts, 30 s and 2 min apart) and its iiko id is saved in `orders.iiko_order_id`. If iiko does not create the order, the `TELEGRAM_STAFF_CHAT_ID` chat gets an alert and staff enter the order in iikoFront by hand. The iiko address is a fixed placeholder (`IIKO_ADDRESS_*`); the real address, the delivery time and the delivery fee are written in the comment. Get the ids with a token from `v2/access_token`: `POST /api/1/terminal_groups` and `POST /api/1/payment_types` with `{"organizationIds": ["<IIKO_ORGANIZATION_ID>"]}`; take the payment type the restaurant uses for online payments, and put its `paymentTypeKind` in `IIKO_PAYMENT_TYPE_KIND`.
 - **Moneta**: in the shop settings set "Pay URL" to `/api/v1/webhooks/moneta` (full public URL) with method GET or POST. Set "Check URL" to the full public URL ending in `/api/v1/webhooks/moneta/check`. Enable mandatory payment-form signatures. The integrity code in the Moneta cabinet must equal `MONETA_SECRET`. The server builds the payment URL (`MONETA_URL`: demo or production assistant). Turn on «Можно переопределять настройки в URL» in the shop settings so `MONETA_SUCCESS_URL` and `MONETA_FAIL_URL` are used. Success/Fail redirects do not confirm payment; only a verified Pay URL notification does. Replace the old `https://assistant.demo.moneta.ru/` URL in local environment files with `https://demo.moneta.ru/assistant.htm`. Keep account test mode consistent with `MONETA_TEST_MODE`. The demo and production shops have different `MONETA_ID`.
 - **Telegram**: add the bot to the staff chat and set `TELEGRAM_STAFF_CHAT_ID` to its id. Before deploying, replace the two old chat variables with this one and restart the backend. A paid order sends its details followed by a separate phone message.
+
+### Hotel booking client
+
+The private [booking contract](../citypark-hotel-managment/docs/BOOKING_CONTRACT.md)
+defines availability, creation and same-key recovery. Task 106 adds the client and
+configuration only; public routes, pricing, email delivery and worker wiring follow
+in task 107. Booking stays disabled by default. Enabling requires
+`SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD` and a valid `SMTP_FROM` in addition
+to the separate booking credentials. Existing `ONEC_HOTEL_URL`, `ONEC_USER` and
+`ONEC_PASSWORD` remain exclusively for reporting and never provide booking defaults.
+Use an isolated development base for HTTP tests; production requires HTTPS.
+
+The client rejects redirects, limits responses to 64 KiB and bounds each request
+to 15 seconds (or a shorter injected client/context deadline). Errors exclude
+upstream bodies, URLs and credentials. `AmbiguousCreateError` means a reservation
+may have committed: lookup or replay using the **original key and payload**;
+never generate a replacement key. Recovery returns the saved creation result even
+after a staff cancellation. No automatic create retry or live 1C request is needed
+for client tests; they use local HTTP fakes.
 
 ## Deployment
 

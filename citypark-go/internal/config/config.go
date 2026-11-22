@@ -33,6 +33,7 @@ type Config struct {
 	Moneta                   Moneta
 	Hotel                    Hotel
 	OneC                     OneC
+	HotelBooking             HotelBooking
 	Upload                   Upload
 }
 
@@ -70,6 +71,10 @@ type Moneta struct {
 }
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
+type HotelBooking struct {
+	Enabled             bool
+	URL, User, Password string
+}
 type Upload struct{ Dir, PublicBaseURL string }
 type SMTP struct {
 	Host                              string
@@ -159,7 +164,7 @@ func Load(lookup LookupFunc) (Config, error) {
 		return Config{}, errors.New("SMTP_TLS_MODE must be starttls or tls")
 	}
 	c.SMTP.Enabled = c.SMTP.Host != "" && c.SMTP.Username != "" && c.SMTP.Password != "" && c.SMTP.From != ""
-	if c.CustomerAuthEnabled {
+	if c.CustomerAuthEnabled || str("HOTEL_BOOKING_ENABLED", "false") == "true" {
 		if c.SMTP.Host == "" || c.SMTP.Username == "" || c.SMTP.Password == "" || c.SMTP.From == "" {
 			return Config{}, errors.New("SMTP configuration is incomplete")
 		}
@@ -250,6 +255,17 @@ func Load(lookup LookupFunc) (Config, error) {
 		HotelURL: str("ONEC_HOTEL_URL", ""),
 		User:     str("ONEC_USER", ""),
 		Password: str("ONEC_PASSWORD", ""),
+	}
+	c.HotelBooking = HotelBooking{Enabled: str("HOTEL_BOOKING_ENABLED", "false") == "true", URL: str("ONEC_BOOKING_URL", ""), User: str("ONEC_BOOKING_USER", ""), Password: str("ONEC_BOOKING_PASSWORD", "")}
+	if flag := str("HOTEL_BOOKING_ENABLED", "false"); flag != "true" && flag != "false" {
+		return Config{}, errors.New("HOTEL_BOOKING_ENABLED must be true or false")
+	}
+	if c.HotelBooking.Enabled {
+		b := c.HotelBooking
+		u, e := url.Parse(b.URL)
+		if e != nil || u.Hostname() == "" || (u.Scheme != "https" && u.Scheme != "http") || (c.IsProduction() && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.Opaque != "" || !strings.HasSuffix(u.Path, "/hs/booking/v1") || b.User == "" || strings.ContainsAny(b.User, ":\r\n") || b.Password == "" {
+			return Config{}, errors.New("booking configuration requires ONEC_BOOKING_URL ending /hs/booking/v1, separate credentials and HTTPS in production")
+		}
 	}
 	c.Upload = Upload{
 		Dir:           str("UPLOAD_DIR", "./uploads"),
