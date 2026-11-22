@@ -1,8 +1,7 @@
 // Flow check: rooms. Drives the real pages in a browser and prints what happened next to what is expected.
 // Usage: node scripts/qa/flows/rooms.mjs   (server must run on BASE_URL, default http://localhost:3111)
-// Before running, set known numbers on the backend (citypark-go on :3000):
-// curl -s -X POST localhost:3000/api/v1/hotel/rooms -H "X-Webhook-Secret: $HOTEL_WEBHOOK_SECRET" \
-//   -H 'Content-Type: application/json' -d '{"rooms":{"vip":1,"singleBalcony":0,"single":2,"doubleTwin":1,"doubleEuro":0}}'
+// Room availability now comes from whole-stay booking quotes in the isolated 1C base.
+// Obtain approval before running: searches persist advisory quotes. Today's room-count webhook does not set inventory.
 import { chromium } from 'playwright'
 const base = process.env.BASE_URL ?? 'http://localhost:3111'
 const browser = await chromium.launch()
@@ -38,13 +37,16 @@ out(
 	`${p.status} / ${await txt(p.locator('h1'))} / ${await p.locator('article').count()}`
 )
 out("chip 'Все · 5 типов' (spacing)", await txt(p.locator('[role=group] a').first()))
-out('VIP button (1 night default)', await txt(p.getByRole('link', { name: /Забронировать · / })))
 out(
-	'statuses (want Свободен, Нет на эти даты, Свободно 2, Свободно 1, Нет на эти даты)',
+	'VIP button (1 night default)',
+	await txt(p.getByRole('link', { name: /Забронировать · |Проверить наличие и стоимость/ }))
+)
+out(
+	'full-stay statuses (available/sold-out/unknown depend on current inventory and capacity)',
 	JSON.stringify(await p.locator('article span.rounded-pill:visible').allInnerTexts())
 )
 out(
-	'search defaults today / tomorrow',
+	'search defaults tomorrow / following day',
 	`${await p.locator('input[name=checkIn]').inputValue()} / ${await p.locator('input[name=checkOut]').inputValue()}`
 )
 
@@ -64,15 +66,12 @@ for (const [name, expected] of [
 await p.getByRole('link', { name: 'Только свободные' }).click()
 await p.waitForTimeout(400)
 out(
-	'+ only free (balcony) (want only the VIP room)',
+	'+ only free (balcony; live inventory and guest capacity)',
 	`${p.url().replace(base, '')} / ${await p.locator('article h2').allInnerTexts()}`
 )
 await p.getByRole('link', { name: 'Двухместные', exact: true }).click()
 await p.waitForTimeout(400)
-out(
-	'double + free (want only the twin room)',
-	`${p.url().replace(base, '')} / ${await p.locator('article h2').allInnerTexts()}`
-)
+out('double + free (live inventory)', `${p.url().replace(base, '')} / ${await p.locator('article h2').allInnerTexts()}`)
 
 // search keeps working and filters survive
 await p.goto(base + '/rooms?type=single')
@@ -90,20 +89,26 @@ out(
 )
 
 // nights in the VIP price
-const d = await open(`/rooms?checkIn=${plus(2)}&checkOut=${plus(4)}&guests=3-4`)
-out('2 nights: VIP button (want 16 000 ₽)', await txt(d.getByRole('link', { name: /Забронировать · / })))
+const d = await open(`/rooms?checkIn=${plus(2)}&checkOut=${plus(4)}&guests=4`)
+out(
+	'2 nights: VIP quote total (current admin rate)',
+	await txt(d.getByRole('link', { name: /Забронировать · |Проверить наличие и стоимость/ }))
+)
 out('guests param -> select', await d.locator('select[name=guests]').inputValue())
 // bad params are ignored
 const bad = await open('/rooms?checkIn=2020-01-01&checkOut=nope&guests=99&type=hack&free=1')
-out('bad params: status / cards (free only) (want 200 / 3)', `${bad.status} / ${await bad.locator('article').count()}`)
+out(
+	'bad params: status / cards (current full-stay availability)',
+	`${bad.status} / ${await bad.locator('article').count()}`
+)
 out(
 	'bad params: dates fall back',
 	`${await bad.locator('input[name=checkIn]').inputValue()} / ${await bad.locator('input[name=checkOut]').inputValue()}`
 )
-// check-in is not today: availability is unknown, so no badges and «Только свободные» filters nothing
+// Future stays use whole-stay inventory; outages/rate limits remain unknown.
 const future = await open(`/rooms?checkIn=${plus(2)}&checkOut=${plus(3)}&free=1`)
 out(
-	'future + free: cards / badges (want 5 / 0)',
+	'future + free: cards / availability badges (live inventory)',
 	`${await future.locator('article').count()} / ${await future.locator('article span.rounded-pill:visible').count()}`
 )
 // nothing matches

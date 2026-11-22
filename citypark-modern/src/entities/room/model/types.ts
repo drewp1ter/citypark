@@ -35,7 +35,10 @@ export type Room = {
  * What the booking engine says about a room type for the chosen dates.
  * `left` is how many rooms of this type are free.
  */
-export type RoomAvailability = { state: 'available'; left?: number } | { state: 'unavailable' }
+export type RoomAvailability =
+	| { state: 'available'; left?: number; price?: { pricePerNight: number; total: number } }
+	| { state: 'unavailable' }
+	| { state: 'unknown' }
 
 export type StayQuery = {
 	/** ISO dates, "2026-10-16". */

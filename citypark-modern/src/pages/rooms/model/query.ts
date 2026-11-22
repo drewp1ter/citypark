@@ -1,16 +1,16 @@
+import { isBookingDate } from '@/entities/room'
 import { addDays, diffDays, todayInMoscow } from '@/shared/lib'
 
 export const roomTypes = ['all', 'single', 'double', 'balcony'] as const
 export type RoomType = (typeof roomTypes)[number]
 
-const guestOptions = ['1', '2', '3-4'] as const
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+const guestOptions = ['1', '2', '3', '4'] as const
 
 type RawParams = Record<string, string | string[] | undefined>
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)
 
 export type RoomsQuery = {
-	/** Stay to price and check availability for. Today and tomorrow when the address has no dates. */
+	/** Stay to price and check availability for. Tomorrow and the following day when the address has no dates. */
 	checkIn: string
 	checkOut: string
 	nights: number
@@ -29,10 +29,10 @@ export function parseRoomsQuery(raw: RawParams): RoomsQuery {
 	const rawGuests = first(raw.guests)
 	const rawType = first(raw.type)
 
-	const today = todayInMoscow()
-	const givenIn = rawIn && ISO_DATE.test(rawIn) && rawIn >= today ? rawIn : undefined
-	const checkIn = givenIn ?? today
-	const givenOut = rawOut && ISO_DATE.test(rawOut) && rawOut > checkIn ? rawOut : undefined
+	const tomorrow = addDays(todayInMoscow(), 1)
+	const givenIn = rawIn && isBookingDate(rawIn) && rawIn >= tomorrow ? rawIn : undefined
+	const checkIn = givenIn ?? tomorrow
+	const givenOut = rawOut && isBookingDate(rawOut) && rawOut > checkIn ? rawOut : undefined
 	const checkOut = givenOut ?? addDays(checkIn, 1)
 	const guests = guestOptions.find((option) => option === rawGuests)
 

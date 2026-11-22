@@ -34,7 +34,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 		getRoomAvailability({
 			checkIn: query.checkIn,
 			checkOut: query.checkOut,
-			guests: query.guests === '3-4' ? 3 : Number(query.guests),
+			guests: Number(query.guests),
 		}).catch((error: unknown) => {
 			console.error(error)
 			return null
@@ -63,7 +63,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 	const visible = rooms.filter(
 		(room) =>
 			matchesType(room, query.type) &&
-			(!query.freeOnly || availability === null || availability[room.id]?.state === 'available')
+			(!query.freeOnly || availability === null || availability[room.id]?.state !== 'unavailable')
 	)
 
 	return (
@@ -86,8 +86,8 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 					<StayDatesBar
 						variant='rooms'
 						submitLabel='Найти'
-						defaultCheckIn={query.given.checkIn}
-						defaultCheckOut={query.given.checkOut}
+						defaultCheckIn={query.checkIn}
+						defaultCheckOut={query.checkOut}
 						defaultGuests={query.guests}
 						preserve={{
 							...(query.type !== 'all' && { type: query.type }),
@@ -141,6 +141,7 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 							room={room}
 							availability={availability ? availability[room.id] : null}
 							nights={query.nights}
+							stay={{ checkIn: query.checkIn, checkOut: query.checkOut, guests: Number(query.guests) }}
 						/>
 					))
 				) : (

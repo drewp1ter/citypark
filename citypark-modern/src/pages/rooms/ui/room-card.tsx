@@ -1,13 +1,11 @@
 import Image from 'next/image'
-import { roomTourHref, type Room, type RoomAvailability } from '@/entities/room'
+import { roomTourHref, bookingHref, type BookingStay, type Room, type RoomAvailability } from '@/entities/room'
 import { cn, formatPrice } from '@/shared/lib'
 import { AppLink, Button, Card } from '@/shared/ui'
 
-// TODO: "Выбрать" scrolls to the search bar, as in the design. When a booking engine is connected it opens the booking.
-const BOOK_HREF = '#search'
-
 function statusLabel(availability: RoomAvailability | null | undefined): string {
-	if (!availability || availability.state === 'unavailable') return 'Нет на эти даты'
+	if (!availability || availability.state === 'unknown') return 'Наличие уточняется'
+	if (availability.state === 'unavailable') return 'Нет на эти даты'
 	return availability.left ? `Свободно ${availability.left}` : 'Свободен'
 }
 
@@ -45,6 +43,7 @@ type RoomCardProps = {
 	/** `null` = not known for these dates (no badge); `undefined` = known, but this room is missing (unavailable). */
 	availability: RoomAvailability | null | undefined
 	nights: number
+	stay: Omit<BookingStay, 'roomTypeId'>
 }
 
 function RoomPhoto({
@@ -75,9 +74,11 @@ function RoomPhoto({
 }
 
 /** The VIP room: a dark card, two columns wide on desktop with a photo on the left and the details on the right. */
-function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) {
+function FeaturedRoomCard({ room, availability, first, stay }: RoomCardProps) {
 	const known = availability !== null
-	const available = !known || availability?.state === 'available'
+	const bookHref = bookingHref({ ...stay, roomTypeId: room.id as BookingStay['roomTypeId'] })
+	const detailHref = `/rooms/${room.id}?${new URLSearchParams({ checkIn: stay.checkIn, checkOut: stay.checkOut, guests: String(stay.guests) })}`
+	const available = !known || availability?.state !== 'unavailable'
 	const status = statusLabel(availability)
 
 	return (
@@ -88,7 +89,7 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 		>
 			<div className='relative md:min-w-0 md:flex-[1_1_380px]'>
 				{/* Same target as the name below, so keyboard and screen reader users get one link. */}
-				<AppLink href={`/rooms/${room.id}`} tabIndex={-1} aria-hidden='true' className='block'>
+				<AppLink href={detailHref} tabIndex={-1} aria-hidden='true' className='block'>
 					<RoomPhoto
 						room={room}
 						available={available}
@@ -97,19 +98,19 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 					/>
 				</AppLink>
 				{known && (
-					<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:hidden'>
+					<StatusBadge available={availability?.state === 'available'} className='absolute top-2.5 left-2.5 md:hidden'>
 						{status}
 					</StatusBadge>
 				)}
 			</div>
 			<div className='flex min-w-0 flex-col gap-1 px-2.5 pt-3.5 pb-2 md:flex-[1_1_280px] md:gap-2.5 md:px-5 md:py-[22px]'>
 				{known && (
-					<StatusBadge available={available} className='hidden self-start md:inline-block'>
+					<StatusBadge available={availability?.state === 'available'} className='hidden self-start md:inline-block'>
 						{status}
 					</StatusBadge>
 				)}
 				<h2 className='font-display text-[22px] font-medium md:text-[32px] md:tracking-[-0.02em]'>
-					<AppLink href={`/rooms/${room.id}`} className='hover:underline'>
+					<AppLink href={detailHref} className='hover:underline'>
 						{room.name}
 					</AppLink>
 				</h2>
@@ -122,17 +123,31 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 				{room.summary && <p className='hidden flex-1 md:block'>{room.summary}</p>}
 
 				<div className='mt-2 flex items-center justify-between md:hidden'>
-					<span className='font-display text-xl font-medium'>{formatPrice(room.pricePerNight)}</span>
-					<Button href={BOOK_HREF} variant='accent'>
+					<span className='font-display text-xl font-medium'>
+						{formatPrice(
+							availability?.state === 'available' && availability.price
+								? availability.price.pricePerNight
+								: room.pricePerNight
+						)}
+					</span>
+					<Button href={bookHref} variant='accent'>
 						Выбрать
 					</Button>
 				</div>
 				<p className='hidden md:block'>
-					<span className='font-display text-[30px] font-medium'>{formatPrice(room.pricePerNight)}</span>
+					<span className='font-display text-[30px] font-medium'>
+						{formatPrice(
+							availability?.state === 'available' && availability.price
+								? availability.price.pricePerNight
+								: room.pricePerNight
+						)}
+					</span>
 					<span className='text-inverse-muted'> / ночь</span>
 				</p>
-				<Button href={BOOK_HREF} variant='accent' className='hidden min-h-[50px] md:inline-flex'>
-					Забронировать · {formatPrice(room.pricePerNight * nights)}
+				<Button href={bookHref} variant='accent' className='hidden min-h-[50px] md:inline-flex'>
+					{availability?.state === 'available' && availability.price
+						? `Забронировать · ${formatPrice(availability.price.total)}`
+						: 'Проверить наличие и стоимость'}
 				</Button>
 			</div>
 		</Card>
@@ -140,11 +155,13 @@ function FeaturedRoomCard({ room, availability, nights, first }: RoomCardProps) 
 }
 
 export function RoomCard(props: RoomCardProps) {
-	const { room, availability, first } = props
+	const { room, availability, first, stay } = props
 	if (room.kind === 'vip') return <FeaturedRoomCard {...props} />
 
 	const known = availability !== null
-	const available = !known || availability?.state === 'available'
+	const bookHref = bookingHref({ ...stay, roomTypeId: room.id as BookingStay['roomTypeId'] })
+	const detailHref = `/rooms/${room.id}?${new URLSearchParams({ checkIn: stay.checkIn, checkOut: stay.checkOut, guests: String(stay.guests) })}`
+	const available = !known || availability?.state !== 'unavailable'
 
 	return (
 		<Card as='article' className='rounded-lg p-2 md:rounded-xl md:p-2.5'>
@@ -156,14 +173,17 @@ export function RoomCard(props: RoomCardProps) {
 					className='h-[190px] rounded-sm md:h-[220px] md:rounded-md'
 				/>
 				{known && (
-					<StatusBadge available={available} className='absolute top-2.5 left-2.5 md:top-3 md:left-3'>
+					<StatusBadge
+						available={availability?.state === 'available'}
+						className='absolute top-2.5 left-2.5 md:top-3 md:left-3'
+					>
 						{statusLabel(availability)}
 					</StatusBadge>
 				)}
 			</div>
 			<div className='flex flex-1 flex-col gap-1 px-2.5 pt-3.5 pb-2 md:gap-1.5 md:px-3 md:pt-4 md:pb-2.5'>
 				<h2 className='text-[19px] font-bold md:text-[21px]'>
-					<AppLink href={`/rooms/${room.id}`} className='hover:underline'>
+					<AppLink href={detailHref} className='hover:underline'>
 						{room.name}
 					</AppLink>
 				</h2>
@@ -173,14 +193,18 @@ export function RoomCard(props: RoomCardProps) {
 				<TourLink room={room} className='mb-auto' />
 				<div className='mt-2 flex items-center justify-between gap-3 md:mt-2.5'>
 					<span className={cn('font-display text-xl font-medium md:text-[22px]', !available && 'text-text-muted')}>
-						{formatPrice(room.pricePerNight)}
+						{formatPrice(
+							availability?.state === 'available' && availability.price
+								? availability.price.pricePerNight
+								: room.pricePerNight
+						)}
 					</span>
 					{available ? (
-						<Button href={BOOK_HREF} variant='inverse' className='px-[18px]'>
+						<Button href={bookHref} variant='inverse' className='px-[18px]'>
 							Выбрать
 						</Button>
 					) : (
-						<Button href={BOOK_HREF} variant='outline' className='px-4 md:px-[18px]'>
+						<Button href={bookHref} variant='outline' className='px-4 md:px-[18px]'>
 							Другие даты
 						</Button>
 					)}

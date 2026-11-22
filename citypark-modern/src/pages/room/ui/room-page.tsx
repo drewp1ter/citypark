@@ -2,9 +2,17 @@ import { socialMetadata } from '@/shared/config'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { getRoom, roomTourHref, type Room } from '@/entities/room'
+import {
+	getRoom,
+	roomTourHref,
+	bookingHref,
+	bookingCapacities,
+	isBookingDate,
+	type BookingStay,
+	type Room,
+} from '@/entities/room'
 import { getSiteSettings } from '@/shared/api'
-import { formatPrice } from '@/shared/lib'
+import { addDays, todayInMoscow, formatPrice } from '@/shared/lib'
 import { AppLink, Breadcrumbs, Button, RichText } from '@/shared/ui'
 import { RoomGallery } from './room-gallery'
 
@@ -35,7 +43,13 @@ export async function generateRoomMetadata(id: string): Promise<Metadata> {
 	}
 }
 
-export async function RoomPage({ id }: { id: string }) {
+export async function RoomPage({
+	id,
+	searchParams = {},
+}: {
+	id: string
+	searchParams?: Record<string, string | string[] | undefined>
+}) {
 	const room = await findRoom(id)
 	if (room === undefined) notFound()
 
@@ -51,6 +65,15 @@ export async function RoomPage({ id }: { id: string }) {
 			</main>
 		)
 	}
+
+	const value = (name: string) => (typeof searchParams[name] === 'string' ? (searchParams[name] as string) : undefined)
+	const tomorrow = addDays(todayInMoscow(), 1)
+	const rawIn = value('checkIn') ?? ''
+	const checkIn = isBookingDate(rawIn) && rawIn >= tomorrow ? rawIn : tomorrow
+	const rawOut = value('checkOut') ?? ''
+	const checkOut = isBookingDate(rawOut) && rawOut > checkIn ? rawOut : addDays(checkIn, 1)
+	const guests = Number(value('guests') ?? Math.min(2, bookingCapacities[room.id as BookingStay['roomTypeId']]))
+	const href = bookingHref({ roomTypeId: room.id as BookingStay['roomTypeId'], checkIn, checkOut, guests })
 
 	return (
 		<main className='max-w-page mx-auto w-full px-3 pt-4 pb-16 md:px-6 md:pt-8 md:pb-28'>
@@ -79,7 +102,7 @@ export async function RoomPage({ id }: { id: string }) {
 						<span className='font-display text-[30px] font-medium'>{formatPrice(room.pricePerNight)}</span>
 						<span className='text-text-muted'> / ночь</span>
 					</p>
-					<Button href='/rooms#search' variant='accent' className='min-h-[50px]'>
+					<Button href={href} variant='accent' className='min-h-[50px]'>
 						Забронировать
 					</Button>
 					<a

@@ -12,7 +12,7 @@ type StayDatesBarProps = {
 	 */
 	variant?: 'inline' | 'rooms'
 	submitLabel?: string
-	/** Values from the address bar (ISO dates, "1" | "2" | "3-4"); today / tomorrow / 2 when missing. */
+	/** Values from the address bar (ISO dates, "1" | "2" | "3" | "4"); tomorrow / the following day / 2 when missing. */
 	defaultCheckIn?: string
 	defaultCheckOut?: string
 	defaultGuests?: string
@@ -24,10 +24,11 @@ type StayDatesBarProps = {
 const guestsOptions = [
 	{ value: '1', label: '1' },
 	{ value: '2', label: '2' },
-	{ value: '3-4', label: '3–4' },
+	{ value: '3', label: '3' },
+	{ value: '4', label: '4' },
 ]
 
-const guestsLabel: Record<string, string> = { '1': '1 гость', '2': '2 гостя', '3-4': '3–4 гостя' }
+const guestsLabel: Record<string, string> = { '1': '1 гость', '2': '2 гостя', '3': '3 гостя', '4': '4 гостя' }
 
 /**
  * Check-in / check-out bar. It is a plain GET form to /rooms?checkIn=…&checkOut=…&guests=…, so it works without
@@ -44,11 +45,13 @@ export function StayDatesBar({
 }: StayDatesBarProps) {
 	const rooms = variant === 'rooms'
 	const today = useToday()
+	const tomorrow = addDays(today, 1)
 	const [checkIn, setCheckIn] = useState<string>()
 	const [checkOut, setCheckOut] = useState<string>()
+	const [guests, setGuests] = useState(defaultGuests)
 
-	// The visitor's own choice wins, then the address bar, then today / tomorrow. Check-out is always after check-in.
-	const checkInValue = checkIn ?? defaultCheckIn ?? today
+	// The visitor's own choice wins, then the address bar, then tomorrow / the following day. Check-out is always after check-in.
+	const checkInValue = checkIn ?? defaultCheckIn ?? tomorrow
 	const earliestCheckOut = addDays(checkInValue, 1)
 	const chosenCheckOut = checkOut ?? defaultCheckOut
 	const checkOutValue = chosenCheckOut && chosenCheckOut >= earliestCheckOut ? chosenCheckOut : earliestCheckOut
@@ -82,7 +85,7 @@ export function StayDatesBar({
 				<input
 					type='date'
 					name='checkIn'
-					min={today || undefined}
+					min={tomorrow || undefined}
 					value={checkInValue}
 					onChange={(event) => setCheckIn(event.target.value)}
 					className={input}
@@ -99,20 +102,21 @@ export function StayDatesBar({
 					className={input}
 				/>
 			</label>
-			{rooms && (
-				// Hidden on mobile (the button says "2 гостя"), but still sent with the form.
+			{
+				// Exact occupancy is selectable at every viewport width.
 				<Select
 					label='Гости'
 					name='guests'
 					options={guestsOptions}
-					defaultValue={defaultGuests}
+					value={guests}
+					onValueChange={setGuests}
 					className={cn(
 						label,
-						'md:border-border font-normal max-md:hidden md:flex-row md:border-l',
+						'md:border-border font-normal md:flex-row md:border-l',
 						'[&_button]:text-text [&_button]:min-h-11 [&_button]:w-auto [&_button]:border-0 [&_button]:bg-transparent [&_button]:px-0 [&_button]:py-0'
 					)}
 				/>
-			)}
+			}
 			<Button
 				type='submit'
 				size={rooms ? 'xl' : 'md'}
@@ -121,7 +125,7 @@ export function StayDatesBar({
 				{rooms ? (
 					<>
 						<span className='md:hidden'>
-							{submitLabel} · {guestsLabel[defaultGuests] ?? guestsLabel['2']}
+							{submitLabel} · {guestsLabel[guests] ?? guestsLabel['2']}
 						</span>
 						<span className='max-md:hidden'>{submitLabel}</span>
 					</>

@@ -237,7 +237,8 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
   - Implemented town regions in suggestions and region-aware geolocation. Check/build, suggestion payload harness and geolocation handler regressions pass. Production browser acceptance completed after the backend restart (details below). No deployment performed.
   - Backend restarted (2026-11-07): confirmed regionCode on all 58 towns. Production checkout geolocation browser flow passes at 390/1440 px in light/dark themes, including delayed-response edit preservation, guest default hydration and malformed-request handling. Suggestion payload harness passes for Краснодарский край, Майкоп and prefixed Гончарка. Authenticated native Telegram permission acceptance remains device-dependent; no orders created or existing town regions changed.
 
-- [ ] [73 Implement hotel reservation flow](73-hotel-booking.md) [backend 107; 1C task 01]
+- [x] [73 Implement hotel reservation flow](73-hotel-booking.md) [backend 107; 1C task 01]
+  - Completed (2026-11-22): private booking route, signed context, whole-stay search/Go quotes, exact guests, explicit price reconfirmation, validated guest form and same-key pending/reload recovery. Harness/check/build pass. Approved production-build browser acceptance passes at 390/1440 px in both themes: search, quote, validation, confirmation/double click, real sold-out race, changed price, lost response/recovery, outage/input preservation and keyboard. Two real development bookings produced sent email statuses; owner verified/canceled both, then free inventory and exact historical recovery were verified. Fixed live 1C BOM handling in backend commit `2b9829e` and RFC3339-offset parsing in the website. Rate edits restored; no active fixtures or deployment. Evidence/limits: [HOTEL_BOOKING.md](../HOTEL_BOOKING.md).
 
 ## Dish visibility
 
