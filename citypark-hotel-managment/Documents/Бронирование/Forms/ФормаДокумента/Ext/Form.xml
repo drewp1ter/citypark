@@ -10,6 +10,17 @@
 		<Event name="OnCreateAtServer">ПриСозданииНаСервере</Event>
 	</Events>
 	<ChildItems>
+		<LabelDecoration name="ИсточникБронирования" id="900">
+			<Visible>false</Visible>
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>С сайта</v8:content>
+				</v8:item>
+			</Title>
+			<ContextMenu name="ИсточникБронированияКонтекстноеМеню" id="901"/>
+			<ExtendedTooltip name="ИсточникБронированияРасширеннаяПодсказка" id="902"/>
+		</LabelDecoration>
 		<UsualGroup name="Шапка" id="1">
 			<Title>
 				<v8:item>

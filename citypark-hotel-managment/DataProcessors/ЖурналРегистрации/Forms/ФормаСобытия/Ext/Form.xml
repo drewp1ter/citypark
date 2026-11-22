@@ -153,7 +153,6 @@
 							<v8:content>Данные</v8:content>
 						</v8:item>
 					</Title>
-					<TitleFont kind="AutoFont"/>
 					<Group>Vertical</Group>
 					<Representation>None</Representation>
 					<ExtendedTooltip name="ГруппаДанныеExtendedTooltip" id="118"/>
@@ -667,7 +666,6 @@
 							<v8:content>Событие</v8:content>
 						</v8:item>
 					</Title>
-					<TitleFont kind="AutoFont"/>
 					<Group>Vertical</Group>
 					<Representation>NormalSeparation</Representation>
 					<ExtendedTooltip name="ГруппаСобытиеExtendedTooltip" id="146"/>
@@ -715,7 +713,6 @@
 							<v8:content>Сеанс</v8:content>
 						</v8:item>
 					</Title>
-					<TitleFont kind="AutoFont"/>
 					<Group>Vertical</Group>
 					<Representation>None</Representation>
 					<ChildItemsWidth>LeftNarrowest</ChildItemsWidth>
@@ -764,7 +761,6 @@
 							<v8:content>Транзакция</v8:content>
 						</v8:item>
 					</Title>
-					<TitleFont kind="AutoFont"/>
 					<ToolTip>
 						<v8:item>
 							<v8:lang>ru</v8:lang>

@@ -211,6 +211,13 @@
 		</right>
 	</object>
 	<object>
+		<name>HTTPService.Booking.URLTemplate.reservations.Method.post</name>
+		<right>
+			<name>Use</name>
+			<value>false</value>
+		</right>
+	</object>
+	<object>
 		<name>DataProcessor.СогласиеНаОбработкуПерсональныхДанных.Command.СогласиеНаОбработкуПерсональныхДанных</name>
 		<right>
 			<name>View</name>
@@ -909,6 +916,57 @@
 		</right>
 	</object>
 	<object>
+		<name>InformationRegister.НастройкиОнлайнБронирования</name>
+		<right>
+			<name>Read</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>Update</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>View</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>Edit</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>ReadDataHistory</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>ReadDataHistoryOfMissingData</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>UpdateDataHistory</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>UpdateDataHistoryOfMissingData</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>UpdateDataHistoryVersionComment</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>ViewDataHistory</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>EditDataHistoryVersionComment</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>SwitchToDataHistoryVersion</name>
+			<value>false</value>
+		</right>
+	</object>
+	<object>
 		<name>Document.Заселение</name>
 		<right>
 			<name>Delete</name>
@@ -1233,6 +1291,13 @@
 		</right>
 	</object>
 	<object>
+		<name>HTTPService.Booking.URLTemplate.reservation.Method.get</name>
+		<right>
+			<name>Use</name>
+			<value>false</value>
+		</right>
+	</object>
+	<object>
 		<name>InformationRegister.НазначениеДополнительныхОбработок</name>
 		<right>
 			<name>Update</name>
@@ -1506,6 +1571,13 @@
 		</right>
 		<right>
 			<name>View</name>
+			<value>false</value>
+		</right>
+	</object>
+	<object>
+		<name>HTTPService.Booking.URLTemplate.availability.Method.post</name>
+		<right>
+			<name>Use</name>
 			<value>false</value>
 		</right>
 	</object>
@@ -3174,6 +3246,33 @@
 		</right>
 	</object>
 	<object>
+		<name>InformationRegister.КлючиОнлайнБронирования</name>
+		<right>
+			<name>Update</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>View</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>Edit</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>ViewDataHistory</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>EditDataHistoryVersionComment</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>SwitchToDataHistoryVersion</name>
+			<value>false</value>
+		</right>
+	</object>
+	<object>
 		<name>Constant.ДетализироватьОбновлениеИБВЖурналеРегистрации</name>
 		<right>
 			<name>Update</name>
@@ -3181,6 +3280,33 @@
 		</right>
 		<right>
 			<name>Edit</name>
+			<value>false</value>
+		</right>
+	</object>
+	<object>
+		<name>InformationRegister.БлокировкиНомеровБронирования</name>
+		<right>
+			<name>Update</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>View</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>Edit</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>ViewDataHistory</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>EditDataHistoryVersionComment</name>
+			<value>false</value>
+		</right>
+		<right>
+			<name>SwitchToDataHistoryVersion</name>
 			<value>false</value>
 		</right>
 	</object>
@@ -3406,84 +3532,6 @@
 		<name>CommonCommand.ЗаполнениеОбъекта</name>
 		<right>
 			<name>View</name>
-			<value>false</value>
-		</right>
-	</object>
-	<object>
-		<name>InformationRegister.КлючиОнлайнБронирования</name>
-		<right>
-			<name>Read</name>
-			<value>true</value>
-		</right>
-		<right>
-			<name>Update</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>View</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>Edit</name>
-			<value>false</value>
-		</right>
-	</object>
-	<object>
-		<name>InformationRegister.БлокировкиНомеровБронирования</name>
-		<right>
-			<name>Read</name>
-			<value>true</value>
-		</right>
-		<right>
-			<name>Update</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>View</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>Edit</name>
-			<value>false</value>
-		</right>
-	</object>
-	<object>
-		<name>InformationRegister.НастройкиОнлайнБронирования</name>
-		<right>
-			<name>Read</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>Update</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>View</name>
-			<value>false</value>
-		</right>
-		<right>
-			<name>Edit</name>
-			<value>false</value>
-		</right>
-	</object>
-	<object>
-		<name>HTTPService.Booking.URLTemplate.availability.Method.post</name>
-		<right>
-			<name>Use</name>
-			<value>false</value>
-		</right>
-	</object>
-	<object>
-		<name>HTTPService.Booking.URLTemplate.reservations.Method.post</name>
-		<right>
-			<name>Use</name>
-			<value>false</value>
-		</right>
-	</object>
-	<object>
-		<name>HTTPService.Booking.URLTemplate.reservation.Method.get</name>
-		<right>
-			<name>Use</name>
 			<value>false</value>
 		</right>
 	</object>

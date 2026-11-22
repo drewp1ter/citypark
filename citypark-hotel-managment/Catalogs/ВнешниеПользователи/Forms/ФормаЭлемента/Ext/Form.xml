@@ -891,7 +891,6 @@
 						</v8:StringQualifiers>
 					</Type>
 				</Column>
-				<AdditionalColumns table="ПользовательИнфБазыРоли.Роль"/>
 			</Columns>
 		</Attribute>
 		<Attribute name="Роли" id="12">

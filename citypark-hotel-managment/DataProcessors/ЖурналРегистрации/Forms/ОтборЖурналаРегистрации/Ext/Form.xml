@@ -306,7 +306,6 @@
 			<ExtendedTooltip name="ГруппаДанныеРасширеннаяПодсказка" id="215"/>
 			<ChildItems>
 				<UsualGroup name="ГруппаДанныеСвойства" id="161">
-					<TitleFont kind="AutoFont"/>
 					<ToolTip>
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -365,7 +364,6 @@
 							<v8:content>Транзакция</v8:content>
 						</v8:item>
 					</Title>
-					<TitleFont kind="AutoFont"/>
 					<Group>Vertical</Group>
 					<Representation>NormalSeparation</Representation>
 					<ExtendedTooltip name="ГруппаТранзакцияExtendedTooltip" id="230"/>
@@ -527,7 +525,6 @@
 							<v8:content>Прочее</v8:content>
 						</v8:item>
 					</Title>
-					<TitleFont kind="AutoFont"/>
 					<Group>Vertical</Group>
 					<Representation>NormalSeparation</Representation>
 					<ChildItemsWidth>LeftNarrowest</ChildItemsWidth>
