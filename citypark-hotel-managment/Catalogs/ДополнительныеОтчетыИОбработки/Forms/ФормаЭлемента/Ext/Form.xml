@@ -466,7 +466,7 @@
 											<Height>3</Height>
 											<HorizontalStretch>false</HorizontalStretch>
 											<VerticalStretch>false</VerticalStretch>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>

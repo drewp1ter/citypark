@@ -364,6 +364,7 @@
 			<Role>ЧтениеВнешнихПользователей</Role>
 			<Role>ЧтениеИнформацииОВерсияхОбъектов</Role>
 			<Role>ЧтениеОбщейБазовойНСИ</Role>
+			<Role>ОнлайнБронированиеСервис</Role>
 			<CommonTemplate>Драйвер1CФискальныйРегистратор</CommonTemplate>
 			<CommonTemplate>Драйвер1СРарусФискальныеРегистраторыМебиус</CommonTemplate>
 			<CommonTemplate>Драйвер1СРарусФискальныеРегистраторыФеликс</CommonTemplate>
@@ -564,6 +565,7 @@
 			<CommonModule>УправлениеОборудованием</CommonModule>
 			<CommonModule>УборкаНомера</CommonModule>
 			<CommonModule>ОбновлениеДанныхНаСайте</CommonModule>
+			<CommonModule>ОнлайнБронирование</CommonModule>
 			<XDTOPackage>ApplicationExtensionsManifest_1_0_0_1</XDTOPackage>
 			<XDTOPackage>ApplicationExtensionsPermissions_1_0_0_1</XDTOPackage>
 			<XDTOPackage>ApplicationPermissions_1_0_0_1</XDTOPackage>
@@ -574,6 +576,7 @@
 			<WebService>Reportss</WebService>
 			<WebService>Reports</WebService>
 			<HTTPService>Reports</HTTPService>
+			<HTTPService>Booking</HTTPService>
 			<EventSubscription>ВидыКонтактнойИнформацииЗаполнитьЗначениеРеквизитаУпорядочивания</EventSubscription>
 			<EventSubscription>ВидыКонтактнойИнформацииСброситьЗначениеРеквизитаУпорядочивания</EventSubscription>
 			<EventSubscription>ДополнительныеОтчетыИОбработкиПередУдалениемИдентификатораОбъектаМетаданных</EventSubscription>
@@ -894,6 +897,9 @@
 			<InformationRegister>ЦеныНоменклатурыПоставщиков</InformationRegister>
 			<InformationRegister>СобытияСКД</InformationRegister>
 			<InformationRegister>УборкаНомеров</InformationRegister>
+			<InformationRegister>КлючиОнлайнБронирования</InformationRegister>
+			<InformationRegister>БлокировкиНомеровБронирования</InformationRegister>
+			<InformationRegister>НастройкиОнлайнБронирования</InformationRegister>
 			<AccumulationRegister>ОстаткиТМЦ</AccumulationRegister>
 			<AccumulationRegister>ДенежныеСредства</AccumulationRegister>
 			<AccumulationRegister>Продажи</AccumulationRegister>

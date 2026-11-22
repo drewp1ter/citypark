@@ -111,7 +111,7 @@
 					</xr:Value>
 				</xr:Item>
 			</ChoiceList>
-			<BackColor>style:ФонУправляющегоПоля</BackColor>
+			<BackColor>#FFE8B3</BackColor>
 			<ContextMenu name="УстановкаДатыЗапретаКонтекстноеМеню" id="202"/>
 			<ExtendedTooltip name="УстановкаДатыЗапретаExtendedTooltip" id="322"/>
 			<Events>
@@ -411,7 +411,7 @@
 													</xr:Value>
 												</xr:Item>
 											</ChoiceList>
-											<BackColor>style:ФонУправляющегоПоля</BackColor>
+											<BackColor>#FFE8B3</BackColor>
 											<ContextMenu name="СпособУказанияДатыЗапретаКонтекстноеМеню" id="217"/>
 											<ExtendedTooltip name="СпособУказанияДатыЗапретаExtendedTooltip" id="335"/>
 											<Events>
@@ -563,7 +563,7 @@
 																			</xr:Value>
 																		</xr:Item>
 																	</ChoiceList>
-																	<BackColor>style:ФонУправляющегоПоля</BackColor>
+																	<BackColor>#FFE8B3</BackColor>
 																	<ContextMenu name="ОписаниеДатыЗапретаКонтекстноеМеню" id="224"/>
 																	<ExtendedTooltip name="ОписаниеДатыЗапретаExtendedTooltip" id="340"/>
 																	<Events>

@@ -146,7 +146,7 @@
 							<ExtendedTooltip name="ОткрытьПользователиExtendedTooltip" id="2044"/>
 						</Button>
 						<LabelDecoration name="ПояснениеПользователи" id="833">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -195,7 +195,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьГруппыПользователей" id="836">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -256,7 +256,7 @@
 							<ExtendedTooltip name="ОткрытьГруппыДоступаExtendedTooltip" id="2052"/>
 						</Button>
 						<LabelDecoration name="ПояснениеГруппыДоступа" id="850">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -294,7 +294,7 @@
 							<ExtendedTooltip name="ОткрытьПрофилиГруппДоступаExtendedTooltip" id="2055"/>
 						</Button>
 						<LabelDecoration name="ПояснениеПрофилиГруппДоступа" id="846">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -345,7 +345,7 @@
 					</Events>
 				</CheckBoxField>
 				<LabelDecoration name="ПояснениеОграничиватьДоступНаУровнеЗаписей" id="839">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -405,7 +405,7 @@
 							<ExtendedTooltip name="КопированиеНастроекПользователейExtendedTooltip" id="2062"/>
 						</Button>
 						<LabelDecoration name="ПояснениеКопированиеНастроекПользователей" id="861">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -443,7 +443,7 @@
 							<ExtendedTooltip name="НастройкиПользователейExtendedTooltip" id="2065"/>
 						</Button>
 						<LabelDecoration name="ПояснениеНастройкиПользователей" id="2002">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -471,7 +471,7 @@
 					<ExtendedTooltip name="ОчисткаНастроекПользователейExtendedTooltip" id="2068"/>
 				</Button>
 				<LabelDecoration name="ПояснениеОчисткаНастроекПользователей" id="2019">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -541,7 +541,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьВнешнихПользователей" id="853">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -579,7 +579,7 @@
 							<ExtendedTooltip name="ОткрытьВнешниеПользователиРасширеннаяПодсказка" id="2075"/>
 						</Button>
 						<LabelDecoration name="ПояснениеВнешниеПользователи" id="857">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -626,7 +626,7 @@
 				<LabelDecoration name="ПояснениеАдресПубликацииИнформационнойБазыВИнтернете" id="2035">
 					<Width>43</Width>
 					<HorizontalStretch>false</HorizontalStretch>
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>

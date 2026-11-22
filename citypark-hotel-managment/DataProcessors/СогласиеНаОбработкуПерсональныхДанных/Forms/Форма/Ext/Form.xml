@@ -179,7 +179,7 @@
 									<ExtendedTooltip name="ВыводитьБланкExtendedTooltip" id="49"/>
 									<ChildItems>
 										<LabelDecoration name="ИнформационнаяНадписьДанныеСубъектов" id="35">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>

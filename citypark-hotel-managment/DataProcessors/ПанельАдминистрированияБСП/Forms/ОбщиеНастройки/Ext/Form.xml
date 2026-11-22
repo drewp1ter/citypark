@@ -201,7 +201,7 @@
 				</Button>
 				<LabelDecoration name="ПояснениеОткрытьВидыКонтактнойИнформации" id="1643">
 					<Height>2</Height>
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -269,7 +269,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьДополнительныеРеквизитыИСведения" id="1805">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -343,7 +343,7 @@
 											</Events>
 										</CheckBoxField>
 										<LabelDecoration name="ПояснениеИспользоватьОбщиеДополнительныеЗначения" id="1818">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -370,7 +370,7 @@
 										</CheckBoxField>
 										<LabelDecoration name="ПояснениеИспользоватьОбщиеДополнительныеРеквизитыИСведения" id="1814">
 											<Height>3</Height>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -424,7 +424,7 @@
 									<ExtendedTooltip name="ДополнительныеРеквизитыExtendedTooltip" id="1860"/>
 								</Button>
 								<LabelDecoration name="ПояснениеДополнительныеРеквизиты" id="1823">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -456,7 +456,7 @@
 									<ExtendedTooltip name="ДополнительныеСведенияExtendedTooltip" id="1863"/>
 								</Button>
 								<LabelDecoration name="ПояснениеДополнительныеСведения" id="1827">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -526,7 +526,7 @@
 							<ExtendedTooltip name="ОткрытьПараметрыПроксиСервераExtendedTooltip" id="1870"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьПараметрыПроксиСервера" id="1525">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -569,7 +569,7 @@
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьНастройкиИспользованияПрофилдейБезопасности" id="1938">
 							<Height>3</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -614,7 +614,7 @@
 					<ExtendedTooltip name="ДекорацияНастройкаПроксиСервераНаСервереНедоступнаПриИспользованииПрофилейБезопасностиРасширеннаяПодсказка" id="1945"/>
 				</PictureDecoration>
 				<LabelDecoration name="ПояснениеНастройкаПроксиСервераНаСервереНедоступнаПриИспользованииПрофилейБезопасности" id="1946">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>

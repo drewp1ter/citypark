@@ -154,7 +154,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьПочтовыйКлиент" id="1298">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -201,7 +201,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеОтправлятьПисьмаВФорматеHTML" id="1311">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -273,7 +273,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьПрочиеВзаимодействия" id="1314">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -322,7 +322,7 @@
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьПризнакРассмотрено" id="1319">
 							<Height>3</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -384,7 +384,7 @@
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьНастройкиСистемнойУчетнойЗаписиЭП" id="1304">
 							<Height>2</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -421,7 +421,7 @@
 							<ExtendedTooltip name="ОткрытьУчетныеЗаписиЭлектроннойПочтыExtendedTooltip" id="1662"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьУчетныеЗаписиЭлектроннойПочты" id="1308">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -451,7 +451,7 @@
 				</Button>
 				<LabelDecoration name="ПояснениеОбщаяФормаНастройкаОтправкиSMS" id="1620">
 					<Height>2</Height>
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -519,7 +519,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьЗаметки" id="1329">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -565,7 +565,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьНапоминанияПользователя" id="1326">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -603,7 +603,7 @@
 					</Events>
 				</CheckBoxField>
 				<LabelDecoration name="ПояснениеИспользоватьАнкетирование" id="1625">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -665,7 +665,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьБизнесПроцессыИЗадачи" id="1340">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -701,7 +701,7 @@
 							<ExtendedTooltip name="ОткрытьРолиИИсполнителиБизнесПроцессовExtendedTooltip" id="1682"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьРолиИИсполнителиБизнесПроцессов" id="1358">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -779,7 +779,7 @@
 									</Events>
 								</CheckBoxField>
 								<LabelDecoration name="ПояснениеИспользоватьПодчиненныеБизнесПроцессы" id="1606">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -834,7 +834,7 @@
 									</Events>
 								</CheckBoxField>
 								<LabelDecoration name="ПояснениеИзменятьЗаданияЗаднимЧислом" id="1354">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -901,7 +901,7 @@
 											</Events>
 										</CheckBoxField>
 										<LabelDecoration name="ПояснениеИспользоватьДатуНачалаЗадач" id="1351">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -955,7 +955,7 @@
 											</Events>
 										</CheckBoxField>
 										<LabelDecoration name="ПояснениеИспользоватьДатуИВремяВСрокахЗадач" id="1348">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>

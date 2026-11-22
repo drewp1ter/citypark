@@ -57,7 +57,7 @@
 		</Table>
 		<LabelDecoration name="ДекорацияРегистрацияСобытияДоступНадпись" id="4">
 			<Height>2</Height>
-			<TextColor>style:ПоясняющийТекст</TextColor>
+			<TextColor>#455185</TextColor>
 			<Title formatted="false">
 				<v8:item>
 					<v8:lang>ru</v8:lang>

@@ -252,7 +252,7 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
   - Migration, persistence, API/OpenAPI, production seed compatibility and regressions implemented. Formatting/build/vet and full serial Go suite pass; deliveryprice coverage 93.8%. Existing towns remain RU-KDA for manual reassignment. Deploy before admin 33 and website 72.
 
 - [ ] [106 Implement 1C booking client](106-hotel-booking-client.md) [1C tasks 01–02]
-  - Blocked (2026-11-09): prerequisite 1C tasks 01 and 02 are both unchecked in `../citypark-hotel-managment/docs/tasks/PROGRESS.md`. The booking contract is not frozen and the 1C HTTP service is not complete. Per AGENTS.md, stopped without inventing client interfaces or marking this task complete. Next prerequisite: 1C task 01, booking-rule discovery and integration-contract agreement.
+  - Dependency update (2026-11-16): 1C task 01 documentation/contract v1 is complete. 1C task 02 (booking service implementation/runtime acceptance) remains incomplete and blocks task 106. Follow the exact interfaces and named tests in the frozen booking contract; do not mark this backend task complete.
 
 - [ ] [107 Expose hotel booking API](107-hotel-booking-api.md) [backend 106; 1C task 01]
 

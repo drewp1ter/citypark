@@ -220,7 +220,7 @@
 			<ChildItems>
 				<LabelDecoration name="ПояснениеИзвлекатьТекстыФайловНаСервере4" id="103">
 					<SkipOnInput>true</SkipOnInput>
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -339,7 +339,7 @@
 										</Button>
 										<LabelDecoration name="ПояснениеИзвлекатьТекстыФайловНаСервере5" id="107">
 											<SkipOnInput>true</SkipOnInput>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -377,7 +377,7 @@
 										</Button>
 										<LabelDecoration name="ПояснениеЗапуститьИзвлечениеТекстов" id="109">
 											<SkipOnInput>true</SkipOnInput>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>

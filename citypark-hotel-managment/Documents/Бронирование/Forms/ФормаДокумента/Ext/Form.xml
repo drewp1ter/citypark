@@ -309,6 +309,21 @@
 							<ContextMenu name="СтоимостьКонтекстноеМеню" id="236"/>
 							<AutoCommandBar name="СтоимостьКоманднаяПанель" id="237">
 								<Autofill>false</Autofill>
+								<ChildItems>
+									<Button name="ИзменитьЦенуОнлайнБронирования" id="332">
+										<Type>CommandBarButton</Type>
+										<Visible>false</Visible>
+										<Representation>Text</Representation>
+										<CommandName>Form.Command.ИзменитьЦенуОнлайнБронирования</CommandName>
+										<Title>
+											<v8:item>
+												<v8:lang>ru</v8:lang>
+												<v8:content>Изменить цену</v8:content>
+											</v8:item>
+										</Title>
+										<ExtendedTooltip name="ИзменитьЦенуОнлайнБронированияРасширеннаяПодсказка" id="333"/>
+									</Button>
+								</ChildItems>
 							</AutoCommandBar>
 							<ExtendedTooltip name="СтоимостьРасширеннаяПодсказка" id="238"/>
 							<SearchStringAddition name="СтоимостьСтрокаПоиска" id="314">
@@ -528,6 +543,23 @@
 			</Type>
 		</Attribute>
 	</Attributes>
+	<Commands>
+		<Command name="ИзменитьЦенуОнлайнБронирования" id="1">
+			<Title>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Изменить цену</v8:content>
+				</v8:item>
+			</Title>
+			<ToolTip>
+				<v8:item>
+					<v8:lang>ru</v8:lang>
+					<v8:content>Изменить цену выделенной строки стоимости.</v8:content>
+				</v8:item>
+			</ToolTip>
+			<Action>ИзменитьЦенуОнлайнБронирования</Action>
+		</Command>
+	</Commands>
 	<CommandInterface>
 		<CommandBar>
 			<Item>

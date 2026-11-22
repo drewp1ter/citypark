@@ -514,7 +514,7 @@
 					<TitleFont ref="sys:DefaultGUIFont" bold="true" italic="false" underline="false" strikeout="false" kind="WindowsFont"/>
 					<TitleLocation>Top</TitleLocation>
 					<HorizontalStretch>true</HorizontalStretch>
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Font ref="sys:DefaultGUIFont" height="14" bold="true" italic="false" underline="false" strikeout="false" kind="WindowsFont"/>
 					<ContextMenu name="ПолученоНаличнымиКонтекстноеМеню" id="98"/>
 					<ExtendedTooltip name="ПолученоНаличнымиРасширеннаяПодсказка" id="99"/>
@@ -524,7 +524,7 @@
 					<ReadOnly>true</ReadOnly>
 					<TitleFont ref="sys:DefaultGUIFont" bold="true" italic="false" underline="false" strikeout="false" kind="WindowsFont"/>
 					<TitleLocation>Top</TitleLocation>
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Font ref="sys:DefaultGUIFont" height="14" bold="true" italic="false" underline="false" strikeout="false" kind="WindowsFont"/>
 					<ContextMenu name="ПолученоКартамиКонтекстноеМеню" id="101"/>
 					<ExtendedTooltip name="ПолученоКартамиРасширеннаяПодсказка" id="102"/>
@@ -592,7 +592,7 @@
 					<TitleFont ref="sys:DefaultGUIFont" bold="true" italic="false" underline="false" strikeout="false" kind="WindowsFont"/>
 					<TitleLocation>Top</TitleLocation>
 					<HorizontalStretch>true</HorizontalStretch>
-					<TextColor>style:РезультатУспехЦвет</TextColor>
+					<TextColor>#008000</TextColor>
 					<BackColor>style:ToolTipBackColor</BackColor>
 					<Font ref="sys:DefaultGUIFont" height="14" bold="true" italic="false" underline="false" strikeout="false" kind="WindowsFont"/>
 					<ContextMenu name="СдачаКонтекстноеМеню" id="126"/>

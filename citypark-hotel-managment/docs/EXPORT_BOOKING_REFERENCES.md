@@ -98,3 +98,14 @@ or incorrect credentials, verify access is rejected. Test a user lacking catalog
 permissions: no partial inventory should be returned. Verify existing sales,
 room-sales and month-sales routes still behave as before. Confirm no catalog or
 document records are changed. These checks have not been run in this environment.
+
+### Cyrillic text when downloading
+
+A direct authorized HTTP check on 2026-11-16 returned valid UTF-8 JSON with
+correct Cyrillic names. If your terminal shows question marks, save the original
+response directly using the `curl.exe --output` command above, then open the file
+as UTF-8 in an editor. Avoid piping terminal text through `Out-File` or `>` while
+diagnosing, because decoding/re-encoding depends on the shell version/settings.
+Changing the encoding cannot recover letters already replaced with literal `?`;
+fetch the original response again. No server encoding change was needed for this
+observed response.

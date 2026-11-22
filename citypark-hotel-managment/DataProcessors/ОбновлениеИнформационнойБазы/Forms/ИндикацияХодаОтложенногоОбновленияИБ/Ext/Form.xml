@@ -239,7 +239,7 @@
 											<ExtendedTooltip name="ГруппаПодсказкаРасположениеФормыРасширеннаяПодсказка" id="143"/>
 											<ChildItems>
 												<LabelDecoration name="ИнформацияПодсказка" id="11">
-													<TextColor>style:ПоясняющийТекст</TextColor>
+													<TextColor>#455185</TextColor>
 													<Title formatted="false">
 														<v8:item>
 															<v8:lang>ru</v8:lang>
@@ -481,7 +481,7 @@
 													<ExtendedTooltip name="ОтступExtendedTooltip" id="161"/>
 												</LabelDecoration>
 												<LabelDecoration name="ПодсказкаГдеНайтиЭтуФорму" id="77">
-													<TextColor>style:ПоясняющийТекст</TextColor>
+													<TextColor>#455185</TextColor>
 													<Title formatted="false">
 														<v8:item>
 															<v8:lang>ru</v8:lang>
@@ -619,7 +619,7 @@
 											<ExtendedTooltip name="ОтступОбновлениеЗавершеноРасширеннаяПодсказка" id="171"/>
 										</LabelDecoration>
 										<LabelDecoration name="ИнформацияПодсказкаРасположениеФормы" id="74">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>

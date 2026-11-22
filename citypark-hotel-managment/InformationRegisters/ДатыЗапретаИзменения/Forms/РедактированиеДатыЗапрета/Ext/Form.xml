@@ -179,7 +179,7 @@
 							</xr:Value>
 						</xr:Item>
 					</ChoiceList>
-					<BackColor>style:ФонУправляющегоПоля</BackColor>
+					<BackColor>#FFE8B3</BackColor>
 					<ContextMenu name="ОписаниеДатыЗапретаКонтекстноеМеню" id="21"/>
 					<ExtendedTooltip name="ОписаниеДатыЗапретаExtendedTooltip" id="51"/>
 					<Events>

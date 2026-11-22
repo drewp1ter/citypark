@@ -3446,5 +3446,39 @@
 		<Metadata name="XDTOPackage.V8AddinBundle.Package" id="ebd3dcc2-1176-4ee0-b590-ee39f85fb55b.0" configVersion="6aab18c3808ffa45bb99475e1255503c00000000"/>
 		<Metadata name="XDTOPackage.КонтактнаяИнформация" id="9935d602-668e-4df9-a338-0f542def878b" configVersion="85275355d08dc345b451863081cc4f7800000000"/>
 		<Metadata name="XDTOPackage.КонтактнаяИнформация.Package" id="9935d602-668e-4df9-a338-0f542def878b.0" configVersion="a206bdb3c24bde4b820916ebfec9754c00000000"/>
+		<Metadata name="CommonModule.ОнлайнБронирование" id="ac05b81c-b9fc-4b37-8aaa-1bc5aa267a7f"/>
+		<Metadata name="CommonModule.ОнлайнБронирование.Module" id="ac05b81c-b9fc-4b37-8aaa-1bc5aa267a7f.0"/>
+		<Metadata name="HTTPService.Booking" id="c5a7d64e-e3f8-434f-9b45-995b7730b890">
+			<Metadata name="HTTPService.Booking.URLTemplate.availability" id="8f6ac258-b6ff-4cc3-ab7b-50c18d224b35"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.availability.Method.post" id="7e90dff7-3282-4c81-9345-997b0f90eb31"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.reservations" id="4291de62-baf1-4309-a4f8-75eae79cd891"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.reservations.Method.post" id="1494ec6f-6cbf-438c-92bb-c7855ccdfbb2"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.reservation" id="34a1ef08-da31-4524-94a1-d9c0adec3fe9"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.reservation.Method.get" id="776621c4-1a3e-40ed-be37-f67359c53e8c"/>
+		</Metadata>
+		<Metadata name="HTTPService.Booking.Module" id="c5a7d64e-e3f8-434f-9b45-995b7730b890.0"/>
+		<Metadata name="InformationRegister.КлючиОнлайнБронирования" id="f070cf67-9349-4268-b678-2454925dc49f">
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Resource.ЗапросJSON" id="033f33b0-f453-40ca-a2d4-eb342b28aa41"/>
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Resource.Документ" id="ba97d818-60d6-40f6-9c8e-5d03f3d9a872"/>
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Resource.РезультатJSON" id="d802b3f4-411d-4564-aeea-afafce6938a0"/>
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Resource.Имя" id="1400afb6-f6da-4c1a-8c0f-22c2f58a09d6"/>
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Resource.Email" id="b16d2ada-eab2-41f7-b2eb-5c9a1fbee50a"/>
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Resource.Телефон" id="95a97c1f-73e4-4e51-99c6-bc8c0bb30a71"/>
+			<Metadata name="InformationRegister.КлючиОнлайнБронирования.Dimension.Ключ" id="b1bdb104-45e7-4326-8de9-69736de3fa7c"/>
+		</Metadata>
+		<Metadata name="InformationRegister.БлокировкиНомеровБронирования" id="f34b14fa-66de-42be-baf4-1c30bd744f82">
+			<Metadata name="InformationRegister.БлокировкиНомеровБронирования.Dimension.ГостиничныйНомер" id="388087f8-1286-49c3-9a99-eec1719dea65"/>
+		</Metadata>
+		<Metadata name="InformationRegister.НастройкиОнлайнБронирования" id="55a16890-e1d5-471e-aae1-1e3ea9be065b">
+			<Metadata name="InformationRegister.НастройкиОнлайнБронирования.Resource.Включено" id="4c697773-2108-43de-944d-8ead4c6e3764"/>
+			<Metadata name="InformationRegister.НастройкиОнлайнБронирования.Resource.Организация" id="2f00eda6-ebf5-4139-a23c-66393aad4fc9"/>
+			<Metadata name="InformationRegister.НастройкиОнлайнБронирования.Resource.Ответственный" id="feb5a1c9-5e9a-4e38-b5b4-e6711719894f"/>
+			<Metadata name="InformationRegister.НастройкиОнлайнБронирования.Resource.ТипНомера" id="7e1d4c93-430e-4e0d-b696-42a596c1a74d"/>
+			<Metadata name="InformationRegister.НастройкиОнлайнБронирования.Resource.НомераJSON" id="a8739f89-2961-4377-81eb-1f296987c6c9"/>
+			<Metadata name="InformationRegister.НастройкиОнлайнБронирования.Dimension.ТипНомераСайта" id="8246557f-9434-41c0-818a-72900259b7ce"/>
+		</Metadata>
+		<Metadata name="Role.ОнлайнБронированиеСервис" id="d5053e85-8359-40a5-8241-a7eee1bb8ffb"/>
+		<Metadata name="Role.ОнлайнБронированиеСервис.Rights" id="d5053e85-8359-40a5-8241-a7eee1bb8ffb.0"/>
+		<Metadata name="InformationRegister.КлючиОнлайнБронирования.RecordSetModule" id="f070cf67-9349-4268-b678-2454925dc49f.1"/>
 	</ConfigVersions>
 </ConfigDumpInfo>

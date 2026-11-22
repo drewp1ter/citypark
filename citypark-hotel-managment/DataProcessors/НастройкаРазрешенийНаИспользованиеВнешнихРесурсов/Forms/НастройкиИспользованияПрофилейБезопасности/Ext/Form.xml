@@ -281,7 +281,7 @@
 										</Button>
 										<LabelDecoration name="ПояснениеТребуемыеРазрешения" id="1625">
 											<Height>3</Height>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -325,7 +325,7 @@
 										</InputField>
 										<LabelDecoration name="ПояснениеПрофильБезопасностиИнформационнойБазы" id="1633">
 											<Height>3</Height>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -365,7 +365,7 @@
 										</Button>
 										<LabelDecoration name="ПояснениеВосстановитьПрофилиБезопасности" id="1640">
 											<Height>3</Height>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -426,7 +426,7 @@
 							<ExtendedTooltip name="ДекорацияПояснениеОЛицензииКОРПРасширеннаяПодсказка" id="1649"/>
 						</PictureDecoration>
 						<LabelDecoration name="ПояснениеОЛицензииКОРП" id="1650">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>

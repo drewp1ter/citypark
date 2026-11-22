@@ -510,7 +510,7 @@
 																	</xr:Value>
 																</xr:Item>
 															</ChoiceList>
-															<BackColor>style:ФонУправляющегоПоля</BackColor>
+															<BackColor>#FFE8B3</BackColor>
 															<ContextMenu name="ТипПодключенияКонтекстноеМеню" id="129"/>
 															<ExtendedTooltip name="ТипПодключенияРасширеннаяПодсказка" id="130"/>
 															<Events>

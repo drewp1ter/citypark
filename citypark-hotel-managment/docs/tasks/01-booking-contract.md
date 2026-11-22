@@ -1,7 +1,7 @@
 # Task 01: Verify booking rules and freeze integration contract
 
 ## Goal
-Verify booking rules and freeze integration contract for one-room, instantly confirmed hotel reservations without prepayment. 1C is authoritative for inventory and tariffs.
+Verify booking rules and freeze integration contract for one-room, instantly confirmed hotel reservations without prepayment. 1C is authoritative for inventory; Go calculates prices from admin-managed room rates.
 
 ## Depends on
 Nothing

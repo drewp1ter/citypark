@@ -96,7 +96,7 @@
 											</Events>
 										</CheckBoxField>
 										<LabelDecoration name="ПояснениеСинхронизацияДанныхСПриложениямиВИнтернете1" id="2027">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -173,7 +173,7 @@
 													</Events>
 												</CheckBoxField>
 												<LabelDecoration name="ПояснениеСинхронизацияДанныхСПриложениямиВИнтернете" id="2022">
-													<TextColor>style:ПоясняющийТекст</TextColor>
+													<TextColor>#455185</TextColor>
 													<Title formatted="false">
 														<v8:item>
 															<v8:lang>ru</v8:lang>
@@ -207,7 +207,7 @@
 													</Events>
 												</CheckBoxField>
 												<LabelDecoration name="ПояснениеСинхронизацияДанныхСПрограммамиВЛокальномРежиме" id="2020">
-													<TextColor>style:ПоясняющийТекст</TextColor>
+													<TextColor>#455185</TextColor>
 													<Title formatted="false">
 														<v8:item>
 															<v8:lang>ru</v8:lang>
@@ -253,7 +253,7 @@
 													</Events>
 												</CheckBoxField>
 												<LabelDecoration name="ПояснениеАвтономнаяРабота" id="2011">
-													<TextColor>style:ПоясняющийТекст</TextColor>
+													<TextColor>#455185</TextColor>
 													<Title formatted="false">
 														<v8:item>
 															<v8:lang>ru</v8:lang>
@@ -290,7 +290,7 @@
 							<ExtendedTooltip name="МониторСинхронизацииДанныхExtendedTooltip" id="2071"/>
 						</Button>
 						<LabelDecoration name="ПояснениеМониторСинхронизацииДанных" id="2040">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -311,7 +311,7 @@
 									<ExtendedTooltip name="НастройкиТранспортаОбменаExtendedTooltip" id="2074"/>
 								</Button>
 								<LabelDecoration name="ПояснениеНастройкиТранспортаОбмена" id="2045">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -327,7 +327,7 @@
 									<ExtendedTooltip name="НастройкиТранспортаОбменаОбластейДанныхExtendedTooltip" id="2076"/>
 								</Button>
 								<LabelDecoration name="ПояснениеНастройкиТранспортаОбменаОбластейДанных" id="2047">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -345,7 +345,7 @@
 							<ExtendedTooltip name="ПравилаДляОбменаДаннымиExtendedTooltip" id="2078"/>
 						</Button>
 						<LabelDecoration name="ПояснениеПравилаДляОбменаДанными" id="2051">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -400,7 +400,7 @@
 					</Events>
 				</InputField>
 				<LabelDecoration name="ПояснениеВременныеКаталоги" id="2102">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
