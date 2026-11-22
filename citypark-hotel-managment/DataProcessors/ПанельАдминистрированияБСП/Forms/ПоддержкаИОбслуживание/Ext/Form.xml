@@ -186,7 +186,7 @@
 							<CommandName>0</CommandName>
 							<ToolTipRepresentation>ShowBottom</ToolTipRepresentation>
 							<ExtendedTooltip name="ОбщаяКомандаПанельОтчетовАдминистрированиеРасширеннаяПодсказка" id="1796">
-								<TextColor>style:ПоясняющийТекст</TextColor>
+								<TextColor>#455185</TextColor>
 							</ExtendedTooltip>
 						</Button>
 					</ChildItems>
@@ -241,7 +241,7 @@
 									<ExtendedTooltip name="ДополнительныеОтчетыПоАдминистрированиюРасширеннаяПодсказка" id="1819"/>
 								</Button>
 								<LabelDecoration name="ПояснениеДополнительныеОтчетыПоАдминистрированию" id="1736">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -283,7 +283,7 @@
 									<ExtendedTooltip name="ДополнительныеОбработкиПоАдминистрированиюРасширеннаяПодсказка" id="1821"/>
 								</Button>
 								<LabelDecoration name="ПояснениеДополнительныеОбработкиПоАдминистрированию" id="1743">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -364,7 +364,7 @@
 									<ExtendedTooltip name="ОбработкаРегламентныеИФоновыеЗаданияExtendedTooltip" id="1645"/>
 								</Button>
 								<LabelDecoration name="ПояснениеОбработкаРегламентныеИФоновыеЗадания" id="1510">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -403,7 +403,7 @@
 									<ExtendedTooltip name="РегистрСведенийДатыЗапретаИзмененияДатыЗапретаИзмененияДанныхExtendedTooltip" id="1648"/>
 								</Button>
 								<LabelDecoration name="ПояснениеРегистрСведенийДатыЗапретаИзмененияДатыЗапретаИзмененияДанных" id="1554">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -461,7 +461,7 @@
 									<ExtendedTooltip name="ОбработкаУправлениеИтогамиИАгрегатамиОткрытьExtendedTooltip" id="1652"/>
 								</Button>
 								<LabelDecoration name="ПояснениеОбработкаУправлениеИтогамиИАгрегатамиОткрыть" id="1507">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -506,7 +506,7 @@
 									<ExtendedTooltip name="УправлениеПолнотекстовымПоискомИИзвлечениемТекстовExtendedTooltip" id="1655"/>
 								</Button>
 								<LabelDecoration name="ПояснениеУправлениеПолнотекстовымПоискомИИзвлечениемТекстов" id="1513">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -582,7 +582,7 @@
 							</ChildItems>
 						</UsualGroup>
 						<LabelDecoration name="ПояснениеУдалениеПомеченныхОбъектовПоРасписанию" id="1775">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<ContextMenu name="ПояснениеУдалениеПомеченныхОбъектовПоРасписаниюКонтекстноеМеню" id="1776"/>
 							<ExtendedTooltip name="ПояснениеУдалениеПомеченныхОбъектовПоРасписаниюРасширеннаяПодсказка" id="1777"/>
 						</LabelDecoration>
@@ -670,7 +670,7 @@
 											</Events>
 										</LabelDecoration>
 										<LabelDecoration name="ПояснениеРезервноеКопированиеПрограммы" id="1474">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -717,7 +717,7 @@
 											</Events>
 										</LabelDecoration>
 										<LabelDecoration name="ПояснениеВосстановлениеРезервнойКопии" id="1477">
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<Title formatted="false">
 												<v8:item>
 													<v8:lang>ru</v8:lang>
@@ -766,7 +766,7 @@
 									</Events>
 								</LabelDecoration>
 								<LabelDecoration name="ПояснениеНастройкаРезервногоКопирования" id="1480">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -812,7 +812,7 @@
 							<ExtendedTooltip name="Декорация18ExtendedTooltip" id="1670"/>
 						</PictureDecoration>
 						<LabelDecoration name="ПояснениеВосстановлениеРезервнойКопииВМоделиСервиса" id="1616">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -883,7 +883,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьВерсионирование" id="1808">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -926,7 +926,7 @@
 							<ExtendedTooltip name="РегистрСведенийНастройкиВерсионированияОбъектовExtendedTooltip" id="1814"/>
 						</Button>
 						<LabelDecoration name="ПояснениеРегистрСведенийНастройкиВерсионированияОбъектов" id="1815">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -995,7 +995,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеВыполнятьЗамерыПроизводительности" id="1592">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -1037,7 +1037,7 @@
 							<ExtendedTooltip name="ОбработкаОценкаПроизводительностиExtendedTooltip" id="1677"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОбработкаОценкаПроизводительности" id="1596">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -1118,7 +1118,7 @@
 									<ExtendedTooltip name="ЗагрузитьКлассификаторБанковExtendedTooltip" id="1682"/>
 								</Button>
 								<LabelDecoration name="ПояснениеЗагрузитьКлассификаторБанков" id="1559">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1157,7 +1157,7 @@
 									<ExtendedTooltip name="РегистрСведенийАдресныйКлассификаторExtendedTooltip" id="1685"/>
 								</Button>
 								<LabelDecoration name="ПояснениеАдресныйКлассификатор" id="1562">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1197,7 +1197,7 @@
 							<ExtendedTooltip name="ОбработкаЗагрузкаКурсовВалютExtendedTooltip" id="1688"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОбработкаЗагрузкаКурсовВалют" id="1566">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -1244,7 +1244,7 @@
 							<ExtendedTooltip name="ОткрытьНастройкиРегистрацииСобытийДоступаКПерсональнымДаннымExtendedTooltip" id="1692"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьНастройкиРегистрацииСобытийДоступаКПерсональнымДанным" id="1602">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -1280,7 +1280,7 @@
 							<ExtendedTooltip name="ОбработкаЗащитаПерсональныхДанныхExtendedTooltip" id="1695"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОбработкаЗащитаПерсональныхДанных" id="1606">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -1360,7 +1360,7 @@
 								</Button>
 								<LabelDecoration name="ПояснениеОбработкаОбновлениеКонфигурации" id="1461">
 									<Height>3</Height>
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1393,7 +1393,7 @@
 								</Button>
 								<LabelDecoration name="ПояснениеНастройкаОбновленияПрограммы" id="1750">
 									<Height>3</Height>
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1446,7 +1446,7 @@
 									<ExtendedTooltip name="ОткрытьОписаниеИзмененийСистемыExtendedTooltip" id="1703"/>
 								</Button>
 								<LabelDecoration name="ПояснениеОткрытьОписаниеИзмененийСистемы" id="1465">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1477,7 +1477,7 @@
 									<ExtendedTooltip name="РезультатыОбновленияИДополнительнаяОбработкаДанныхExtendedTooltip" id="1707"/>
 								</Button>
 								<LabelDecoration name="ПояснениеОтложеннаяОбработкаДанных" id="1630">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1546,7 +1546,7 @@
 									</Events>
 								</CheckBoxField>
 								<LabelDecoration name="ПояснениеДетализироватьОбновлениеИБВЖурналеРегистрации" id="1612">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -1607,7 +1607,7 @@
 							<ExtendedTooltip name="ОбработкаГрупповоеИзменениеОбъектовГрупповоеИзменениеРеквизитовРасширеннаяПодсказка" id="1779"/>
 						</Button>
 						<LabelDecoration name="ПояснениеКОбработкеГрупповоеИзменениеОбъектов" id="1761">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -1643,7 +1643,7 @@
 							<ExtendedTooltip name="ПоискИУдалениеДублейРасширеннаяПодсказка" id="1791"/>
 						</Button>
 						<LabelDecoration name="ПояснениеКПоискуИУдалениюДублей" id="1792">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>

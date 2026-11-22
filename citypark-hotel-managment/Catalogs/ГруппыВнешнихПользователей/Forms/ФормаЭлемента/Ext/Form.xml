@@ -114,7 +114,7 @@
 											</xr:Value>
 										</xr:Item>
 									</ChoiceList>
-									<BackColor>style:ФонУправляющегоПоля</BackColor>
+									<BackColor>#FFE8B3</BackColor>
 									<ContextMenu name="УчастникиГруппыКонтекстноеМеню" id="148"/>
 									<ExtendedTooltip name="УчастникиГруппыExtendedTooltip" id="157"/>
 									<Events>

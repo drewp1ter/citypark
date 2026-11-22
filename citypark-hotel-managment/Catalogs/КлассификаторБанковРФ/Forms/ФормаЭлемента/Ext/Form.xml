@@ -41,7 +41,7 @@
 					<ExtendedTooltip name="СтраницаНадписьДеятельностьПрекращенаExtendedTooltip" id="25"/>
 					<ChildItems>
 						<LabelDecoration name="НадписьДеятельностьБанкаПрекращена" id="19">
-							<TextColor>style:ПросроченныеДанныеЦвет</TextColor>
+							<TextColor>#B22222</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>

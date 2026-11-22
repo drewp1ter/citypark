@@ -155,7 +155,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьОбменДанными" id="1222">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -191,7 +191,7 @@
 							<ExtendedTooltip name="НастройкиСинхронизацииДанныхExtendedTooltip" id="2023"/>
 						</Button>
 						<LabelDecoration name="ПояснениеНастройкиСинхронизацииДанных" id="1225">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -250,7 +250,7 @@
 							<ExtendedTooltip name="РезультатыСинхронизацииДанныхExtendedTooltip" id="2027"/>
 						</Button>
 						<LabelDecoration name="ПояснениеРезультатыСинхронизацииДанных" id="2011">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -286,7 +286,7 @@
 							<ExtendedTooltip name="ДатыЗапретаЗагрузкиДанныхExtendedTooltip" id="2030"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьДатыЗапретаЗагрузкиДанных" id="1625">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -360,7 +360,7 @@
 							</ChildItems>
 						</UsualGroup>
 						<LabelDecoration name="ДекорацияПрефиксУзлаРаспределеннойИнформационнойБазы" id="1998">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -421,7 +421,7 @@
 					</Events>
 				</InputField>
 				<LabelDecoration name="ПояснениеВременныеКаталоги" id="2048">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>

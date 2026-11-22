@@ -66,7 +66,7 @@
 					</Events>
 				</CheckBoxField>
 				<LabelDecoration name="ПояснениеИзменятьВТранзакции" id="7">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -104,7 +104,7 @@
 					<ExtendedTooltip name="ПрерыватьПриОшибкеExtendedTooltip" id="57"/>
 				</CheckBoxField>
 				<LabelDecoration name="ПояснениеПрерыватьПриОшибке" id="40">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -142,7 +142,7 @@
 					<ExtendedTooltip name="ОбрабатыватьГруппыРекурсивноExtendedTooltip" id="60"/>
 				</CheckBoxField>
 				<LabelDecoration name="ПояснениеОбрабатыватьГруппыРекурсивно" id="9">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -180,7 +180,7 @@
 					<ExtendedTooltip name="ПоказыватьСлужебныеРеквизитыРасширеннаяПодсказка" id="82"/>
 				</CheckBoxField>
 				<LabelDecoration name="ПояснениеПоказыватьСлужебныеРеквизиты" id="83">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>

@@ -91,7 +91,7 @@
 									</app:value>
 								</app:item>
 							</ChoiceParameters>
-							<BackColor>style:ФонУправляющегоПоля</BackColor>
+							<BackColor>#FFE8B3</BackColor>
 							<ChoiceHistoryOnInput>DontUse</ChoiceHistoryOnInput>
 							<ContextMenu name="СтранаКонтекстноеМеню" id="11"/>
 							<ExtendedTooltip name="СтранаExtendedTooltip" id="107"/>

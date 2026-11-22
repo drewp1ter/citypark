@@ -3,8 +3,9 @@
 Status: **frozen for implementation, 2026-11-16**. Product decisions are from the
 owner; technical defaults below resolve the implementation details. This is a
 documentation/discovery completion, not runtime or deployment acceptance. A
-separate development information base does not yet exist. Task 02 cannot pass
-runtime acceptance until one is provided.
+separate development file base has now been identified by the owner through
+untracked `1c.txt`, and CityParkHotelDev is confirmed to point to it. Task 02
+cannot pass acceptance until owner-run Designer and runtime checks succeed.
 
 ## Scope
 
@@ -45,17 +46,36 @@ availability checks do not establish that concurrent posting is safe.
 - Dates only; minimum one night and no business maximum stay. Earliest arrival is
   tomorrow in `Europe/Moscow`. There is no business limit on how far ahead arrival
   or departure may be booked (owner revision, 2026-11-16); the earlier six-month
-  horizon is superseded. Use noon-to-noon intervals `[arrival 12:00, departure 12:00)`;
-  customer copy remains check-in after 12:00, check-out before 12:00. No early/late
+  horizon is superseded. Use half-open intervals `[arrival at configured check-in,
+  departure at configured check-out)` in Moscow local time. The authoritative
+  times are `Константы.ВремяЗаселения` and `Константы.ВремяВыселения`, shared with
+  staff workflows. Owner reports production check-in is 13:00; production check-out
+  is not yet confirmed. Owner authorized this revision on 2026-11-20, superseding
+  the earlier noon-to-noon rule. Do not change hotel constants to satisfy online
+  booking. Customer copy must match the verified configured times; the earlier
+  check-in-after-12:00 copy must be corrected before release. No early/late
   options in v1. Dates must be valid Gregorian dates representable by 1C and the
-  backend. Unlimited advance booking and duration do not bypass date-type limits,
+  backend. The 1C database storage range is years 0001–3999; years outside
+  that range return `400 INVALID_REQUEST` before inventory queries or writes.
+  Unlimited advance booking and duration do not bypass date-type limits,
   checked price arithmetic or full-stay inventory validation.
 - Anonymous guest booking allowed; no prior email verification. Confirmation goes
   to the supplied email after 1C commits. Email failure cannot undo the booking.
+- Nights are the difference between the two calendar dates, independent of the
+  configured arrival/departure clock times. For example, check-in at 13:00 on
+  December 1 and check-out at 12:00 on December 2 is one night. Availability and
+  posting use the actual configured timestamp interval. Adjacent calendar stays
+  are allowed only when their actual timestamp intervals do not overlap.
 - Go computes `nights × rooms.price_kopecks` using checked integer arithmetic,
   independent of guests. No extras, seasonal schedules or discounts in v1. Reject
   missing/nonpositive rates and overflow. Public JSON money uses rubles, following
   existing `money.Kopecks` serialization; internal 1C requests use integer kopecks.
+- Configured clock times are applied consistently within each availability/new
+  reservation request. They are not client input and are not added to canonical
+  request JSON. Same-key replay and GET recovery return the original saved result
+  without recalculating times or moving the existing reservation when constants
+  change. A new request uses current constants; advisory availability is rechecked
+  during reservation creation.
 - One physical room must cover the complete interval. Reuse existing availability
   semantics, including blocking non-free occupancy; retain the staff housekeeping
   policy rather than inventing a new cleaning buffer. Disabled/deleted references
@@ -181,7 +201,7 @@ records for the reservation lifetime; no automatic expiry/reuse in v1.
 
 Reuse `Документы.Бронирование.СоздатьДокумент()`, filling and normal posting.
 After filling, explicitly replace default dates/guest count and `Проживание` rows.
-Populate daily `Сутки` row with nights, noon boundaries and backend price in
+Populate daily `Сутки` row with calendar nights, configured arrival/departure times and backend price in
 `Стоимость`/`Сумма`; do not invoke the 1C price calculator for online reservations.
 Create a separate counterparty per new reservation, with the required name; save
 email/phone in restricted online-booking metadata, not a public comment. Replays
@@ -189,6 +209,17 @@ create neither another counterparty nor another document. Preserve the accepted
 cost rows during `Заселение` creation and automatic form recalculation for these
 online reservations; explicit staff edits remain staff responsibility. Do not
 change default pricing of ordinary staff-created bookings.
+
+Staff with document edit permission can explicitly change an open online
+booking/check-in cost row using «Изменить цену» on its «Стоимость» tab. The command
+changes the selected row's nonnegative unit price, rounds its amount to kopecks
+and updates the document total; saving/posting remains explicit. It does not
+change stay dates/quantity, hotel tariff settings or the immutable API request
+and creation result. The dedicated service role cannot invoke this command;
+closed/deletion-marked documents cannot use it. Ordinary staff-created bookings
+retain their existing automatic pricing. Native validation of the command is
+required before accepting this task's manual-price-edit scenario.
+
 
 ### Public Go API
 
@@ -283,7 +314,8 @@ cannot be forwarded. Never log credentials, contacts or response bodies.
 
 Create `HTTPServices/Booking.xml`, `HTTPServices/Booking/Ext/Module.bsl`,
 `CommonModules/ОнлайнБронирование.xml` and its `Ext/Module.bsl`, the two independent
-registers named above (root `.xml` files under `InformationRegisters/`), and
+registers named above (root `.xml` files under `InformationRegisters/`), the
+restricted `НастройкиОнлайнБронирования` setup register, and
 `Roles/ОнлайнБронированиеСервис.xml` with `Roles/ОнлайнБронированиеСервис/Ext/Rights.xml`.
 Register metadata in `Configuration.xml` and `ConfigDumpInfo.xml` following the
 existing export format. Preserve existing object UUIDs.
@@ -294,7 +326,13 @@ HTTP exports: `availabilityPost(Запрос)`, `reservationsPost(Запрос)`
 `ПолучитьРезультат(Ключ)`, `ЗаблокироватьНомера(Номера)`.
 Use a dedicated configured service user/organization and explicit room mapping;
 store setup values in restricted service configuration, never HTTP request fields
-or source-code credentials. Start disabled until references are verified.
+or source-code credentials. Start disabled until references are verified. The
+setup register has one website-type key and enabled/organization/responsible-user/
+1C-room-type/explicit-room-UUID-JSON fields. Its rows are absent by default. The
+service role can read, but cannot edit them; ordinary hotel staff cannot activate
+them or change idempotency records. Accepted idempotency records are immutable
+through their record-set writer. See the development setup and scenario handoff in
+[BOOKING_RUNTIME_RESULTS.md](BOOKING_RUNTIME_RESULTS.md).
 
 Update object modules for `Бронирование`, `Заселение`, `ОтменаБронирования`,
 `Выселение` to share locks. Adapt booking/check-in form recalculation to preserve
@@ -304,11 +342,31 @@ normal pricing. Use the existing daily predefined tariff (not a guessed UUID).
 
 Record platform and results under `docs/BOOKING_RUNTIME_RESULTS.md`. Named scenarios:
 `BookingValid`, `FullStayOneRoom`, `AdjacentStays`, `OverlapVariants`,
-`WebsiteStaffRace`, `ConcurrentRoomMove`, `DuplicateKeyRace`, `KeyPayloadConflict`,
+`WebsiteStaffRace`, `DuplicateKeyRace`, `KeyPayloadConflict`,
 `PostingRollback`, `CommitTimeoutRecovery`, `CancellationUndoRace`,
 `RepostSelfExclusion`, `BackendPriceAtCheckIn`, `UnauthorizedAccess`, `RestrictedRole`.
 Each includes document/register assertions. Freeze metadata lock compatibility in
 Designer testing; failure blocks task 02 rather than weakening the lock invariant.
+
+Task 02 acceptance scope amendment (owner decision, 2026-11-22):
+`ConcurrentRoomMove` is excluded from required acceptance, including the manual
+three-way two-staff-session/API orchestration and its reverse-order/stale-snapshot
+variants. It is not a completion blocker or a deferred mandatory test. Prior
+attempts remain historical evidence: a managed-lock conflict was observed and
+its cause was not diagnosed; this exclusion does not turn that result into a pass
+or prove shared locking correct. Existing shared-room-lock implementation and
+other required scenarios (including `WebsiteStaffRace`, `CancellationUndoRace`
+and `RepostSelfExclusion`) remain in scope. No technological-log setup or further
+manual repeat is required for the excluded scenario.
+
+Online checkout pricing: checkout linked through a check-in to an online
+booking uses the saved check-in cost-row rates, including explicit staff edits,
+instead of silently applying current 1C tariff prices. Recalculation clips saved
+rate periods to checkout stay periods; unchanged source periods keep saved
+quantities, partial periods use the existing tariff quantity helper. A period
+without saved rate coverage must be corrected in the check-in before checkout.
+Order charges remain included; immutable API creation results are not rewritten.
+Ordinary checkout retains its previous pricing path. Native validation required.
 
 ### Backend tasks 106–107
 
@@ -410,8 +468,9 @@ required. None of these runtime scenarios has passed merely by writing this spec
 Task 01 is documentation complete with the explicit schemas/defaults above, stable
 room sets, source inspection and environment prerequisites. Examples are normative
 contracts, not captured runtime responses. Task 02 implements and tests them in a
-separate development base. No such base is available yet; provisioning, account
-rights, organization selection, timezone/constant verification, publication/TLS,
+separate development base. The owner has now identified an isolated file base
+and its CityParkHotelDev publication; account rights, organization selection,
+timezone/constant verification, new-service publication/TLS,
 Designer checks and concurrent runtime acceptance remain release requirements.
 The discovery endpoint's earlier deployment is not booking-service acceptance.
 See [BOOKING_ENVIRONMENT.md](BOOKING_ENVIRONMENT.md).

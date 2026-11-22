@@ -254,7 +254,7 @@
 					</Events>
 				</CheckBoxField>
 				<LabelDecoration name="РекомендуетсяПроверитьНастройкиДляВхода" id="267">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>

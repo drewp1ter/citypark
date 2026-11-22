@@ -681,7 +681,7 @@
 											<DataPath>ОписаниеСостоянияНайденныхДублей</DataPath>
 											<TitleLocation>None</TitleLocation>
 											<Height>2</Height>
-											<TextColor>style:ПоясняющийТекст</TextColor>
+											<TextColor>#455185</TextColor>
 											<ContextMenu name="ОписаниеСостоянияНайденныхДублейКонтекстноеМеню" id="203"/>
 											<ExtendedTooltip name="ОписаниеСостоянияНайденныхДублейРасширеннаяПодсказка" id="204"/>
 										</LabelField>
@@ -1162,7 +1162,7 @@
 									</ChildItems>
 								</UsualGroup>
 								<LabelDecoration name="Декорация3" id="334">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>

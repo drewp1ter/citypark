@@ -1211,7 +1211,7 @@
 						</UsualGroup>
 						<LabelDecoration name="НадписьИтогиЧастичногоУдаленияПояснение" id="377">
 							<Height>3</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>

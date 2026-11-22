@@ -33,3 +33,23 @@ Online payment, multi-room carts, guest self-service cancellation or changes, an
 ## Frozen implementation specification (2026-11-16)
 
 Follow [Booking contract v1](../BOOKING_CONTRACT.md), including its exact HTTP shapes, implementation map, paths, signatures and named acceptance scenarios for this task. The contract supersedes the original 1C-pricing wording. Runtime validation and environment gates remain mandatory; this expansion does not mark this task complete.
+
+## Owner acceptance scope amendment (2026-11-22)
+
+The owner explicitly excludes `ConcurrentRoomMove` from this task's acceptance,
+including the manually orchestrated two-staff/API, reverse-order and stale-snapshot
+variants. This supersedes its inclusion in the frozen named scenario list.
+No further manual repeat or technological-log investigation is required for this
+scenario. Keep the observed lock conflict in the runtime history; do not claim it
+passed. Shared locking and all other required scenarios remain in scope.
+
+## Completion and approved Designer baseline exception (2026-11-22)
+
+Completed under the owner's explicit statement: “I accept the baseline exception.”
+The Designer-check completion requirement accepts the documented pre-existing
+BSP/reference/form diagnostics reproduced in production, with no claim that the
+full check is clean. No newly introduced booking diagnostic is waived.
+The previously approved ConcurrentRoomMove exclusion remains unchanged.
+See [final acceptance review](../BOOKING_ACCEPTANCE_REVIEW.md) for bounded runtime
+results, structural checks, native evidence and limitations. Task03 and production
+deployment remain out of scope.

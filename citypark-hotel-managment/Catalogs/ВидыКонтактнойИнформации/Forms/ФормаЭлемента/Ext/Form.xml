@@ -23,7 +23,7 @@
 					<Width>19</Width>
 					<HorizontalStretch>false</HorizontalStretch>
 					<TextEdit>false</TextEdit>
-					<BackColor>style:ФонУправляющегоПоля</BackColor>
+					<BackColor>#FFE8B3</BackColor>
 					<ContextMenu name="ТипКонтекстноеМеню" id="71"/>
 					<ExtendedTooltip name="ТипExtendedTooltip" id="86"/>
 					<Events>

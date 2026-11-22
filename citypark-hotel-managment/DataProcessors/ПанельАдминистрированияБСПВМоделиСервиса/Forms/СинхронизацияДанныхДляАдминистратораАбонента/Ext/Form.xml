@@ -156,7 +156,7 @@
 									<ExtendedTooltip name="СинхронизацияДанныхExtendedTooltip" id="2017"/>
 								</Button>
 								<LabelDecoration name="ПояснениеНастройкиСинхронизацииДанных" id="1225">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -192,7 +192,7 @@
 									<ExtendedTooltip name="ДатыЗапретаЗагрузкиДанныхExtendedTooltip" id="2020"/>
 								</Button>
 								<LabelDecoration name="ПояснениеОткрытьДатыЗапретаЗагрузкиДанных" id="1625">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>

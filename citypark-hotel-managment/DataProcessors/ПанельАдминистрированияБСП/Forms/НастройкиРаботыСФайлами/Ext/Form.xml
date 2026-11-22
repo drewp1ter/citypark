@@ -148,7 +148,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеХранитьФайлыВТомахНаДиске" id="1407">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -184,7 +184,7 @@
 							<ExtendedTooltip name="СправочникТомаХраненияФайловExtendedTooltip" id="2054"/>
 						</Button>
 						<LabelDecoration name="ПояснениеСправочникТомаХраненияФайлов" id="1275">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -257,7 +257,7 @@
 					</ChildItems>
 				</UsualGroup>
 				<LabelDecoration name="ПояснениеЗапретЗагрузкиФайловПоРасширению" id="1410">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -334,7 +334,7 @@
 					</ChildItems>
 				</UsualGroup>
 				<LabelDecoration name="ПояснениеМаксимальныйРазмерФайлаОбластиДанных" id="1413">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -381,7 +381,7 @@
 					</Events>
 				</InputField>
 				<LabelDecoration name="ПояснениеСписокРасширенийФайловOpenDocumentОбластиДанных" id="1417">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -417,7 +417,7 @@
 					</Events>
 				</InputField>
 				<LabelDecoration name="ПояснениеСписокРасширенийТекстовыхФайлов" id="1976">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -473,7 +473,7 @@
 							</Events>
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьЭлектронныеПодписи" id="1983">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -510,7 +510,7 @@
 							<ExtendedTooltip name="ОбщаяФормаНастройкиКриптографииРасширеннаяПодсказка" id="2077"/>
 						</Button>
 						<LabelDecoration name="ПояснениеОбщаяФормаНастройкиКриптографии" id="1987">
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -565,7 +565,7 @@
 						<LabelDecoration name="ПояснениеОбщиеПараметрыДляВсехОбластейДанных" id="2020">
 							<Width>86</Width>
 							<HorizontalStretch>false</HorizontalStretch>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -627,7 +627,7 @@
 									</ChildItems>
 								</UsualGroup>
 								<LabelDecoration name="ПояснениеМаксимальныйРазмерФайла" id="2039">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -674,7 +674,7 @@
 									</Events>
 								</InputField>
 								<LabelDecoration name="ПояснениеЗапретЗагрузкиФайловПоРасширению2" id="2026">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>
@@ -721,7 +721,7 @@
 									</Events>
 								</InputField>
 								<LabelDecoration name="ПояснениеСписокРасширенийФайловOpenDocument" id="2030">
-									<TextColor>style:ПоясняющийТекст</TextColor>
+									<TextColor>#455185</TextColor>
 									<Title formatted="false">
 										<v8:item>
 											<v8:lang>ru</v8:lang>

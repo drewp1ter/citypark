@@ -125,7 +125,7 @@
 					<ExtendedTooltip name="ОткрытьМакетыПечатныхФормExtendedTooltip" id="1606"/>
 				</Button>
 				<LabelDecoration name="ПояснениеОткрытьМакетыПечатныхФорм" id="1382">
-					<TextColor>style:ПоясняющийТекст</TextColor>
+					<TextColor>#455185</TextColor>
 					<Title formatted="false">
 						<v8:item>
 							<v8:lang>ru</v8:lang>
@@ -185,7 +185,7 @@
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьВариантыОтчетов" id="1395">
 							<Height>2</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -224,7 +224,7 @@
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьРассылкиОтчетов" id="1578">
 							<Height>2</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -295,7 +295,7 @@
 						</CheckBoxField>
 						<LabelDecoration name="ПояснениеИспользоватьДополнительныеОтчетыИОбработки" id="1591">
 							<Height>2</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
@@ -334,7 +334,7 @@
 						</Button>
 						<LabelDecoration name="ПояснениеОткрытьДополнительныеОтчетыИОбработки" id="1401">
 							<Height>2</Height>
-							<TextColor>style:ПоясняющийТекст</TextColor>
+							<TextColor>#455185</TextColor>
 							<Title formatted="false">
 								<v8:item>
 									<v8:lang>ru</v8:lang>
