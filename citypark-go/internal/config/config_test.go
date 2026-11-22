@@ -455,3 +455,13 @@ func TestBookingConfig(t *testing.T) {
 		t.Fatal("invalid flag accepted")
 	}
 }
+
+func TestBookingTrustedProxyConfig(t *testing.T) {
+	c, err := Load(lookupMap(map[string]string{"HOTEL_BOOKING_TRUSTED_PROXIES": "127.0.0.1/32, ::1/128, 10.0.0.0/8"}))
+	if err != nil || len(c.HotelBooking.TrustedProxies) != 3 || c.HotelBooking.TrustedProxies[0].String() != "127.0.0.1/32" {
+		t.Fatalf("proxies %+v %v", c.HotelBooking.TrustedProxies, err)
+	}
+	if _, err = Load(lookupMap(map[string]string{"HOTEL_BOOKING_TRUSTED_PROXIES": "private-secret"})); err == nil || strings.Contains(err.Error(), "private-secret") {
+		t.Fatal("invalid proxy accepted or leaked")
+	}
+}

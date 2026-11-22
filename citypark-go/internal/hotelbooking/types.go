@@ -8,10 +8,10 @@ import (
 )
 
 type AvailabilityRequest struct {
-	RoomTypeID string `json:"roomTypeId"`
-	CheckIn    string `json:"checkIn"`
-	CheckOut   string `json:"checkOut"`
-	Guests     int    `json:"guests"`
+	RoomTypeID string `json:"roomTypeId" validate:"required"`
+	CheckIn    string `json:"checkIn" validate:"required"`
+	CheckOut   string `json:"checkOut" validate:"required"`
+	Guests     int    `json:"guests" validate:"required"`
 }
 
 type AvailabilityResponse struct {
@@ -23,9 +23,9 @@ type AvailabilityResponse struct {
 }
 
 type Guest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Phone string `json:"phone"`
+	Name  string `json:"name" validate:"required"`
+	Email string `json:"email" validate:"required"`
+	Phone string `json:"phone" validate:"required"`
 }
 
 // Price uses integer kopecks on this private wire, unlike public ruble JSON.

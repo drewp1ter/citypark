@@ -93,6 +93,13 @@ func run() error {
 		}
 	}
 
+	bookingDone := make(chan struct{})
+	if a.BookingWorker != nil {
+		go func() { defer close(bookingDone); a.BookingWorker.Run(ctx) }()
+	} else {
+		close(bookingDone)
+	}
+	defer func() { stop(); <-bookingDone }()
 	serveErr := make(chan error, 1)
 	go func() {
 		log.Info("server listening", "addr", srv.Addr)

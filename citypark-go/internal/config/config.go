@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"net/mail"
+	"net/netip"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -72,6 +73,7 @@ type Moneta struct {
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
 type HotelBooking struct {
+	TrustedProxies      []netip.Prefix
 	Enabled             bool
 	URL, User, Password string
 }
@@ -259,6 +261,16 @@ func Load(lookup LookupFunc) (Config, error) {
 	c.HotelBooking = HotelBooking{Enabled: str("HOTEL_BOOKING_ENABLED", "false") == "true", URL: str("ONEC_BOOKING_URL", ""), User: str("ONEC_BOOKING_USER", ""), Password: str("ONEC_BOOKING_PASSWORD", "")}
 	if flag := str("HOTEL_BOOKING_ENABLED", "false"); flag != "true" && flag != "false" {
 		return Config{}, errors.New("HOTEL_BOOKING_ENABLED must be true or false")
+	}
+	for _, raw := range strings.Split(str("HOTEL_BOOKING_TRUSTED_PROXIES", ""), ",") {
+		if strings.TrimSpace(raw) == "" {
+			continue
+		}
+		prefix, err := netip.ParsePrefix(strings.TrimSpace(raw))
+		if err != nil {
+			return Config{}, errors.New("HOTEL_BOOKING_TRUSTED_PROXIES must contain comma-separated CIDRs")
+		}
+		c.HotelBooking.TrustedProxies = append(c.HotelBooking.TrustedProxies, prefix)
 	}
 	if c.HotelBooking.Enabled {
 		b := c.HotelBooking

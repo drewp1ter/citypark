@@ -22,6 +22,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/health"
 	"github.com/drewp1ter/citypark-go/internal/homepagemenu"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
+	"github.com/drewp1ter/citypark-go/internal/hotelbooking"
 	"github.com/drewp1ter/citypark-go/internal/iiko"
 	"github.com/drewp1ter/citypark-go/internal/live"
 	"github.com/drewp1ter/citypark-go/internal/logging"
@@ -42,12 +43,13 @@ import (
 
 // App is the assembled application. Notifier and IikoOrders are exposed so the caller can wait for pending sends.
 type App struct {
-	Handler    http.Handler
-	Notifier   *TelegramNotifier
-	IikoOrders *IikoOrders
-	Hub        *live.Hub
-	Syncer     *iiko.Syncer
-	Uploads    *upload.Storage
+	Handler       http.Handler
+	Notifier      *TelegramNotifier
+	IikoOrders    *IikoOrders
+	Hub           *live.Hub
+	Syncer        *iiko.Syncer
+	Uploads       *upload.Storage
+	BookingWorker *hotelbooking.Worker
 }
 
 // New builds all stores, services and handlers and returns the router.
@@ -103,12 +105,18 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	googleService := google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, "")
 	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)
 
+	booking := hotelbooking.NewService(hotelbooking.NewStore(db), room.NewStore(db), hotelbooking.NewClient(cfg.HotelBooking.URL, cfg.HotelBooking.User, cfg.HotelBooking.Password, nil), c)
+	var bookingWorker *hotelbooking.Worker
+	if cfg.HotelBooking.Enabled {
+		bookingWorker = hotelbooking.NewWorker(booking, mailer.NewSMTP(cfg.SMTP, nil), settings.NewStore(db), log)
+	}
 	r := chi.NewRouter()
 	r.Use(logging.Recover(log))
 	r.Use(middleware...)
 	r.Use(logging.Requests(log), cors)
 	r.Route("/api/v1", func(r chi.Router) {
 		health.Routes(r)
+		hotelbooking.NewHandler(booking, cfg.HotelBooking.Enabled, cfg.HotelBooking.TrustedProxies).Routes(r)
 		apidocs.Routes(r)
 		user.NewAuthHandler(users, tokens, cfg.CustomerAuthEnabled).Routes(r)
 		user.NewHandler(users, tokens, adapter.Required(true)).Routes(r)
@@ -146,7 +154,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	r.Get("/uploads/*", uploads.Serve().ServeHTTP)
 	r.Head("/uploads/*", uploads.Serve().ServeHTTP)
 
-	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Hub: hub, Syncer: syncer, Uploads: uploads}
+	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Hub: hub, Syncer: syncer, Uploads: uploads, BookingWorker: bookingWorker}
 }
 
 // cors allows any origin and answers preflight requests itself.

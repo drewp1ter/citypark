@@ -35,6 +35,12 @@ components:
       scheme: bearer
       description: Opaque cs_ customer token. Enabled by CUSTOMER_AUTH_ENABLED.
   parameters:
+    HotelBookingContext:
+      name: X-Hotel-Booking-Context
+      in: header
+      required: true
+      description: 32 random bytes as unpadded base64url; server-only token in signed HttpOnly SameSite=Lax cookie. Hash stored; all quote/key reads require the same context.
+      schema: {type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$'}
     Id:
       name: id
       in: path
@@ -60,6 +66,77 @@ components:
         minimum: 1
         maximum: 500
   responses:
+    HotelBooking400:
+      description: Проверьте данные бронирования
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingError'}
+          example: {statusCode: 400, code: INVALID_REQUEST, message: 'Проверьте данные бронирования'}
+    HotelBooking404:
+      description: Бронирование не найдено
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingError'}
+          example: {statusCode: 404, code: RESERVATION_NOT_FOUND, message: 'Бронирование не найдено'}
+    HotelBooking429:
+      description: Слишком много запросов. Попробуйте позже
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingError'}
+          example: {statusCode: 429, code: RATE_LIMITED, message: 'Слишком много запросов. Попробуйте позже'}
+    HotelBooking503:
+      description: Бронирование временно недоступно
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingError'}
+          example: {statusCode: 503, code: BOOKING_UNAVAILABLE, message: 'Бронирование временно недоступно'}
+    HotelBooking409:
+      description: Definitive inventory, consent or idempotency conflict; never automatically submit a new price/key.
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingError'}
+          examples:
+            occupied:
+              value: {statusCode: 409, code: ROOM_UNAVAILABLE, message: На выбранные даты нет свободного номера}
+            changed:
+              value: {statusCode: 409, code: PRICE_CHANGED, message: Стоимость проживания изменилась. Подтвердите новую стоимость}
+            conflictingKey:
+              value: {statusCode: 409, code: IDEMPOTENCY_CONFLICT, message: Ключ бронирования уже использован с другими данными}
+            expired:
+              value: {statusCode: 409, code: QUOTE_EXPIRED, message: Расчёт стоимости устарел. Обновите стоимость}
+    HotelBookingPending:
+      description: Creation unresolved; recover/replay the same key and saved payload; never reprice or claim failure.
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingPending'}
+          example: {status: pending}
+    HotelBookingConfirmed:
+      description: Committed 1C creation result; immutable even after staff cancellation; current email delivery status.
+      headers:
+        Cache-Control:
+          schema: {type: string, enum: [no-store]}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/HotelBookingConfirmed'}
+          example: {reservationId: 6e37e63e-b130-4ff6-a1b4-e0166f470922, status: confirmed, roomTypeId: single-balcony, checkIn: '2026-12-01', checkOut: '2026-12-03', guests: 1, price: {currency: RUB, nights: 2, pricePerNight: 4000, total: 8000}, confirmationEmailStatus: pending}
     BookError400:
       description: "Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field."
       headers:
@@ -188,6 +265,80 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    HotelBookingStay:
+      type: object
+      additionalProperties: false
+      required: [roomTypeId, checkIn, checkOut, guests]
+      properties:
+        roomTypeId: {type: string, enum: [single, single-balcony, double-twin, double-euro, vip]}
+        checkIn: {type: string, format: date, description: Tomorrow or later in Europe/Moscow; years 0001–3999.}
+        checkOut: {type: string, format: date, description: After checkIn; years 0001–3999; no business maximum stay/horizon.}
+        guests: {type: integer, minimum: 1, maximum: 4, description: 'Capacity: single/balcony 1, twin/Euro 2, VIP 4.'}
+    HotelBookingGuest:
+      type: object
+      additionalProperties: false
+      required: [name, email, phone]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 150, description: Trimmed Unicode name; no controls.}
+        email: {type: string, format: email, maxLength: 254, description: Bare address; trimmed; domain lowercased; local-part case preserved; byte limit.}
+        phone: {type: string, description: 'Normalized to + and 8–15 digits; strip spaces/parentheses/hyphens; Russian 8 prefix becomes +7.'}
+    HotelBookingPrice:
+      type: object
+      additionalProperties: false
+      required: [currency, nights, pricePerNight, total]
+      properties:
+        currency: {type: string, enum: [RUB]}
+        nights: {type: integer, minimum: 1}
+        pricePerNight: {type: number, example: 4000, description: Rubles; positive checked integer kopecks internally.}
+        total: {type: number, example: 8000, description: Calendar nights times the accepted rate in rubles.}
+    HotelBookingQuote:
+      type: object
+      additionalProperties: false
+      required: [quoteId, expiresAt, roomTypeId, checkIn, checkOut, guests, available, price]
+      properties:
+        quoteId: {type: string, format: uuid}
+        expiresAt: {type: string, format: date-time, description: Ten-minute quote lifetime.}
+        roomTypeId: {type: string, enum: [single, single-balcony, double-twin, double-euro, vip]}
+        checkIn: {type: string, format: date}
+        checkOut: {type: string, format: date}
+        guests: {type: integer, minimum: 1, maximum: 4}
+        available: {type: boolean, enum: [true]}
+        price: {$ref: '#/components/schemas/HotelBookingPrice'}
+    HotelBookingCreate:
+      type: object
+      additionalProperties: false
+      required: [idempotencyKey, quoteId, guest]
+      properties:
+        idempotencyKey: {type: string, format: uuid, description: Canonical lowercase nonzero UUID; retain forever for recovery/replay.}
+        quoteId: {type: string, format: uuid, description: Canonical lowercase nonzero UUID; same context.}
+        guest: {$ref: '#/components/schemas/HotelBookingGuest'}
+    HotelBookingPending:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: {type: string, enum: [pending]}
+    HotelBookingConfirmed:
+      type: object
+      additionalProperties: false
+      required: [reservationId, status, roomTypeId, checkIn, checkOut, guests, price, confirmationEmailStatus]
+      properties:
+        reservationId: {type: string, format: uuid}
+        status: {type: string, enum: [confirmed]}
+        roomTypeId: {type: string, enum: [single, single-balcony, double-twin, double-euro, vip]}
+        checkIn: {type: string, format: date}
+        checkOut: {type: string, format: date}
+        guests: {type: integer, minimum: 1, maximum: 4}
+        price: {$ref: '#/components/schemas/HotelBookingPrice'}
+        confirmationEmailStatus: {type: string, enum: [pending, sent], description: Failed delivery remains pending; at-least-once SMTP retries.}
+    HotelBookingError:
+      type: object
+      additionalProperties: false
+      required: [statusCode, code, message]
+      properties:
+        statusCode: {type: integer, enum: [400, 404, 409, 429, 503]}
+        code: {type: string, enum: [INVALID_REQUEST, RESERVATION_NOT_FOUND, ROOM_UNAVAILABLE, PRICE_CHANGED, IDEMPOTENCY_CONFLICT, QUOTE_EXPIRED, RATE_LIMITED, BOOKING_UNAVAILABLE]}
+        message: {type: string}
     HomepageMenu:
       type: object
       required: [categories]
@@ -1445,6 +1596,74 @@ components:
               description: Empty, or `X% Y%` with X and Y from 0 to 100.
               example: 50% 30%
 paths:
+  /hotel/quotes:
+    post:
+      tags: [hotel]
+      summary: Quote one room for a complete stay
+      description: Anonymous server-side context; 16 KiB strict JSON; 30/minute/IP fixed UTC window. Availability advisory, quote expires in ten minutes. Missing/overflowed rate or upstream failure is 503. No inventory is 409 ROOM_UNAVAILABLE. Disabled booking returns 503.
+      parameters:
+        - $ref: '#/components/parameters/HotelBookingContext'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HotelBookingStay'}
+            example: {roomTypeId: single-balcony, checkIn: '2026-12-01', checkOut: '2026-12-03', guests: 1}
+      responses:
+        '200':
+          description: Persistent price snapshot with advisory availability
+          headers:
+            Cache-Control:
+              schema: {type: string, enum: [no-store]}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/HotelBookingQuote'}
+              example: {quoteId: 1d2c6be4-b903-4eb2-9145-02176cc397eb, expiresAt: '2026-11-22T21:09:00Z', roomTypeId: single-balcony, checkIn: '2026-12-01', checkOut: '2026-12-03', guests: 1, available: true, price: {currency: RUB, nights: 2, pricePerNight: 4000, total: 8000}}
+        '400': {$ref: '#/components/responses/HotelBooking400'}
+        '409': {$ref: '#/components/responses/HotelBooking409'}
+        '429': {$ref: '#/components/responses/HotelBooking429'}
+        '503': {$ref: '#/components/responses/HotelBooking503'}
+  /hotel/reservations:
+    post:
+      tags: [hotel]
+      summary: Create or replay an instantly confirmed reservation without prepayment
+      description: Strict 16 KiB JSON. New attempts revalidate quote expiry/Moscow dates/current rate. Expired/changed quote needs fresh explicit consent. Persisted attempts retain canonical payload/key indefinitely; replay survives expiry/rate changes. Same key with different quote/guest is 409 IDEMPOTENCY_CONFLICT; wrong context/unknown quote 404. New attempts 5/hour/IP plus 3/hour/contact-pair hash in fixed UTC windows; existing-key replay and lookup share 30/minute/IP outside creation quotas. Ambiguous dispatch returns 202; worker recovers every 30 seconds. SMTP failure cannot undo confirmation. Storage failure before durable attempt is 503.
+      parameters:
+        - $ref: '#/components/parameters/HotelBookingContext'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HotelBookingCreate'}
+            example: {idempotencyKey: eaf9d7d3-2b21-43a9-8e27-e718b65d2588, quoteId: 1d2c6be4-b903-4eb2-9145-02176cc397eb, guest: {name: ' Иван Иванов ', email: Ivan@EXAMPLE.COM, phone: '8 (918) 000-00-00'}}
+      responses:
+        '200': {$ref: '#/components/responses/HotelBookingConfirmed'}
+        '201': {$ref: '#/components/responses/HotelBookingConfirmed'}
+        '202': {$ref: '#/components/responses/HotelBookingPending'}
+        '400': {$ref: '#/components/responses/HotelBooking400'}
+        '404': {$ref: '#/components/responses/HotelBooking404'}
+        '409': {$ref: '#/components/responses/HotelBooking409'}
+        '429': {$ref: '#/components/responses/HotelBooking429'}
+        '503': {$ref: '#/components/responses/HotelBooking503'}
+  /hotel/reservations/{idempotencyKey}:
+    get:
+      tags: [hotel]
+      summary: Recover a creation result within its original booking context
+      description: Unknown key/wrong context both return 404. Pending is exactly status=pending; never treat it as failure. Confirmed result survives staff cancellation. Saved definitive validation/conflict rejection returns its original 400/409 code; no repricing. Recovery and replay share 30/minute/IP; unknown-key probes count. Poll same key every five seconds while visible; worker operates independently.
+      parameters:
+        - $ref: '#/components/parameters/HotelBookingContext'
+        - name: idempotencyKey
+          in: path
+          required: true
+          schema: {type: string, format: uuid, description: Canonical lowercase nonzero UUID.}
+      responses:
+        '200': {$ref: '#/components/responses/HotelBookingConfirmed'}
+        '202': {$ref: '#/components/responses/HotelBookingPending'}
+        '400': {$ref: '#/components/responses/HotelBooking400'}
+        '404': {$ref: '#/components/responses/HotelBooking404'}
+        '409': {$ref: '#/components/responses/HotelBooking409'}
+        '429': {$ref: '#/components/responses/HotelBooking429'}
+        '503': {$ref: '#/components/responses/HotelBooking503'}
   /customer/addresses:
     get:
       summary: List saved addresses

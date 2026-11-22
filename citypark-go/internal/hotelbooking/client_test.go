@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -229,10 +230,10 @@ func TestClientCredentialIsolation(t *testing.T) {
 	}
 }
 func TestClientAmbiguousCreateRecovery(t *testing.T) {
-	creates := 0
+	var creates atomic.Int32
 	client := testClient(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
-			creates++
+			creates.Add(1)
 			var req CreateRequest
 			if json.NewDecoder(r.Body).Decode(&req) != nil || req.IdempotencyKey != testKey {
 				t.Error("changed recovery key")
@@ -249,11 +250,11 @@ func TestClientAmbiguousCreateRecovery(t *testing.T) {
 	})
 	_, err := client.Create(context.Background(), testRequest())
 	var ambiguous *AmbiguousCreateError
-	if !errors.As(err, &ambiguous) || creates != 1 {
-		t.Fatalf("ambiguous create retried: %v, %d", err, creates)
+	if !errors.As(err, &ambiguous) || creates.Load() != 1 {
+		t.Fatalf("ambiguous create retried: %v, %d", err, creates.Load())
 	}
 	got, err := client.Lookup(context.Background(), testKey)
-	if err != nil || got != testReservation() || creates != 1 {
+	if err != nil || got != testReservation() || creates.Load() != 1 {
 		t.Fatalf("same-key recovery failed: %v", err)
 	}
 }

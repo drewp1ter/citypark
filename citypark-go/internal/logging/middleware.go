@@ -46,12 +46,17 @@ func Requests(log *slog.Logger) func(http.Handler) http.Handler {
 			sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 			next.ServeHTTP(sw, r)
 
+			path, ip := r.URL.Path, clientIP(r)
+			if strings.HasPrefix(path, "/api/v1/hotel/") {
+				path = "/api/v1/hotel/[private]"
+				ip = "[redacted]"
+			}
 			log.Log(r.Context(), levelFor(sw.status), "request",
 				"method", r.Method,
-				"path", r.URL.Path,
+				"path", path,
 				"status", sw.status,
 				"duration_ms", time.Since(start).Milliseconds(),
-				"ip", clientIP(r),
+				"ip", ip,
 			)
 		})
 	}

@@ -60,6 +60,7 @@ All settings are environment variables. `make run` and `make seed` load `.env` w
 | `TELEGRAM_PROXY_URL` | empty | Telegram-only SOCKS5 proxy, e.g. `socks5h://user:password@proxy-host:1080`; proxy failure never falls back to direct access. Both schemes resolve the target through the proxy. Empty preserves environment proxy behavior. |
 | `TELEGRAM_TOKEN` | empty | Bot token |
 | `TELEGRAM_STAFF_CHAT_ID` | empty | Staff chat for paid orders and iiko alerts |
+| `HOTEL_BOOKING_TRUSTED_PROXIES` | empty | Comma-separated trusted proxy CIDRs for verified booking client IP forwarding; empty ignores forwarded headers |
 | `HOTEL_BOOKING_ENABLED` | `false` | Enable hotel booking integration; requires all booking credentials and SMTP settings |
 | `ONEC_BOOKING_URL` | empty | Private service root ending `/hs/booking/v1`; HTTPS required in production |
 | `ONEC_BOOKING_USER` | empty | Dedicated restricted booking service user; independent of reporting credentials |
@@ -176,3 +177,52 @@ Keep campaigns disabled until an explicitly authorized deployment acceptance ver
 Optional HTTP error and trace monitoring is documented in [docs/SENTRY.md](docs/SENTRY.md), including environment variables, privacy behavior, verification and manual deployment. Empty `SENTRY_DSN` disables reporting.
 
 Production public-content export and restore: [docs/CONTENT_SEED.md](docs/CONTENT_SEED.md). This uses a separate command from the development demo seeder.
+
+## Hotel booking API and workers
+
+Task 107 exposes `/api/v1/hotel/quotes` and `/api/v1/hotel/reservations`; see
+[the exact public contract](docs/API.md#hotel-booking). Booking remains disabled
+by default. Migration 40 adds PostgreSQL quotes, attempts, rate counters and a
+confirmation-email outbox. Migrations run through the existing startup path.
+There is no automatic deployment or production activation.
+
+When enabled, each server process starts a cancellation-aware worker. Pending
+creation recovery runs every 30 seconds using the original persisted request/key,
+without holding SQL transactions across HTTP. Row claims use one-minute leases,
+`SKIP LOCKED` and fencing tokens. A worker crash is recoverable after lease expiry;
+multiple processes can run safely. Confirmation and its unique outbox row commit
+atomically. SMTP retries use 30 seconds, 1 minute, 5 minutes, then 30 minutes;
+delivery is at-least-once. The worker reads the current hotel contact phone from
+site settings. Missing contact configuration keeps email pending.
+
+Configure `HOTEL_BOOKING_TRUSTED_PROXIES` with comma-separated CIDRs only for
+trusted immediate proxies/website servers which securely build the forwarded IP
+chain. Empty means all forwarded IP headers are ignored. This setting is separate
+from reporting credentials and other API middleware. Quotes use fixed UTC minute
+windows; new valid attempts use UTC hour windows. Review limits with the actual
+website/proxy topology before release.
+
+Monitor the following aggregate queries with restricted DB access; alert on
+increasing age/backlog and repeated sanitized worker warnings. Do not log canonical
+requests, results, context headers/cookies, keys, email addresses or phone numbers.
+
+```sql
+SELECT count(*) AS pending_count,
+       extract(epoch FROM (now() - min(created_at))) AS oldest_pending_seconds
+FROM hotel_booking_attempts WHERE state = 'pending';
+SELECT count(*) AS email_backlog,
+       max(attempts) AS max_delivery_attempts,
+       extract(epoch FROM (now() - min(next_attempt_at))) AS oldest_due_seconds
+FROM hotel_booking_email_outbox WHERE state = 'pending' AND next_attempt_at <= now();
+```
+
+Booking access logs redact paths and IPs; worker messages omit upstream/database/
+SMTP error strings. Contacts and canonical JSON remain sensitive data in the
+restricted database for recovery/email. Keep attempt/key records for the
+reservation lifetime; there is no automatic expiry/reuse. Quotes referenced by
+attempts must remain. Rate-counter rows may be pruned operationally after their
+window ends; unused expired quotes may be pruned only when no attempt references
+them. Do not delete pending attempts/outbox rows to clear alerts. Back up and
+restore the booking tables together; inspect pending recovery after a restore.
+Live 1C/SMTP and production acceptance are separate release checks; automated
+backend tests use the configured test database and local fakes.

@@ -3798,3 +3798,152 @@ Validation fields (first error returned; rejected saves leave configuration unch
 ### Saved address recipient fields
 
 Customer address create/update requests require `recipientName` (trimmed, 2–80 Unicode characters) and `recipientPhone` (valid Russian phone, normalized to `+7XXXXXXXXXX`). Responses include both strings; existing entries return empty strings until edited. These belong to each user-address association. Missing/invalid values return 400 `Проверьте адрес`, with `errors.recipientName` (`Укажите имя` / `Слишком длинное имя`) or `errors.recipientPhone` (`Введите номер полностью: +7 ___ ___-__-__`). Duplicate creation preserves existing contacts; account merges preserve survivor contacts. Coordinate backend/frontend deployment because old clients omit required fields.
+
+### Hotel booking
+
+These public endpoints are independent of customer accounts and disabled by default
+(`HOTEL_BOOKING_ENABLED=false` → 503). All responses, including errors and pending
+results, have `Cache-Control: no-store`. Bodies are UTF-8 JSON, at most 16 KiB;
+unknown, duplicate, incorrectly cased or missing fields, nulls and trailing JSON
+are rejected. Do not cache them in Next.js, a service worker or a reverse proxy.
+
+The website server supplies `X-Hotel-Booking-Context` on **every** request: exactly
+32 cryptographically random bytes encoded as unpadded base64url (43 characters).
+It keeps this token in a signed HttpOnly SameSite=Lax cookie and forwards it only
+server-side. Go stores its SHA-256 hash and binds quotes/attempts to it. This token
+does not identify a customer account. Never log it or use a public 1C proxy.
+
+Booking errors use this exact envelope (unlike the general API, they include `code`):
+
+```json
+{"statusCode":409,"code":"ROOM_UNAVAILABLE","message":"На выбранные даты нет свободного номера"}
+```
+
+| Status | Code | Exact message |
+| --- | --- | --- |
+| 400 | INVALID_REQUEST | Проверьте данные бронирования |
+| 404 | RESERVATION_NOT_FOUND | Бронирование не найдено |
+| 409 | ROOM_UNAVAILABLE | На выбранные даты нет свободного номера |
+| 409 | PRICE_CHANGED | Стоимость проживания изменилась. Подтвердите новую стоимость |
+| 409 | IDEMPOTENCY_CONFLICT | Ключ бронирования уже использован с другими данными |
+| 409 | QUOTE_EXPIRED | Расчёт стоимости устарел. Обновите стоимость |
+| 429 | RATE_LIMITED | Слишком много запросов. Попробуйте позже |
+| 503 | BOOKING_UNAVAILABLE | Бронирование временно недоступно |
+
+Rate limits are shared by all Go processes and use fixed UTC minute/hour windows:
+quotes 30/minute/IP; accepted new creation attempts 5/hour/IP and
+3/hour/normalized email+phone pair; existing-key replay and lookup share
+30/minute/IP independently of new creation quotas. Unknown-key lookups count too.
+Contact/IP quota identifiers are hashed. Invalid data or a stale/changed quote
+never dispatches creation. Forwarded IPs are ignored unless the immediate peer
+belongs to `HOTEL_BOOKING_TRUSTED_PROXIES` (comma-separated CIDRs). Trusted proxy
+chains are walked from the right to the first untrusted hop; configure only
+proxies which append/overwrite verified client addresses. Invalid trusted chains
+return 400. Do not forward a browser-supplied IP header unchanged.
+
+#### POST /hotel/quotes
+
+Role: public; booking-context header required. No query parameters.
+
+Required body: `roomTypeId` (`single`, `single-balcony`, `double-twin`,
+`double-euro`, `vip`), `checkIn`, `checkOut` (Gregorian `YYYY-MM-DD`, years
+0001–3999), and integer `guests`. Arrival must be tomorrow or later in
+Europe/Moscow; checkout must follow arrival. Capacities: single/single-balcony 1,
+twin/Euro 2, VIP 4. No business maximum stay or advance horizon. Nights are calendar
+date differences, independent of 1C's configured check-in/out clock times.
+
+```json
+{"roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1}
+```
+
+200 (captured handler example; quote ID is generated):
+
+```json
+{"quoteId":"1d2c6be4-b903-4eb2-9145-02176cc397eb","expiresAt":"2026-11-22T21:09:00Z","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"available":true,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000}}
+```
+
+A quote lasts ten minutes. Go reads the admin-managed `rooms.price_kopecks` rate,
+checks positive rates and integer multiplication overflow, and asks 1C for
+whole-stay availability. Public prices are rubles. Availability is advisory until
+creation commits. Occupied inventory returns 409 `ROOM_UNAVAILABLE`, with no quote.
+Other errors: 400 `INVALID_REQUEST`, 429 `RATE_LIMITED`, 503
+`BOOKING_UNAVAILABLE` (including missing rate/configuration, overflow, storage or
+upstream failure). Messages are in the table above.
+
+#### POST /hotel/reservations
+
+Role: public; same booking context as the quote. No query parameters.
+
+Required body contains **only** `idempotencyKey`, `quoteId` (canonical lowercase,
+nonzero UUIDs) and `guest` with required `name`, `email`, `phone`. Name is trimmed,
+1–150 Unicode characters. Email is trimmed, at most 254 bytes, validated as a bare
+address; local-part case is preserved, domain is lowercased. Phone removes spaces,
+parentheses and hyphens and becomes `+` plus 8–15 ASCII digits; Russian `8` plus ten
+digits becomes `+7`. Control characters are rejected. No passport, account,
+physical-room reference or client price is accepted.
+
+```json
+{"idempotencyKey":"eaf9d7d3-2b21-43a9-8e27-e718b65d2588","quoteId":"1d2c6be4-b903-4eb2-9145-02176cc397eb","guest":{"name":" Иван Иванов ","email":"Ivan@EXAMPLE.COM","phone":"8 (918) 000-00-00"}}
+```
+
+201 for a newly committed attempt, 200 for confirmed replay (captured handler response):
+
+```json
+{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000},"confirmationEmailStatus":"pending"}
+```
+
+`confirmationEmailStatus` is `pending` or `sent`. SMTP failure keeps it pending and
+cannot undo a committed booking. Delivery is at-least-once; a lost SMTP
+acknowledgement can produce a duplicate email, never a duplicate reservation.
+Confirmation includes reservation reference, room type, dates, guests, RUB total
+and hotel contact phone, with no payment link.
+
+202 when creation may have committed or is still executing:
+
+```json
+{"status":"pending"}
+```
+
+Persist the key before submission. For a pending result, interrupted request or
+network timeout, recover/replay using **the same key, quote and normalized guest**.
+Do not generate another key, reprice or report failure. The worker checks saved
+pending attempts every 30 seconds; it can resend the identical saved 1C request
+after a missing-key lookup. A 1C lookup 404 alone cannot prove that a previous
+POST failed. Recovery survives browser closure and expired quotes/rate changes.
+
+Initial creation revalidates Moscow dates, quote expiry and current rate before
+1C dispatch. 409 `QUOTE_EXPIRED` or `PRICE_CHANGED` creates nothing: obtain a fresh
+quote and explicit user consent before submitting a new attempt. A key already
+persisted belongs permanently to its original quote, context and normalized
+guest; different quote/guest returns 409 `IDEMPOTENCY_CONFLICT`. Wrong context or
+unknown quote returns 404 `RESERVATION_NOT_FOUND` without exposing another context.
+Definitive 1C validation/conflict errors are saved as rejected attempts; replay
+returns that error rather than dispatching again. Availability conflicts create
+no confirmed booking. Once dispatched, uncertain errors (including 1C outages)
+remain 202 pending until reconciliation establishes an authoritative result.
+
+Errors: 400 `INVALID_REQUEST`; 404 `RESERVATION_NOT_FOUND`; 409
+`ROOM_UNAVAILABLE`, `PRICE_CHANGED`, `IDEMPOTENCY_CONFLICT`, `QUOTE_EXPIRED`;
+429 `RATE_LIMITED`; 503 `BOOKING_UNAVAILABLE` for failure before a durable attempt.
+All exact messages are in the table above.
+
+#### GET /hotel/reservations/{idempotencyKey}
+
+Role: public; same booking context as creation. Path `idempotencyKey` is a
+canonical lowercase, nonzero UUID. No body/query parameters.
+
+Example: `GET /api/v1/hotel/reservations/eaf9d7d3-2b21-43a9-8e27-e718b65d2588`
+with `X-Hotel-Booking-Context`.
+
+200 returns the confirmed response shown above, with the current email delivery
+status; 202 returns exactly `{"status":"pending"}`. This is immutable creation
+recovery, not current cancellation status: staff cancellation does not erase or
+rewrite the saved confirmation. Poll the same key while pending (website interval:
+five seconds); browser polling is not required for background recovery/email.
+
+404 `RESERVATION_NOT_FOUND` means unknown key or wrong context, without revealing
+which. Other errors: 400 `INVALID_REQUEST` (bad context/key or saved validation
+rejection), 409 `ROOM_UNAVAILABLE` / `IDEMPOTENCY_CONFLICT` (saved definitive
+rejection), 429 `RATE_LIMITED`, 503 `BOOKING_UNAVAILABLE`. Exact messages are in the
+table above. Keep the original key after any transport error; never infer a failed
+reservation from a client timeout.
