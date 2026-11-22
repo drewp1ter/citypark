@@ -184,6 +184,9 @@ func (c *Client) request(ctx context.Context, method, path string, body, out any
 	if err != nil || media != "application/json" {
 		return fail()
 	}
+	// 1C's UTF-8 HTTP writer can prepend a BOM. Accept it only at the wire
+	// boundary; keep stored JSON and all remaining response validation strict.
+	raw = bytes.TrimPrefix(raw, []byte{0xef, 0xbb, 0xbf})
 	if resp.StatusCode != http.StatusOK && !(create && resp.StatusCode == http.StatusCreated) {
 		var wire struct {
 			StatusCode int    `json:"statusCode"`

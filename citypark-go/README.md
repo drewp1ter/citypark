@@ -121,7 +121,9 @@ to the separate booking credentials. Existing `ONEC_HOTEL_URL`, `ONEC_USER` and
 Use an isolated development base for HTTP tests; production requires HTTPS.
 
 The client rejects redirects, limits responses to 64 KiB and bounds each request
-to 15 seconds (or a shorter injected client/context deadline). Errors exclude
+to 15 seconds (or a shorter injected client/context deadline). It accepts one
+leading UTF-8 BOM emitted by 1C's HTTP writer; all remaining JSON validation stays
+strict, including errors and saved reservation results. Errors exclude
 upstream bodies, URLs and credentials. `AmbiguousCreateError` means a reservation
 may have committed: lookup or replay using the **original key and payload**;
 never generate a replacement key. Recovery returns the saved creation result even

@@ -317,3 +317,96 @@ func TestClientResponseBoundaryAndTruncation(t *testing.T) {
 		}
 	}
 }
+
+func TestClientUTF8BOMResponses(t *testing.T) {
+	stay := AvailabilityRequest{"single-balcony", "2026-12-01", "2026-12-03", 1}
+	for _, prefix := range []string{"", "\xef\xbb\xbf"} {
+		for _, available := range []bool{true, false} {
+			t.Run(fmt.Sprintf("availability/%x/%t", prefix, available), func(t *testing.T) {
+				want := AvailabilityResponse{stay.RoomTypeID, stay.CheckIn, stay.CheckOut, stay.Guests, available}
+				client := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					fmt.Fprint(w, prefix)
+					_ = json.NewEncoder(w).Encode(want)
+				})
+				got, err := client.Availability(context.Background(), stay)
+				if err != nil || got != want {
+					t.Fatalf("availability: %+v %v", got, err)
+				}
+			})
+		}
+		for _, operation := range []string{"create", "replay", "lookup"} {
+			t.Run(fmt.Sprintf("%s/%x", operation, prefix), func(t *testing.T) {
+				client := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					if operation == "create" {
+						w.WriteHeader(http.StatusCreated)
+					}
+					fmt.Fprint(w, prefix)
+					_ = json.NewEncoder(w).Encode(testReservation())
+				})
+				var got Reservation
+				var err error
+				if operation == "lookup" {
+					got, err = client.Lookup(context.Background(), testKey)
+				} else {
+					got, err = client.Create(context.Background(), testRequest())
+				}
+				if err != nil || got != testReservation() {
+					t.Fatalf("reservation: %+v %v", got, err)
+				}
+			})
+		}
+		for _, operation := range []string{"availability", "create", "lookup"} {
+			t.Run(fmt.Sprintf("error/%s/%x", operation, prefix), func(t *testing.T) {
+				client := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json; charset=utf-8")
+					w.WriteHeader(http.StatusForbidden)
+					fmt.Fprint(w, prefix+`{"statusCode":403,"code":"FORBIDDEN","message":"Доступ запрещён"}`)
+				})
+				var err error
+				switch operation {
+				case "availability":
+					_, err = client.Availability(context.Background(), stay)
+				case "create":
+					_, err = client.Create(context.Background(), testRequest())
+				case "lookup":
+					_, err = client.Lookup(context.Background(), testKey)
+				}
+				var protocol *ProtocolError
+				var ambiguous *AmbiguousCreateError
+				if !errors.As(err, &protocol) || protocol.StatusCode != http.StatusForbidden || protocol.Code != "FORBIDDEN" || errors.As(err, &ambiguous) {
+					t.Fatalf("expected definitive forbidden response, got %T %v", err, err)
+				}
+			})
+		}
+	}
+}
+
+func TestClientUTF8BOMStrictValidation(t *testing.T) {
+	const bom = "\xef\xbb\xbf"
+	const valid = `{"roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"available":true}`
+	for name, body := range map[string]string{
+		"double BOM":     bom + bom + valid,
+		"misplaced BOM":  " " + bom + valid,
+		"UTF16 BOM":      "\xff\xfe" + valid,
+		"empty document": bom,
+		"trailing JSON":  bom + valid + `{}`,
+		"unknown field":  bom + strings.TrimSuffix(valid, "}") + `,"internal":"secret"}`,
+		"missing field":  bom + strings.Replace(valid, `,"available":true`, "", 1),
+		"null field":     bom + strings.Replace(valid, `"available":true`, `"available":null`, 1),
+		"wrong type":     bom + strings.Replace(valid, `"available":true`, `"available":"true"`, 1),
+		"wrong stay":     bom + strings.Replace(valid, "single-balcony", "vip", 1),
+	} {
+		t.Run(name, func(t *testing.T) {
+			client := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json; charset=utf-8")
+				fmt.Fprint(w, body)
+			})
+			got, err := client.Availability(context.Background(), AvailabilityRequest{"single-balcony", "2026-12-01", "2026-12-03", 1})
+			if !errors.Is(err, ErrUnavailable) {
+				t.Fatalf("expected unavailable, got %+v %v", got, err)
+			}
+		})
+	}
+}
