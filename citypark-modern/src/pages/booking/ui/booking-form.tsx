@@ -265,8 +265,9 @@ export function BookingForm({
 				</fieldset>
 				<fieldset disabled={locked} className='grid min-w-0 gap-4'>
 					<legend className='mb-3 text-xl font-semibold'>Данные гостя</legend>
+					<p className='text-text-muted text-sm'>Все поля в этом разделе обязательны.</p>
 					<TextField
-						label='Имя'
+						label='ФИО'
 						name='name'
 						autoComplete='name'
 						value={guest.name}

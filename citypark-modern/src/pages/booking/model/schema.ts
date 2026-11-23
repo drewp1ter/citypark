@@ -5,9 +5,9 @@ export const guestSchema = z
 	.object({
 		name: z
 			.string()
-			.refine(noControls, 'Укажите имя без управляющих символов')
+			.refine(noControls, 'Укажите ФИО без управляющих символов')
 			.transform((v) => v.trim())
-			.refine((v) => [...v].length >= 1 && [...v].length <= 150, 'Укажите имя (до 150 символов)'),
+			.refine((v) => [...v].length >= 1 && [...v].length <= 150, 'Укажите ФИО (до 150 символов)'),
 		email: z
 			.string()
 			.refine(noControls, 'Проверьте электронную почту')

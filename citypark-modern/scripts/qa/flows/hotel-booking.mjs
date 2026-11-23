@@ -122,20 +122,20 @@ try {
 
 			if (offlineQuote) {
 				const name = 'Тест недоступности сайта 73'
-				await page.getByLabel('Имя', { exact: true }).fill(name)
+				await page.getByLabel('ФИО', { exact: true }).fill(name)
 				await page.getByLabel('Электронная почта', { exact: true }).fill('signup@retand.tech')
 				await page.getByLabel('Телефон', { exact: true }).fill('+70000000073')
 				await context.setOffline(true)
 				await page.getByRole('button', { name: 'Проверить наличие и стоимость', exact: true }).click()
 				await page.getByRole('alert').filter({ hasText: 'Бронирование временно недоступно' }).waitFor()
-				assert.equal(await page.getByLabel('Имя', { exact: true }).inputValue(), name)
+				assert.equal(await page.getByLabel('ФИО', { exact: true }).inputValue(), name)
 				assert.equal(await page.getByLabel('Электронная почта', { exact: true }).inputValue(), 'signup@retand.tech')
 				assert.equal(await page.locator('[name=checkIn]').inputValue(), stay.checkIn)
 				assert.equal(await page.locator('[name=checkOut]').inputValue(), stay.checkOut)
 				await context.setOffline(false)
 				await page.getByRole('button', { name: 'Проверить наличие и стоимость', exact: true }).click()
 				await page.getByRole('button', { name: 'Забронировать', exact: true }).waitFor()
-				assert.equal(await page.getByLabel('Имя', { exact: true }).inputValue(), name)
+				assert.equal(await page.getByLabel('ФИО', { exact: true }).inputValue(), name)
 			}
 			if (
 				[
@@ -159,7 +159,7 @@ try {
 						.locator('form')
 						.getByText(/^Итого:/)
 						.innerText()
-					await page.getByLabel('Имя', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_NAME)
+					await page.getByLabel('ФИО', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_NAME)
 					await page.getByLabel('Электронная почта', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_EMAIL)
 					await page.getByLabel('Телефон', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_PHONE)
 					if (stage === 'price-change' && process.env.HOTEL_BOOKING_QA_AUTOMATIC_PRICE_CHANGE === '1') {
@@ -193,7 +193,7 @@ try {
 								? 'На выбранные даты нет свободного номера'
 								: 'Стоимость проживания изменилась. Подтвердите новую стоимость'
 						await page.getByRole('alert').filter({ hasText: expected }).waitFor({ timeout: 30000 })
-						assert.equal(await page.getByLabel('Имя', { exact: true }).inputValue(), process.env.HOTEL_BOOKING_QA_NAME)
+						assert.equal(await page.getByLabel('ФИО', { exact: true }).inputValue(), process.env.HOTEL_BOOKING_QA_NAME)
 						assert.equal(await page.getByRole('button', { name: 'Забронировать', exact: true }).count(), 0)
 						if (stage === 'price-change' && cleanup.length) {
 							const requestsBeforeRefresh = creationRequests
@@ -202,7 +202,7 @@ try {
 							await page.getByRole('button', { name: 'Забронировать', exact: true }).waitFor()
 							assert.match(await page.locator('form').innerText(), /Итого:/)
 							assert.equal(
-								await page.getByLabel('Имя', { exact: true }).inputValue(),
+								await page.getByLabel('ФИО', { exact: true }).inputValue(),
 								process.env.HOTEL_BOOKING_QA_NAME
 							)
 							assert.notEqual(
@@ -223,7 +223,7 @@ try {
 						await page.reload()
 						await page.getByRole('heading', { name: 'Проверяем бронирование' }).waitFor()
 						assert.equal(new URL(page.url()).searchParams.get('attempt'), attempt)
-						assert.equal(await page.getByLabel('Имя', { exact: true }).inputValue(), process.env.HOTEL_BOOKING_QA_NAME)
+						assert.equal(await page.getByLabel('ФИО', { exact: true }).inputValue(), process.env.HOTEL_BOOKING_QA_NAME)
 					} else {
 						await page.getByRole('heading', { name: 'Бронирование подтверждено' }).waitFor({ timeout: 60000 })
 						creationArmed = false
@@ -253,12 +253,12 @@ try {
 				assert.equal(new URL(page.url()).searchParams.get('attempt'), attempt)
 			}
 			if (readonly) {
-				await page.getByLabel('Имя', { exact: true }).fill('Тест сохранения')
+				await page.getByLabel('ФИО', { exact: true }).fill('Тест сохранения')
 				await page.getByLabel('Электронная почта', { exact: true }).fill('draft@example.invalid')
 				await page.getByRole('button', { name: 'Гости', exact: false }).last().click()
 				await page.getByRole('option', { name: '4', exact: true }).click()
-				assert.equal(await page.getByLabel('Имя', { exact: true }).inputValue(), 'Тест сохранения')
-				await page.getByLabel('Имя', { exact: true }).focus()
+				assert.equal(await page.getByLabel('ФИО', { exact: true }).inputValue(), 'Тест сохранения')
+				await page.getByLabel('ФИО', { exact: true }).focus()
 				await page.keyboard.press('Tab')
 				assert.equal(
 					await page.getByLabel('Электронная почта', { exact: true }).evaluate((el) => el === document.activeElement),

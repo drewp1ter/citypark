@@ -59,7 +59,7 @@ try {
 		if (index === 0) {
 			await page.getByRole('button', { name: 'Проверить наличие и стоимость', exact: true }).click()
 			await page.getByRole('button', { name: 'Забронировать', exact: true }).waitFor()
-			await page.getByLabel('Имя', { exact: true }).fill('Тест отказа сайта 73')
+			await page.getByLabel('ФИО', { exact: true }).fill('Тест отказа сайта 73')
 			await page.getByLabel('Электронная почта', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_EMAIL)
 			await page.getByLabel('Телефон', { exact: true }).fill('+70000000073')
 			const quote = await api('/quotes', stay)
@@ -88,7 +88,7 @@ try {
 			.getByRole('alert')
 			.filter({ hasText: 'На выбранные даты нет свободного номера' })
 			.waitFor({ timeout: 30000 })
-		assert.equal(await page.getByLabel('Имя', { exact: true }).inputValue(), 'Тест отказа сайта 73')
+		assert.equal(await page.getByLabel('ФИО', { exact: true }).inputValue(), 'Тест отказа сайта 73')
 		assert.equal(await page.locator('[name=checkIn]').inputValue(), stay.checkIn)
 		assert.equal(await page.locator('[name=checkOut]').inputValue(), stay.checkOut)
 		assert.equal(await page.getByRole('button', { name: 'Забронировать', exact: true }).count(), 0)
