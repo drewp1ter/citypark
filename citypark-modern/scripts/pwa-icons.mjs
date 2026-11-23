@@ -1,11 +1,11 @@
-// Generates the PWA icons from app/icon.svg with Playwright Chromium. Run once and commit the PNGs.
+// Generates the PWA icons from public/icon.svg with Playwright Chromium. Run once and commit the PNGs.
 // Outputs: public/pwa/icon-192.png, public/pwa/icon-512.png, public/pwa/icon-maskable-512.png, app/apple-icon.png.
 // Usage: node scripts/pwa-icons.mjs
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 
-const svg = readFileSync(new URL('../app/icon.svg', import.meta.url), 'utf8')
+const svg = readFileSync(new URL('../public/icon.svg', import.meta.url), 'utf8')
 const browser = await chromium.launch()
 
 async function shoot(html, size, file) {

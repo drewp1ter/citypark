@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 	title: 'Сити Парк — отель, ресторан и доставка в Белореченске',
 	description: 'Отель-люкс на 12 номеров, ресторан и летнее кафе, банкеты и доставка еды. Белореченск, ул. Гоголя, 61.',
 	applicationName: 'Сити Парк',
+	icons: { icon: { url: '/favicon.ico', sizes: '16x16 32x32 48x48' } },
 	appleWebApp: { title: 'Сити Парк', statusBarStyle: 'default' },
 }
 
