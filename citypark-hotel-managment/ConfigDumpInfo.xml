@@ -1479,6 +1479,10 @@
 		<Metadata name="Constant.АвтоматическиНастраиватьРазрешенияВПрофиляхБезопасности" id="9893e2d6-f3f8-4d73-bb06-19bf26d216ab" configVersion="fa9f3e57954d0443b043b46684ab8bba00000000"/>
 		<Metadata name="Constant.АвтоматическиНастраиватьРазрешенияВПрофиляхБезопасности.ValueManagerModule" id="9893e2d6-f3f8-4d73-bb06-19bf26d216ab.0" configVersion="d6c758b26f10e84faf1d5cd5b5df48c700000000"/>
 		<Metadata name="Constant.АвтоматическоеОбновлениеСайта" id="57c07456-9474-40d7-bf97-f1bf31d7577c" configVersion="f233988a63179541b52316a68391d57e00000000"/>
+		<Metadata name="Constant.СостояниеПубликацииНомеров" id="94d61b37-b40a-4f76-a1d0-d1fa891587c4" configVersion="9d14610a44fcc5bb130d3076c07236e000000000"/>
+		<Metadata name="Constant.ВерсияСостоянияНомеровДляСайта" id="e3db1f2d-e0be-45ad-9114-53af5db836bb" configVersion="27a0fef5660d3bed212ab7ace647c6d700000000"/>
+		<Metadata name="Constant.СекретПубликацииНомеров" id="3f4dd668-c72f-4c53-a81d-5c5dab4a498f" configVersion="9f4466b337c534c109a91ba7304540a600000000"/>
+		<Metadata name="Constant.ХостПубликацииНомеров" id="f70a4f05-0742-4e8b-84a5-f84155d653a8" configVersion="f5a84245e5d29eaab967a7c577b894cf00000000"/>
 		<Metadata name="Constant.ВалютаРегламентированногоУчета" id="77c5d621-8ea6-4946-bd66-78b594014e08" configVersion="a4369dfd8bdf8348939c7a502e4330b800000000"/>
 		<Metadata name="Constant.ВерсияКлассификатораБанковРФ" id="230722e6-942f-4594-be89-eff59c6572bf" configVersion="4f46f92d91e68a41b44a82da8352181500000000"/>
 		<Metadata name="Constant.ВремяВыселения" id="ef4b2b95-827e-4b22-87d3-f936b80ea8bc" configVersion="41ff49596d02c345a61a0fa9d9e383ed00000000"/>

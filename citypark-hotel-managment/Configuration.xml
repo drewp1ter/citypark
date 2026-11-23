@@ -688,6 +688,10 @@
 			<Constant>ЭтоАвтономноеРабочееМесто</Constant>
 			<Constant>ВалютаРегламентированногоУчета</Constant>
 			<Constant>АвтоматическоеОбновлениеСайта</Constant>
+			<Constant>СостояниеПубликацииНомеров</Constant>
+			<Constant>ВерсияСостоянияНомеровДляСайта</Constant>
+			<Constant>СекретПубликацииНомеров</Constant>
+			<Constant>ХостПубликацииНомеров</Constant>
 			<CommonForm>ФормаНастройки1ССканерыШтрихкода</CommonForm>
 			<CommonForm>ФормаВводаЧисла</CommonForm>
 			<CommonForm>Вопрос</CommonForm>

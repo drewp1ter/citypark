@@ -16,7 +16,7 @@
 			<ExternalConnection>false</ExternalConnection>
 			<ClientOrdinaryApplication>false</ClientOrdinaryApplication>
 			<ServerCall>false</ServerCall>
-			<Privileged>false</Privileged>
+			<Privileged>true</Privileged>
 			<ReturnValuesReuse>DontUse</ReturnValuesReuse>
 		</Properties>
 	</CommonModule>
