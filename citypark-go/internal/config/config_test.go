@@ -490,3 +490,20 @@ func TestYandexConfig(t *testing.T) {
 		t.Fatal("accepted partial Yandex configuration")
 	}
 }
+
+func TestBookingTelegramConfig(t *testing.T) {
+	env := map[string]string{"TELEGRAM_HOTEL_CHAT_ID": " -10042 "}
+	c, err := Load(lookupMap(env))
+	if err != nil || c.HotelBooking.TelegramChatID != "-10042" || c.HotelBooking.Enabled {
+		t.Fatalf("disabled booking Telegram configuration: %v", err)
+	}
+	env["HOTEL_BOOKING_ENABLED"] = "true"
+	env["TELEGRAM_TOKEN"] = " "
+	env["SMTP_HOST"] = "smtp.example"
+	env["SMTP_USERNAME"] = "mail"
+	env["SMTP_PASSWORD"] = "password"
+	env["SMTP_FROM"] = "hotel@example.com"
+	if _, err := Load(lookupMap(env)); err == nil || !strings.Contains(err.Error(), "TELEGRAM_TOKEN") {
+		t.Fatalf("expected missing token error, got %v", err)
+	}
+}

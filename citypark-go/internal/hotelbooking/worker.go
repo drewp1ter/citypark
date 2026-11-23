@@ -17,23 +17,37 @@ type ContactReader interface {
 	Get(context.Context) (settings.Settings, time.Time, error)
 }
 type Worker struct {
-	service  *Service
-	mailer   mailer.Mailer
-	contacts ContactReader
-	log      *slog.Logger
+	service        *Service
+	mailer         mailer.Mailer
+	contacts       ContactReader
+	log            *slog.Logger
+	telegram       plainMessenger
+	telegramChatID string
 }
 
 func NewWorker(service *Service, m mailer.Mailer, contacts ContactReader, log *slog.Logger) *Worker {
-	return &Worker{service, m, contacts, log}
+	return &Worker{service: service, mailer: m, contacts: contacts, log: log}
 }
 func (w *Worker) Run(ctx context.Context) {
+	if w.telegram != nil {
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			runBookingPoller(ctx, w.tickTelegram)
+		}()
+		defer func() { <-done }()
+	}
+	runBookingPoller(ctx, w.Tick)
+}
+
+func runBookingPoller(ctx context.Context, tick func(context.Context)) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	for {
 		if ctx.Err() != nil {
 			return
 		}
-		w.Tick(ctx)
+		tick(ctx)
 		select {
 		case <-ctx.Done():
 			return
@@ -70,12 +84,12 @@ func (w *Worker) Tick(ctx context.Context) {
 		if !sent {
 			w.log.Warn("hotel booking confirmation email pending")
 		}
-		if err = w.service.store.emailResult(ctx, row.Key, claim, sent, w.service.clock.Now().Add(emailBackoff(row.Attempts))); err != nil {
+		if err = w.service.store.emailResult(ctx, row.Key, claim, sent, w.service.clock.Now().Add(notificationBackoff(row.Attempts))); err != nil {
 			w.log.Warn("hotel booking email acknowledgement unavailable")
 		}
 	}
 }
-func emailBackoff(attempt int) time.Duration {
+func notificationBackoff(attempt int) time.Duration {
 	switch attempt {
 	case 1:
 		return 30 * time.Second

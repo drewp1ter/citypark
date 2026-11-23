@@ -106,10 +106,18 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)
 	yandexService := google.NewYandexService(db, c, cfg.Yandex.ClientID, cfg.Yandex.ClientSecret, cfg.Yandex.CallbackURL)
 
-	booking := hotelbooking.NewService(hotelbooking.NewStore(db), room.NewStore(db), hotelbooking.NewClient(cfg.HotelBooking.URL, cfg.HotelBooking.User, cfg.HotelBooking.Password, nil), c)
+	bookingStore := hotelbooking.NewStore(db)
+	sendHotelTelegram := cfg.HotelBooking.Enabled && cfg.HotelBooking.TelegramChatID != ""
+	if sendHotelTelegram {
+		bookingStore = hotelbooking.NewStoreWithTelegram(db)
+	}
+	booking := hotelbooking.NewService(bookingStore, room.NewStore(db), hotelbooking.NewClient(cfg.HotelBooking.URL, cfg.HotelBooking.User, cfg.HotelBooking.Password, nil), c)
 	var bookingWorker *hotelbooking.Worker
 	if cfg.HotelBooking.Enabled {
 		bookingWorker = hotelbooking.NewWorker(booking, mailer.NewSMTP(cfg.SMTP, nil), settings.NewStore(db), log)
+		if sendHotelTelegram {
+			bookingWorker.ConfigureTelegram(telegramClient, cfg.HotelBooking.TelegramChatID)
+		}
 	}
 	r := chi.NewRouter()
 	r.Use(logging.Recover(log))

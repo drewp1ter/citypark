@@ -104,7 +104,7 @@ type bookingHarness struct {
 func newBooking(t *testing.T) *bookingHarness {
 	t.Helper()
 	db := testutil.NewDB(t)
-	_, err := db.Exec(`TRUNCATE hotel_booking_email_outbox,hotel_booking_attempts,hotel_booking_quotes,hotel_booking_rate_limits; UPDATE rooms SET price_kopecks=400000`)
+	_, err := db.Exec(`TRUNCATE hotel_booking_telegram_outbox,hotel_booking_email_outbox,hotel_booking_attempts,hotel_booking_quotes,hotel_booking_rate_limits; UPDATE rooms SET price_kopecks=400000`)
 	if err != nil {
 		t.Fatal(err)
 	}

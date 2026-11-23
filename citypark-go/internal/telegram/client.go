@@ -29,11 +29,19 @@ func NewClient(baseURL, token string, httpClient *http.Client) *Client {
 
 // SendMessage posts a Markdown message to a chat.
 func (c *Client) SendMessage(ctx context.Context, chatID, text string) error {
-	payload, err := json.Marshal(map[string]string{
-		"chat_id":    chatID,
-		"parse_mode": "Markdown",
-		"text":       text,
-	})
+	return c.sendMessage(ctx, chatID, text, "Markdown")
+}
+
+func (c *Client) SendPlainMessage(ctx context.Context, chatID, text string) error {
+	return c.sendMessage(ctx, chatID, text, "")
+}
+
+func (c *Client) sendMessage(ctx context.Context, chatID, text, parseMode string) error {
+	message := map[string]string{"chat_id": chatID, "text": text}
+	if parseMode != "" {
+		message["parse_mode"] = parseMode
+	}
+	payload, err := json.Marshal(message)
 	if err != nil {
 		return fmt.Errorf("telegram: encode request: %w", err)
 	}

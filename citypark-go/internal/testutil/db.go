@@ -38,7 +38,7 @@ func NewDB(t *testing.T) *sqlx.DB {
 	_, err = db.ExecContext(ctx, `TRUNCATE promo_codes, users, addresses, user_addresses, menus, categories, category_images,
 		products, product_images, tags, product_tags, delivery_prices, orders, order_items,
 		hotel_rooms, customer_telegram_proofs, hotel_booking_quotes, hotel_booking_attempts,
-		hotel_booking_email_outbox, hotel_booking_rate_limits
+		hotel_booking_email_outbox, hotel_booking_telegram_outbox, hotel_booking_rate_limits
 		RESTART IDENTITY CASCADE`)
 	if err != nil {
 		t.Fatalf("truncate test database: %v", err)

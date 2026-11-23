@@ -12,9 +12,14 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type Store struct{ db store.DBTX }
+type Store struct {
+	db            store.DBTX
+	queueTelegram bool
+}
 
-func NewStore(db store.DBTX) *Store { return &Store{db: db} }
+func NewStore(db store.DBTX) *Store             { return &Store{db: db} }
+func NewStoreWithTelegram(db store.DBTX) *Store { return &Store{db: db, queueTelegram: true} }
+
 func (s *Store) transaction(ctx context.Context, fn func(*Store) error) error {
 	if db, ok := s.db.(*sqlx.DB); ok {
 		return store.InTx(ctx, db, func(tx *sqlx.Tx) error { return fn(NewStore(tx)) })
@@ -118,6 +123,10 @@ func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, now tim
 			return err
 		}
 		_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_email_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
+		if err != nil || !s.queueTelegram {
+			return err
+		}
+		_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_telegram_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
 		return err
 	})
 }
