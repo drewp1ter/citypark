@@ -10,8 +10,12 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io"
 	"math/big"
+	"mime"
+	"mime/multipart"
 	"net"
+	"net/mail"
 	"strings"
 	"sync"
 	"testing"
@@ -254,5 +258,58 @@ func TestSMTPSend(t *testing.T) {
 	defer stop()
 	if err := stalled.Send(timeout, "to@example.com", "Hello", "body"); err != ErrDelivery {
 		t.Fatalf("timeout: %v", err)
+	}
+}
+
+func TestSMTPSendAlternative(t *testing.T) {
+	f, roots := newFake(t, "tls", true, "")
+	s := NewSMTP(config.SMTP{Host: "localhost", Port: f.listener.Addr().(*net.TCPAddr).Port, From: "from@example.com", TLSMode: "tls", Enabled: true}, nil)
+	s.roots = roots
+
+	const subject = "Бронирование Сити Парк подтверждено"
+	const plain = "Тип номера: Одноместный\nСтоимость: 8000 RUB"
+	const html = "<p>Тип номера: Одноместный</p><p>Стоимость: 8000 RUB</p>"
+	if err := s.SendAlternative(context.Background(), "to@example.com", subject+"\r\nBcc: other@example.com", plain, html); err != ErrDelivery {
+		t.Fatalf("header injection: %v", err)
+	}
+	if err := s.SendAlternative(context.Background(), "to@example.com", subject, plain, html); err != nil {
+		t.Fatal(err)
+	}
+	f.mu.Lock()
+	raw := f.message
+	f.mu.Unlock()
+	message, err := mail.ReadMessage(strings.NewReader(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := new(mime.WordDecoder).DecodeHeader(message.Header.Get("Subject"))
+	if err != nil || decoded != subject || message.Header.Get("Subject") == subject {
+		t.Fatalf("subject = %q, error = %v", decoded, err)
+	}
+	mediaType, params, err := mime.ParseMediaType(message.Header.Get("Content-Type"))
+	if err != nil || mediaType != "multipart/alternative" {
+		t.Fatalf("content type = %q, error = %v", mediaType, err)
+	}
+
+	reader := multipart.NewReader(message.Body, params["boundary"])
+	for _, want := range []struct{ mediaType, body string }{
+		{"text/plain", strings.ReplaceAll(plain, "\n", "\r\n")},
+		{"text/html", html},
+	} {
+		part, err := reader.NextPart()
+		if err != nil {
+			t.Fatal(err)
+		}
+		mediaType, params, err := mime.ParseMediaType(part.Header.Get("Content-Type"))
+		if err != nil || mediaType != want.mediaType || params["charset"] != "UTF-8" {
+			t.Fatalf("part content type = %q, error = %v", part.Header.Get("Content-Type"), err)
+		}
+		got, err := io.ReadAll(part)
+		if err != nil || string(got) != want.body {
+			t.Fatalf("%s body = %q, error = %v", mediaType, got, err)
+		}
+	}
+	if _, err := reader.NextPart(); err != io.EOF {
+		t.Fatalf("expected end of multipart message, got %v", err)
 	}
 }

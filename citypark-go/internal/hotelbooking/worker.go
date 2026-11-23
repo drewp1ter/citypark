@@ -5,28 +5,39 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"html/template"
 	"log/slog"
 	"time"
 
-	"github.com/drewp1ter/citypark-go/internal/mailer"
 	"github.com/drewp1ter/citypark-go/internal/settings"
 )
 
 type ContactReader interface {
 	Get(context.Context) (settings.Settings, time.Time, error)
 }
+
+type confirmationMailer interface {
+	SendAlternative(ctx context.Context, to, subject, plainText, html string) error
+}
+
 type Worker struct {
 	service        *Service
-	mailer         mailer.Mailer
+	mailer         confirmationMailer
+	confirmation   *template.Template
 	contacts       ContactReader
 	log            *slog.Logger
 	telegram       plainMessenger
 	telegramChatID string
 }
 
-func NewWorker(service *Service, m mailer.Mailer, contacts ContactReader, log *slog.Logger) *Worker {
-	return &Worker{service: service, mailer: m, contacts: contacts, log: log}
+func NewWorker(service *Service, m confirmationMailer, contacts ContactReader, log *slog.Logger) *Worker {
+	return &Worker{
+		service:      service,
+		mailer:       m,
+		confirmation: template.Must(template.New("booking confirmation").Parse(confirmationHTML)),
+		contacts:     contacts,
+		log:          log,
+	}
 }
 func (w *Worker) Run(ctx context.Context) {
 	if w.telegram != nil {
@@ -118,10 +129,9 @@ func (w *Worker) send(ctx context.Context, row emailRow) error {
 	if contact.Phones.Hotel.Number == "" {
 		return ErrUnavailable
 	}
-	numberLine := ""
-	if result.ReservationNumber != "" {
-		numberLine = fmt.Sprintf("Номер бронирования: %s\n", result.ReservationNumber)
+	plainText, html, err := renderConfirmation(w.confirmation, result, room.Name, contact.Phones.Hotel.Number)
+	if err != nil {
+		return ErrUnavailable
 	}
-	body := fmt.Sprintf("Бронирование подтверждено\n%sТип номера: %s\nЗаезд: %s\nВыезд: %s\nГостей: %d\nСтоимость: %s RUB\nТелефон гостиницы: %s\nПредоплата не требуется.", numberLine, room.Name, result.CheckIn, result.CheckOut, result.Guests, result.Price.TotalKopecks.String(), contact.Phones.Hotel.Number)
-	return w.mailer.Send(ctx, req.Guest.Email, "Бронирование Сити Парк подтверждено", body)
+	return w.mailer.SendAlternative(ctx, req.Guest.Email, "Бронирование Сити Парк подтверждено", plainText, html)
 }

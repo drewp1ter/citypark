@@ -42,6 +42,11 @@ func TestOutboxRecovery(t *testing.T) {
 			t.Fatalf("missing %q: %s", want, m.body)
 		}
 	}
+	for _, want := range []string{"СИТИ ПАРК", "00000001234", "Одноместный", "2026-12-01", "2026-12-03", "8000 RUB", "Телефон гостиницы", "Предоплата не требуется."} {
+		if !strings.Contains(m.html, want) {
+			t.Fatalf("HTML confirmation missing %q", want)
+		}
+	}
 	rec := h.request("GET", "/reservations/"+req.IdempotencyKey, h.token, nil)
 	if !strings.Contains(rec.Body.String(), `"confirmationEmailStatus":"sent"`) {
 		t.Fatal(rec.Body.String())

@@ -578,13 +578,14 @@ func TestNoPIILogging(t *testing.T) {
 type testMailer struct {
 	calls          int
 	fail           bool
-	to, body       string
+	to, body, html string
 	block, entered chan struct{}
 }
 
-func (m *testMailer) Send(ctx context.Context, to, subject, body string) error {
+func (m *testMailer) SendAlternative(ctx context.Context, to, subject, body, html string) error {
 	m.calls++
 	m.to, m.body = to, body
+	m.html = html
 	if m.entered != nil {
 		close(m.entered)
 		m.entered = nil

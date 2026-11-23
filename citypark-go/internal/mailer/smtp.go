@@ -7,9 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
+	"mime/multipart"
+	"mime/quotedprintable"
 	"net"
 	"net/mail"
 	"net/smtp"
+	"net/textproto"
 	"strconv"
 	"strings"
 	"time"
@@ -38,6 +42,45 @@ func NewSMTP(settings config.SMTP, dial Dialer) *SMTP {
 }
 
 func (s *SMTP) Send(ctx context.Context, to, subject, body string) error {
+	return s.send(ctx, to, subject, "text/plain; charset=UTF-8", body)
+}
+
+// SendAlternative sends equivalent plain-text and HTML versions of a message.
+func (s *SMTP) SendAlternative(ctx context.Context, to, subject, plainText, html string) error {
+	if invalidHeader(subject) {
+		return ErrDelivery
+	}
+	var body strings.Builder
+	parts := multipart.NewWriter(&body)
+	if err := writeAlternative(parts, "text/plain", plainText); err != nil {
+		return ErrDelivery
+	}
+	if err := writeAlternative(parts, "text/html", html); err != nil {
+		return ErrDelivery
+	}
+	if err := parts.Close(); err != nil {
+		return ErrDelivery
+	}
+	contentType := mime.FormatMediaType("multipart/alternative", map[string]string{"boundary": parts.Boundary()})
+	return s.send(ctx, to, mime.BEncoding.Encode("UTF-8", subject), contentType, body.String())
+}
+
+func writeAlternative(parts *multipart.Writer, contentType, body string) error {
+	part, err := parts.CreatePart(textproto.MIMEHeader{
+		"Content-Type":              {contentType + "; charset=UTF-8"},
+		"Content-Transfer-Encoding": {"quoted-printable"},
+	})
+	if err != nil {
+		return err
+	}
+	encoded := quotedprintable.NewWriter(part)
+	if _, err := io.WriteString(encoded, body); err != nil {
+		return err
+	}
+	return encoded.Close()
+}
+
+func (s *SMTP) send(ctx context.Context, to, subject, contentType, body string) error {
 	if !s.settings.Enabled || invalidHeader(to) || invalidHeader(subject) || invalidHeader(s.settings.From) || subject == "" {
 		return ErrDelivery
 	}
@@ -93,7 +136,7 @@ func (s *SMTP) Send(ctx context.Context, to, subject, body string) error {
 	if err != nil {
 		return ErrDelivery
 	}
-	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n%s", s.settings.From, to, subject, body)
+	message := fmt.Sprintf("From: %s\r\nTo: %s\r\nSubject: %s\r\nMIME-Version: 1.0\r\nContent-Type: %s\r\n\r\n%s", s.settings.From, to, subject, contentType, body)
 	if _, err := io.WriteString(writer, message); err != nil {
 		_ = writer.Close()
 		return ErrDelivery
