@@ -232,7 +232,7 @@ export function BookingForm({
 							label='Заезд'
 							type='date'
 							name='checkIn'
-							min={addDays(todayInMoscow(), 1)}
+							min={todayInMoscow()}
 							max='3999-12-30'
 							value={stay.checkIn}
 							onChange={(e) => changeStay({ checkIn: e.target.value })}

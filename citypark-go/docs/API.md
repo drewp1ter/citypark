@@ -3847,7 +3847,7 @@ Role: public; booking-context header required. No query parameters.
 
 Required body: `roomTypeId` (`single`, `single-balcony`, `double-twin`,
 `double-euro`, `vip`), `checkIn`, `checkOut` (Gregorian `YYYY-MM-DD`, years
-0001–3999), and integer `guests`. Arrival must be tomorrow or later in
+0001–3999), and integer `guests`. Arrival must be today or later in
 Europe/Moscow; checkout must follow arrival. Capacities: single/single-balcony 1,
 twin/Euro 2, VIP 4. No business maximum stay or advance horizon. Nights are calendar
 date differences, independent of 1C's configured check-in/out clock times.

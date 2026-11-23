@@ -25,8 +25,8 @@ export const bookingStaySchema = z
 	})
 	.strict()
 	.superRefine((stay, ctx) => {
-		if (stay.checkIn <= todayInMoscow())
-			ctx.addIssue({ code: 'custom', path: ['checkIn'], message: 'Заезд возможен с завтрашнего дня' })
+		if (stay.checkIn < todayInMoscow())
+			ctx.addIssue({ code: 'custom', path: ['checkIn'], message: 'Дата заезда не может быть в прошлом' })
 		if (stay.checkOut <= stay.checkIn)
 			ctx.addIssue({ code: 'custom', path: ['checkOut'], message: 'Выезд должен быть позже заезда' })
 		if (stay.guests > bookingCapacities[stay.roomTypeId])

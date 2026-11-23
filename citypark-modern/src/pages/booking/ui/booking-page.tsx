@@ -14,7 +14,7 @@ export async function BookingPage({
 	const params = await searchParams
 	const first = (key: string) => (typeof params[key] === 'string' ? (params[key] as string) : undefined)
 	const [rooms, settings] = await Promise.all([getRooms().catch(() => null), getSiteSettings()])
-	const tomorrow = addDays(todayInMoscow(), 1)
+	const checkIn = first('checkIn') ?? todayInMoscow()
 	const key = bookingUuid.safeParse(first('attempt'))
 	return (
 		<main className='max-w-page mx-auto w-full px-3 pt-4 pb-20 md:px-6 md:pt-8'>
@@ -25,8 +25,8 @@ export async function BookingPage({
 					rooms={rooms.filter((r) => bookingRoomIds.some((id) => id === r.id))}
 					initialStay={{
 						roomTypeId: bookingRoomIds.find((id) => id === first('roomTypeId')) ?? 'double-twin',
-						checkIn: first('checkIn') ?? tomorrow,
-						checkOut: first('checkOut') ?? addDays(tomorrow, 1),
+						checkIn,
+						checkOut: first('checkOut') ?? addDays(checkIn, 1),
 						guests: Number(first('guests') ?? 2),
 					}}
 					initialKey={key.success ? key.data : undefined}

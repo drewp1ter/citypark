@@ -54,9 +54,10 @@ assert.equal(
 )
 assert.equal(model.bookingQuoteSchema.safeParse({ ...quote, expiresAt: '2026-11-22T22:12:06' }).success, false)
 for (const patch of [
-	{ checkIn: '2026-11-22' },
+	{ checkIn: '2026-11-21' },
 	{ checkIn: '2027-02-29' },
 	{ checkOut: '2026-12-01' },
+	{ checkOut: '2026-11-30' },
 	{ checkOut: '4000-01-01' },
 	{ guests: 2 },
 	{ guests: 1.5 },
@@ -64,6 +65,7 @@ for (const patch of [
 ])
 	assert.equal(model.bookingStaySchema.safeParse({ ...stay, ...patch }).success, false)
 for (const dates of [
+	['2026-11-22', '2026-11-23'],
 	['2028-02-29', '2028-03-01'],
 	['2027-01-01', '2027-12-31'],
 	['3999-12-30', '3999-12-31'],

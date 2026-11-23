@@ -70,7 +70,7 @@ func (s *Service) stay(req QuoteRequest) (int, error) {
 	out, e2 := time.Parse("2006-01-02", req.CheckOut)
 	loc, _ := time.LoadLocation("Europe/Moscow")
 	today := s.clock.Now().In(loc).Format("2006-01-02")
-	if capacity == 0 || req.Guests < 1 || req.Guests > capacity || e1 != nil || e2 != nil || in.Year() < 1 || out.Year() > 3999 || req.CheckIn <= today || !out.After(in) {
+	if capacity == 0 || req.Guests < 1 || req.Guests > capacity || e1 != nil || e2 != nil || in.Year() < 1 || out.Year() > 3999 || req.CheckIn < today || !out.After(in) {
 		return 0, failure("INVALID_REQUEST")
 	}
 	return int((out.Unix() - in.Unix()) / 86400), nil

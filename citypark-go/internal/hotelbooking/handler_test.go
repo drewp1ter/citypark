@@ -181,7 +181,7 @@ func TestQuoteCalendarBounds(t *testing.T) {
 		in, out string
 		valid   bool
 	}{
-		{"2026-11-22", "2026-11-23", false}, {"2026-11-21", "2026-11-23", false},
+		{"2026-11-22", "2026-11-23", true}, {"2026-11-21", "2026-11-23", false},
 		{"2026-11-23", "2026-11-24", true}, {"2026-12-03", "2026-12-03", false}, {"2026-12-04", "2026-12-03", false},
 		{"2027-02-29", "2027-03-01", false}, {"2028-02-29", "2028-03-01", true},
 		{"2027-11-23", "2028-11-24", true}, {"3999-01-01", "3999-12-31", true}, {"3999-12-31", "4000-01-01", false},
@@ -196,9 +196,9 @@ func TestQuoteCalendarBounds(t *testing.T) {
 			checkCode(t, rec, 400, "INVALID_REQUEST")
 		}
 	}
-	h.clock.now = h.clock.now.Add(time.Minute) // Moscow midnight, previously valid arrival is today.
+	h.clock.now = h.clock.now.Add(time.Minute) // Moscow midnight, previously valid arrival is yesterday.
 	req := stayRequest()
-	req.CheckIn = "2026-11-23"
+	req.CheckIn = "2026-11-22"
 	checkCode(t, h.request("POST", "/quotes", h.token, req), 400, "INVALID_REQUEST")
 }
 func TestQuoteCapacity(t *testing.T) {
@@ -251,11 +251,11 @@ func TestCreateRateChange(t *testing.T) {
 	}
 	h.clock.now = h.clock.now.Add(10 * time.Minute)
 	checkCode(t, h.request("POST", "/reservations", h.token, req), 409, "QUOTE_EXPIRED")
-	// A quote crossing Moscow midnight is invalid even while unexpired.
+	// An unexpired quote is invalid once its arrival date is in the past.
 	h.clock.now = time.Date(2026, 11, 22, 20, 59, 0, 0, time.UTC)
-	tomorrow := stayRequest()
-	tomorrow.CheckIn = "2026-11-23"
-	q = h.quote(tomorrow)
+	today := stayRequest()
+	today.CheckIn = "2026-11-22"
+	q = h.quote(today)
 	h.clock.now = h.clock.now.Add(time.Minute)
 	checkCode(t, h.request("POST", "/reservations", h.token, createRequest(q)), 400, "INVALID_REQUEST")
 	if h.client.calls != 0 {
@@ -264,7 +264,10 @@ func TestCreateRateChange(t *testing.T) {
 }
 func TestCreateIdempotency(t *testing.T) {
 	h := newBooking(t)
-	q := h.quote(stayRequest())
+	stay := stayRequest()
+	stay.CheckIn, stay.CheckOut = "2026-11-23", "2026-11-25"
+	q := h.quote(stay)
+	h.clock.now = h.clock.now.Add(time.Minute) // Arrival is now today in Moscow.
 	req := createRequest(q)
 	first := h.request("POST", "/reservations", h.token, req)
 	checkCode(t, first, 201, "")

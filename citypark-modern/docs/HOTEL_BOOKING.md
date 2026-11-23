@@ -7,8 +7,9 @@ or OpenAPI operations are introduced in the website. All booking calls originate
 ## Routes and state
 
 `/rooms?checkIn=YYYY-MM-DD&checkOut=YYYY-MM-DD&guests=1` searches a whole stay.
-Exact guest counts are 1, 2, 3 and 4, on mobile and desktop. Arrival defaults to tomorrow
-in Moscow. Capacity is one for single rooms, two for twin/Euro and four for VIP.
+Exact guest counts are 1, 2, 3 and 4, on mobile and desktop. Arrival defaults to
+today in Moscow, with checkout tomorrow. Capacity is one for single rooms, two
+for twin/Euro and four for VIP.
 
 Search requests `POST /hotel/quotes` for each eligible type using an ephemeral server-generated
 context. These advisory quotes cannot be used to create a booking from the browser.

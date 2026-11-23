@@ -44,7 +44,7 @@ availability checks do not establish that concurrent posting is safe.
   Capacity limits: single/single-balcony 1, twin/Euro 2; VIP 4, matching the existing
   site description. Do not derive capacity from the shared 1C room-type reference.
 - Dates only; minimum one night and no business maximum stay. Earliest arrival is
-  tomorrow in `Europe/Moscow`. There is no business limit on how far ahead arrival
+  today in `Europe/Moscow`. There is no business limit on how far ahead arrival
   or departure may be booked (owner revision, 2026-11-16); the earlier six-month
   horizon is superseded. Use half-open intervals `[arrival at configured check-in,
   departure at configured check-out)` in Moscow local time. The authoritative
@@ -449,7 +449,7 @@ required. None of these runtime scenarios has passed merely by writing this spec
 | Adjacent stays | Checkout boundary permits the next valid arrival without a phantom extra occupied second. |
 | Guest fields | Name/email/phone required; no required additional guest/contact fields or child/extra-bed questions. |
 | Capacity | Verified physical-room allocation rules enforced without child/extra-bed questions. |
-| Booking horizon/duration | Reject today/past arrival dates using Moscow time; allow tomorrow when otherwise valid. Revalidate after Moscow midnight. Accept arrival and departure more than six months ahead and stays longer than 90 nights when inventory is available and dates/totals are representable. No maximum advance horizon or stay duration; no month-clamping rule. Reject checkout on/before arrival, invalid/unrepresentable dates and arithmetic overflow. Long stays require one room for the full stay and complete price calculation. |
+| Booking horizon/duration | Reject past arrival dates using Moscow time; allow today and future dates when otherwise valid. Revalidate after Moscow midnight. Accept arrival and departure more than six months ahead and stays longer than 90 nights when inventory is available and dates/totals are representable. No maximum advance horizon or stay duration; no month-clamping rule. Reject checkout on/before arrival, invalid/unrepresentable dates and arithmetic overflow. Long stays require one room for the full stay and complete price calculation. |
 | Email confirmation | Confirmation sent after commit; delivery failure/retry never creates a duplicate reservation. |
 | Pricing | Go calculation covers rate changes, missing/zero price, rounding and date boundaries. 1C persists the exact accepted snapshot; staff check-in does not silently replace it. |
 | Price consent | Changed/expired quote creates nothing; explicit refreshed consent is required. |

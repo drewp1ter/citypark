@@ -12,7 +12,7 @@ type StayDatesBarProps = {
 	 */
 	variant?: 'inline' | 'rooms'
 	submitLabel?: string
-	/** Values from the address bar (ISO dates, "1" | "2" | "3" | "4"); tomorrow / the following day / 2 when missing. */
+	/** Values from the address bar (ISO dates, "1" | "2" | "3" | "4"); today / the following day / 2 when missing. */
 	defaultCheckIn?: string
 	defaultCheckOut?: string
 	defaultGuests?: string
@@ -45,13 +45,12 @@ export function StayDatesBar({
 }: StayDatesBarProps) {
 	const rooms = variant === 'rooms'
 	const today = useToday()
-	const tomorrow = addDays(today, 1)
 	const [checkIn, setCheckIn] = useState<string>()
 	const [checkOut, setCheckOut] = useState<string>()
 	const [guests, setGuests] = useState(defaultGuests)
 
-	// The visitor's own choice wins, then the address bar, then tomorrow / the following day. Check-out is always after check-in.
-	const checkInValue = checkIn ?? defaultCheckIn ?? tomorrow
+	// The visitor's own choice wins, then the address bar, then today / the following day. Check-out is always after check-in.
+	const checkInValue = checkIn ?? defaultCheckIn ?? today
 	const earliestCheckOut = addDays(checkInValue, 1)
 	const chosenCheckOut = checkOut ?? defaultCheckOut
 	const checkOutValue = chosenCheckOut && chosenCheckOut >= earliestCheckOut ? chosenCheckOut : earliestCheckOut
@@ -85,7 +84,7 @@ export function StayDatesBar({
 				<input
 					type='date'
 					name='checkIn'
-					min={tomorrow || undefined}
+					min={today || undefined}
 					value={checkInValue}
 					onChange={(event) => setCheckIn(event.target.value)}
 					className={input}

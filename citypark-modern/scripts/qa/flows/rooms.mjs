@@ -46,7 +46,7 @@ out(
 	JSON.stringify(await p.locator('article span.rounded-pill:visible').allInnerTexts())
 )
 out(
-	'search defaults tomorrow / following day',
+	'search defaults today / tomorrow',
 	`${await p.locator('input[name=checkIn]').inputValue()} / ${await p.locator('input[name=checkOut]').inputValue()}`
 )
 

@@ -67,9 +67,9 @@ export async function RoomPage({
 	}
 
 	const value = (name: string) => (typeof searchParams[name] === 'string' ? (searchParams[name] as string) : undefined)
-	const tomorrow = addDays(todayInMoscow(), 1)
+	const today = todayInMoscow()
 	const rawIn = value('checkIn') ?? ''
-	const checkIn = isBookingDate(rawIn) && rawIn >= tomorrow ? rawIn : tomorrow
+	const checkIn = isBookingDate(rawIn) && rawIn >= today ? rawIn : today
 	const rawOut = value('checkOut') ?? ''
 	const checkOut = isBookingDate(rawOut) && rawOut > checkIn ? rawOut : addDays(checkIn, 1)
 	const guests = Number(value('guests') ?? Math.min(2, bookingCapacities[room.id as BookingStay['roomTypeId']]))
