@@ -110,6 +110,8 @@ export function StayDatesBar({
 					options={guestsOptions}
 					value={guests}
 					onValueChange={setGuests}
+					popoverClassName='min-w-24 [&_[role=option]]:justify-center'
+					popoverPlacement='bottom end'
 					className={cn(
 						label,
 						'md:border-border font-normal md:flex-row md:border-l',

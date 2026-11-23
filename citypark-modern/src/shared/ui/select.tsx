@@ -1,6 +1,6 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import {
 	Button,
 	Label,
@@ -33,6 +33,8 @@ type SelectProps = {
 	onValueChange?: (value: string) => void
 	error?: string
 	className?: string
+	popoverClassName?: string
+	popoverPlacement?: ComponentProps<typeof Popover>['placement']
 	required?: boolean
 	disabled?: boolean
 }
@@ -50,6 +52,8 @@ export function Select({
 	onValueChange,
 	error,
 	className,
+	popoverClassName,
+	popoverPlacement,
 	required,
 	disabled,
 }: SelectProps) {
@@ -85,10 +89,12 @@ export function Select({
 			)}
 			<Popover
 				offset={6}
+				placement={popoverPlacement}
 				className={cn(
 					'max-h-72 w-(--trigger-width) overflow-auto rounded-xs border p-1 text-base font-normal',
 					'border-border bg-surface text-text',
-					'data-[entering]:motion-safe:animate-[select-in_120ms_ease-out] data-[exiting]:motion-safe:animate-[select-out_90ms_ease-in]'
+					'data-[entering]:motion-safe:animate-[select-in_120ms_ease-out] data-[exiting]:motion-safe:animate-[select-out_90ms_ease-in]',
+					popoverClassName
 				)}
 			>
 				<ListBox className='outline-none'>

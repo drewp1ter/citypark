@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import type { PageContent } from '@/entities/content'
-import { hasPriceRange, minPricePerNight, type Room } from '@/entities/room'
+import { bookingCapacities, hasPriceRange, minPricePerNight, type BookingStay, type Room } from '@/entities/room'
 import { StayDatesBar } from '@/features/search-rooms'
 import { formatPrice, typo } from '@/shared/lib'
 import { AppLink, Button, Card, Section } from '@/shared/ui'
@@ -8,7 +8,7 @@ import { FreeRooms } from './free-rooms'
 
 // The home page shows three short cards, with their own wording (not the same as the rooms page).
 type Teaser = {
-	roomIds: readonly string[]
+	roomIds: readonly [BookingStay['roomTypeId'], ...BookingStay['roomTypeId'][]]
 	name: string
 	details: { desktop: string; mobile: string }
 	/** Key of the photo block. */
@@ -58,6 +58,8 @@ export function RoomsSection({ content, rooms, free }: RoomsSectionProps) {
 				<div className='-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 md:mx-0 md:grid md:grid-cols-2 md:gap-3 md:overflow-visible md:px-0 md:pb-0 lg:grid-cols-3'>
 					{teasers.map((teaser) => {
 						const photo = content.image(teaser.photoKey)
+						const [roomTypeId] = teaser.roomIds
+						const guests = Math.min(2, bookingCapacities[roomTypeId])
 
 						return (
 							<Card
@@ -98,7 +100,7 @@ export function RoomsSection({ content, rooms, free }: RoomsSectionProps) {
 											{formatPrice(minPricePerNight(rooms, teaser.roomIds) ?? 0)}
 										</span>
 										<Button
-											href='/rooms'
+											href={`/booking?roomTypeId=${roomTypeId}&guests=${guests}`}
 											variant={teaser.featured ? 'accent' : 'inverse'}
 											className='hidden px-5 md:inline-flex'
 										>
