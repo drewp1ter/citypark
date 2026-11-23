@@ -67,11 +67,12 @@ type CreateRequest struct {
 }
 
 type Reservation struct {
-	ReservationID string `json:"reservationId"`
-	Status        string `json:"status"`
-	RoomTypeID    string `json:"roomTypeId"`
-	CheckIn       string `json:"checkIn"`
-	CheckOut      string `json:"checkOut"`
-	Guests        int    `json:"guests"`
-	Price         Price  `json:"price"`
+	ReservationID     string `json:"reservationId"`
+	ReservationNumber string `json:"reservationNumber,omitempty"`
+	Status            string `json:"status"`
+	RoomTypeID        string `json:"roomTypeId"`
+	CheckIn           string `json:"checkIn"`
+	CheckOut          string `json:"checkOut"`
+	Guests            int    `json:"guests"`
+	Price             Price  `json:"price"`
 }

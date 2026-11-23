@@ -190,7 +190,7 @@ func response(a attemptRow) (PublicReservationResponse, error) {
 		return PublicReservationResponse{}, failure("BOOKING_UNAVAILABLE")
 	}
 	p := publicPrice(r.Price)
-	return PublicReservationResponse{ReservationID: r.ReservationID, Status: r.Status, RoomTypeID: r.RoomTypeID, CheckIn: r.CheckIn, CheckOut: r.CheckOut, Guests: r.Guests, Price: &p, ConfirmationEmailStatus: a.EmailState}, nil
+	return PublicReservationResponse{ReservationID: r.ReservationID, ReservationNumber: r.ReservationNumber, Status: r.Status, RoomTypeID: r.RoomTypeID, CheckIn: r.CheckIn, CheckOut: r.CheckOut, Guests: r.Guests, Price: &p, ConfirmationEmailStatus: a.EmailState}, nil
 }
 func (s *Service) Create(ctx context.Context, token string, req PublicCreateRequest) (PublicReservationResponse, error) {
 	hash, err := contextHash(token)

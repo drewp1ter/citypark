@@ -3889,8 +3889,10 @@ physical-room reference or client price is accepted.
 201 for a newly committed attempt, 200 for confirmed replay (captured handler response):
 
 ```json
-{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000},"confirmationEmailStatus":"pending"}
+{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","reservationNumber":"00000001234","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000},"confirmationEmailStatus":"pending"}
 ```
+
+When available, `reservationNumber` is the booking document number assigned by 1C. Older results may omit it.
 
 `confirmationEmailStatus` is `pending` or `sent`. SMTP failure keeps it pending and
 cannot undo a committed booking. Delivery is at-least-once; a lost SMTP

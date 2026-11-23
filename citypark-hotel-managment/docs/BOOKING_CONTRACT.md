@@ -188,7 +188,7 @@ by the installer before activation, not guessed from the catalog's row count.
 201 for first committed creation; 200 for same-payload replay:
 
 ```json
-{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"nightlyPriceKopecks":400000,"totalKopecks":800000}}
+{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","reservationNumber":"00000001234","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"nightlyPriceKopecks":400000,"totalKopecks":800000}}
 ```
 
 `GET /reservations/{idempotencyKey}`, handler `reservationGet`, returns 200 with
@@ -243,7 +243,7 @@ in the browser. Bind quote/key records to this context. No public caller sends a
 physical-room reference or authoritative price. Public response 201/200:
 
 ```json
-{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000},"confirmationEmailStatus":"pending"}
+{"reservationId":"6e37e63e-b130-4ff6-a1b4-e0166f470922","reservationNumber":"00000001234","status":"confirmed","roomTypeId":"single-balcony","checkIn":"2026-12-01","checkOut":"2026-12-03","guests":1,"price":{"currency":"RUB","nights":2,"pricePerNight":4000,"total":8000},"confirmationEmailStatus":"pending"}
 ```
 
 Email status is `pending` or `sent`; failed attempts remain pending for retry.

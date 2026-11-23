@@ -55,6 +55,7 @@ export const bookingQuoteSchema = z
 export const bookingReservationSchema = z
 	.object({
 		reservationId: bookingUuid,
+		reservationNumber: z.string().min(1).optional(),
 		status: z.literal('confirmed'),
 		roomTypeId: z.enum(bookingRoomIds),
 		checkIn: z.string().refine(isBookingDate),

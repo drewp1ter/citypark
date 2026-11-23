@@ -37,7 +37,7 @@ func TestOutboxRecovery(t *testing.T) {
 	if m.calls != 1 || m.to != "Ivan@example.com" {
 		t.Fatalf("send %+v", m)
 	}
-	for _, want := range []string{"6e37e63e", "Одноместный", "2026-12-01", "2026-12-03", "Гостей: 1", "8000 RUB", "Телефон гостиницы:"} {
+	for _, want := range []string{"Номер бронирования: 00000001234", "Одноместный", "2026-12-01", "2026-12-03", "Гостей: 1", "8000 RUB", "Телефон гостиницы:"} {
 		if !strings.Contains(m.body, want) {
 			t.Fatalf("missing %q: %s", want, m.body)
 		}
@@ -190,7 +190,7 @@ func TestRecoveryOutageAndOriginalSnapshot(t *testing.T) {
 	h.client.lookupError = nil
 	h.client.mu.Lock()
 	saved := h.client.requests[0]
-	h.client.saved[req.IdempotencyKey] = Reservation{randomID(), "confirmed", saved.RoomTypeID, saved.CheckIn, saved.CheckOut, saved.Guests, Price{"RUB", 2, 500000, 1000000}}
+	h.client.saved[req.IdempotencyKey] = Reservation{randomID(), "00000001234", "confirmed", saved.RoomTypeID, saved.CheckIn, saved.CheckOut, saved.Guests, Price{"RUB", 2, 500000, 1000000}}
 	h.client.mu.Unlock()
 	h.clock.now = h.clock.now.Add(time.Minute)
 	h.worker(&testMailer{}).Tick(context.Background())

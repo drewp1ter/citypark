@@ -21,7 +21,7 @@ func testRequest() CreateRequest {
 }
 func testReservation() Reservation {
 	r := testRequest()
-	return Reservation{reservationID, "confirmed", r.RoomTypeID, r.CheckIn, r.CheckOut, r.Guests, r.Price}
+	return Reservation{reservationID, "00000001234", "confirmed", r.RoomTypeID, r.CheckIn, r.CheckOut, r.Guests, r.Price}
 }
 func testClient(t *testing.T, handler http.HandlerFunc) *Client {
 	t.Helper()

@@ -70,7 +70,7 @@ func (f *bookingFake) Create(ctx context.Context, req CreateRequest) (Reservatio
 	if r, ok := f.saved[req.IdempotencyKey]; ok {
 		return r, nil
 	}
-	r := Reservation{"6e37e63e-b130-4ff6-a1b4-e0166f470922", "confirmed", req.RoomTypeID, req.CheckIn, req.CheckOut, req.Guests, req.Price}
+	r := Reservation{"6e37e63e-b130-4ff6-a1b4-e0166f470922", "00000001234", "confirmed", req.RoomTypeID, req.CheckIn, req.CheckOut, req.Guests, req.Price}
 	if f.createError == nil || f.commitOnError {
 		f.saved[req.IdempotencyKey] = r
 	}
@@ -270,7 +270,7 @@ func TestCreateIdempotency(t *testing.T) {
 	checkCode(t, first, 201, "")
 	var result PublicReservationResponse
 	_ = json.Unmarshal(first.Body.Bytes(), &result)
-	if result.Status != "confirmed" || result.ReservationID == "" || result.Price.Total != 800000 || result.ConfirmationEmailStatus != "pending" {
+	if result.Status != "confirmed" || result.ReservationID == "" || result.ReservationNumber != "00000001234" || result.Price.Total != 800000 || result.ConfirmationEmailStatus != "pending" {
 		t.Fatalf("result %+v", result)
 	}
 	sent := h.client.requests[0]

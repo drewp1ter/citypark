@@ -136,7 +136,7 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/HotelBookingConfirmed'}
-          example: {reservationId: 6e37e63e-b130-4ff6-a1b4-e0166f470922, status: confirmed, roomTypeId: single-balcony, checkIn: '2026-12-01', checkOut: '2026-12-03', guests: 1, price: {currency: RUB, nights: 2, pricePerNight: 4000, total: 8000}, confirmationEmailStatus: pending}
+          example: {reservationId: 6e37e63e-b130-4ff6-a1b4-e0166f470922, reservationNumber: "00000001234", status: confirmed, roomTypeId: single-balcony, checkIn: '2026-12-01', checkOut: '2026-12-03', guests: 1, price: {currency: RUB, nights: 2, pricePerNight: 4000, total: 8000}, confirmationEmailStatus: pending}
     BookError400:
       description: "Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field."
       headers:
@@ -324,6 +324,7 @@ components:
       required: [reservationId, status, roomTypeId, checkIn, checkOut, guests, price, confirmationEmailStatus]
       properties:
         reservationId: {type: string, format: uuid}
+        reservationNumber: {type: string, description: Booking document number assigned by 1C, minLength: 1}
         status: {type: string, enum: [confirmed]}
         roomTypeId: {type: string, enum: [single, single-balcony, double-twin, double-euro, vip]}
         checkIn: {type: string, format: date}

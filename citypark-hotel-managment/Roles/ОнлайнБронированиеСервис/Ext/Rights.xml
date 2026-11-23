@@ -57,6 +57,13 @@
 		</right>
 	</object>
 	<object>
+		<name>Catalog.ВидыКонтактнойИнформации</name>
+		<right>
+			<name>Read</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
 		<name>Catalog.ГостиничныеКорпуса</name>
 		<right>
 			<name>Read</name>

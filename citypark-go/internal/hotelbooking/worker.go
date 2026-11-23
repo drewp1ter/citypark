@@ -104,6 +104,10 @@ func (w *Worker) send(ctx context.Context, row emailRow) error {
 	if contact.Phones.Hotel.Number == "" {
 		return ErrUnavailable
 	}
-	body := fmt.Sprintf("Бронирование подтверждено\nНомер бронирования: %s\nТип номера: %s\nЗаезд: %s\nВыезд: %s\nГостей: %d\nСтоимость: %s RUB\nТелефон гостиницы: %s\nПредоплата не требуется.", result.ReservationID, room.Name, result.CheckIn, result.CheckOut, result.Guests, result.Price.TotalKopecks.String(), contact.Phones.Hotel.Number)
+	numberLine := ""
+	if result.ReservationNumber != "" {
+		numberLine = fmt.Sprintf("Номер бронирования: %s\n", result.ReservationNumber)
+	}
+	body := fmt.Sprintf("Бронирование подтверждено\n%sТип номера: %s\nЗаезд: %s\nВыезд: %s\nГостей: %d\nСтоимость: %s RUB\nТелефон гостиницы: %s\nПредоплата не требуется.", numberLine, room.Name, result.CheckIn, result.CheckOut, result.Guests, result.Price.TotalKopecks.String(), contact.Phones.Hotel.Number)
 	return w.mailer.Send(ctx, req.Guest.Email, "Бронирование Сити Парк подтверждено", body)
 }

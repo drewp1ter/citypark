@@ -83,6 +83,15 @@ dc logs --tail=100 backend website admin
 
 The backend waits for PostgreSQL, runs embedded migrations, and ensures the initial admin exists. Website and admin wait for backend health. Health checks test process/HTTP availability, not every integration. Restart policies restart exited processes, not merely unhealthy containers. Configure external monitoring for the public website and API.
 
+## Enable room booking
+
+For an existing installation, add the settings below to the active env files. Release bundles leave those files in place.
+
+- In `deploy/website.env`, set `HOTEL_BOOKING_COOKIE_SECRET` to the output of `openssl rand -hex 32`. Keep the same secret across releases so existing booking sessions remain valid.
+- In `deploy/backend.env`, set `HOTEL_BOOKING_ENABLED=true`, `ONEC_BOOKING_URL` to the production HTTPS endpoint ending in `/hs/booking/v1`, and `ONEC_BOOKING_USER` and `ONEC_BOOKING_PASSWORD` to the booking service credentials. Fill in `SMTP_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD`, and `SMTP_FROM` for confirmation emails.
+
+Apply the runtime settings with `dc up -d --no-build --pull never --wait backend website`. Then open the public booking page and request a price for a room with known availability. A successful quote verifies the website can reach the booking service without creating a reservation. The website and backend health checks alone do not verify booking.
+
 ## Existing nginx
 
 Adapt `deploy/nginx/citypark.conf.example` into your host nginx configuration. Replace both domains and certificate paths with your existing values. Reuse existing server blocks where appropriate; do not install duplicate blocks for the same hostname. The `map` belongs in the `http` context. This example assumes nginx is directly exposed to clients; adapt real-IP handling if a CDN sits in front.

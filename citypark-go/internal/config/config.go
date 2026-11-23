@@ -272,13 +272,6 @@ func Load(lookup LookupFunc) (Config, error) {
 		}
 		c.HotelBooking.TrustedProxies = append(c.HotelBooking.TrustedProxies, prefix)
 	}
-	if c.HotelBooking.Enabled {
-		b := c.HotelBooking
-		u, e := url.Parse(b.URL)
-		if e != nil || u.Hostname() == "" || (u.Scheme != "https" && u.Scheme != "http") || (c.IsProduction() && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.Opaque != "" || !strings.HasSuffix(u.Path, "/hs/booking/v1") || b.User == "" || strings.ContainsAny(b.User, ":\r\n") || b.Password == "" {
-			return Config{}, errors.New("booking configuration requires ONEC_BOOKING_URL ending /hs/booking/v1, separate credentials and HTTPS in production")
-		}
-	}
 	c.Upload = Upload{
 		Dir:           str("UPLOAD_DIR", "./uploads"),
 		PublicBaseURL: strings.TrimRight(str("PUBLIC_BASE_URL", "http://localhost:3000"), "/"),

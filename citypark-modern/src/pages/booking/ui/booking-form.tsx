@@ -181,7 +181,9 @@ export function BookingForm({
 		return (
 			<section className={cardClass('surface', 'gap-4 rounded-lg p-5 md:p-8')} aria-live='polite'>
 				<h2 className='heading text-2xl'>Бронирование подтверждено</h2>
-				<p className='break-all'>Номер бронирования: {confirmation.reservationId}</p>
+				{confirmation.reservationNumber && (
+					<p>Номер бронирования: {confirmation.reservationNumber}</p>
+				)}
 				<p>
 					{rooms.find((r) => r.id === confirmation.roomTypeId)?.name} · {confirmation.checkIn} — {confirmation.checkOut}{' '}
 					· Гостей: {confirmation.guests}

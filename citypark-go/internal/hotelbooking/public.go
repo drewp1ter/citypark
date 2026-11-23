@@ -35,6 +35,7 @@ type PublicCreateRequest struct {
 
 type PublicReservationResponse struct {
 	ReservationID           string       `json:"reservationId,omitempty"`
+	ReservationNumber       string       `json:"reservationNumber,omitempty"`
 	Status                  string       `json:"status"`
 	RoomTypeID              string       `json:"roomTypeId,omitempty"`
 	CheckIn                 string       `json:"checkIn,omitempty"`
