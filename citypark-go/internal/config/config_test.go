@@ -465,3 +465,28 @@ func TestBookingTrustedProxyConfig(t *testing.T) {
 		t.Fatal("invalid proxy accepted or leaked")
 	}
 }
+
+func TestYandexConfig(t *testing.T) {
+	cfg, err := Load(lookupMap(nil))
+	if err != nil || cfg.Yandex.Enabled {
+		t.Fatalf("Yandex must default to disabled: %v", err)
+	}
+	env := map[string]string{
+		"CUSTOMER_PUBLIC_ORIGIN": "https://citypark.example",
+		"YANDEX_CLIENT_ID":       "id",
+		"YANDEX_CLIENT_SECRET":   "secret",
+		"YANDEX_CALLBACK_URL":    "https://citypark.example/account/yandex/callback",
+	}
+	cfg, err = Load(lookupMap(env))
+	if err != nil || !cfg.Yandex.Enabled {
+		t.Fatalf("complete Yandex configuration rejected: %v", err)
+	}
+	env["YANDEX_CALLBACK_URL"] = "https://other.example/account/yandex/callback"
+	if _, err := Load(lookupMap(env)); err == nil {
+		t.Fatal("accepted mismatched Yandex callback")
+	}
+	delete(env, "YANDEX_CALLBACK_URL")
+	if _, err := Load(lookupMap(env)); err == nil {
+		t.Fatal("accepted partial Yandex configuration")
+	}
+}

@@ -76,7 +76,7 @@ func (s *Service) CreateSession(ctx context.Context, userID int64, method, surfa
 	return token, exp, err
 }
 func (s *Service) createSession(ctx context.Context, st *Store, userID int64, method, surface string) (string, time.Time, error) {
-	if userID <= 0 || !((method == "password" || method == "google") && surface == "web" || method == "telegram" && surface == "mini") {
+	if userID <= 0 || !((method == "password" || method == "google" || method == "yandex") && surface == "web" || method == "telegram" && surface == "mini") {
 		return "", time.Time{}, ErrInvalidSession
 	}
 	if err := st.LockAccount(ctx, userID); err != nil {

@@ -97,3 +97,7 @@ func (l *Limits) PairRedeem(userID int64, r *http.Request) (bool, int) {
 func (l *Limits) PairConfirm(userID int64) (bool, int) {
 	return l.allow("pair-confirm:"+strconv.FormatInt(userID, 10), 20, 15*time.Minute)
 }
+
+func (l *Limits) OAuth(r *http.Request, provider, operation string) (bool, int) {
+	return l.allow(provider+"-"+operation+"-ip:"+directIP(r), 20, 15*time.Minute)
+}

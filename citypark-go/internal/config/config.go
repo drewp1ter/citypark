@@ -26,6 +26,7 @@ type Config struct {
 	CustomerAuthEnabled      bool
 	CustomerPublicOrigin     string
 	Google                   Google
+	Yandex                   Google
 	SMTP                     SMTP
 	Admin                    Admin
 	Iiko                     Iiko
@@ -157,6 +158,14 @@ func Load(lookup LookupFunc) (Config, error) {
 	}
 	if c.Google.Enabled && c.Google.CallbackURL != c.CustomerPublicOrigin+"/account/google/callback" {
 		return Config{}, errors.New("GOOGLE_CALLBACK_URL must match CUSTOMER_PUBLIC_ORIGIN/account/google/callback")
+	}
+	c.Yandex = Google{ClientID: str("YANDEX_CLIENT_ID", ""), ClientSecret: str("YANDEX_CLIENT_SECRET", ""), CallbackURL: str("YANDEX_CALLBACK_URL", "")}
+	c.Yandex.Enabled = c.Yandex.ClientID != "" && c.Yandex.ClientSecret != "" && c.Yandex.CallbackURL != ""
+	if !c.Yandex.Enabled && (c.Yandex.ClientID != "" || c.Yandex.ClientSecret != "" || c.Yandex.CallbackURL != "") {
+		return Config{}, errors.New("Yandex configuration is incomplete")
+	}
+	if c.Yandex.Enabled && c.Yandex.CallbackURL != c.CustomerPublicOrigin+"/account/yandex/callback" {
+		return Config{}, errors.New("YANDEX_CALLBACK_URL must match CUSTOMER_PUBLIC_ORIGIN/account/yandex/callback")
 	}
 	c.SMTP = SMTP{Host: str("SMTP_HOST", ""), Username: str("SMTP_USERNAME", ""), Password: str("SMTP_PASSWORD", ""), From: str("SMTP_FROM", ""), TLSMode: str("SMTP_TLS_MODE", "starttls")}
 	if c.SMTP.Port, err = positiveInt("SMTP_PORT", "587"); err != nil || c.SMTP.Port > 65535 {

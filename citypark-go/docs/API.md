@@ -252,6 +252,20 @@ Cancellation: `{"state":"<state>","flowToken":"<flowToken>","error":"access_deni
 
 All responses, including errors, use `Cache-Control: private, no-store`; 429 includes `Retry-After` in seconds. The attempt is consumed before exchange, so failures require a new start. Google email, even when verified, does not become an authentication email or merge key. Keep the login token on the Next server in an HttpOnly same-site cookie; a successful link retains the current session.
 
+#### POST /auth/customer/yandex/start
+#### POST /auth/customer/yandex/complete
+
+These endpoints use the Google endpoints' JSON contract, session requirements, status codes,
+and per-IP limits. The configured callback is `/account/yandex/callback`. The browser
+returns a code and state, or an OAuth error and state. The website keeps the flow token
+in a provider-specific HttpOnly cookie.
+
+Yandex attempts are single-use and expire after ten minutes. The backend uses PKCE S256
+and verifies the application ID returned by the profile endpoint. The Yandex profile ID
+is the subject. First-time sign-in creates a customer without an email or phone. Linking
+requires the same recent website session and retains that session. The linked-methods
+endpoint returns `{"provider":"yandex","verified":true}` for a linked Yandex identity.
+
 #### POST /auth/customer/register
 
 Creates a pending password account and sends a verification link.

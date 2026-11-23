@@ -4,12 +4,12 @@ import { useActionState } from 'react'
 import type { CustomerMethod } from '@/shared/customer'
 import { AppLink, Button, TextField, cardClass } from '@/shared/ui'
 import { changeEmailAction } from '../api/actions'
-import { startGoogleLink } from '../api/google-actions'
+import { startGoogleLink, startYandexLink } from '../api/google-actions'
 import { initialAuthState } from '../model/schema'
 
-const labels = { email: 'Email и пароль', google: 'Google', telegram: 'Telegram' }
+const labels = { email: 'Email и пароль', google: 'Google', yandex: 'Яндекс ID', telegram: 'Telegram' }
 
-export function MethodsPanel({ methods, email }: { methods: CustomerMethod[]; email: string }) {
+export function MethodsPanel({ methods, email, showYandex }: { methods: CustomerMethod[]; email: string; showYandex: boolean }) {
  const [state, action, pending] = useActionState(changeEmailAction, initialAuthState)
  const hasEmail = methods.some(method => method.provider === 'email')
  const hasGoogle = methods.some(method => method.provider === 'google')
@@ -23,6 +23,7 @@ export function MethodsPanel({ methods, email }: { methods: CustomerMethod[]; em
    <Button type='submit' variant='outline' disabled={pending}>Отправить подтверждение</Button>
   </form>}
   {!hasGoogle && <form action={startGoogleLink}><Button type='submit' variant='outline'>Подключить Google</Button></form>}
+  {showYandex && !methods.some(method => method.provider === 'yandex') && <form action={startYandexLink}><Button type='submit' variant='outline'>Подключить Яндекс ID</Button></form>}
   <AppLink href='/account/sign-in' className='min-h-11 self-start py-2 underline'>Войти повторно для изменения способов входа</AppLink>
  </section>
 }

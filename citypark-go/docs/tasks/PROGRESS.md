@@ -270,3 +270,8 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [x] [109 Preserve shared dish images](109-shared-dish-images.md) [108]
   - Migration 39 preserves image rows and allows shared URLs per product; sync keeps stable associations and removes stale associations independently while preserving manual images. Catalog read, repeat-sync, cleanup, rollback and database-error regressions pass. Formatting/build/vet and fresh full serial suite pass; iiko coverage 95.1%. No live sync or deployment performed; deploy backend/migration together and sync the menu to restore missing images.
+
+## Yandex ID
+
+- [ ] [110 Yandex ID sign-in](110-yandex-sign-in.md)
+  - Yandex integration and migration tests pass. The full suite reports an existing failure in `TestBookingConfig`, reproduced with the pre-change configuration code.

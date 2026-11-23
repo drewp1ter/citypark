@@ -104,6 +104,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	orders.SetPaymentHours(hours)
 	googleService := google.NewService(db, c, cfg.Google.ClientID, cfg.Google.CallbackURL, "")
 	googleService.ConfigureCompletion(cfg.Google.ClientSecret, "", nil)
+	yandexService := google.NewYandexService(db, c, cfg.Yandex.ClientID, cfg.Yandex.ClientSecret, cfg.Yandex.CallbackURL)
 
 	booking := hotelbooking.NewService(hotelbooking.NewStore(db), room.NewStore(db), hotelbooking.NewClient(cfg.HotelBooking.URL, cfg.HotelBooking.User, cfg.HotelBooking.Password, nil), c)
 	var bookingWorker *hotelbooking.Worker
@@ -125,6 +126,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		customer.NewEmailHandler(db, sessions, customer.NewLimits(c), cfg.CustomerAuthEnabled).Routes(r)
 		customer.NewTelegramHandler(db, sessions, customer.NewLimits(c), cfg.CustomerTelegramBotToken, cfg.CustomerAuthEnabled).Routes(r)
 		google.NewHandler(googleService, sessions, customer.NewLimits(c), cfg.Google.Enabled && cfg.CustomerAuthEnabled).Routes(r)
+		google.NewHandler(yandexService, sessions, customer.NewLimits(c), cfg.Yandex.Enabled && cfg.CustomerAuthEnabled).Routes(r)
 		address.NewHandler(address.NewStore(db), tokens, adapter.Required(true)).WithService(address.NewService(db)).Routes(r)
 		address.NewBookHandler(address.NewStore(db), address.NewService(db), adapter.Required(false)).Routes(r)
 		deliveryprice.NewHandler(db, tokens).Routes(r)

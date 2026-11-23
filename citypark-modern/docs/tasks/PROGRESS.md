@@ -245,3 +245,8 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 - [x] [74 Hide dishes marked hidden in iiko](74-dish-visibility.md) [backend 108]
   - Implementation, visibility harness, check and production build pass (2026-11-17). Harness covers pagination, hidden categories/items, saved homepage selections, ID lookups, stale carts and restoration.
   - Owner-started backend is reachable and exposes isHidden on all 259 products. Read-only production browser checks pass at 390/1440px in light/dark themes: menu search, dish detail and unknown-ID 404. Sitemap includes the visible dish. Live menu has 246 dishes in visible categories and no individually hidden dishes; hidden cases are covered by the harness and backend tests. No catalog sync/writes, orders, payments or deployment performed.
+
+## Yandex ID
+
+- [ ] [75 Yandex ID sign-in](75-yandex-sign-in.md) [backend 110]
+  - Checks and production build pass. Chromium verifies the enabled and disabled sign-in controls and invalid callback handling. Live Yandex login and linking need a registered staging application.

@@ -37,13 +37,14 @@ type Service struct {
 	clientSecret, discoveryURL      string
 	httpClient                      *http.Client
 	provider                        providerCache
+	method, label                   string
 }
 
 func NewService(db *sqlx.DB, c clock.Clock, clientID, callbackURL, endpoint string) *Service {
 	if endpoint == "" {
 		endpoint = authorizationEndpoint
 	}
-	return &Service{db: db, clock: c, clientID: clientID, callbackURL: callbackURL, endpoint: endpoint, random: rand.Reader, discoveryURL: defaultDiscoveryURL, httpClient: &http.Client{Timeout: 5 * time.Second}}
+	return &Service{method: "google", label: "Google", db: db, clock: c, clientID: clientID, callbackURL: callbackURL, endpoint: endpoint, random: rand.Reader, discoveryURL: defaultDiscoveryURL, httpClient: &http.Client{Timeout: 5 * time.Second}}
 }
 
 // ConfigureCompletion supplies the server-only secret and provider discovery endpoint.
@@ -66,7 +67,7 @@ func (s *Service) Start(ctx context.Context, intent string, session *customer.Se
 			return StartResult{}, httpx.Unauthorized()
 		}
 		if session.Surface != "web" {
-			return StartResult{}, httpx.NewError(403, "Откройте сайт для подключения Google")
+			return StartResult{}, httpx.NewError(403, "Откройте сайт для подключения "+s.label)
 		}
 		age := s.clock.Now().Sub(session.AuthenticatedAt)
 		if session.UserID <= 0 || len(session.TokenHash) != 32 || age < 0 || age > 5*time.Minute {
@@ -127,7 +128,7 @@ func (s *Service) Start(ctx context.Context, intent string, session *customer.Se
 				return httpx.NewError(403, "Подтвердите вход повторно")
 			}
 		}
-		_, e := tx.ExecContext(ctx, `INSERT INTO customer_oauth_attempts(state_hash,nonce_hash,flow_hash,pkce_verifier,intent,user_id,session_hash,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, stateHash[:], nonceHash[:], flowHash[:], verifier, intent, userID, sessionHash, expires)
+		_, e := tx.ExecContext(ctx, `INSERT INTO customer_oauth_attempts(state_hash,nonce_hash,flow_hash,pkce_verifier,intent,user_id,session_hash,expires_at,provider) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, stateHash[:], nonceHash[:], flowHash[:], verifier, intent, userID, sessionHash, expires, s.method)
 		return e
 	})
 	if err != nil {
@@ -141,9 +142,13 @@ func (s *Service) Start(ctx context.Context, intent string, session *customer.Se
 	q.Set("client_id", s.clientID)
 	q.Set("redirect_uri", s.callbackURL)
 	q.Set("response_type", "code")
-	q.Set("scope", "openid email profile")
 	q.Set("state", state)
-	q.Set("nonce", nonce)
+	if s.method == "yandex" {
+		q.Set("scope", "login:info")
+	} else {
+		q.Set("scope", "openid email profile")
+		q.Set("nonce", nonce)
+	}
 	q.Set("code_challenge", base64.RawURLEncoding.EncodeToString(challenge[:]))
 	q.Set("code_challenge_method", "S256")
 	u.RawQuery = q.Encode()
@@ -161,13 +166,13 @@ func NewHandler(service *Service, sessions *customer.Service, limits *customer.L
 	return &Handler{service, sessions, limits, enabled}
 }
 func (h *Handler) Routes(r chi.Router) {
-	r.Post("/auth/customer/google/start", httpx.Handle(h.start))
-	r.Post("/auth/customer/google/complete", httpx.Handle(h.complete))
+	r.Post("/auth/customer/"+h.service.method+"/start", httpx.Handle(h.start))
+	r.Post("/auth/customer/"+h.service.method+"/complete", httpx.Handle(h.complete))
 }
 func (h *Handler) start(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Cache-Control", "private, no-store")
 	if !h.enabled {
-		return httpx.NewError(503, "Вход через Google недоступен")
+		return h.service.unavailable()
 	}
 	var body struct {
 		Intent string `json:"intent"`
@@ -196,7 +201,7 @@ func (h *Handler) start(w http.ResponseWriter, r *http.Request) error {
 	if body.Intent == "link" && session == nil {
 		return httpx.Unauthorized()
 	}
-	if ok, retry := h.limits.GoogleStart(r); !ok {
+	if ok, retry := h.limits.OAuth(r, h.service.method, "start"); !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(retry))
 		return httpx.NewError(429, "Слишком много попыток. Попробуйте позже")
 	}

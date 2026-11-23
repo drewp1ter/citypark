@@ -7,9 +7,8 @@ const productionName = '__Host-citypark_customer'
 const developmentName = 'citypark_customer_dev'
 const miniName = '__Host-citypark_mini'
 const miniDevName = 'citypark_mini_dev'
-const googleName = '__Host-citypark_google_flow'
-const googleDevName = 'citypark_google_flow_dev'
-type GoogleAttempt = { key: string; token: string; intent: 'login' | 'link'; expires: number }
+export type OAuthProvider = 'google' | 'yandex'
+type OAuthAttempt = { key: string; token: string; intent: 'login' | 'link'; expires: number }
 export const guestCookieName = 'citypark_guest_checkout_scope'
 const paymentName = '__Host-citypark_payment'
 const paymentDevName = 'citypark_payment_dev'
@@ -74,19 +73,19 @@ function miniCookieName() {
 	return customerCookieName() === productionName ? miniName : miniDevName
 }
 
-function googleCookieName() {
-	return customerCookieName() === productionName ? googleName : googleDevName
+function oauthCookieName(provider: OAuthProvider) {
+	return customerCookieName() === productionName ? `__Host-citypark_${provider}_flow` : `citypark_${provider}_flow_dev`
 }
 function stateKey(state: string) {
 	return createHash('sha256').update(state).digest('base64url')
 }
-function readAttempts(raw?: string): GoogleAttempt[] {
+function readAttempts(raw?: string): OAuthAttempt[] {
 	try {
 		const value: unknown = JSON.parse(raw ?? '')
 		if (!Array.isArray(value)) return []
 		return value
 			.filter(
-				(item): item is GoogleAttempt =>
+				(item): item is OAuthAttempt =>
 					typeof item?.key === 'string' &&
 					typeof item?.token === 'string' &&
 					(item?.intent === 'login' || item?.intent === 'link') &&
@@ -99,36 +98,37 @@ function readAttempts(raw?: string): GoogleAttempt[] {
 	}
 }
 
-async function writeAttempts(attempts: GoogleAttempt[]) {
-	const name = googleCookieName()
+async function writeAttempts(provider: OAuthProvider, attempts: OAuthAttempt[]) {
+	const name = oauthCookieName(provider)
 	;(await cookies()).set(name, attempts.length ? JSON.stringify(attempts) : '', {
 		httpOnly: true,
-		secure: name === googleName,
+		secure: customerCookieName() === productionName,
 		sameSite: 'lax',
 		path: '/',
 		maxAge: attempts.length ? 600 : 0,
 	})
 }
 
-export async function addGoogleAttempt(state: string, token: string, intent: 'login' | 'link', expiresAt: string) {
+export async function addOAuthAttempt(provider: OAuthProvider, state: string, token: string, intent: 'login' | 'link', expiresAt: string) {
 	if (!/^[A-Za-z0-9_-]{32,128}$/.test(state) || !/^[A-Za-z0-9_-]{32,128}$/.test(token))
-		throw new Error('Invalid Google attempt')
+		throw new Error('Invalid OAuth attempt')
 	const expires = new Date(expiresAt).getTime()
 	if (!Number.isFinite(expires) || expires <= Date.now() || expires > Date.now() + 600_000)
-		throw new Error('Invalid Google attempt expiry')
-	const current = readAttempts((await cookies()).get(googleCookieName())?.value)
+		throw new Error('Invalid OAuth attempt expiry')
+	const current = readAttempts((await cookies()).get(oauthCookieName(provider))?.value)
 	await writeAttempts(
+		provider,
 		[...current.filter((item) => item.key !== stateKey(state)), { key: stateKey(state), token, intent, expires }].slice(
 			-3
 		)
 	)
 }
 
-export async function consumeGoogleAttempt(state: string): Promise<GoogleAttempt | undefined> {
-	const current = readAttempts((await cookies()).get(googleCookieName())?.value)
+export async function consumeOAuthAttempt(provider: OAuthProvider, state: string): Promise<OAuthAttempt | undefined> {
+	const current = readAttempts((await cookies()).get(oauthCookieName(provider))?.value)
 	const key = stateKey(state)
 	const found = current.find((item) => item.key === key)
-	if (found) await writeAttempts(current.filter((item) => item.key !== key))
+	if (found) await writeAttempts(provider, current.filter((item) => item.key !== key))
 	return found
 }
 

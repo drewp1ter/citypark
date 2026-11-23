@@ -1,3 +1,4 @@
+import { yandexEnabled } from '../api/oauth'
 import { redirect } from 'next/navigation'
 import { customerAuthorized, CustomerApiError, type CustomerMethod, type CustomerProfile } from '@/shared/customer'
 import { Button } from '@/shared/ui'
@@ -24,7 +25,8 @@ export async function AccountPage({ searchParams }: { searchParams: Promise<{ li
   <h1 className='heading text-4xl'>Личный кабинет</h1>
   {linked === 'google' && <p role='status'>Google подключён</p>}
   <ProfileForm profile={profile} />
-  <MethodsPanel methods={methods.methods} email={profile.email} />
+  {linked === 'yandex' && <p role='status'>Яндекс ID подключён</p>}
+  <MethodsPanel showYandex={yandexEnabled()} methods={methods.methods} email={profile.email} />
   {!methods.methods.some(method => method.provider === 'telegram') && <PairingPanel />}
   <div className='flex flex-wrap gap-3'><Button href='/account/addresses'>Мои адреса</Button><Button href='/account/orders'>История заказов</Button><form action={logoutAction}><Button type='submit' variant='outline'>Выйти</Button></form></div>
  </div></main>

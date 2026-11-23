@@ -2,10 +2,11 @@ import { AuthForm } from './auth-form'
 import { logoutAction } from '../api/actions'
 import { hasCustomerSessionCookie } from '@/shared/customer'
 import { Button } from '@/shared/ui'
+import { yandexEnabled } from '../api/oauth'
 import { GoogleButton } from './google-button'
 
-export async function SignInPage({ searchParams }: { searchParams: Promise<{ returnTo?: string; logout?: string; google?: string }> }) {
-	const { returnTo, logout, google } = await searchParams
+export async function SignInPage({ searchParams }: { searchParams: Promise<{ returnTo?: string; logout?: string; google?: string; yandex?: string }> }) {
+	const { returnTo, logout, google, yandex } = await searchParams
 	const signedIn = await hasCustomerSessionCookie()
 	return <main className='max-w-page mx-auto w-full px-3 py-10 md:px-6 md:py-16'>
 		<div className='mx-auto flex max-w-lg flex-col gap-6'>
@@ -18,6 +19,10 @@ export async function SignInPage({ searchParams }: { searchParams: Promise<{ ret
 			{signedIn && <form action={logoutAction}><Button type='submit' variant='outline'>Выйти из аккаунта</Button></form>}
 			<AuthForm mode='sign-in' returnTo={returnTo} />
 			<GoogleButton />
+			{yandexEnabled() && <GoogleButton provider='yandex' />}
+			{yandex === 'cancelled' && <p role='alert'>Вход через Яндекс ID отменён</p>}
+			{yandex === 'failed' && <p role='alert'>Не удалось подтвердить вход через Яндекс ID. Попробуйте ещё раз.</p>}
+			{yandex === 'expired' && <p role='alert'>Войдите повторно для подключения Яндекс ID</p>}
 		</div>
 	</main>
 }

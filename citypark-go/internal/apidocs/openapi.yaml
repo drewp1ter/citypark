@@ -368,7 +368,7 @@ components:
       type: object
       required: [provider, verified]
       properties:
-        provider: {type: string, enum: [email, google, telegram]}
+        provider: {type: string, enum: [email, google, telegram, yandex]}
         verified: {type: boolean}
     PairingCreated:
       type: object
@@ -2081,6 +2081,122 @@ paths:
               schema: {$ref: '#/components/schemas/Error'}
         '503':
           description: 'Google or customer auth disabled, or provider unavailable. Вход через Google недоступен.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /auth/customer/yandex/start:
+    post:
+      tags: [auth]
+      summary: Start a Yandex ID authorization attempt
+      description: 'Role: public login or recent (five minutes) customer web session link. No sign-in occurs yet. The ten-minute attempt stores hashed state and browser flow token plus a backend-only PKCE verifier. All responses send Cache-Control: private, no-store.'
+      security:
+        - {}
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [intent]
+              properties:
+                intent: {type: string, enum: [login, link]}
+            example: {intent: login}
+      responses:
+        '200':
+          description: Authorization URL and browser-bound flow token.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [authorizationUrl, flowToken, expiresAt]
+                properties:
+                  authorizationUrl: {type: string, format: uri}
+                  flowToken: {type: string}
+                  expiresAt: {type: string, format: date-time}
+              example: {authorizationUrl: 'https://oauth.yandex.ru/authorize?client_id=client-id&code_challenge=...&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fsite.example%2Faccount%2Fyandex%2Fcallback&response_type=code&scope=login%3Ainfo&state=...', flowToken: '<random>', expiresAt: '2026-10-29T12:10:00Z'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: 'Mini session: Откройте сайт для подключения Яндекс ID. Stale web session: Подтвердите вход повторно.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: '20 starts per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Yandex ID or customer auth disabled. Вход через Яндекс ID недоступен.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+  /auth/customer/yandex/complete:
+    post:
+      tags: [auth]
+      summary: Complete Yandex ID login or explicit account linking
+      description: 'Role: public login or the same recent customer web session bound at start for linking. Atomically consumes the attempt before the server-side code exchange. Yandex ID email never becomes a password credential or an account merge key. All responses, including errors, send Cache-Control: private, no-store.'
+      security:
+        - {}
+        - customerSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state, flowToken]
+              properties:
+                state: {type: string, description: Yandex ID callback state}
+                flowToken: {type: string, description: Browser-bound flow token from start}
+                code: {type: string, description: Authorization code; exclusive with error}
+                error: {type: string, enum: [access_denied], description: Cancellation; exclusive with code}
+            example: {state: '<state>', flowToken: '<flowToken>', code: '<authorization-code>'}
+      responses:
+        '200':
+          description: Customer session envelope on login or linked confirmation on link. Existing link retains its session.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/SignInResponse'
+                  - type: object
+                    required: [linked]
+                    properties:
+                      linked: {type: boolean, enum: [true]}
+              examples:
+                login:
+                  value: {user: {id: 1, name: 'Yandex ID User', email: '', phone: '', role: user}, token: 'cs_<random>', expiresAt: '2026-11-29T12:00:00Z'}
+                link:
+                  value: {linked: true}
+        '400':
+          description: 'Некорректный JSON; Не удалось подтвердить вход через Яндекс ID (invalid, expired or replayed proof, code or token); Вход через Яндекс ID отменён (valid cancellation).'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403':
+          description: 'Mini session: Откройте сайт для подключения Яндекс ID. Stale or different session: Подтвердите вход повторно.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '409':
+          description: 'Yandex ID subject conflict: Способ входа уже используется.'
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '429':
+          description: '20 completions per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже.'
+          headers:
+            Retry-After: {schema: {type: integer}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '503':
+          description: 'Yandex ID or customer auth disabled, or provider unavailable. Вход через Яндекс ID недоступен.'
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Error'}

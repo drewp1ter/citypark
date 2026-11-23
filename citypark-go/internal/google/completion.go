@@ -24,7 +24,6 @@ import (
 )
 
 var invalidFlow = httpx.BadRequest("Не удалось подтвердить вход через Google")
-var unavailable = httpx.NewError(503, "Вход через Google недоступен")
 var conflict = httpx.NewError(409, "Способ входа уже используется")
 
 type CompletionResult struct {
@@ -54,22 +53,22 @@ func proofHash(raw string) ([]byte, error) {
 func (s *Service) consume(ctx context.Context, state, flow string) (attempt, error) {
 	sh, err := proofHash(state)
 	if err != nil {
-		return attempt{}, err
+		return attempt{}, s.invalidFlow()
 	}
 	fh, err := proofHash(flow)
 	if err != nil {
-		return attempt{}, err
+		return attempt{}, s.invalidFlow()
 	}
 	var a attempt
 	err = store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
-		if e := tx.GetContext(ctx, &a, `UPDATE customer_oauth_attempts SET consumed_at=$3 WHERE state_hash=$1 AND flow_hash=$2 AND consumed_at IS NULL AND expires_at>$3 RETURNING nonce_hash,pkce_verifier,intent,user_id,session_hash`, sh, fh, s.clock.Now()); e != nil {
+		if e := tx.GetContext(ctx, &a, `UPDATE customer_oauth_attempts SET consumed_at=$3 WHERE state_hash=$1 AND flow_hash=$2 AND consumed_at IS NULL AND expires_at>$3 AND provider=$4 RETURNING nonce_hash,pkce_verifier,intent,user_id,session_hash`, sh, fh, s.clock.Now(), s.method); e != nil {
 			return e
 		}
 		_, e := tx.ExecContext(ctx, `UPDATE customer_oauth_attempts SET pkce_verifier='' WHERE state_hash=$1`, sh)
 		return e
 	})
 	if errors.Is(err, store.ErrNotFound) || err != nil && strings.Contains(err.Error(), "no rows") {
-		return attempt{}, invalidFlow
+		return attempt{}, s.invalidFlow()
 	}
 	return a, err
 }
@@ -78,7 +77,7 @@ func (s *Service) validLink(ctx context.Context, a attempt, session *customer.Se
 		return httpx.Unauthorized()
 	}
 	if session.Surface != "web" {
-		return httpx.NewError(403, "Откройте сайт для подключения Google")
+		return httpx.NewError(403, "Откройте сайт для подключения "+s.label)
 	}
 	age := s.clock.Now().Sub(session.AuthenticatedAt)
 	if age < 0 || age > 5*time.Minute || a.UserID == nil || *a.UserID != session.UserID || !equalBytes(a.SessionHash, session.TokenHash) {
@@ -96,7 +95,7 @@ func (s *Service) validLink(ctx context.Context, a attempt, session *customer.Se
 }
 func (s *Service) Complete(ctx context.Context, state, flowToken, code, providerError string, session *customer.Session) (CompletionResult, error) {
 	if (code == "") == (providerError == "") {
-		return CompletionResult{}, invalidFlow
+		return CompletionResult{}, s.invalidFlow()
 	}
 	a, err := s.consume(ctx, state, flowToken)
 	if err != nil {
@@ -109,38 +108,17 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 	}
 	if providerError != "" {
 		if providerError == "access_denied" {
-			return CompletionResult{}, httpx.BadRequest("Вход через Google отменён")
+			return CompletionResult{}, httpx.BadRequest("Вход через " + s.label + " отменён")
 		}
-		return CompletionResult{}, invalidFlow
+		return CompletionResult{}, s.invalidFlow()
 	}
-	tokenURL, _, err := s.endpoints(ctx)
+	claims, err := s.exchange(ctx, code, a)
 	if err != nil {
-		return CompletionResult{}, unavailable
-	}
-	form := url.Values{"code": {code}, "client_id": {s.clientID}, "client_secret": {s.clientSecret}, "redirect_uri": {s.callbackURL}, "code_verifier": {a.Verifier}, "grant_type": {"authorization_code"}}
-	var exchange struct {
-		IDToken string `json:"id_token"`
-	}
-	_, err = s.getJSON(ctx, http.MethodPost, tokenURL, strings.NewReader(form.Encode()), "application/x-www-form-urlencoded", &exchange)
-	if err != nil {
-		if errors.Is(err, errProviderRejected) {
-			return CompletionResult{}, invalidFlow
-		}
-		return CompletionResult{}, unavailable
-	}
-	if exchange.IDToken == "" {
-		return CompletionResult{}, invalidFlow
-	}
-	claims, err := s.validateIDToken(ctx, exchange.IDToken, a.NonceHash)
-	if err != nil {
-		if errors.Is(err, errInvalidToken) {
-			return CompletionResult{}, invalidFlow
-		}
-		return CompletionResult{}, unavailable
+		return CompletionResult{}, err
 	}
 	if a.Intent == "link" {
 		err = store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
-			if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "google:"+claims.Subject); e != nil {
+			if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, s.method+":"+claims.Subject); e != nil {
 				return e
 			}
 			if e := customer.NewStore(tx).LockAccount(ctx, *a.UserID); e != nil {
@@ -158,7 +136,7 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 				return e
 			}
 			var owner int64
-			e = tx.GetContext(ctx, &owner, `SELECT user_id FROM customer_identities WHERE provider='google' AND subject=$1`, claims.Subject)
+			e = tx.GetContext(ctx, &owner, `SELECT user_id FROM customer_identities WHERE provider=$2 AND subject=$1`, claims.Subject, s.method)
 			if e == nil {
 				if owner == *a.UserID {
 					return nil
@@ -168,7 +146,7 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 			if !errors.Is(store.NotFound(e), store.ErrNotFound) {
 				return e
 			}
-			_, e = tx.ExecContext(ctx, `INSERT INTO customer_identities(user_id,provider,subject) VALUES($1,'google',$2)`, *a.UserID, claims.Subject)
+			_, e = tx.ExecContext(ctx, `INSERT INTO customer_identities(user_id,provider,subject) VALUES($1,$3,$2)`, *a.UserID, claims.Subject, s.method)
 			if store.IsUniqueViolation(e) {
 				return conflict
 			}
@@ -182,10 +160,10 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 	var id int64
 	err = store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
 		// Serialise first logins for a subject so a failed reservation leaves no user.
-		if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "google:"+claims.Subject); e != nil {
+		if _, e := tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, s.method+":"+claims.Subject); e != nil {
 			return e
 		}
-		e := tx.GetContext(ctx, &id, `SELECT user_id FROM customer_identities WHERE provider='google' AND subject=$1`, claims.Subject)
+		e := tx.GetContext(ctx, &id, `SELECT user_id FROM customer_identities WHERE provider=$2 AND subject=$1`, claims.Subject, s.method)
 		if e == nil {
 			return nil
 		}
@@ -204,7 +182,7 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 		if e != nil {
 			return e
 		}
-		_, e = tx.ExecContext(ctx, `INSERT INTO customer_identities(user_id,provider,subject) VALUES($1,'google',$2)`, id, claims.Subject)
+		_, e = tx.ExecContext(ctx, `INSERT INTO customer_identities(user_id,provider,subject) VALUES($1,$3,$2)`, id, claims.Subject, s.method)
 		return e
 	})
 	if err != nil {
@@ -215,7 +193,7 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 		return CompletionResult{}, err
 	}
 	sessions := customer.NewService(s.db, s.clock)
-	token, exp, err := sessions.CreateSession(ctx, id, "google", "web")
+	token, exp, err := sessions.CreateSession(ctx, id, s.method, "web")
 	if err != nil {
 		return CompletionResult{}, err
 	}
@@ -225,7 +203,7 @@ func (s *Service) Complete(ctx context.Context, state, flowToken, code, provider
 func (h *Handler) complete(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Cache-Control", "private, no-store")
 	if !h.enabled {
-		return unavailable
+		return h.service.unavailable()
 	}
 	var body struct {
 		State     string `json:"state"`
@@ -236,7 +214,7 @@ func (h *Handler) complete(w http.ResponseWriter, r *http.Request) error {
 	if err := httpx.DecodeJSON(w, r, &body); err != nil {
 		return err
 	}
-	if ok, retry := h.limits.GoogleComplete(r); !ok {
+	if ok, retry := h.limits.OAuth(r, h.service.method, "complete"); !ok {
 		w.Header().Set("Retry-After", strconv.Itoa(retry))
 		return httpx.NewError(429, "Слишком много попыток. Попробуйте позже")
 	}
@@ -264,9 +242,51 @@ func (h *Handler) complete(w http.ResponseWriter, r *http.Request) error {
 		if errors.As(err, &publicErr) {
 			category = strconv.Itoa(publicErr.Status)
 		}
-		slog.Default().WarnContext(r.Context(), "google completion failed", "category", category, "request_id", hex.EncodeToString(requestID))
+		slog.Default().WarnContext(r.Context(), "OAuth completion failed", "provider", h.service.method, "category", category, "request_id", hex.EncodeToString(requestID))
 		return err
 	}
 	httpx.JSON(w, 200, result)
 	return nil
+}
+
+type profile struct{ Subject, Name string }
+
+func (s *Service) exchange(ctx context.Context, code string, a attempt) (profile, error) {
+	if s.method == "yandex" {
+		return s.exchangeYandex(ctx, code, a.Verifier)
+	}
+	tokenURL, _, err := s.endpoints(ctx)
+	if err != nil {
+		return profile{}, s.unavailable()
+	}
+	form := url.Values{"code": {code}, "client_id": {s.clientID}, "client_secret": {s.clientSecret}, "redirect_uri": {s.callbackURL}, "code_verifier": {a.Verifier}, "grant_type": {"authorization_code"}}
+	var exchange struct {
+		IDToken string `json:"id_token"`
+	}
+	_, err = s.getJSON(ctx, http.MethodPost, tokenURL, strings.NewReader(form.Encode()), "application/x-www-form-urlencoded", &exchange)
+	if err != nil {
+		if errors.Is(err, errProviderRejected) {
+			return profile{}, s.invalidFlow()
+		}
+		return profile{}, s.unavailable()
+	}
+	if exchange.IDToken == "" {
+		return profile{}, s.invalidFlow()
+	}
+	claims, err := s.validateIDToken(ctx, exchange.IDToken, a.NonceHash)
+	if err != nil {
+		if errors.Is(err, errInvalidToken) {
+			return profile{}, s.invalidFlow()
+		}
+		return profile{}, s.unavailable()
+	}
+	return profile{Subject: claims.Subject, Name: claims.Name}, nil
+}
+
+func (s *Service) invalidFlow() error {
+	return httpx.BadRequest("Не удалось подтвердить вход через " + s.label)
+}
+
+func (s *Service) unavailable() error {
+	return httpx.NewError(503, "Вход через "+s.label+" недоступен")
 }

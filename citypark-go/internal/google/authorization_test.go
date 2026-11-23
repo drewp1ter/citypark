@@ -157,3 +157,34 @@ func TestGoogleStartLimits(t *testing.T) {
 		t.Fatal(body)
 	}
 }
+
+func TestYandexAttemptProviderBinding(t *testing.T) {
+	db, googleService, _, _, _ := setup(t)
+	ctx := context.Background()
+	yandex := google.NewYandexService(db, clock.Fixed(startTime), "client-id", "secret", "https://site.example/account/yandex/callback")
+	start, err := yandex.Start(ctx, "login", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	u, err := url.Parse(start.AuthorizationURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	q := u.Query()
+	if u.Host != "oauth.yandex.ru" || q.Get("scope") != "login:info" || q.Get("code_challenge_method") != "S256" {
+		t.Fatalf("unexpected authorization URL: %s", u)
+	}
+	state := q.Get("state")
+	_, err = googleService.Complete(ctx, state, start.FlowToken, "", "access_denied", nil)
+	if err == nil || !strings.Contains(err.Error(), "Не удалось подтвердить") {
+		t.Fatalf("Google accepted Yandex attempt: %v", err)
+	}
+	_, err = yandex.Complete(ctx, state, start.FlowToken, "", "access_denied", nil)
+	if err == nil || !strings.Contains(err.Error(), "отменён") {
+		t.Fatalf("Yandex cancellation failed: %v", err)
+	}
+	_, err = yandex.Complete(ctx, state, start.FlowToken, "", "access_denied", nil)
+	if err == nil || !strings.Contains(err.Error(), "Не удалось подтвердить") {
+		t.Fatalf("Yandex accepted replayed attempt: %v", err)
+	}
+}

@@ -178,3 +178,14 @@ The restore replaces database objects and uploaded files. Rehearse it on a separ
 For upgrades, create a new uniquely tagged release on the build machine. On the server, back up first, verify checksums, load the new image archive, then extract its deployment bundle over the deployment directory. The bundle contains only templates and does not overwrite your `.env` files. Review configuration changes, update `RELEASE_TAG` in `deploy/production.env` to match `RELEASE`, and run `dc up -d --no-build --pull never --wait`. Check logs and public routes. Reuse the same deployment directory and Compose project name so existing volumes stay attached.
 
 Keep the previous archives and tags. To roll back, load the previous archive if needed, restore its deployment bundle and matching configuration, set the previous release tag, and recreate containers. PostgreSQL 17 is also tagged per release so rollback selects the packaged image. Migrations run automatically: reverting images alone may not undo schema changes. If incompatible, restore the matching database/uploads backup with the previous application revision. PostgreSQL major-version upgrades need a separate migration procedure. Changing `POSTGRES_PASSWORD` in an env file does not change the password inside an initialized database.
+
+### Yandex ID sign-in
+
+Register a Yandex ID web application with the `login:info` permission and the
+exact callback `https://<website>/account/yandex/callback`. In `backend.env`,
+set `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET`, and `YANDEX_CALLBACK_URL`.
+The callback must match `CUSTOMER_PUBLIC_ORIGIN` plus the callback path.
+Apply the backend migration before testing sign-in and account linking in staging.
+Set `YANDEX_SIGN_IN_ENABLED=true` in `website.env` to show the buttons in that
+environment. Customer auth must also be enabled in the backend. Keep the client
+secret in `backend.env`.

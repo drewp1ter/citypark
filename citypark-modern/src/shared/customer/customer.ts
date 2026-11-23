@@ -33,7 +33,7 @@ export async function customerRequest<T>(path: string, init: RequestInit = {}): 
 }
 
 export type CustomerProfile = { id: number; name: string; email: string; phone: string; role: 'user' }
-export type CustomerMethod = { provider: 'email' | 'google' | 'telegram'; verified: boolean }
+export type CustomerMethod = { provider: 'email' | 'google' | 'telegram' | 'yandex'; verified: boolean }
 export type CustomerPairing = { id: string; status: 'pending' | 'completed' | 'canceled'; sourceConfirmed: boolean; destinationConfirmed: boolean; otherName: string; expiresAt: string }
 
 export async function customerAuthorized<T>(path: string, init: RequestInit = {}): Promise<T | undefined> {
