@@ -47,7 +47,7 @@ export function DishRow({ dish, onEdit }: { dish: ApiProduct; onEdit: () => void
 					disabled={save.isPending}
 					onChange={(event) => save.mutate(event.target.checked, { onError: toastError })}
 				/>
-				Заблокировать заказ
+				Заблокировать онлайн заказ
 			</label>
 			{save.error instanceof ApiError && save.error.fields.isOrderBlocked && (
 				<p role='alert' className='text-sm text-danger'>

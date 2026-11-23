@@ -37,7 +37,7 @@ export function DishControls({ dish, url }: { dish: Dish; url: string }) {
 			)}
 			<p className='text-text-muted'>{variant.weight}</p>
 			<p className='font-display text-2xl'>{variant.price === null ? 'Цена уточняется' : formatPrice(variant.price)}</p>
-			{(!dish.available || dish.orderBlocked) && <p className='text-text-muted'>Временно недоступно для заказа</p>}
+			{(!dish.available || dish.orderBlocked) && <p className='text-text-muted'>Онлайн продажа не доступна</p>}
 			<div className='w-full max-w-sm'>
 				<AddToCartButton dish={dish} variantId={variant.id} layout='pill' />
 			</div>
