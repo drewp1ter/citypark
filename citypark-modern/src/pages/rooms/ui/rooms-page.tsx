@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { getPageContent } from '@/entities/content'
 import { getHotelPrices } from '@/entities/hotel'
 import { getRoomAvailability, getRooms, type Room } from '@/entities/room'
@@ -23,22 +24,61 @@ const matchesType = (room: Room, type: RoomType) => {
 
 const chipLi = 'rounded-pill bg-bg px-3 py-1.5 text-sm md:px-4 md:py-2 md:text-base'
 
+type RoomListProps = { rooms: readonly Room[]; query: RoomsQuery }
+type Availability = Awaited<ReturnType<typeof getRoomAvailability>> | null
+
+async function AvailableRoomList({ request, ...props }: RoomListProps & { request: Promise<Availability> }) {
+	return <RoomList {...props} availability={await request} />
+}
+
+function RoomList({ rooms, query, availability }: RoomListProps & { availability: Availability }) {
+	const visible = rooms.filter(
+		(room) =>
+			matchesType(room, query.type) &&
+			(!query.freeOnly || availability === null || availability[room.id]?.state !== 'unavailable')
+	)
+
+	return visible.length > 0 ? (
+		visible.map((room, index) => (
+			<RoomCard
+				first={index === 0}
+				key={room.id}
+				room={room}
+				availability={availability ? availability[room.id] : null}
+				nights={query.nights}
+				stay={{ checkIn: query.checkIn, checkOut: query.checkOut, guests: Number(query.guests) }}
+			/>
+		))
+	) : (
+		<p className='text-text-muted md:col-span-3' role='status'>
+			По этим условиям номеров нет.{' '}
+			<AppLink
+				href={roomsHref(query, { type: 'all', freeOnly: false })}
+				className='tap-area text-text font-semibold underline'
+			>
+				Показать все номера
+			</AppLink>
+		</p>
+	)
+}
+
 /** The rooms page: search bar, filters, the room cards, what every room has, and the phone numbers. */
 export async function RoomsPage({ query }: { query: RoomsQuery }) {
-	const { phones } = await getSiteSettings()
-	const [rooms, availability, content, prices] = await Promise.all([
+	const availabilityRequest = getRoomAvailability({
+		checkIn: query.checkIn,
+		checkOut: query.checkOut,
+		guests: Number(query.guests),
+	}).catch((error: unknown) => {
+		console.error(error)
+		return null
+	})
+	const [{ phones }, rooms, content, prices] = await Promise.all([
+		getSiteSettings(),
 		getRooms().catch((error: unknown) => {
 			console.error(error)
 			return null
 		}),
-		getRoomAvailability({
-			checkIn: query.checkIn,
-			checkOut: query.checkOut,
-			guests: Number(query.guests),
-		}).catch((error: unknown) => {
-			console.error(error)
-			return null
-		}),
+
 		getPageContent('hotel'),
 		getHotelPrices(),
 	])
@@ -59,12 +99,6 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 	const mobileAmenities = content.lines('hotel.amenities-mobile')
 	const quickFacts = content.lines('hotel.quick-facts')
 	const values = { smokingFine: prices.smokingFine }
-
-	const visible = rooms.filter(
-		(room) =>
-			matchesType(room, query.type) &&
-			(!query.freeOnly || availability === null || availability[room.id]?.state !== 'unavailable')
-	)
 
 	return (
 		<main>
@@ -133,28 +167,18 @@ export async function RoomsPage({ query }: { query: RoomsQuery }) {
 			</section>
 
 			<section className='max-w-page mx-auto grid w-full gap-2 px-3 pt-3.5 md:grid-cols-2 md:gap-3 md:px-6 md:pt-6 lg:grid-cols-3'>
-				{visible.length > 0 ? (
-					visible.map((room, index) => (
-						<RoomCard
-							first={index === 0}
-							key={room.id}
-							room={room}
-							availability={availability ? availability[room.id] : null}
-							nights={query.nights}
-							stay={{ checkIn: query.checkIn, checkOut: query.checkOut, guests: Number(query.guests) }}
-						/>
-					))
-				) : (
-					<p className='text-text-muted md:col-span-3' role='status'>
-						По этим условиям номеров нет.{' '}
-						<AppLink
-							href={roomsHref(query, { type: 'all', freeOnly: false })}
-							className='tap-area text-text font-semibold underline'
-						>
-							Показать все номера
-						</AppLink>
-					</p>
-				)}
+				<Suspense
+					key={roomsHref(query, {})}
+					fallback={
+						query.freeOnly ? (
+							<p role='status'>Проверяем наличие номеров…</p>
+						) : (
+							<RoomList rooms={rooms} query={query} availability={null} />
+						)
+					}
+				>
+					<AvailableRoomList rooms={rooms} query={query} request={availabilityRequest} />
+				</Suspense>
 			</section>
 
 			<Section className='grid gap-2 pt-10 md:grid-cols-3 md:gap-3 md:pt-[104px]'>
