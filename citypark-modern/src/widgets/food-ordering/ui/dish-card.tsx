@@ -41,7 +41,7 @@ export function DishCard({ dish, eager = false, linked = false }: { dish: Dish; 
 
 	return (
 		<Card as='article' className='rounded-md p-1.5 md:rounded-lg md:p-2'>
-			<div className='relative h-[130px] overflow-hidden rounded-sm md:h-[180px]'>
+			<div className='relative isolate h-[130px] overflow-hidden rounded-sm md:h-[180px]'>
 				{linked && (
 					<AppLink
 						href={`/menu/${encodeURIComponent(dish.id)}`}
