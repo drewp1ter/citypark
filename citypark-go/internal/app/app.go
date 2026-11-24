@@ -112,6 +112,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		bookingStore = hotelbooking.NewStoreWithTelegram(db)
 	}
 	booking := hotelbooking.NewService(bookingStore, room.NewStore(db), hotelbooking.NewClient(cfg.HotelBooking.URL, cfg.HotelBooking.User, cfg.HotelBooking.Password, nil), c)
+	booking.EnableCancellation(cfg.CustomerPublicOrigin, cfg.HotelBooking.CancellationSecret)
 	var bookingWorker *hotelbooking.Worker
 	if cfg.HotelBooking.Enabled {
 		bookingWorker = hotelbooking.NewWorker(booking, mailer.NewSMTP(cfg.SMTP, nil), settings.NewStore(db), log)

@@ -2781,6 +2781,9 @@
 			<Metadata name="HTTPService.Booking.URLTemplate.reservation.Method.get" id="776621c4-1a3e-40ed-be37-f67359c53e8c"/>
 			<Metadata name="HTTPService.Booking.URLTemplate.availability.Method.post" id="7e90dff7-3282-4c81-9345-997b0f90eb31"/>
 			<Metadata name="HTTPService.Booking.URLTemplate.availability" id="8f6ac258-b6ff-4cc3-ab7b-50c18d224b35"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.cancellation" id="305abfd6-6d3f-44f9-b92d-163bb0712f78"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.cancellation.Method.get" id="3b8cc1b1-578a-4dce-8e42-48c40d2a9248"/>
+			<Metadata name="HTTPService.Booking.URLTemplate.cancellation.Method.post" id="559897e8-49e8-47ec-8ed0-b4f5b50a8a51"/>
 		</Metadata>
 		<Metadata name="HTTPService.Booking.Module" id="c5a7d64e-e3f8-434f-9b45-995b7730b890.0" configVersion="3d7d95253c468f488b0a21c2ed4bf93c00000000"/>
 		<Metadata name="HTTPService.Reports" id="05e800d5-ef45-4086-850d-cb24a08e272c" configVersion="45e1887d68e91f408f68f57a3ab1fb6b00000000">

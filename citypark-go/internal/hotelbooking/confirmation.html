@@ -28,6 +28,7 @@
                 {{end}}
               </dl>
               <p style="margin:14px 0 0;padding:12px 14px;border-radius:8px;background-color:#D6F24A;color:#111111;font-size:16px;line-height:22px;">{{.PaymentNote}}</p>
+              {{if .CancellationURL}}<p><a href="{{.CancellationURL}}">Отменить бронирование</a></p>{{end}}
             </td>
           </tr>
         </table>

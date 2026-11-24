@@ -174,4 +174,40 @@
 			<value>true</value>
 		</right>
 	</object>
+	<object>
+		<name>HTTPService.Booking.URLTemplate.cancellation.Method.get</name>
+		<right>
+			<name>Use</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
+		<name>HTTPService.Booking.URLTemplate.cancellation.Method.post</name>
+		<right>
+			<name>Use</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
+		<name>Document.ОтменаБронирования</name>
+		<right>
+			<name>Read</name>
+			<value>true</value>
+		</right>
+		<right>
+			<name>Insert</name>
+			<value>true</value>
+		</right>
+		<right>
+			<name>Posting</name>
+			<value>true</value>
+		</right>
+	</object>
+	<object>
+		<name>Document.Заселение</name>
+		<right>
+			<name>Read</name>
+			<value>true</value>
+		</right>
+	</object>
 </Rights>

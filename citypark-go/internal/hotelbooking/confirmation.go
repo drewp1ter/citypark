@@ -15,7 +15,7 @@ type confirmationDetail struct {
 	Value string
 }
 
-func renderConfirmation(t *template.Template, booking Reservation, roomName, phone string) (plainText, html string, err error) {
+func renderConfirmation(t *template.Template, booking Reservation, roomName, phone string, links ...string) (plainText, html string, err error) {
 	const title = "Бронирование подтверждено"
 	const paymentNote = "Предоплата не требуется."
 
@@ -39,12 +39,18 @@ func renderConfirmation(t *template.Template, booking Reservation, roomName, pho
 	}
 	plain.WriteString(paymentNote)
 
+	var cancellationURL string
+	if len(links) > 0 && links[0] != "" {
+		cancellationURL = links[0]
+		plain.WriteString("\nОтменить бронирование: " + cancellationURL)
+	}
 	var styled strings.Builder
 	if err := t.Execute(&styled, struct {
-		Title       string
-		Details     []confirmationDetail
-		PaymentNote string
-	}{title, details, paymentNote}); err != nil {
+		Title           string
+		Details         []confirmationDetail
+		PaymentNote     string
+		CancellationURL string
+	}{title, details, paymentNote, cancellationURL}); err != nil {
 		return "", "", err
 	}
 	return plain.String(), styled.String(), nil

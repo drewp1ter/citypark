@@ -3963,3 +3963,24 @@ rejection), 409 `ROOM_UNAVAILABLE` / `IDEMPOTENCY_CONFLICT` (saved definitive
 rejection), 429 `RATE_LIMITED`, 503 `BOOKING_UNAVAILABLE`. Exact messages are in the
 table above. Keep the original key after any transport error; never infer a failed
 reservation from a client timeout.
+
+#### GET /hotel/cancellation
+
+Reads the current cancellation status.
+
+#### POST /hotel/cancellation
+
+Confirms cancellation and can be retried with the same credential. Both operations require
+`X-Hotel-Cancellation-Token` from the private confirmation email link and return
+`Cache-Control: no-store`. Neither endpoint accepts a request body.
+
+A 200 response contains `status` (`eligible`, `closed`, or `canceled`),
+`reservationNumber`, `checkIn`, and `checkOut`. A 202 response from POST
+contains `{"status":"pending"}`. Read the status again before showing success.
+Invalid links return 404. A status check during an outage returns 503.
+
+Enable links after deploying the 1C cancellation routes and verifying them with
+the restricted service role. Configure a stable, randomly generated
+`HOTEL_BOOKING_CANCELLATION_SECRET` (at least 32 bytes) and set
+`CUSTOMER_PUBLIC_ORIGIN` to the public website origin. Changing the secret
+invalidates links already sent. Keep the secret out of logs and the repository.

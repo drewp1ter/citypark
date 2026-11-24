@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
 	async headers() {
 		return [
 			{
-				source: '/booking',
+				source: '/booking/:path*',
 				headers: [
 					{ key: 'Cache-Control', value: 'private, no-store' },
 					{ key: 'Referrer-Policy', value: 'no-referrer' },

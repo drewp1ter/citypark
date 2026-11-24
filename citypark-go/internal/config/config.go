@@ -74,6 +74,7 @@ type Moneta struct {
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
 type HotelBooking struct {
+	CancellationSecret  string
 	TelegramChatID      string
 	TrustedProxies      []netip.Prefix
 	Enabled             bool
@@ -269,11 +270,15 @@ func Load(lookup LookupFunc) (Config, error) {
 		Password: str("ONEC_PASSWORD", ""),
 	}
 	c.HotelBooking = HotelBooking{
-		Enabled:        str("HOTEL_BOOKING_ENABLED", "false") == "true",
-		URL:            str("ONEC_BOOKING_URL", ""),
-		User:           str("ONEC_BOOKING_USER", ""),
-		Password:       str("ONEC_BOOKING_PASSWORD", ""),
-		TelegramChatID: strings.TrimSpace(str("TELEGRAM_HOTEL_CHAT_ID", "")),
+		CancellationSecret: str("HOTEL_BOOKING_CANCELLATION_SECRET", ""),
+		Enabled:            str("HOTEL_BOOKING_ENABLED", "false") == "true",
+		URL:                str("ONEC_BOOKING_URL", ""),
+		User:               str("ONEC_BOOKING_USER", ""),
+		Password:           str("ONEC_BOOKING_PASSWORD", ""),
+		TelegramChatID:     strings.TrimSpace(str("TELEGRAM_HOTEL_CHAT_ID", "")),
+	}
+	if c.HotelBooking.CancellationSecret != "" && len(c.HotelBooking.CancellationSecret) < 32 {
+		return Config{}, errors.New("HOTEL_BOOKING_CANCELLATION_SECRET must be at least 32 bytes")
 	}
 	if c.HotelBooking.Enabled && c.HotelBooking.TelegramChatID != "" && strings.TrimSpace(c.Telegram.Token) == "" {
 		return Config{}, errors.New("TELEGRAM_TOKEN is required when TELEGRAM_HOTEL_CHAT_ID is configured for hotel bookings")

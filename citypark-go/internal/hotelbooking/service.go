@@ -30,14 +30,15 @@ type RoomReader interface {
 	Get(context.Context, string) (room.Room, error)
 }
 type Service struct {
-	store  *Store
-	rooms  RoomReader
-	client BookingClient
-	clock  clock.Clock
+	store        *Store
+	rooms        RoomReader
+	client       BookingClient
+	clock        clock.Clock
+	cancellation cancellationConfig
 }
 
 func NewService(s *Store, rooms RoomReader, client BookingClient, c clock.Clock) *Service {
-	return &Service{s, rooms, client, c}
+	return &Service{store: s, rooms: rooms, client: client, clock: c}
 }
 func randomID() string {
 	var b [16]byte

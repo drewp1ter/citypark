@@ -29,6 +29,8 @@ func NewHandler(service *Service, enabled bool, trusted []netip.Prefix) *Handler
 func (h *Handler) Routes(r chi.Router) {
 	r.Route("/hotel", func(r chi.Router) {
 		r.Use(h.private)
+		r.Get("/cancellation", httpx.Handle(h.Cancellation))
+		r.Post("/cancellation", httpx.Handle(h.Cancellation))
 		r.Post("/quotes", httpx.Handle(h.Quote))
 		r.Post("/reservations", httpx.Handle(h.Create))
 		r.Get("/reservations/{idempotencyKey}", httpx.Handle(h.Lookup))

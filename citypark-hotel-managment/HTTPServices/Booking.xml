@@ -102,6 +102,34 @@
 					</Method>
 				</ChildObjects>
 			</URLTemplate>
+			<URLTemplate uuid="305abfd6-6d3f-44f9-b92d-163bb0712f78">
+				<Properties>
+					<Name>cancellation</Name>
+					<Synonym/>
+					<Comment/>
+					<Template>/v1/reservations/{idempotencyKey}/cancellation</Template>
+				</Properties>
+				<ChildObjects>
+				<Method uuid="3b8cc1b1-578a-4dce-8e42-48c40d2a9248">
+					<Properties>
+						<Name>get</Name>
+						<Synonym/>
+						<Comment/>
+						<HTTPMethod>GET</HTTPMethod>
+						<Handler>cancellationGet</Handler>
+					</Properties>
+				</Method>
+				<Method uuid="559897e8-49e8-47ec-8ed0-b4f5b50a8a51">
+					<Properties>
+						<Name>post</Name>
+						<Synonym/>
+						<Comment/>
+						<HTTPMethod>POST</HTTPMethod>
+						<Handler>cancellationPost</Handler>
+					</Properties>
+				</Method>
+				</ChildObjects>
+			</URLTemplate>
 		</ChildObjects>
 	</HTTPService>
 </MetaDataObject>

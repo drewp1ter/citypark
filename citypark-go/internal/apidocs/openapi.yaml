@@ -1597,6 +1597,60 @@ components:
               description: Empty, or `X% Y%` with X and Y from 0 to 100.
               example: 50% 30%
 paths:
+  /hotel/cancellation:
+    get:
+      summary: Read hotel cancellation status
+      parameters:
+        - in: header
+          name: X-Hotel-Cancellation-Token
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Current cancellation status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, reservationNumber, checkIn, checkOut]
+                properties:
+                  status: {type: string, enum: [eligible, closed, canceled]}
+                  reservationNumber: {type: string}
+                  checkIn: {type: string, format: date}
+                  checkOut: {type: string, format: date}
+        '404': {$ref: '#/components/responses/HotelBooking404'}
+        '503': {$ref: '#/components/responses/HotelBooking503'}
+    post:
+      summary: Confirm guest hotel cancellation
+      parameters:
+        - in: header
+          name: X-Hotel-Cancellation-Token
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Current cancellation status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, reservationNumber, checkIn, checkOut]
+                properties:
+                  status: {type: string, enum: [eligible, closed, canceled]}
+                  reservationNumber: {type: string}
+                  checkIn: {type: string, format: date}
+                  checkOut: {type: string, format: date}
+        '404': {$ref: '#/components/responses/HotelBooking404'}
+        '503': {$ref: '#/components/responses/HotelBooking503'}
+        '202':
+          description: Cancellation outcome is pending
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: {type: string, enum: [pending]}
   /hotel/quotes:
     post:
       tags: [hotel]

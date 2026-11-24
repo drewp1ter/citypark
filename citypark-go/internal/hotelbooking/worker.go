@@ -129,7 +129,7 @@ func (w *Worker) send(ctx context.Context, row emailRow) error {
 	if contact.Phones.Hotel.Number == "" {
 		return ErrUnavailable
 	}
-	plainText, html, err := renderConfirmation(w.confirmation, result, room.Name, contact.Phones.Hotel.Number)
+	plainText, html, err := renderConfirmation(w.confirmation, result, room.Name, contact.Phones.Hotel.Number, w.service.cancellation.link(row.Key))
 	if err != nil {
 		return ErrUnavailable
 	}
