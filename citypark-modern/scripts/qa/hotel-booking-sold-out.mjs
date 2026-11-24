@@ -60,7 +60,7 @@ try {
 			await page.getByRole('button', { name: 'Проверить наличие и стоимость', exact: true }).click()
 			await page.getByRole('button', { name: 'Забронировать', exact: true }).waitFor()
 			await page.getByLabel('ФИО', { exact: true }).fill('Тест отказа сайта 73')
-			await page.getByLabel('Электронная почта', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_EMAIL)
+			await page.getByLabel('Электронная почта (необязательно)', { exact: true }).fill(process.env.HOTEL_BOOKING_QA_EMAIL)
 			await page.getByLabel('Телефон', { exact: true }).fill('+70000000073')
 			const quote = await api('/quotes', stay)
 			assert.equal(quote.status, 200)

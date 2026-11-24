@@ -93,12 +93,14 @@ func normalizeGuest(g Guest) (Guest, error) {
 	if n := utf8.RuneCountInString(g.Name); n < 1 || n > 150 {
 		return Guest{}, failure("INVALID_REQUEST")
 	}
-	address, err := mail.ParseAddress(g.Email)
-	if err != nil || address.Address != g.Email || len(g.Email) > 254 {
-		return Guest{}, failure("INVALID_REQUEST")
+	if g.Email != "" {
+		address, err := mail.ParseAddress(g.Email)
+		if err != nil || address.Address != g.Email || len(g.Email) > 254 {
+			return Guest{}, failure("INVALID_REQUEST")
+		}
+		at := strings.LastIndexByte(g.Email, '@')
+		g.Email = g.Email[:at+1] + strings.ToLower(g.Email[at+1:])
 	}
-	at := strings.LastIndexByte(g.Email, '@')
-	g.Email = g.Email[:at+1] + strings.ToLower(g.Email[at+1:])
 	var phone strings.Builder
 	for _, c := range g.Phone {
 		if c == ' ' || c == '(' || c == ')' || c == '-' {
@@ -299,7 +301,7 @@ func (s *Service) dispatch(ctx context.Context, a attemptRow, recovery bool) {
 			_ = s.store.release(ctx, a, s.clock.Now())
 			return
 		}
-		_ = s.store.finish(ctx, a, r, s.clock.Now())
+		_ = s.store.finish(ctx, a, r, req.Guest.Email != "", s.clock.Now())
 		return
 	}
 	var protocol *ProtocolError

@@ -401,7 +401,7 @@ func TestGuestValidation(t *testing.T) {
 		valid        bool
 	}{
 		{"name", "", false}, {"name", strings.Repeat("я", 151), false}, {"name", strings.Repeat("я", 150), true}, {"name", "a\nb", false}, {"name", string([]byte{255}), false},
-		{"email", "wrong", false}, {"email", "Person <a@example.com>", false}, {"email", "x\r@example.com", false}, {"email", strings.Repeat("a", 243) + "@example.com", false},
+		{"email", "", true}, {"email", "   ", true}, {"email", "wrong", false}, {"email", "Person <a@example.com>", false}, {"email", "x\r@example.com", false}, {"email", strings.Repeat("a", 243) + "@example.com", false},
 		{"phone", "", false}, {"phone", "+1234567", false}, {"phone", "+1234567890123456", false}, {"phone", "+123456789012345", true}, {"phone", "+7abc1234567", false}, {"phone", "+7\t9180000000", false}, {"phone", "++79180000000", false},
 	} {
 		t.Run(tc.field+fmt.Sprint(len(tc.value))+fmt.Sprint(tc.valid), func(t *testing.T) {
@@ -428,6 +428,29 @@ func TestGuestValidation(t *testing.T) {
 		t.Fatal("invalid guest dispatched")
 	}
 }
+func TestCreateWithoutEmail(t *testing.T) {
+	h := newBooking(t)
+	h.service.store = NewStoreWithTelegram(h.db)
+	req := createRequest(h.quote(stayRequest()))
+	req.Guest.Email = ""
+	first := h.request("POST", "/reservations", h.token, req)
+	checkCode(t, first, 201, "")
+	recovered := h.request("GET", "/reservations/"+req.IdempotencyKey, h.token, nil)
+	checkCode(t, recovered, 200, "")
+	for _, response := range []*httptest.ResponseRecorder{first, recovered} {
+		var result map[string]any
+		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil || result["status"] != "confirmed" {
+			t.Fatalf("expected confirmed booking: %s", response.Body.String())
+		}
+		if _, exists := result["confirmationEmailStatus"]; exists {
+			t.Fatal("reported email delivery for a booking without an address")
+		}
+	}
+	if h.client.requests[0].Guest.Email != "" || h.count("hotel_booking_email_outbox") != 0 || h.count("hotel_booking_telegram_outbox") != 1 {
+		t.Fatal("expected a blank email on the 1C request and only a Telegram notification")
+	}
+}
+
 func TestStrictBookingBodies(t *testing.T) {
 	h := newBooking(t)
 	for _, raw := range []string{

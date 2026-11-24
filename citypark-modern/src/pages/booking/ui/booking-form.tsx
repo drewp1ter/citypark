@@ -189,11 +189,13 @@ export function BookingForm({
 					· Гостей: {confirmation.guests}
 				</p>
 				<p className='text-xl font-semibold'>{formatPrice(confirmation.price.total)} · без предоплаты</p>
-				<p>
-					{confirmation.confirmationEmailStatus === 'sent'
-						? 'Подтверждение отправлено на электронную почту.'
-						: 'Бронирование сохранено. Подтверждение отправим на электронную почту; отправка ещё ожидается.'}
-				</p>
+				{confirmation.confirmationEmailStatus && (
+					<p>
+						{confirmation.confirmationEmailStatus === 'sent'
+							? 'Подтверждение отправлено на электронную почту.'
+							: 'Бронирование сохранено. Подтверждение отправим на электронную почту; отправка ещё ожидается.'}
+					</p>
+				)}
 				<p>
 					Для изменения или отмены позвоните в отель:{' '}
 					<a className='underline' href={hotelPhone.href}>
@@ -276,14 +278,13 @@ export function BookingForm({
 						required
 					/>
 					<TextField
-						label='Электронная почта'
+						label='Электронная почта (необязательно)'
 						name='email'
 						type='email'
 						autoComplete='email'
 						value={guest.email}
 						onChange={(e) => setGuest((g) => ({ ...g, email: e.target.value }))}
 						error={state.errors?.email}
-						required
 					/>
 					<TextField
 						label='Телефон'

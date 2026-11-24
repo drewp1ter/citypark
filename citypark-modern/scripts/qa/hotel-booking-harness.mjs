@@ -76,6 +76,10 @@ assert.equal(
 	guest.phone
 )
 assert.equal(schema.guestSchema.parse({ ...guest, email: 'Ivan@EXAMPLE.COM ' }).email, guest.email)
+assert.equal(schema.guestSchema.parse({ ...guest, email: '   ' }).email, '')
+const withoutEmailStatus = { ...reservation }
+delete withoutEmailStatus.confirmationEmailStatus
+assert.equal(model.bookingReservationSchema.safeParse(withoutEmailStatus).success, true)
 for (const patch of [
 	{ name: '' },
 	{ name: 'x'.repeat(151) },

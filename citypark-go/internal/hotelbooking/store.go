@@ -65,7 +65,7 @@ type attemptRow struct {
 	Claim       sql.NullString `db:"claim"`
 }
 
-const attemptColumns = `a.key,a.quote_id,a.context_hash,a.canonical_request,a.state,a.result,a.rejection_code,a.claim,COALESCE(o.state,'pending') AS email_state`
+const attemptColumns = `a.key,a.quote_id,a.context_hash,a.canonical_request,a.state,a.result,a.rejection_code,a.claim,COALESCE(o.state,'') AS email_state`
 
 func (s *Store) attempt(ctx context.Context, key string) (attemptRow, error) {
 	var a attemptRow
@@ -111,7 +111,7 @@ func (s *Store) limit(ctx context.Context, scope, hash string, now time.Time, wi
 }
 
 // finish makes confirmation and its uniquely keyed outbox entry one local commit.
-func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, now time.Time) error {
+func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, queueEmail bool, now time.Time) error {
 	raw, _ := json.Marshal(r)
 	return s.transaction(ctx, func(tx *Store) error {
 		var key string
@@ -122,9 +122,14 @@ func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, now tim
 		if err != nil {
 			return err
 		}
-		_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_email_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
-		if err != nil || !s.queueTelegram {
-			return err
+		if queueEmail {
+			_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_email_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
+			if err != nil {
+				return err
+			}
+		}
+		if !s.queueTelegram {
+			return nil
 		}
 		_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_telegram_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
 		return err

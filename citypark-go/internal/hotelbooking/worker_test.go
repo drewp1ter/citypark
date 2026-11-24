@@ -123,7 +123,7 @@ func TestRecoveryLeases(t *testing.T) {
 	h.client.createError = nil
 	h.service.dispatch(context.Background(), fresh, true)
 	// A stale worker cannot change a confirmed result or enqueue another email.
-	if err = h.service.store.finish(context.Background(), old, h.client.saved[req.IdempotencyKey], h.clock.Now()); err != nil {
+	if err = h.service.store.finish(context.Background(), old, h.client.saved[req.IdempotencyKey], true, h.clock.Now()); err != nil {
 		t.Fatal(err)
 	}
 	checkCode(t, h.request("GET", "/reservations/"+req.IdempotencyKey, h.token, nil), 200, "")

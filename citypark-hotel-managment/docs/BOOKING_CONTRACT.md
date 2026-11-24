@@ -39,7 +39,7 @@ availability checks do not establish that concurrent posting is safe.
 
 ## Agreed product rules and implementation defaults
 
-- Required guest/contact fields: name, email, phone. No passport fields, child-age
+- Required guest/contact values: name and phone. Send an empty `guest.email` string when no address is supplied. No passport fields, child-age
   or extra-bed questions. Keep one exact total `guests` count from the room search.
   Capacity limits: single/single-balcony 1, twin/Euro 2; VIP 4, matching the existing
   site description. Do not derive capacity from the shared 1C room-type reference.
@@ -60,7 +60,7 @@ availability checks do not establish that concurrent posting is safe.
   Unlimited advance booking and duration do not bypass date-type limits,
   checked price arithmetic or full-stay inventory validation.
 - Anonymous guest booking allowed; no prior email verification. Confirmation goes
-  to the supplied email after 1C commits. Email failure cannot undo the booking.
+  to the supplied email after 1C commits, when provided. Email failure cannot undo the booking.
 - Nights are the difference between the two calendar dates, independent of the
   configured arrival/departure clock times. For example, check-in at 13:00 on
   December 1 and check-out at 12:00 on December 2 is one night. Availability and
@@ -300,7 +300,7 @@ cannot be forwarded. Never log credentials, contacts or response bodies.
   internal same-key GET; 404 can mean the original request is still executing.
   Background recovery checks every 30 seconds and may resend the identical saved
   create using the same key. Never regenerate a key or reprice a pending request.
-- On confirmation, Go saves result and one uniquely keyed email-outbox row in the
+- On confirmation, Go saves the result and, when an address was provided, one uniquely keyed email-outbox row in the
   same local transaction. Reconciliation after a lost local commit recreates this
   using the same key. Use existing SMTP mailer; retries with bounded backoff continue
   while pending. SMTP delivery is at-least-once: a lost acknowledgement may cause
@@ -430,8 +430,7 @@ and a saved key. Recovery works independently through the Go worker.
 
 Use existing room content/photos/tokens and Russian labels `Имя`, `Электронная
 почта`, `Телефон`, `Забронировать`, `Проверяем бронирование`,
-`Бронирование подтверждено`. State that confirmation is sent by email; never
-claim successful delivery while pending. No payment UI. Server-only integration;
+`Бронирование подтверждено`. Show the confirmation email status when the guest supplied an address. No payment UI. Server-only integration;
 no 1C credentials/references in client code. Private booking route is noindex.
 QA `scripts/qa/flows/hotel-booking.mjs` stages: `search`, `guest-validation`,
 `quote`, `confirm`, `double-submit`, `sold-out`, `price-change`, `pending-recovery`,
@@ -447,7 +446,7 @@ required. None of these runtime scenarios has passed merely by writing this spec
 | Full-stay allocation | Reject a stay where each night has space but no single room covers the whole interval. |
 | Interval overlap | Reject partial overlap, contained/containing stays and identical dates. |
 | Adjacent stays | Checkout boundary permits the next valid arrival without a phantom extra occupied second. |
-| Guest fields | Name/email/phone required; no required additional guest/contact fields or child/extra-bed questions. |
+| Guest fields | Name and phone required, email optional; no required additional guest/contact fields or child/extra-bed questions. |
 | Capacity | Verified physical-room allocation rules enforced without child/extra-bed questions. |
 | Booking horizon/duration | Reject past arrival dates using Moscow time; allow today and future dates when otherwise valid. Revalidate after Moscow midnight. Accept arrival and departure more than six months ahead and stays longer than 90 nights when inventory is available and dates/totals are representable. No maximum advance horizon or stay duration; no month-clamping rule. Reject checkout on/before arrival, invalid/unrepresentable dates and arithmetic overflow. Long stays require one room for the full stay and complete price calculation. |
 | Email confirmation | Confirmation sent after commit; delivery failure/retry never creates a duplicate reservation. |

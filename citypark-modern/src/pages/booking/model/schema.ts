@@ -12,7 +12,7 @@ export const guestSchema = z
 			.string()
 			.refine(noControls, 'Проверьте электронную почту')
 			.transform((v) => v.trim())
-			.pipe(z.email('Проверьте электронную почту'))
+			.pipe(z.union([z.literal(''), z.email()], { error: 'Проверьте электронную почту' }))
 			.refine((v) => new TextEncoder().encode(v).length <= 254, 'Слишком длинный адрес')
 			.transform((v) => {
 				const at = v.lastIndexOf('@')

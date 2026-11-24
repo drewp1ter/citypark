@@ -280,7 +280,11 @@ components:
       required: [name, email, phone]
       properties:
         name: {type: string, minLength: 1, maxLength: 150, description: Trimmed Unicode name; no controls.}
-        email: {type: string, format: email, maxLength: 254, description: Bare address; trimmed; domain lowercased; local-part case preserved; byte limit.}
+        email:
+          description: Empty string for a booking without email. Supplied addresses are trimmed with a lowercased domain and preserved local-part case.
+          oneOf:
+            - {type: string, enum: ['']}
+            - {type: string, format: email, maxLength: 254}
         phone: {type: string, description: 'Normalized to + and 8–15 digits; strip spaces/parentheses/hyphens; Russian 8 prefix becomes +7.'}
     HotelBookingPrice:
       type: object
@@ -321,7 +325,7 @@ components:
     HotelBookingConfirmed:
       type: object
       additionalProperties: false
-      required: [reservationId, status, roomTypeId, checkIn, checkOut, guests, price, confirmationEmailStatus]
+      required: [reservationId, status, roomTypeId, checkIn, checkOut, guests, price]
       properties:
         reservationId: {type: string, format: uuid}
         reservationNumber: {type: string, description: Booking document number assigned by 1C, minLength: 1}
@@ -331,7 +335,7 @@ components:
         checkOut: {type: string, format: date}
         guests: {type: integer, minimum: 1, maximum: 4}
         price: {$ref: '#/components/schemas/HotelBookingPrice'}
-        confirmationEmailStatus: {type: string, enum: [pending, sent], description: Failed delivery remains pending; at-least-once SMTP retries.}
+        confirmationEmailStatus: {type: string, enum: [pending, sent], description: Omitted for bookings without email. Failed delivery remains pending with at-least-once SMTP retries.}
     HotelBookingError:
       type: object
       additionalProperties: false

@@ -3889,8 +3889,9 @@ upstream failure). Messages are in the table above.
 Role: public; same booking context as the quote. No query parameters.
 
 Required body contains **only** `idempotencyKey`, `quoteId` (canonical lowercase,
-nonzero UUIDs) and `guest` with required `name`, `email`, `phone`. Name is trimmed,
-1–150 Unicode characters. Email is trimmed, at most 254 bytes, validated as a bare
+nonzero UUIDs) and `guest` with `name`, `email`, and `phone` string fields. Supply
+an empty string when the guest leaves email blank. Name is trimmed and must contain
+1–150 Unicode characters. A nonempty email is trimmed, limited to 254 bytes, and validated as a bare
 address; local-part case is preserved, domain is lowercased. Phone removes spaces,
 parentheses and hyphens and becomes `+` plus 8–15 ASCII digits; Russian `8` plus ten
 digits becomes `+7`. Control characters are rejected. No passport, account,
@@ -3908,7 +3909,8 @@ physical-room reference or client price is accepted.
 
 When available, `reservationNumber` is the booking document number assigned by 1C. Older results may omit it.
 
-`confirmationEmailStatus` is `pending` or `sent`. SMTP failure keeps it pending and
+When an email address is supplied, `confirmationEmailStatus` is `pending` or `sent`.
+Bookings with a blank email omit this field and skip email delivery. SMTP failure keeps it pending and
 cannot undo a committed booking. Delivery is at-least-once; a lost SMTP
 acknowledgement can produce a duplicate email, never a duplicate reservation.
 Confirmation includes reservation reference, room type, dates, guests, RUB total
