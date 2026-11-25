@@ -61,11 +61,12 @@ type attemptRow struct {
 	State       string         `db:"state"`
 	Result      []byte         `db:"result"`
 	Rejection   string         `db:"rejection_code"`
+	SMSState    string         `db:"sms_state"`
 	EmailState  string         `db:"email_state"`
 	Claim       sql.NullString `db:"claim"`
 }
 
-const attemptColumns = `a.key,a.quote_id,a.context_hash,a.canonical_request,a.state,a.result,a.rejection_code,a.claim,COALESCE(o.state,'') AS email_state`
+const attemptColumns = `a.key,a.quote_id,a.context_hash,a.canonical_request,a.state,a.result,a.rejection_code,a.claim,COALESCE(CASE WHEN o.channel='email' THEN o.state END,'') AS email_state,COALESCE(CASE WHEN o.channel='sms' THEN o.state END,'') AS sms_state`
 
 func (s *Store) attempt(ctx context.Context, key string) (attemptRow, error) {
 	var a attemptRow
@@ -111,7 +112,7 @@ func (s *Store) limit(ctx context.Context, scope, hash string, now time.Time, wi
 }
 
 // finish makes confirmation and its uniquely keyed outbox entry one local commit.
-func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, queueEmail bool, now time.Time) error {
+func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, hasEmail bool, now time.Time) error {
 	raw, _ := json.Marshal(r)
 	return s.transaction(ctx, func(tx *Store) error {
 		var key string
@@ -122,11 +123,13 @@ func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, queueEm
 		if err != nil {
 			return err
 		}
-		if queueEmail {
-			_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_email_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
-			if err != nil {
-				return err
-			}
+		channel := "sms"
+		if hasEmail {
+			channel = "email"
+		}
+		_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_email_outbox(attempt_key,next_attempt_at,channel) VALUES($1,$2,$3) ON CONFLICT(attempt_key) DO NOTHING`, key, now, channel)
+		if err != nil {
+			return err
 		}
 		if !s.queueTelegram {
 			return nil
@@ -148,26 +151,27 @@ func (s *Store) release(ctx context.Context, a attemptRow, now time.Time) error 
 // acknowledge one another's expired leases.
 func (s *Store) claimRecovery(ctx context.Context, now time.Time, claim string) (attemptRow, error) {
 	var key string
-	err := s.db.GetContext(ctx, &key, `UPDATE hotel_booking_attempts SET claim=$2,lease_until=$3,updated_at=now() WHERE key=(SELECT key FROM hotel_booking_attempts WHERE state='pending' AND next_attempt_at<=$1 AND (lease_until IS NULL OR lease_until<=$1) ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING key`, now, claim, now.Add(time.Minute))
+	err := s.db.GetContext(ctx, &key, `UPDATE hotel_booking_attempts SET claim=$2,lease_until=$3,updated_at=now() WHERE key=(SELECT key FROM hotel_booking_attempts WHERE state='pending' AND (channel='email' OR $4) AND next_attempt_at<=$1 AND (lease_until IS NULL OR lease_until<=$1) ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING key`, now, claim, now.Add(time.Minute))
 	if err != nil {
 		return attemptRow{}, err
 	}
 	return s.attempt(ctx, key)
 }
 
-type emailRow struct {
+type confirmationRow struct {
+	Channel   string `db:"channel"`
 	Key       string `db:"attempt_key"`
 	Attempts  int    `db:"attempts"`
 	Canonical string `db:"canonical_request"`
 	Result    []byte `db:"result"`
 }
 
-func (s *Store) claimEmail(ctx context.Context, now time.Time, claim string) (emailRow, error) {
-	var row emailRow
-	err := s.db.GetContext(ctx, &row, `WITH claimed AS (UPDATE hotel_booking_email_outbox SET claim=$2,lease_until=$3,attempts=attempts+1,updated_at=now() WHERE attempt_key=(SELECT attempt_key FROM hotel_booking_email_outbox WHERE state='pending' AND next_attempt_at<=$1 AND (lease_until IS NULL OR lease_until<=$1) ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING attempt_key,attempts) SELECT c.attempt_key,c.attempts,a.canonical_request,a.result FROM claimed c JOIN hotel_booking_attempts a ON a.key=c.attempt_key`, now, claim, now.Add(time.Minute))
+func (s *Store) claimConfirmation(ctx context.Context, now time.Time, claim string, smsEnabled bool) (confirmationRow, error) {
+	var row confirmationRow
+	err := s.db.GetContext(ctx, &row, `WITH claimed AS (UPDATE hotel_booking_email_outbox SET claim=$2,lease_until=$3,attempts=attempts+1,updated_at=now() WHERE attempt_key=(SELECT attempt_key FROM hotel_booking_email_outbox WHERE state='pending' AND (channel='email' OR $4) AND next_attempt_at<=$1 AND (lease_until IS NULL OR lease_until<=$1) ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING attempt_key,attempts,channel) SELECT c.attempt_key,c.attempts,c.channel,a.canonical_request,a.result FROM claimed c JOIN hotel_booking_attempts a ON a.key=c.attempt_key`, now, claim, now.Add(time.Minute), smsEnabled)
 	return row, err
 }
-func (s *Store) emailResult(ctx context.Context, key, claim string, sent bool, next time.Time) error {
+func (s *Store) confirmationResult(ctx context.Context, key, claim string, sent bool, next time.Time) error {
 	state := "pending"
 	if sent {
 		state = "sent"

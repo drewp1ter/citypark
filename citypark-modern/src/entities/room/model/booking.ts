@@ -63,6 +63,7 @@ export const bookingReservationSchema = z
 		guests: z.number().int().min(1).max(4),
 		price: priceSchema,
 		confirmationEmailStatus: z.enum(['pending', 'sent']).optional(),
+		confirmationSmsStatus: z.enum(['pending', 'sent']).optional(),
 	})
 	.strict()
 export type BookingStay = z.infer<typeof bookingStaySchema>

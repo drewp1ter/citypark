@@ -442,12 +442,15 @@ func TestCreateWithoutEmail(t *testing.T) {
 		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil || result["status"] != "confirmed" {
 			t.Fatalf("expected confirmed booking: %s", response.Body.String())
 		}
+		if result["confirmationSmsStatus"] != "pending" {
+			t.Fatal("expected pending SMS confirmation")
+		}
 		if _, exists := result["confirmationEmailStatus"]; exists {
 			t.Fatal("reported email delivery for a booking without an address")
 		}
 	}
-	if h.client.requests[0].Guest.Email != "" || h.count("hotel_booking_email_outbox") != 0 || h.count("hotel_booking_telegram_outbox") != 1 {
-		t.Fatal("expected a blank email on the 1C request and only a Telegram notification")
+	if h.client.requests[0].Guest.Email != "" || h.count("hotel_booking_email_outbox") != 1 || h.count("hotel_booking_telegram_outbox") != 1 {
+		t.Fatal("expected a blank email on the 1C request and SMS and Telegram notifications")
 	}
 }
 

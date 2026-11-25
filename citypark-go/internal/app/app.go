@@ -116,6 +116,9 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	var bookingWorker *hotelbooking.Worker
 	if cfg.HotelBooking.Enabled {
 		bookingWorker = hotelbooking.NewWorker(booking, mailer.NewSMTP(cfg.SMTP, nil), settings.NewStore(db), log)
+		if cfg.HotelBooking.SMSLogin != "" {
+			bookingWorker.ConfigureSMS(hotelbooking.NewSMSAero(cfg.HotelBooking.SMSLogin, cfg.HotelBooking.SMSKey))
+		}
 		if sendHotelTelegram {
 			bookingWorker.ConfigureTelegram(telegramClient, cfg.HotelBooking.TelegramChatID)
 		}

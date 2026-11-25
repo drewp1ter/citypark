@@ -80,6 +80,9 @@ assert.equal(schema.guestSchema.parse({ ...guest, email: '   ' }).email, '')
 const withoutEmailStatus = { ...reservation }
 delete withoutEmailStatus.confirmationEmailStatus
 assert.equal(model.bookingReservationSchema.safeParse(withoutEmailStatus).success, true)
+for (const confirmationSmsStatus of ['pending', 'sent']) {
+	assert.equal(model.bookingReservationSchema.safeParse({ ...withoutEmailStatus, confirmationSmsStatus }).success, true)
+}
 for (const patch of [
 	{ name: '' },
 	{ name: 'x'.repeat(151) },

@@ -42,6 +42,7 @@ type PublicReservationResponse struct {
 	CheckOut                string       `json:"checkOut,omitempty"`
 	Guests                  int          `json:"guests,omitempty"`
 	Price                   *PublicPrice `json:"price,omitempty"`
+	ConfirmationSMSStatus   string       `json:"confirmationSmsStatus,omitempty"`
 	ConfirmationEmailStatus string       `json:"confirmationEmailStatus,omitempty"`
 	created                 bool
 }

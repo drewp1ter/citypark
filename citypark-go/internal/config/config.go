@@ -74,6 +74,8 @@ type Moneta struct {
 type Hotel struct{ WebhookSecret string }
 type OneC struct{ HotelURL, User, Password string }
 type HotelBooking struct {
+	SMSLogin            string
+	SMSKey              string
 	CancellationSecret  string
 	TelegramChatID      string
 	TrustedProxies      []netip.Prefix
@@ -270,12 +272,17 @@ func Load(lookup LookupFunc) (Config, error) {
 		Password: str("ONEC_PASSWORD", ""),
 	}
 	c.HotelBooking = HotelBooking{
+		SMSLogin:           strings.TrimSpace(str("SMS_API_LOGIN", "")),
+		SMSKey:             strings.TrimSpace(str("SMS_API_KEY", "")),
 		CancellationSecret: str("HOTEL_BOOKING_CANCELLATION_SECRET", ""),
 		Enabled:            str("HOTEL_BOOKING_ENABLED", "false") == "true",
 		URL:                str("ONEC_BOOKING_URL", ""),
 		User:               str("ONEC_BOOKING_USER", ""),
 		Password:           str("ONEC_BOOKING_PASSWORD", ""),
 		TelegramChatID:     strings.TrimSpace(str("TELEGRAM_HOTEL_CHAT_ID", "")),
+	}
+	if (c.HotelBooking.SMSLogin == "") != (c.HotelBooking.SMSKey == "") {
+		return Config{}, errors.New("SMS_API_LOGIN and SMS_API_KEY must be configured together")
 	}
 	if c.HotelBooking.CancellationSecret != "" && len(c.HotelBooking.CancellationSecret) < 32 {
 		return Config{}, errors.New("HOTEL_BOOKING_CANCELLATION_SECRET must be at least 32 bytes")

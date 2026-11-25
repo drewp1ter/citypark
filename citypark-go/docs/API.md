@@ -3909,10 +3909,8 @@ physical-room reference or client price is accepted.
 
 When available, `reservationNumber` is the booking document number assigned by 1C. Older results may omit it.
 
-When an email address is supplied, `confirmationEmailStatus` is `pending` or `sent`.
-Bookings with a blank email omit this field and skip email delivery. SMTP failure keeps it pending and
-cannot undo a committed booking. Delivery is at-least-once; a lost SMTP
-acknowledgement can produce a duplicate email, never a duplicate reservation.
+When an email address is supplied, `confirmationEmailStatus` is `pending` or `sent`. For new bookings without email, `confirmationSmsStatus` is returned instead with the same values. For SMS, `sent` means SMS Aero accepted the message.
+Historical bookings without email can omit both fields. Sending failures keep the selected notification pending and cannot undo a committed booking. Delivery is at least once, so a lost provider acknowledgement can produce a duplicate message.
 Confirmation includes reservation reference, room type, dates, guests, RUB total
 and hotel contact phone, with no payment link.
 

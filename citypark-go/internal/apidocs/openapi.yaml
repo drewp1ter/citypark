@@ -335,6 +335,7 @@ components:
         checkOut: {type: string, format: date}
         guests: {type: integer, minimum: 1, maximum: 4}
         price: {$ref: '#/components/schemas/HotelBookingPrice'}
+        confirmationSmsStatus: {type: string, enum: [pending, sent], description: SMS confirmation status for bookings without email. Sent means SMS Aero accepted the message.}
         confirmationEmailStatus: {type: string, enum: [pending, sent], description: Omitted for bookings without email. Failed delivery remains pending with at-least-once SMTP retries.}
     HotelBookingError:
       type: object

@@ -189,3 +189,5 @@ Apply the backend migration before testing sign-in and account linking in stagin
 Set `YANDEX_SIGN_IN_ENABLED=true` in `website.env` to show the buttons in that
 environment. Customer auth must also be enabled in the backend. Keep the client
 secret in `backend.env`.
+
+For hotel booking SMS, deploy the website version that accepts `confirmationSmsStatus` first. Stop old backend workers before upgrading the backend so they cannot claim SMS rows as email. Set `SMS_API_LOGIN` and `SMS_API_KEY` in `deploy/backend.env` using the SMS Aero account with the approved `CityPark` sender. With both credentials absent, SMS confirmations stay queued until credentials are configured.

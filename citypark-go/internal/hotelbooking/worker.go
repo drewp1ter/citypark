@@ -20,7 +20,12 @@ type confirmationMailer interface {
 	SendAlternative(ctx context.Context, to, subject, plainText, html string) error
 }
 
+type smsSender interface {
+	Send(ctx context.Context, phone, message string) error
+}
+
 type Worker struct {
+	sms            smsSender
 	service        *Service
 	mailer         confirmationMailer
 	confirmation   *template.Template
@@ -39,6 +44,10 @@ func NewWorker(service *Service, m confirmationMailer, contacts ContactReader, l
 		log:          log,
 	}
 }
+func (w *Worker) ConfigureSMS(sender smsSender) {
+	w.sms = sender
+}
+
 func (w *Worker) Run(ctx context.Context) {
 	if w.telegram != nil {
 		done := make(chan struct{})
@@ -83,20 +92,20 @@ func (w *Worker) Tick(ctx context.Context) {
 	}
 	for i := 0; i < 100 && ctx.Err() == nil; i++ {
 		claim := randomID()
-		row, err := w.service.store.claimEmail(ctx, w.service.clock.Now(), claim)
+		row, err := w.service.store.claimConfirmation(ctx, w.service.clock.Now(), claim, w.sms != nil)
 		if errors.Is(err, sql.ErrNoRows) {
 			break
 		}
 		if err != nil {
-			w.log.Warn("hotel booking email storage unavailable")
+			w.log.Warn("hotel booking confirmation storage unavailable")
 			break
 		}
 		sent := w.send(ctx, row) == nil
 		if !sent {
-			w.log.Warn("hotel booking confirmation email pending")
+			w.log.Warn("hotel booking confirmation pending", "channel", row.Channel)
 		}
-		if err = w.service.store.emailResult(ctx, row.Key, claim, sent, w.service.clock.Now().Add(notificationBackoff(row.Attempts))); err != nil {
-			w.log.Warn("hotel booking email acknowledgement unavailable")
+		if err = w.service.store.confirmationResult(ctx, row.Key, claim, sent, w.service.clock.Now().Add(notificationBackoff(row.Attempts))); err != nil {
+			w.log.Warn("hotel booking confirmation acknowledgement unavailable")
 		}
 	}
 }
@@ -112,7 +121,7 @@ func notificationBackoff(attempt int) time.Duration {
 		return 30 * time.Minute
 	}
 }
-func (w *Worker) send(ctx context.Context, row emailRow) error {
+func (w *Worker) send(ctx context.Context, row confirmationRow) error {
 	var req CreateRequest
 	var result Reservation
 	if json.Unmarshal([]byte(row.Canonical), &req) != nil || json.Unmarshal(row.Result, &result) != nil {
@@ -132,6 +141,9 @@ func (w *Worker) send(ctx context.Context, row emailRow) error {
 	plainText, html, err := renderConfirmation(w.confirmation, result, room.Name, contact.Phones.Hotel.Number, w.service.cancellation.link(row.Key))
 	if err != nil {
 		return ErrUnavailable
+	}
+	if row.Channel == "sms" {
+		return w.sms.Send(ctx, req.Guest.Phone, plainText)
 	}
 	return w.mailer.SendAlternative(ctx, req.Guest.Email, "Бронирование Сити Парк подтверждено", plainText, html)
 }

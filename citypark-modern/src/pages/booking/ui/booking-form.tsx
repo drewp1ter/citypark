@@ -189,6 +189,13 @@ export function BookingForm({
 					· Гостей: {confirmation.guests}
 				</p>
 				<p className='text-xl font-semibold'>{formatPrice(confirmation.price.total)} · без предоплаты</p>
+				{confirmation.confirmationSmsStatus && (
+					<p>
+						{confirmation.confirmationSmsStatus === 'sent'
+							? 'Подтверждение отправлено по СМС.'
+							: 'Подтверждение по СМС ожидает отправки.'}
+					</p>
+				)}
 				{confirmation.confirmationEmailStatus && (
 					<p>
 						{confirmation.confirmationEmailStatus === 'sent'
@@ -330,7 +337,9 @@ export function BookingForm({
 								</p>
 								<p className='text-2xl font-semibold'>Итого: {formatPrice(quote.price.total)}</p>
 								<p className='text-text-muted text-sm'>
-									Нажимая «Забронировать», вы подтверждаете эту стоимость. Подтверждение отправим на электронную почту.
+									Нажимая «Забронировать», вы подтверждаете эту стоимость. {guest.email.trim()
+										? 'Подтверждение отправим на электронную почту.'
+										: 'Подтверждение отправим по СМС.'}
 								</p>
 							</div>
 						)}

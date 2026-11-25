@@ -24,7 +24,7 @@ func TestOutboxRecovery(t *testing.T) {
 	w := h.worker(m)
 	// Two processes race to claim one row; only one owns the lease.
 	claim := randomID()
-	row, err := h.service.store.claimEmail(context.Background(), h.clock.Now(), claim)
+	row, err := h.service.store.claimConfirmation(context.Background(), h.clock.Now(), claim, false)
 	if err != nil || row.Key != req.IdempotencyKey || row.Attempts != 1 {
 		t.Fatalf("claim %+v %v", row, err)
 	}
@@ -52,7 +52,7 @@ func TestOutboxRecovery(t *testing.T) {
 		t.Fatal(rec.Body.String())
 	}
 	// A late acknowledgement from the old lease cannot revert 'sent'.
-	if err = h.service.store.emailResult(context.Background(), req.IdempotencyKey, claim, false, h.clock.Now()); err != nil {
+	if err = h.service.store.confirmationResult(context.Background(), req.IdempotencyKey, claim, false, h.clock.Now()); err != nil {
 		t.Fatal(err)
 	}
 	w.Tick(context.Background())
@@ -142,7 +142,7 @@ func TestConcurrentOutbox(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, err := NewStore(h.db).claimEmail(context.Background(), h.clock.Now(), randomID())
+			_, err := NewStore(h.db).claimConfirmation(context.Background(), h.clock.Now(), randomID(), false)
 			results <- err
 		}()
 	}
@@ -217,12 +217,12 @@ func TestEmailPrerequisiteFailures(t *testing.T) {
 	h := newBooking(t)
 	req := createRequest(h.quote(stayRequest()))
 	checkCode(t, h.request("POST", "/reservations", h.token, req), 201, "")
-	row, err := h.service.store.claimEmail(context.Background(), h.clock.Now(), randomID())
+	row, err := h.service.store.claimConfirmation(context.Background(), h.clock.Now(), randomID(), false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	w := h.worker(&testMailer{})
-	for _, bad := range []emailRow{{Canonical: "{"}, {Canonical: row.Canonical, Result: []byte("{")}} {
+	for _, bad := range []confirmationRow{{Canonical: "{"}, {Canonical: row.Canonical, Result: []byte("{")}} {
 		if w.send(context.Background(), bad) == nil {
 			t.Fatal("accepted corrupt data")
 		}
@@ -313,5 +313,53 @@ func TestLostLocalConfirmationCommit(t *testing.T) {
 	checkCode(t, h.request("GET", "/reservations/"+req.IdempotencyKey, h.token, nil), 200, "")
 	if h.client.calls != 1 || h.count("hotel_booking_email_outbox") != 1 {
 		t.Fatal("reconciliation duplicated booking or lost email")
+	}
+}
+
+type testSMS struct {
+	calls          int
+	phone, message string
+	fail           bool
+}
+
+func (s *testSMS) Send(_ context.Context, phone, message string) error {
+	s.calls++
+	s.phone, s.message = phone, message
+	if s.fail {
+		return errors.New("SMS provider unavailable")
+	}
+	return nil
+}
+
+func TestSMSConfirmationRetry(t *testing.T) {
+	h := newBooking(t)
+	h.service.EnableCancellation("https://hotel.example", strings.Repeat("x", 32))
+	req := createRequest(h.quote(stayRequest()))
+	req.Guest.Email = "  "
+	checkCode(t, h.request("POST", "/reservations", h.token, req), 201, "")
+	checkCode(t, h.request("POST", "/reservations", h.token, req), 200, "")
+
+	mail := &testMailer{}
+	sms := &testSMS{fail: true}
+	w := h.worker(mail)
+	w.ConfigureSMS(sms)
+	w.Tick(context.Background())
+	rec := h.request("GET", "/reservations/"+req.IdempotencyKey, h.token, nil)
+	if !strings.Contains(rec.Body.String(), `"confirmationSmsStatus":"pending"`) {
+		t.Fatal(rec.Body.String())
+	}
+	sms.fail = false
+	h.clock.now = h.clock.now.Add(30 * time.Second)
+	w.Tick(context.Background())
+	w.Tick(context.Background())
+	if sms.calls != 2 || mail.calls != 0 || h.client.calls != 1 ||
+		!strings.HasPrefix(sms.phone, "+") ||
+		!strings.Contains(sms.message, "00000001234") ||
+		!strings.Contains(sms.message, "https://hotel.example/booking/cancel#") {
+		t.Fatal("expected one booking and two SMS attempts with the booking number and cancellation link")
+	}
+	rec = h.request("GET", "/reservations/"+req.IdempotencyKey, h.token, nil)
+	if !strings.Contains(rec.Body.String(), `"confirmationSmsStatus":"sent"`) {
+		t.Fatal(rec.Body.String())
 	}
 }
