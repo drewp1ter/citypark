@@ -13,6 +13,7 @@ export const categoriesQuery = queryOptions({
 /** Every product: pages of 500 are loaded until one is shorter. */
 export const productsQuery = queryOptions({
 	queryKey: ['menu', 'products'] as const,
+	refetchInterval: 15_000,
 	queryFn: async () => {
 		const all = []
 		for (let page = 1; ; page++) {

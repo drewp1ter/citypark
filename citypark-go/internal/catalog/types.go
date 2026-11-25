@@ -31,6 +31,7 @@ type Category struct {
 type Product struct {
 	IsHidden        bool          `db:"is_hidden"`
 	FullDescription string        `db:"full_description"`
+	IsOnStopList    bool          `db:"is_on_stop_list"`
 	IsOrderBlocked  bool          `db:"is_order_blocked"`
 	ID              int64         `db:"id"`
 	CategoryID      int64         `db:"category_id"`
@@ -71,6 +72,7 @@ type CategoryView struct {
 // ProductView is the JSON shape of a product.
 type ProductView struct {
 	IsHidden            bool          `json:"isHidden"`
+	IsOnStopList        bool          `json:"isOnStopList"`
 	FullDescription     string        `json:"fullDescription"`
 	IsOrderBlocked      bool          `json:"isOrderBlocked"`
 	ID                  int64         `json:"id"`
@@ -139,6 +141,7 @@ func (p Product) View(now time.Time) ProductView {
 	w := p.Window()
 	return ProductView{
 		IsHidden:            p.IsHidden,
+		IsOnStopList:        p.IsOnStopList,
 		ID:                  p.ID,
 		CategoryID:          p.CategoryID,
 		Name:                p.Name,

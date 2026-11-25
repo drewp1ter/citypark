@@ -10,7 +10,7 @@ const categoryColumns = `id, name, description, sale_start, sale_end, sale_days,
 
 // productSelect is the base query of every product read. Callers append conditions with AND.
 const productSelect = `
-SELECT p.is_hidden, p.is_order_blocked, p.id, p.category_id, p.name, p.description, p.full_description, p.measure_unit, p.weight, p.proteins, p.fats,
+SELECT p.is_hidden, p.is_on_stop_list, p.is_order_blocked, p.id, p.category_id, p.name, p.description, p.full_description, p.measure_unit, p.weight, p.proteins, p.fats,
        p.carbohydrates, p.calories, p.flags, p.price_kopecks, p.sale_start, p.sale_end, p.sale_days,
        c.name AS category_name, c.sale_start AS category_sale_start,
        c.sale_end AS category_sale_end, c.sale_days AS category_sale_days

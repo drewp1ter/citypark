@@ -107,3 +107,11 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 - [x] [37 Show iiko dish visibility to staff](37-dish-visibility.md) [backend 108]
   - Implementation, regenerated API types, check (308 unit tests), production build and four isolated visibility browser tests pass at 390/1440px in light/dark themes (2026-11-17). Hidden dishes remain searchable/editable with a read-only iiko status.
   - Owner-started backend is reachable. Four real-backend browser flows pass at 390/1440px in both themes: sign-in, all 259 dishes retained, search and description editor access. Live data has no individually hidden dishes; isolated browser tests cover hidden labels, retained staff controls and simultaneous manual blocks. Only sign-in and read requests were sent; no catalog writes/syncs, orders, payments or deployment performed.
+
+## iiko stop list
+
+- [ ] [38 Mark dishes and categories on the iiko stop list](38-iiko-stop-list-markers.md) [backend 111]
+  - Implemented dish and category markers and regenerated API types. Admin checks, build, and all four isolated browser tests pass. Real-backend acceptance is pending a running backend with task 111.
+
+- [ ] [39 Refresh stop-list markers while the menu is open](39-refresh-stop-list-markers.md) [backend 112]
+  - Admin checks, build, and four isolated browser tests pass. Real-backend acceptance is pending a running backend with task 112.

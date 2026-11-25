@@ -71,6 +71,13 @@ Fill the required credentials in `deploy/production.env`. Its release tag and pu
 
 `backend.env` configures iiko, Moneta, Telegram, hotel services, and optional customer authentication/email. Payment defaults use live Moneta; set merchant credentials and the provider callback to `https://<website>/api/v1/webhooks/moneta` (check URL: `/api/v1/webhooks/moneta/check`). Keep customer authentication disabled until its mail/OAuth settings are ready. `website.env` holds server-only integrations. Runtime settings require container recreation, not just restart.
 
+For iiko stop-list updates, set `IIKO_WEBHOOK_TOKEN` in `backend.env` to a random shared secret.
+After deploying the backend, set the iiko webhook URL to
+`https://<website>/api/v1/webhooks/iiko` and its `authToken` to the same secret.
+Enable `StopListUpdate` in iikoWeb or set `webHooksFilter.stopListUpdateFilter.updates` to
+`true` via the iiko settings API. Check existing webhook settings before registering the URL
+and preserve any other consumers and event filters.
+
 Define this helper in each server shell, from `/opt/citypark`:
 
 ```bash

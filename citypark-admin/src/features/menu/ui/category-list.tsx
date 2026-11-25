@@ -1,3 +1,4 @@
+import { Chip } from '@heroui/react'
 import { HIDDEN_PARAM, type MenuGroup } from '../model/group'
 
 type Props = {
@@ -14,11 +15,12 @@ const base =
 /** A sidebar on desktop and a row of scrolling chips on a phone. */
 export function CategoryList({ groups, total, selected, onSelect }: Props) {
 	const items = [
-		{ param: undefined, name: 'Все', count: total },
+		{ param: undefined, name: 'Все', count: total, stoppedCount: 0 },
 		...groups.map((g) => ({
 			param: g.id === 'hidden' ? HIDDEN_PARAM : g.id,
 			name: g.name,
 			count: g.dishes.length,
+			stoppedCount: g.dishes.filter((dish) => dish.isOnStopList).length,
 		})),
 	]
 	return (
@@ -37,6 +39,13 @@ export function CategoryList({ groups, total, selected, onSelect }: Props) {
 								}`}
 							>
 								{item.name} <span className={active ? '' : 'text-muted'}>{item.count}</span>
+								{item.stoppedCount > 0 && (
+									<span className='mt-1 block'>
+										<Chip size='sm' color='warning' variant={active ? 'primary' : 'soft'}>
+											В стоп-листе: {item.stoppedCount}
+										</Chip>
+									</span>
+								)}
 							</button>
 						</li>
 					)

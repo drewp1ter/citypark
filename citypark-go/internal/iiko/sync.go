@@ -16,9 +16,10 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/store"
 )
 
-// Source provides the menu. *Client implements it.
+// Source provides the menu and stop list. *Client implements it.
 type Source interface {
 	Fetch(ctx context.Context) (*Menu, error)
+	FetchStopList(ctx context.Context, terminalGroupID string) (map[string]bool, error)
 }
 
 var _ Source = (*Client)(nil)
@@ -35,14 +36,15 @@ var ErrSyncRunning = errors.New("iiko sync is already running")
 // Syncer copies the iiko external menu into the menus, categories and
 // products tables.
 type Syncer struct {
-	db  *sqlx.DB
-	src Source
-	mu  sync.Mutex // held for the whole Sync
+	db              *sqlx.DB
+	src             Source
+	terminalGroupID string
+	mu              sync.Mutex // held for the whole Sync
 }
 
 // NewSyncer creates a Syncer.
-func NewSyncer(db *sqlx.DB, src Source) *Syncer {
-	return &Syncer{db: db, src: src}
+func NewSyncer(db *sqlx.DB, src Source, terminalGroupID string) *Syncer {
+	return &Syncer{db: db, src: src, terminalGroupID: terminalGroupID}
 }
 
 // Sync downloads the menu and applies it in one transaction. It returns
@@ -58,6 +60,11 @@ func (s *Syncer) Sync(ctx context.Context) (Result, error) {
 		return Result{}, fmt.Errorf("fetch iiko menu: %w", err)
 	}
 
+	stopped, err := s.src.FetchStopList(ctx, s.terminalGroupID)
+	if err != nil {
+		return Result{}, fmt.Errorf("fetch iiko stop list: %w", err)
+	}
+
 	var res Result
 	err = store.InTx(ctx, s.db, func(tx *sqlx.Tx) error {
 		menuID, err := syncMenu(ctx, tx, menu)
@@ -68,7 +75,7 @@ func (s *Syncer) Sync(ctx context.Context) (Result, error) {
 		if err != nil {
 			return fmt.Errorf("sync categories: %w", err)
 		}
-		productIDs, err := syncProducts(ctx, tx, menu, categoryIDs)
+		productIDs, err := syncProducts(ctx, tx, menu, categoryIDs, stopped)
 		if err != nil {
 			return fmt.Errorf("sync products: %w", err)
 		}
@@ -85,6 +92,35 @@ func (s *Syncer) Sync(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 	return res, nil
+}
+
+// RefreshStopList updates ordering markers for the current catalog. It shares
+// the menu sync lock so a refresh cannot be overwritten by an older snapshot.
+func (s *Syncer) RefreshStopList(ctx context.Context) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	stopped, err := s.src.FetchStopList(ctx, s.terminalGroupID)
+	if err != nil {
+		return fmt.Errorf("fetch iiko stop list: %w", err)
+	}
+	ids := make([]string, 0, len(stopped))
+	for id, listed := range stopped {
+		if listed {
+			ids = append(ids, id)
+		}
+	}
+	_, err = s.db.ExecContext(ctx, `
+UPDATE products
+SET is_on_stop_list = (lower(iiko_id) = ANY($1::text[])), updated_at = now()
+WHERE iiko_id IS NOT NULL AND NOT is_deleted
+  AND is_on_stop_list IS DISTINCT FROM (lower(iiko_id) = ANY($1::text[]))`, ids)
+	if err != nil {
+		return fmt.Errorf("save iiko stop list: %w", err)
+	}
+	return nil
 }
 
 // RunEvery syncs once right away and then on every value from tick, until ctx is done.
@@ -177,18 +213,19 @@ func pickSize(sizes []ItemSizePrice) (size ItemSizePrice, ok bool) {
 // syncProducts upserts the priced items of every group and soft-deletes iiko
 // products missing from the menu. It returns a map from iiko product id to
 // products.id.
-func syncProducts(ctx context.Context, tx *sqlx.Tx, menu *Menu, categoryIDs map[string]int64) (map[string]int64, error) {
+func syncProducts(ctx context.Context, tx *sqlx.Tx, menu *Menu, categoryIDs map[string]int64, stopped map[string]bool) (map[string]int64, error) {
 	const upsert = `
 INSERT INTO products (iiko_id, category_id, name, description, measure_unit, weight, sort_order, is_deleted,
-                      fats, proteins, carbohydrates, calories, price_kopecks, sale_start, sale_end, sale_days, is_hidden)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+                      fats, proteins, carbohydrates, calories, price_kopecks, sale_start, sale_end, sale_days, is_hidden, is_on_stop_list)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 ON CONFLICT (iiko_id) DO UPDATE SET
     category_id = EXCLUDED.category_id, name = EXCLUDED.name, description = EXCLUDED.description,
     measure_unit = EXCLUDED.measure_unit, weight = EXCLUDED.weight, sort_order = EXCLUDED.sort_order,
     is_deleted = EXCLUDED.is_deleted, fats = EXCLUDED.fats, proteins = EXCLUDED.proteins,
     carbohydrates = EXCLUDED.carbohydrates, calories = EXCLUDED.calories,
     price_kopecks = EXCLUDED.price_kopecks, sale_start = EXCLUDED.sale_start,
-    sale_end = EXCLUDED.sale_end, sale_days = EXCLUDED.sale_days, is_hidden = EXCLUDED.is_hidden, updated_at = now()
+    sale_end = EXCLUDED.sale_end, sale_days = EXCLUDED.sale_days, is_hidden = EXCLUDED.is_hidden,
+    is_on_stop_list = EXCLUDED.is_on_stop_list, updated_at = now()
 RETURNING id`
 
 	measureUnits := make(map[string]string, len(menu.Products))
@@ -211,7 +248,7 @@ RETURNING id`
 			err := tx.GetContext(ctx, &id, upsert,
 				item.ProductID, categoryIDs[g.ID], item.Name, strings.TrimSpace(item.Description), measureUnits[item.ProductID], size.Weight/1000, j, false,
 				size.Nutritions.Fats, size.Nutritions.Proteins, size.Nutritions.Carbs, size.Nutritions.Energy,
-				int64(price), w.Start, w.End, w.Days, item.IsHidden)
+				int64(price), w.Start, w.End, w.Days, item.IsHidden, stopped[strings.ToLower(item.ProductID)])
 			if err != nil {
 				return nil, fmt.Errorf("upsert product %q: %w", item.ProductID, err)
 			}

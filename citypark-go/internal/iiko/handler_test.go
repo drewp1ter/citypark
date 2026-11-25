@@ -53,7 +53,7 @@ func postUpdate(t *testing.T, token, header string, src Source) *httptest.Respon
 	t.Helper()
 	db := testutil.NewDB(t)
 	r := chi.NewRouter()
-	NewHandler(NewSyncer(db, src), token, testTokens()).Routes(r)
+	NewHandler(NewSyncer(db, src, ""), token, testTokens()).Routes(r)
 
 	req := httptest.NewRequest(http.MethodPost, "/iiko/update-products", nil)
 	if header != "" {
@@ -155,7 +155,7 @@ func newAdminEnv(t *testing.T, src Source, updateToken string) adminEnv {
 		t.Fatal(err)
 	}
 	r := chi.NewRouter()
-	NewHandler(NewSyncer(db, src), updateToken, tokens).Routes(r)
+	NewHandler(NewSyncer(db, src, ""), updateToken, tokens).Routes(r)
 	return adminEnv{router: r, db: db, admin: admin, user: user}
 }
 

@@ -19,6 +19,7 @@ function product(id: number, categoryId: number, name = `Блюдо ${id}`): Api
 		id,
 		categoryId,
 		isHidden: false,
+		isOnStopList: false,
 		isOrderBlocked: false,
 		name,
 		description: '',

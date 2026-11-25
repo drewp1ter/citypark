@@ -52,6 +52,7 @@ type Admin struct{ Email, Password, Phone string }
 type Iiko struct {
 	PromoDiscountTypeID                                                               string
 	BaseURL, APIKey, AppID, ClientSecret, OrganizationID, ExternalMenuID, UpdateToken string
+	WebhookToken                                                                      string
 	SyncInterval                                                                      time.Duration // 0 = no scheduled sync
 
 	// Orders sent to iiko. Without TerminalGroupID and PaymentTypeID orders are not sent.
@@ -220,6 +221,7 @@ func Load(lookup LookupFunc) (Config, error) {
 		OrganizationID:      str("IIKO_ORGANIZATION_ID", ""),
 		ExternalMenuID:      str("IIKO_EXTERNAL_MENU_ID", ""),
 		UpdateToken:         str("IIKO_UPDATE_TOKEN", ""),
+		WebhookToken:        str("IIKO_WEBHOOK_TOKEN", ""),
 
 		TerminalGroupID: str("IIKO_TERMINAL_GROUP_ID", ""),
 		PaymentTypeID:   str("IIKO_PAYMENT_TYPE_ID", ""),

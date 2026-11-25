@@ -4,6 +4,272 @@
  */
 
 export interface paths {
+    "/hotel/cancellation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read hotel cancellation status */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    "X-Hotel-Cancellation-Token": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current cancellation status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "eligible" | "closed" | "canceled";
+                            reservationNumber: string;
+                            /** Format: date */
+                            checkIn: string;
+                            /** Format: date */
+                            checkOut: string;
+                        };
+                    };
+                };
+                404: components["responses"]["HotelBooking404"];
+                503: components["responses"]["HotelBooking503"];
+            };
+        };
+        put?: never;
+        /** Confirm guest hotel cancellation */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "X-Hotel-Cancellation-Token": string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Current cancellation status */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "eligible" | "closed" | "canceled";
+                            reservationNumber: string;
+                            /** Format: date */
+                            checkIn: string;
+                            /** Format: date */
+                            checkOut: string;
+                        };
+                    };
+                };
+                /** @description Cancellation outcome is pending */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @enum {string} */
+                            status: "pending";
+                        };
+                    };
+                };
+                404: components["responses"]["HotelBooking404"];
+                503: components["responses"]["HotelBooking503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hotel/quotes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Quote one room for a complete stay
+         * @description Anonymous server-side context; 16 KiB strict JSON; 30/minute/IP fixed UTC window. Availability advisory, quote expires in ten minutes. Missing/overflowed rate or upstream failure is 503. No inventory is 409 ROOM_UNAVAILABLE. Disabled booking returns 503.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description 32 random bytes as unpadded base64url; server-only token in signed HttpOnly SameSite=Lax cookie. Hash stored; all quote/key reads require the same context. */
+                    "X-Hotel-Booking-Context": components["parameters"]["HotelBookingContext"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "roomTypeId": "single-balcony",
+                     *       "checkIn": "2026-12-01",
+                     *       "checkOut": "2026-12-03",
+                     *       "guests": 1
+                     *     }
+                     */
+                    "application/json": components["schemas"]["HotelBookingStay"];
+                };
+            };
+            responses: {
+                /** @description Persistent price snapshot with advisory availability */
+                200: {
+                    headers: {
+                        "Cache-Control"?: "no-store";
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "quoteId": "1d2c6be4-b903-4eb2-9145-02176cc397eb",
+                         *       "expiresAt": "2026-11-22T21:09:00Z",
+                         *       "roomTypeId": "single-balcony",
+                         *       "checkIn": "2026-12-01",
+                         *       "checkOut": "2026-12-03",
+                         *       "guests": 1,
+                         *       "available": true,
+                         *       "price": {
+                         *         "currency": "RUB",
+                         *         "nights": 2,
+                         *         "pricePerNight": 4000,
+                         *         "total": 8000
+                         *       }
+                         *     }
+                         */
+                        "application/json": components["schemas"]["HotelBookingQuote"];
+                    };
+                };
+                400: components["responses"]["HotelBooking400"];
+                409: components["responses"]["HotelBooking409"];
+                429: components["responses"]["HotelBooking429"];
+                503: components["responses"]["HotelBooking503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hotel/reservations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create or replay an instantly confirmed reservation without prepayment
+         * @description Strict 16 KiB JSON. New attempts revalidate quote expiry/Moscow dates/current rate. Expired/changed quote needs fresh explicit consent. Persisted attempts retain canonical payload/key indefinitely; replay survives expiry/rate changes. Same key with different quote/guest is 409 IDEMPOTENCY_CONFLICT; wrong context/unknown quote 404. New attempts 5/hour/IP plus 3/hour/contact-pair hash in fixed UTC windows; existing-key replay and lookup share 30/minute/IP outside creation quotas. Ambiguous dispatch returns 202; worker recovers every 30 seconds. SMTP failure cannot undo confirmation. Storage failure before durable attempt is 503.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description 32 random bytes as unpadded base64url; server-only token in signed HttpOnly SameSite=Lax cookie. Hash stored; all quote/key reads require the same context. */
+                    "X-Hotel-Booking-Context": components["parameters"]["HotelBookingContext"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "idempotencyKey": "eaf9d7d3-2b21-43a9-8e27-e718b65d2588",
+                     *       "quoteId": "1d2c6be4-b903-4eb2-9145-02176cc397eb",
+                     *       "guest": {
+                     *         "name": " Иван Иванов ",
+                     *         "email": "Ivan@EXAMPLE.COM",
+                     *         "phone": "8 (918) 000-00-00"
+                     *       }
+                     *     }
+                     */
+                    "application/json": components["schemas"]["HotelBookingCreate"];
+                };
+            };
+            responses: {
+                200: components["responses"]["HotelBookingConfirmed"];
+                201: components["responses"]["HotelBookingConfirmed"];
+                202: components["responses"]["HotelBookingPending"];
+                400: components["responses"]["HotelBooking400"];
+                404: components["responses"]["HotelBooking404"];
+                409: components["responses"]["HotelBooking409"];
+                429: components["responses"]["HotelBooking429"];
+                503: components["responses"]["HotelBooking503"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hotel/reservations/{idempotencyKey}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recover a creation result within its original booking context
+         * @description Unknown key/wrong context both return 404. Pending is exactly status=pending; never treat it as failure. Confirmed result survives staff cancellation. Saved definitive validation/conflict rejection returns its original 400/409 code; no repricing. Recovery and replay share 30/minute/IP; unknown-key probes count. Poll same key every five seconds while visible; worker operates independently.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header: {
+                    /** @description 32 random bytes as unpadded base64url; server-only token in signed HttpOnly SameSite=Lax cookie. Hash stored; all quote/key reads require the same context. */
+                    "X-Hotel-Booking-Context": components["parameters"]["HotelBookingContext"];
+                };
+                path: {
+                    idempotencyKey: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: components["responses"]["HotelBookingConfirmed"];
+                202: components["responses"]["HotelBookingPending"];
+                400: components["responses"]["HotelBooking400"];
+                404: components["responses"]["HotelBooking404"];
+                409: components["responses"]["HotelBooking409"];
+                429: components["responses"]["HotelBooking429"];
+                503: components["responses"]["HotelBooking503"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customer/addresses": {
         parameters: {
             query?: never;
@@ -772,6 +1038,212 @@ export interface paths {
                     };
                 };
                 /** @description Google or customer auth disabled, or provider unavailable. Вход через Google недоступен. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/yandex/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a Yandex ID authorization attempt
+         * @description Role: public login or recent (five minutes) customer web session link. No sign-in occurs yet. The ten-minute attempt stores hashed state and browser flow token plus a backend-only PKCE verifier. All responses send Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "intent": "login"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @enum {string} */
+                        intent: "login" | "link";
+                    };
+                };
+            };
+            responses: {
+                /** @description Authorization URL and browser-bound flow token. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "authorizationUrl": "https://oauth.yandex.ru/authorize?client_id=client-id&code_challenge=...&code_challenge_method=S256&redirect_uri=https%3A%2F%2Fsite.example%2Faccount%2Fyandex%2Fcallback&response_type=code&scope=login%3Ainfo&state=...",
+                         *       "flowToken": "<random>",
+                         *       "expiresAt": "2026-10-29T12:10:00Z"
+                         *     }
+                         */
+                        "application/json": {
+                            /** Format: uri */
+                            authorizationUrl: string;
+                            flowToken: string;
+                            /** Format: date-time */
+                            expiresAt: string;
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                /** @description Mini session: Откройте сайт для подключения Яндекс ID. Stale web session: Подтвердите вход повторно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description 20 starts per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Yandex ID or customer auth disabled. Вход через Яндекс ID недоступен. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/customer/yandex/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete Yandex ID login or explicit account linking
+         * @description Role: public login or the same recent customer web session bound at start for linking. Atomically consumes the attempt before the server-side code exchange. Yandex ID email never becomes a password credential or an account merge key. All responses, including errors, send Cache-Control: private, no-store.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "state": "<state>",
+                     *       "flowToken": "<flowToken>",
+                     *       "code": "<authorization-code>"
+                     *     }
+                     */
+                    "application/json": {
+                        /** @description Yandex ID callback state */
+                        state: string;
+                        /** @description Browser-bound flow token from start */
+                        flowToken: string;
+                        /** @description Authorization code; exclusive with error */
+                        code?: string;
+                        /**
+                         * @description Cancellation; exclusive with code
+                         * @enum {string}
+                         */
+                        error?: "access_denied";
+                    };
+                };
+            };
+            responses: {
+                /** @description Customer session envelope on login or linked confirmation on link. Existing link retains its session. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SignInResponse"] | {
+                            /** @enum {boolean} */
+                            linked: true;
+                        };
+                    };
+                };
+                /** @description Некорректный JSON; Не удалось подтвердить вход через Яндекс ID (invalid, expired or replayed proof, code or token); Вход через Яндекс ID отменён (valid cancellation). */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+                /** @description Mini session: Откройте сайт для подключения Яндекс ID. Stale or different session: Подтвердите вход повторно. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Yandex ID subject conflict: Способ входа уже используется. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description 20 completions per direct IP per 15 minutes. Retry-After seconds. Слишком много попыток. Попробуйте позже. */
+                429: {
+                    headers: {
+                        "Retry-After"?: number;
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Yandex ID or customer auth disabled, or provider unavailable. Вход через Яндекс ID недоступен. */
                 503: {
                     headers: {
                         [name: string]: unknown;
@@ -4175,6 +4647,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/iiko": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Receive iiko stop-list updates
+         * @description Called by iiko. The Authorization header must match IIKO_WEBHOOK_TOKEN. Matching stop-list events queue a background refresh of the delivery terminal group's stop list.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    Authorization: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        eventType?: string;
+                        /** Format: uuid */
+                        organizationId?: string;
+                        eventInfo?: {
+                            terminalGroupsStopListsUpdates?: {
+                                /** Format: uuid */
+                                id?: string;
+                                isFull?: boolean;
+                            }[];
+                        };
+                    }[];
+                };
+            };
+            responses: {
+                /** @description Batch acknowledged. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/moneta": {
         parameters: {
             query?: never;
@@ -5009,6 +5538,114 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        HotelBookingStay: {
+            /** @enum {string} */
+            roomTypeId: "single" | "single-balcony" | "double-twin" | "double-euro" | "vip";
+            /**
+             * Format: date
+             * @description Today or later in Europe/Moscow; years 0001–3999.
+             */
+            checkIn: string;
+            /**
+             * Format: date
+             * @description After checkIn; years 0001–3999; no business maximum stay/horizon.
+             */
+            checkOut: string;
+            /** @description Capacity: single/balcony 1, twin/Euro 2, VIP 4. */
+            guests: number;
+        };
+        HotelBookingGuest: {
+            /** @description Trimmed Unicode name; no controls. */
+            name: string;
+            /** @description Empty string for a booking without email. Supplied addresses are trimmed with a lowercased domain and preserved local-part case. */
+            email: "" | string;
+            /** @description Normalized to + and 8–15 digits; strip spaces/parentheses/hyphens; Russian 8 prefix becomes +7. */
+            phone: string;
+        };
+        HotelBookingPrice: {
+            /** @enum {string} */
+            currency: "RUB";
+            nights: number;
+            /**
+             * @description Rubles; positive checked integer kopecks internally.
+             * @example 4000
+             */
+            pricePerNight: number;
+            /**
+             * @description Calendar nights times the accepted rate in rubles.
+             * @example 8000
+             */
+            total: number;
+        };
+        HotelBookingQuote: {
+            /** Format: uuid */
+            quoteId: string;
+            /**
+             * Format: date-time
+             * @description Ten-minute quote lifetime.
+             */
+            expiresAt: string;
+            /** @enum {string} */
+            roomTypeId: "single" | "single-balcony" | "double-twin" | "double-euro" | "vip";
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            guests: number;
+            /** @enum {boolean} */
+            available: true;
+            price: components["schemas"]["HotelBookingPrice"];
+        };
+        HotelBookingCreate: {
+            /**
+             * Format: uuid
+             * @description Canonical lowercase nonzero UUID; retain forever for recovery/replay.
+             */
+            idempotencyKey: string;
+            /**
+             * Format: uuid
+             * @description Canonical lowercase nonzero UUID; same context.
+             */
+            quoteId: string;
+            guest: components["schemas"]["HotelBookingGuest"];
+        };
+        HotelBookingPending: {
+            /** @enum {string} */
+            status: "pending";
+        };
+        HotelBookingConfirmed: {
+            /** Format: uuid */
+            reservationId: string;
+            /** @description Booking document number assigned by 1C */
+            reservationNumber?: string;
+            /** @enum {string} */
+            status: "confirmed";
+            /** @enum {string} */
+            roomTypeId: "single" | "single-balcony" | "double-twin" | "double-euro" | "vip";
+            /** Format: date */
+            checkIn: string;
+            /** Format: date */
+            checkOut: string;
+            guests: number;
+            price: components["schemas"]["HotelBookingPrice"];
+            /**
+             * @description SMS confirmation status for bookings without email. Sent means SMS Aero accepted the message.
+             * @enum {string}
+             */
+            confirmationSmsStatus?: "pending" | "sent";
+            /**
+             * @description Omitted for bookings without email. Failed delivery remains pending with at-least-once SMTP retries.
+             * @enum {string}
+             */
+            confirmationEmailStatus?: "pending" | "sent";
+        };
+        HotelBookingError: {
+            /** @enum {integer} */
+            statusCode: 400 | 404 | 409 | 429 | 503;
+            /** @enum {string} */
+            code: "INVALID_REQUEST" | "RESERVATION_NOT_FOUND" | "ROOM_UNAVAILABLE" | "PRICE_CHANGED" | "IDEMPOTENCY_CONFLICT" | "QUOTE_EXPIRED" | "RATE_LIMITED" | "BOOKING_UNAVAILABLE";
+            message: string;
+        };
         HomepageMenu: {
             /** @description Ordered selections. An empty array uses the first four visible menu categories on the homepage. */
             categories: {
@@ -5020,7 +5657,7 @@ export interface components {
         };
         CustomerMethod: {
             /** @enum {string} */
-            provider: "email" | "google" | "telegram";
+            provider: "email" | "google" | "telegram" | "yandex";
             verified: boolean;
         };
         PairingCreated: {
@@ -5345,6 +5982,8 @@ export interface components {
             images: components["schemas"]["Image"][];
             /** @description Item visibility imported from iiko. Hidden products remain listed for staff; customer clients must omit them. */
             isHidden: boolean;
+            /** @description Product appears on the iiko delivery terminal group stop list at the last successful sync. Informational. */
+            isOnStopList: boolean;
             /** @description Persistent manual ordering block, preserved during iiko sync. */
             isOrderBlocked: boolean;
             /** @description True only when not hidden in iiko, not manually blocked and both the product's own window and its category's window are open now. */
@@ -5859,6 +6498,127 @@ export interface components {
         };
     };
     responses: {
+        /** @description Проверьте данные бронирования */
+        HotelBooking400: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 400,
+                 *       "code": "INVALID_REQUEST",
+                 *       "message": "Проверьте данные бронирования"
+                 *     }
+                 */
+                "application/json": components["schemas"]["HotelBookingError"];
+            };
+        };
+        /** @description Бронирование не найдено */
+        HotelBooking404: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 404,
+                 *       "code": "RESERVATION_NOT_FOUND",
+                 *       "message": "Бронирование не найдено"
+                 *     }
+                 */
+                "application/json": components["schemas"]["HotelBookingError"];
+            };
+        };
+        /** @description Слишком много запросов. Попробуйте позже */
+        HotelBooking429: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 429,
+                 *       "code": "RATE_LIMITED",
+                 *       "message": "Слишком много запросов. Попробуйте позже"
+                 *     }
+                 */
+                "application/json": components["schemas"]["HotelBookingError"];
+            };
+        };
+        /** @description Бронирование временно недоступно */
+        HotelBooking503: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "statusCode": 503,
+                 *       "code": "BOOKING_UNAVAILABLE",
+                 *       "message": "Бронирование временно недоступно"
+                 *     }
+                 */
+                "application/json": components["schemas"]["HotelBookingError"];
+            };
+        };
+        /** @description Definitive inventory, consent or idempotency conflict; never automatically submit a new price/key. */
+        HotelBooking409: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HotelBookingError"];
+            };
+        };
+        /** @description Creation unresolved; recover/replay the same key and saved payload; never reprice or claim failure. */
+        HotelBookingPending: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "status": "pending"
+                 *     }
+                 */
+                "application/json": components["schemas"]["HotelBookingPending"];
+            };
+        };
+        /** @description Committed 1C creation result; immutable even after staff cancellation; current email delivery status. */
+        HotelBookingConfirmed: {
+            headers: {
+                "Cache-Control"?: "no-store";
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "reservationId": "6e37e63e-b130-4ff6-a1b4-e0166f470922",
+                 *       "reservationNumber": "00000001234",
+                 *       "status": "confirmed",
+                 *       "roomTypeId": "single-balcony",
+                 *       "checkIn": "2026-12-01",
+                 *       "checkOut": "2026-12-03",
+                 *       "guests": 1,
+                 *       "price": {
+                 *         "currency": "RUB",
+                 *         "nights": 2,
+                 *         "pricePerNight": 4000,
+                 *         "total": 8000
+                 *       },
+                 *       "confirmationEmailStatus": "pending"
+                 *     }
+                 */
+                "application/json": components["schemas"]["HotelBookingConfirmed"];
+            };
+        };
         /** @description Malformed/type/unknown-field/null/extra-document/body-too-large: Некорректный JSON. Invalid fields: Проверьте адрес, with exact errors per field. */
         BookError400: {
             headers: {
@@ -6060,6 +6820,8 @@ export interface components {
         };
     };
     parameters: {
+        /** @description 32 random bytes as unpadded base64url; server-only token in signed HttpOnly SameSite=Lax cookie. Hash stored; all quote/key reads require the same context. */
+        HotelBookingContext: string;
         Id: number;
         Page: number;
         /** @description From 1 to 500. The default is the server's page size. */

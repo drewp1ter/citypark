@@ -1402,6 +1402,7 @@ Returns the products of one category, ordered by sort order and then by `id`. De
     "price": 320,
     "images": [],
     "isHidden": false,
+    "isOnStopList": false,
     "isOrderBlocked": false,
     "isAvailableForOrder": true,
     "salesDays": "",
@@ -1486,6 +1487,7 @@ Searches products across all categories. Without `query` it returns every produc
     "price": 320,
     "images": [],
     "isHidden": false,
+    "isOnStopList": false,
     "isOrderBlocked": false,
     "isAvailableForOrder": true,
     "salesDays": "",
@@ -1504,6 +1506,8 @@ Searches products across all categories. Without `query` it returns every produc
 **Notes**
 
 A product matches when any of the words matches its name, its category name or one of its tags. `?query=хачапури+салат` and `?query=хачапури%20салат` both give two words. Results are ordered by sort order and then by `id`. The list is `[]` when nothing matches or the page is past the end.
+
+`isOnStopList` indicates whether the product appeared on the iiko delivery terminal group stop list at the last successful sync. It is informational and independent of `isAvailableForOrder` and `isOrderBlocked`.
 
 Both product listing endpoints include dishes hidden in iiko so staff can manage them. `isHidden` is the item-level iiko flag; customer clients must omit these dishes entirely. A hidden dish always has `isAvailableForOrder: false`. Visibility changes take effect after a successful menu sync; manual ordering blocks and full descriptions are preserved.
 
@@ -3288,6 +3292,32 @@ Same as `GET /reports/hotel/sales`. A date from 1C that cannot be read also give
 
 ### Integrations
 
+#### POST /webhooks/iiko
+
+Receives iiko's `StopListUpdate` webhook. Set `Authorization` to the exact `IIKO_WEBHOOK_TOKEN` value.
+
+```json
+[
+  {
+    "eventType": "StopListUpdate",
+    "organizationId": "a1b2c3d4-0000-0000-0000-000000000001",
+    "eventInfo": {
+      "terminalGroupsStopListsUpdates": [
+        { "id": "a1b2c3d4-0000-0000-0000-000000000002", "isFull": false }
+      ]
+    }
+  }
+]
+```
+
+A valid batch returns `200` with an empty body. Matching events queue a background stop-list refresh for the configured organization and delivery terminal group. If the terminal group setting is empty, the refresh uses the sole-group fallback. Unrelated events are acknowledged. The worker retries failed refreshes after 30 seconds while the server runs.
+
+| Status | When | Message |
+|---|---|---|
+| 400 | invalid JSON batch or missing stop-list event details | `Некорректный JSON` |
+| 401 | missing or incorrect authorization token | `Требуется авторизация` |
+| 404 | webhook disabled because its token is unset | `Не найдено` |
+
 #### POST /iiko/update-products
 
 Downloads the external menu from iiko and applies it: categories and products. Meant to be called by a scheduler or an admin tool, not by the site frontend.
@@ -3318,6 +3348,8 @@ Downloads the external menu from iiko and applies it: categories and products. M
 **Notes**
 
 The update runs in one transaction and can take a few seconds. The menu is the external menu `IIKO_EXTERNAL_MENU_ID`. Every menu group becomes a category, even a group with nothing for sale. Items without a price are skipped. `totalCategories` and `totalProducts` count the categories and products that are in the menu after the update. Items that disappeared from iiko are hidden, not removed. The `isHidden` flag of a menu group is stored; hidden groups are synced with their products but are not listed by `GET /categories`.
+
+The sync also refreshes `isOnStopList` using `IIKO_TERMINAL_GROUP_ID`, or the sole terminal group returned for the organization when that setting is empty. A failed stop-list request or an indeterminate terminal group fails the sync and preserves the previous snapshot.
 
 Products take their `description` from the iiko menu item (trimmed; an empty string when iiko has none, and an empty iiko description clears the old one on the next update). The update saves each product's iiko button image as a product image of type `from_iiko` (the first size with an image wins; an image url used twice keeps the last product), and deletes `from_iiko` images that are no longer in the menu. Categories get no images from iiko, so their `from_iiko` images are all deleted. The update does not take tags, nutrition values or sale windows from iiko: nutrition values and product sale windows are reset and all tags are removed. Category descriptions are copied from iiko with surrounding whitespace trimmed; an empty description clears the old text. Category ordering times and weekdays are managed by admins and survive sync. Images added by hand stay.
 

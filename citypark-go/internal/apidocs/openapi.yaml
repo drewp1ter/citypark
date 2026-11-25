@@ -772,6 +772,7 @@ components:
         - price
         - images
         - isHidden
+        - isOnStopList
         - isOrderBlocked
         - isAvailableForOrder
         - salesDays
@@ -817,6 +818,9 @@ components:
         isHidden:
           type: boolean
           description: Item visibility imported from iiko. Hidden products remain listed for staff; customer clients must omit them.
+        isOnStopList:
+          type: boolean
+          description: Product appears on the iiko delivery terminal group stop list at the last successful sync. Informational.
         isOrderBlocked:
           type: boolean
           description: Persistent manual ordering block, preserved during iiko sync.
@@ -4208,6 +4212,56 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/SyncRunning'
+  /webhooks/iiko:
+    post:
+      summary: Receive iiko stop-list updates
+      description: >-
+        Called by iiko. The Authorization header must match IIKO_WEBHOOK_TOKEN.
+        Matching stop-list events queue a background refresh of the delivery terminal group's stop list.
+      tags: [integrations]
+      security: []
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  eventType:
+                    type: string
+                  organizationId:
+                    type: string
+                    format: uuid
+                  eventInfo:
+                    type: object
+                    properties:
+                      terminalGroupsStopListsUpdates:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            isFull:
+                              type: boolean
+      responses:
+        '200':
+          description: Batch acknowledged.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /webhooks/moneta:
     post:
       summary: Moneta payment notification

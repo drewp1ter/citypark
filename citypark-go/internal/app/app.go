@@ -23,6 +23,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/homepagemenu"
 	"github.com/drewp1ter/citypark-go/internal/hotel"
 	"github.com/drewp1ter/citypark-go/internal/hotelbooking"
+	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/iiko"
 	"github.com/drewp1ter/citypark-go/internal/live"
 	"github.com/drewp1ter/citypark-go/internal/logging"
@@ -48,6 +49,7 @@ type App struct {
 	IikoOrders    *IikoOrders
 	Hub           *live.Hub
 	Syncer        *iiko.Syncer
+	IikoWebhook   *iiko.StopListWebhook
 	Uploads       *upload.Storage
 	BookingWorker *hotelbooking.Worker
 }
@@ -80,7 +82,8 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		cfg.Iiko.ExternalMenuID,
 		nil,
 	)
-	syncer := iiko.NewSyncer(db, iikoClient)
+	syncer := iiko.NewSyncer(db, iikoClient, cfg.Iiko.TerminalGroupID)
+	iikoWebhook := iiko.NewStopListWebhook(cfg.Iiko.WebhookToken, cfg.Iiko.OrganizationID, cfg.Iiko.TerminalGroupID, syncer.RefreshStopList)
 
 	uploads := upload.NewStorage(cfg.Upload.Dir, cfg.Upload.PublicBaseURL)
 
@@ -147,6 +150,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		catalogHandler.Routes(r)
 		catalogHandler.AdminRoutes(r, tokens)
 		iiko.NewHandler(syncer, cfg.Iiko.UpdateToken, tokens).Routes(r)
+		r.Post("/webhooks/iiko", httpx.Handle(iikoWebhook.Receive))
 		hotel.NewHandler(hotel.NewStore(db), cfg.Hotel.WebhookSecret, tokens).Routes(r)
 		room.NewHandler(room.NewStore(db), uploads, tokens).Routes(r)
 		news.NewHandler(db, uploads, tokens, c, cfg.DefaultPageSize).Routes(r)
@@ -168,7 +172,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	r.Get("/uploads/*", uploads.Serve().ServeHTTP)
 	r.Head("/uploads/*", uploads.Serve().ServeHTTP)
 
-	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Hub: hub, Syncer: syncer, Uploads: uploads, BookingWorker: bookingWorker}
+	return &App{Handler: r, Notifier: notifier, IikoOrders: iikoOrders, Hub: hub, Syncer: syncer, IikoWebhook: iikoWebhook, Uploads: uploads, BookingWorker: bookingWorker}
 }
 
 // cors allows any origin and answers preflight requests itself.

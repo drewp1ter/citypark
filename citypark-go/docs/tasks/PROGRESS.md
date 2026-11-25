@@ -275,3 +275,11 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 
 - [ ] [110 Yandex ID sign-in](110-yandex-sign-in.md)
   - Yandex integration and migration tests pass. The full suite reports an existing failure in `TestBookingConfig`, reproduced with the pre-change configuration code.
+
+## iiko stop list
+
+- [ ] [111 Sync iiko dish stop-list status](111-iiko-stop-list.md)
+  - Implemented terminal-group stop-list sync and the product API flag. The iiko client tests, build, and vet pass. The PostgreSQL integration test is blocked because the configured test database refused the connection.
+
+- [ ] [112 Receive iiko stop-list updates](112-iiko-stop-list-webhook.md) [backend 111]
+  - Receiver and background refresh implemented. The configured PostgreSQL server refused the test connection. Live iiko delivery requires deployment and webhook registration.

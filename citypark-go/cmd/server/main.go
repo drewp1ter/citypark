@@ -93,6 +93,15 @@ func run() error {
 		}
 	}
 
+	if cfg.Iiko.WebhookToken != "" {
+		webhookDone := make(chan struct{})
+		go func() {
+			defer close(webhookDone)
+			a.IikoWebhook.Run(ctx, log)
+		}()
+		defer func() { stop(); <-webhookDone }()
+	}
+
 	bookingDone := make(chan struct{})
 	if a.BookingWorker != nil {
 		go func() { defer close(bookingDone); a.BookingWorker.Run(ctx) }()

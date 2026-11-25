@@ -17,6 +17,7 @@ import (
 )
 
 type fakeSource struct {
+	emptyStopList
 	n   *Menu
 	err error
 }
@@ -69,7 +70,7 @@ func oneItemMenu() *Menu {
 
 func runSync(t *testing.T, db *sqlx.DB, m *Menu) Result {
 	t.Helper()
-	res, err := NewSyncer(db, &fakeSource{n: m}).Sync(context.Background())
+	res, err := NewSyncer(db, &fakeSource{n: m}, "").Sync(context.Background())
 	if err != nil {
 		t.Fatalf("Sync: %v", err)
 	}
@@ -515,7 +516,7 @@ func TestSyncFetchError(t *testing.T) {
 	db := testutil.NewDB(t)
 	boom := errors.New("iiko is down")
 
-	_, err := NewSyncer(db, &fakeSource{err: boom}).Sync(context.Background())
+	_, err := NewSyncer(db, &fakeSource{err: boom}, "").Sync(context.Background())
 
 	if !errors.Is(err, boom) {
 		t.Fatalf("err = %v, want %v", err, boom)
@@ -533,7 +534,7 @@ func TestSyncRollsBackOnError(t *testing.T) {
 	// A negative weight violates products.weight CHECK (weight >= 0) after the menu and categories were written.
 	m.ItemsGroups[1].Items[0].SizePrices[0].Weight = -1
 
-	_, err := NewSyncer(db, &fakeSource{n: m}).Sync(context.Background())
+	_, err := NewSyncer(db, &fakeSource{n: m}, "").Sync(context.Background())
 
 	if err == nil {
 		t.Fatal("want error")
@@ -548,7 +549,7 @@ func TestSyncRollsBackOnError(t *testing.T) {
 func TestSyncRunningReturnsErr(t *testing.T) {
 	db := testutil.NewDB(t)
 	src := newBlockingSource(&fakeSource{n: oneItemMenu()})
-	syncer := NewSyncer(db, src)
+	syncer := NewSyncer(db, src, "")
 
 	done := make(chan error, 1)
 	go func() {
@@ -570,7 +571,7 @@ func TestSyncRunningReturnsErr(t *testing.T) {
 func TestSyncUnlocksAfterError(t *testing.T) {
 	db := testutil.NewDB(t)
 	src := &switchSource{err: errors.New("iiko is down")}
-	syncer := NewSyncer(db, src)
+	syncer := NewSyncer(db, src, "")
 
 	if _, err := syncer.Sync(context.Background()); err == nil {
 		t.Fatal("first Sync error = nil, want an error")
@@ -588,6 +589,7 @@ func TestSyncUnlocksAfterError(t *testing.T) {
 
 // switchSource is a fakeSource whose answer a test can change between calls.
 type switchSource struct {
+	emptyStopList
 	n   *Menu
 	err error
 }
@@ -645,6 +647,7 @@ func waitDone(t *testing.T, done <-chan struct{}) {
 
 // countingFetcher counts Fetch calls under a lock.
 type countingFetcher struct {
+	emptyStopList
 	mu  sync.Mutex
 	n   int
 	src Source
@@ -671,7 +674,7 @@ func TestRunEverySyncsAtStartAndOnTick(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	done := startRunEvery(ctx, NewSyncer(db, src), tick, slog.New(slog.NewTextHandler(logs, nil)))
+	done := startRunEvery(ctx, NewSyncer(db, src, ""), tick, slog.New(slog.NewTextHandler(logs, nil)))
 
 	waitLog(t, logs, "scheduled menu sync done", 1)
 	if got := src.calls(); got != 1 {
@@ -702,7 +705,7 @@ func TestRunEveryLogsError(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	done := startRunEvery(ctx, NewSyncer(db, src), tick, slog.New(slog.NewTextHandler(logs, nil)))
+	done := startRunEvery(ctx, NewSyncer(db, src, ""), tick, slog.New(slog.NewTextHandler(logs, nil)))
 
 	waitLog(t, logs, "scheduled menu sync failed", 1)
 	if !strings.Contains(logs.String(), "iiko is down") {
@@ -724,7 +727,7 @@ func TestRunEveryLogsError(t *testing.T) {
 func TestRunEverySkipsWhenRunning(t *testing.T) {
 	db := testutil.NewDB(t)
 	blocking := newBlockingSource(&fakeSource{n: oneItemMenu()})
-	syncer := NewSyncer(db, blocking)
+	syncer := NewSyncer(db, blocking, "")
 	manual := make(chan error, 1)
 	go func() {
 		_, err := syncer.Sync(context.Background())
@@ -754,7 +757,7 @@ func TestRunEveryStopsWhileWaitingForTick(t *testing.T) {
 	db := testutil.NewDB(t)
 	logs := &syncBuffer{}
 	ctx, cancel := context.WithCancel(context.Background())
-	done := startRunEvery(ctx, NewSyncer(db, &fakeSource{n: oneItemMenu()}), make(chan time.Time), slog.New(slog.NewTextHandler(logs, nil)))
+	done := startRunEvery(ctx, NewSyncer(db, &fakeSource{n: oneItemMenu()}, ""), make(chan time.Time), slog.New(slog.NewTextHandler(logs, nil)))
 	waitLog(t, logs, "scheduled menu sync done", 1)
 
 	cancel()
@@ -780,7 +783,7 @@ func TestSyncCategoryDescription(t *testing.T) {
 
 func TestSyncPreservesProductOrderingBlock(t *testing.T) {
 	db := testutil.NewDB(t)
-	s := NewSyncer(db, &fakeSource{n: baseMenu()})
+	s := NewSyncer(db, &fakeSource{n: baseMenu()}, "")
 	if _, err := s.Sync(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -798,7 +801,7 @@ func TestSyncPreservesProductOrderingBlock(t *testing.T) {
 
 func TestSyncPreservesHomepageMenu(t *testing.T) {
 	db := testutil.NewDB(t)
-	s := NewSyncer(db, &fakeSource{n: baseMenu()})
+	s := NewSyncer(db, &fakeSource{n: baseMenu()}, "")
 	if _, err := s.Sync(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -825,7 +828,7 @@ func TestSyncPreservesHomepageMenu(t *testing.T) {
 
 func TestSyncPreservesProductFullDescription(t *testing.T) {
 	db := testutil.NewDB(t)
-	s := NewSyncer(db, &fakeSource{n: baseMenu()})
+	s := NewSyncer(db, &fakeSource{n: baseMenu()}, "")
 	if _, err := s.Sync(t.Context()); err != nil {
 		t.Fatal(err)
 	}
@@ -839,4 +842,10 @@ func TestSyncPreservesProductFullDescription(t *testing.T) {
 	if err := db.Get(&description, `SELECT full_description FROM products WHERE iiko_id='p-shashlik'`); err != nil || description != "<p>Описание</p>" {
 		t.Fatalf("%q %v", description, err)
 	}
+}
+
+type emptyStopList struct{}
+
+func (emptyStopList) FetchStopList(context.Context, string) (map[string]bool, error) {
+	return nil, nil
 }
