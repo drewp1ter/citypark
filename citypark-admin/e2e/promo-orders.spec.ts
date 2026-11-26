@@ -134,7 +134,7 @@ for (const width of [390, 1440])
 				await page.goto('/orders/live')
 				const card = page
 					.getByRole('listitem')
-					.filter({ has: page.getByRole('link', { name: `Заказ ${order.id}`, exact: true }) })
+					.filter({ has: page.getByRole('button', { name: `Заказ ${order.id}`, exact: true }) })
 				await expect(card).toContainText(formatRub(order.total + order.deliveryPrice))
 			}
 			await page.goto(`/orders/${legacy.id}`)

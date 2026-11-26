@@ -5,7 +5,7 @@ import type { components } from '../../../shared/api/schema'
 import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import { useState } from 'react'
 import { toastError } from '../../../shared/ui/toast'
-import { iikoStatusLabel } from '../model/iiko-status'
+import { iikoStatusLabel } from '../../../shared/lib/iiko-status'
 import { orderQuery, useApproveOrder } from '../api'
 import { StatusChip } from '../../../shared/ui/order-chips'
 import { addressText } from './orders-table'
@@ -195,7 +195,15 @@ function OrderBody({ order }: { order: Order }) {
 }
 
 /** The order drawer: a side panel on desktop, full width on phones. */
-export function OrderDetails({ orderId, onClose }: { orderId: string; onClose: () => void }) {
+export function OrderDetails({
+	orderId,
+	onClose,
+	closeLabel = 'Назад к списку',
+}: {
+	orderId: string
+	onClose: () => void
+	closeLabel?: string
+}) {
 	const id = /^\d+$/.test(orderId) ? Number(orderId) : null
 	const query = useQuery({ ...orderQuery(id ?? 0), enabled: id !== null })
 	const notFound = id === null || (query.error instanceof ApiError && query.error.status === 404)
@@ -235,7 +243,7 @@ export function OrderDetails({ orderId, onClose }: { orderId: string; onClose: (
 					<Drawer.Body>{body}</Drawer.Body>
 					<Drawer.Footer>
 						<Button variant='secondary' onPress={onClose}>
-							Назад к списку
+							{closeLabel}
 						</Button>
 					</Drawer.Footer>
 				</Drawer.Dialog>

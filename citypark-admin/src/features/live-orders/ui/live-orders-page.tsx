@@ -1,5 +1,4 @@
 import { Button, Skeleton, toast } from '@heroui/react'
-import { useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { PageHeader } from '../../../shared/ui/page-header'
 import { useLiveOrders } from '../api'
@@ -15,17 +14,11 @@ function canNotify(): boolean {
 	return typeof window !== 'undefined' && 'Notification' in window
 }
 
-export function LiveOrdersPage() {
-	const navigate = useNavigate()
+export function LiveOrdersPage({ onOpenOrder }: { onOpenOrder: (id: number) => void }) {
 	const [freshIds, setFreshIds] = useState<ReadonlySet<number>>(new Set())
 	const [missed, setMissed] = useState(0)
 	const [permission, setPermission] = useState(() => (canNotify() ? Notification.permission : 'denied'))
 	const timers = useRef(new Set<ReturnType<typeof setTimeout>>())
-
-	const openOrder = useCallback(
-		(id: number) => void navigate({ to: '/orders/$orderId', params: { orderId: String(id) } }),
-		[navigate]
-	)
 
 	const onOrderEvent = useCallback(
 		(e: LiveOrderEvent) => {
@@ -44,7 +37,7 @@ export function LiveOrdersPage() {
 
 			if (!isPaidAlert(e)) return
 			toast.success(alertText(order), {
-				actionProps: { children: 'Открыть', onPress: () => openOrder(order.id) },
+				actionProps: { children: 'Открыть', onPress: () => onOpenOrder(order.id) },
 			})
 			if (!document.hidden) return
 			setMissed((n) => n + 1)
@@ -52,12 +45,12 @@ export function LiveOrdersPage() {
 				const notification = new Notification(alertText(order))
 				notification.onclick = () => {
 					window.focus()
-					openOrder(order.id)
+					onOpenOrder(order.id)
 					notification.close()
 				}
 			}
 		},
-		[openOrder]
+		[onOpenOrder]
 	)
 
 	const { board, status, isLoading, error, refetch } = useLiveOrders(onOrderEvent)
@@ -108,8 +101,14 @@ export function LiveOrdersPage() {
 	} else {
 		content = (
 			<div className='grid items-start gap-4 lg:grid-cols-2'>
-				<OrderColumn title='Новые' orders={board.fresh} freshIds={freshIds} />
-				<OrderColumn title='Ждут оплаты' orders={board.pending} freshIds={freshIds} className='lg:order-first' />
+				<OrderColumn title='Новые' orders={board.fresh} freshIds={freshIds} onOpenOrder={onOpenOrder} />
+				<OrderColumn
+					title='Ждут оплаты'
+					orders={board.pending}
+					freshIds={freshIds}
+					onOpenOrder={onOpenOrder}
+					className='lg:order-first'
+				/>
 			</div>
 		)
 	}

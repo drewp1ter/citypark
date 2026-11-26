@@ -1,5 +1,7 @@
-import { Link } from '@tanstack/react-router'
+import { Chip } from '@heroui/react'
 import { formatRub } from '../../../shared/lib/format'
+import { iikoStatusLabel } from '../../../shared/lib/iiko-status'
+import { StatusChip } from '../../../shared/ui/order-chips'
 import type { LiveOrder } from '../model/board'
 
 const timeFormat = new Intl.DateTimeFormat('ru-RU', {
@@ -9,23 +11,32 @@ const timeFormat = new Intl.DateTimeFormat('ru-RU', {
 	hour12: false,
 })
 
-export function LiveOrderCard({ order, isFresh }: { order: LiveOrder; isFresh: boolean }) {
+export function LiveOrderCard({ order, isFresh, onOpen }: { order: LiveOrder; isFresh: boolean; onOpen: () => void }) {
+	const iikoLabel = iikoStatusLabel(order.iikoStatus)
 	return (
 		<li
 			className={`relative flex flex-col gap-1 rounded-xl border bg-surface p-3 ${
 				isFresh ? 'border-accent ring-2 ring-accent' : 'border-border'
 			}`}
 		>
-			<div className='flex items-center justify-between gap-2'>
-				<Link
-					to='/orders/$orderId'
-					params={{ orderId: String(order.id) }}
-					className='font-medium text-accent after:absolute after:inset-0 hover:underline'
+			<div className='flex flex-wrap items-center gap-x-2 gap-y-1'>
+				<button
+					type='button'
+					onClick={onOpen}
+					aria-haspopup='dialog'
+					className='cursor-pointer font-medium text-accent after:absolute after:inset-0 hover:underline'
 					aria-label={`Заказ ${order.id}`}
 				>
 					№{order.id}
-				</Link>
-				<span className='text-sm text-muted'>{timeFormat.format(new Date(order.createdAt))}</span>
+				</button>
+				{iikoLabel === undefined ? (
+					<StatusChip status={order.status} />
+				) : (
+					<Chip variant='soft' size='sm'>
+						{iikoLabel}
+					</Chip>
+				)}
+				<span className='ml-auto text-sm text-muted'>{timeFormat.format(new Date(order.createdAt))}</span>
 			</div>
 			{order.deliveryTime !== '' && <div className='text-sm'>Ко времени {order.deliveryTime}</div>}
 			<div>{order.customer.name}</div>

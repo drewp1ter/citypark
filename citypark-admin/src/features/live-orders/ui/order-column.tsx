@@ -5,11 +5,13 @@ export function OrderColumn({
 	title,
 	orders,
 	freshIds,
+	onOpenOrder,
 	className = '',
 }: {
 	title: string
 	orders: LiveOrder[]
 	freshIds: ReadonlySet<number>
+	onOpenOrder: (id: number) => void
 	className?: string
 }) {
 	return (
@@ -22,7 +24,12 @@ export function OrderColumn({
 			) : (
 				<ul className='flex flex-col gap-2'>
 					{orders.map((order) => (
-						<LiveOrderCard key={order.id} order={order} isFresh={freshIds.has(order.id)} />
+						<LiveOrderCard
+							key={order.id}
+							order={order}
+							isFresh={freshIds.has(order.id)}
+							onOpen={() => onOpenOrder(order.id)}
+						/>
 					))}
 				</ul>
 			)}

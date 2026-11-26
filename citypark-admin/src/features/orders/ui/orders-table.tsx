@@ -5,7 +5,7 @@ import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import type { OrderSearch } from '../model/search'
 import { StatusChip } from '../../../shared/ui/order-chips'
 
-import { iikoStatusLabel } from '../model/iiko-status'
+import { iikoStatusLabel } from '../../../shared/lib/iiko-status'
 
 type Order = components['schemas']['Order']
 

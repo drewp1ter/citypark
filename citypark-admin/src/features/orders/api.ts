@@ -1,7 +1,7 @@
 import { keepPreviousData, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api, unwrap } from '../../shared/api'
 import type { paths } from '../../shared/api/schema'
-import { isSendingToIiko } from './model/iiko-status'
+import { isSendingToIiko } from '../../shared/lib/iiko-status'
 import { PAGE_SIZE, toApiQuery, type OrderSearch } from './model/search'
 
 type ListQuery = NonNullable<paths['/orders']['get']['parameters']['query']>
@@ -41,7 +41,10 @@ export function useApproveOrder(id: number) {
 		onSuccess: async (order) => {
 			await cache.cancelQueries({ queryKey: orderQuery(id).queryKey })
 			cache.setQueryData(orderQuery(id).queryKey, order)
-			await cache.invalidateQueries({ queryKey: ['orders'] })
+			await Promise.all([
+				cache.invalidateQueries({ queryKey: ['orders'] }),
+				cache.invalidateQueries({ queryKey: ['live-orders'] }),
+			])
 		},
 	})
 }

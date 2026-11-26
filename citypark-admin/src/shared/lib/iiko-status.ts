@@ -1,4 +1,4 @@
-import type { components } from '../../../shared/api/schema'
+import type { components } from '../api/schema'
 
 type IikoStatus = components['schemas']['Order']['iikoStatus']
 

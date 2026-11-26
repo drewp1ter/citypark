@@ -1,6 +1,7 @@
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { api, getSession, unwrap } from '../../shared/api'
+import { isSendingToIiko } from '../../shared/lib/iiko-status'
 import { moscowToday } from '../../shared/lib/today'
 import { applyEvent, groupOrders, type Board, type LiveOrder } from './model/board'
 import { connectLiveOrders, liveUrl, type LiveOrderEvent, type LiveStatus } from './model/socket'
@@ -14,11 +15,16 @@ export function todayOrdersQuery(today: string) {
 			const page = await unwrap(api.GET('/orders', { params: { query: { from: today, to: today, pageSize: 100 } } }))
 			return page.orders
 		},
+		refetchInterval: ({ state: { data } }) => {
+			// The live stream covers payments. Check for approval and iiko updates through the list API.
+			if (data?.some((order) => isSendingToIiko(order.iikoStatus))) return 2000
+			return data?.some((order) => order.iikoStatus === 'awaiting_approval') ? 10000 : false
+		},
 	})
 }
 
 /**
- * Today's orders in three columns, kept fresh by the WebSocket. `onOrderEvent` gets every event that carries an
+ * Today's orders, kept fresh by the WebSocket and list refreshes. `onOrderEvent` gets every event that carries an
  * order, after the list is updated.
  */
 export function useLiveOrders(onOrderEvent?: (e: LiveOrderEvent) => void): {
@@ -63,7 +69,7 @@ export function useLiveOrders(onOrderEvent?: (e: LiveOrderEvent) => void): {
 		board: groupOrders(query.data ?? []),
 		status,
 		isLoading: query.isPending,
-		error: query.error,
+		error: query.isLoadingError ? query.error : null,
 		refetch: () => void query.refetch(),
 	}
 }
