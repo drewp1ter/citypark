@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -13,6 +14,83 @@ import (
 
 	"github.com/drewp1ter/citypark-go/internal/telegram"
 )
+
+type cancellationBookingFake struct {
+	*bookingFake
+	status string
+	err    error
+}
+
+func (f *cancellationBookingFake) cancellation(context.Context, string, string) (cancellationStatus, error) {
+	return cancellationStatus{Status: f.status}, f.err
+}
+
+func TestCancellationTelegramDelivery(t *testing.T) {
+	h := newBooking(t)
+	h.service.store = NewStoreWithTelegram(h.db)
+	h.service.EnableCancellation("https://hotel.example", strings.Repeat("s", 32))
+	client := &cancellationBookingFake{bookingFake: h.client}
+	h.service.client = client
+	req := createRequest(h.quote(stayRequest()))
+	checkCode(t, h.request(http.MethodPost, "/reservations", h.token, req), 201, "")
+
+	call := func(method, status string, wantCode int) {
+		t.Helper()
+		r := httptest.NewRequest(method, "/api/v1/hotel/cancellation", nil)
+		r.Header.Set("X-Hotel-Cancellation-Token", h.service.cancellation.token(req.IdempotencyKey))
+		response := httptest.NewRecorder()
+		h.handler.ServeHTTP(response, r)
+		checkCode(t, response, wantCode, "")
+		var result cancellationStatus
+		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil || result.Status != status {
+			t.Fatalf("expected status %s, got %s (%v)", status, response.Body.String(), err)
+		}
+	}
+
+	client.status = "eligible"
+	call(http.MethodGet, "eligible", 200)
+	client.err = errors.New("lost cancellation response")
+	call(http.MethodPost, "pending", 202)
+	if h.count("hotel_booking_telegram_outbox") != 1 {
+		t.Fatal("expected only the original confirmation")
+	}
+
+	client.status, client.err = "canceled", nil
+	call(http.MethodGet, "canceled", 200)
+	call(http.MethodPost, "canceled", 200)
+	call(http.MethodGet, "canceled", 200)
+	if h.count("hotel_booking_telegram_outbox") != 2 {
+		t.Fatal("expected one confirmation and one cancellation")
+	}
+
+	var cancellations atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(resp http.ResponseWriter, r *http.Request) {
+		var payload map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+		}
+		if strings.HasPrefix(payload["text"], "Бронирование гостиницы отменено\nБронирование: 00000001234\n") {
+			if payload["chat_id"] != "-10042" {
+				t.Errorf("unexpected staff chat %q", payload["chat_id"])
+			}
+			cancellations.Add(1)
+		}
+		resp.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+	w := h.worker(&testMailer{})
+	w.ConfigureTelegram(telegram.NewClient(server.URL, "fake", nil), "-10042")
+	w.tickTelegram(context.Background())
+	call(http.MethodPost, "canceled", 200)
+	w.tickTelegram(context.Background())
+	if cancellations.Load() != 1 {
+		t.Fatalf("sent %d cancellation alerts, want 1", cancellations.Load())
+	}
+	var sent int
+	if err := h.db.Get(&sent, "SELECT count(*) FROM hotel_booking_telegram_outbox WHERE sent"); err != nil || sent != 2 {
+		t.Fatalf("sent=%d, err=%v", sent, err)
+	}
+}
 
 func TestBookingTelegramDelivery(t *testing.T) {
 	h := newBooking(t)

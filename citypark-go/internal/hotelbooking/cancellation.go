@@ -84,6 +84,12 @@ func (h *Handler) Cancellation(w http.ResponseWriter, r *http.Request) error {
 		return writeFailure(w, ErrUnavailable)
 	}
 	status, err := client.cancellation(r.Context(), r.Method, key)
+	if err == nil && status.Status == "canceled" && h.service.store.queueTelegram {
+		err = h.service.store.enqueueTelegram(r.Context(), key, telegramCancellation, h.service.clock.Now())
+		if err != nil {
+			err = ErrUnavailable
+		}
+	}
 	if err != nil {
 		if r.Method == http.MethodPost {
 			httpx.JSON(w, http.StatusAccepted, cancellationStatus{Status: "pending"})

@@ -134,8 +134,7 @@ func (s *Store) finish(ctx context.Context, a attemptRow, r Reservation, hasEmai
 		if !s.queueTelegram {
 			return nil
 		}
-		_, err = tx.db.ExecContext(ctx, `INSERT INTO hotel_booking_telegram_outbox(attempt_key,next_attempt_at) VALUES($1,$2) ON CONFLICT(attempt_key) DO NOTHING`, key, now)
-		return err
+		return tx.enqueueTelegram(ctx, key, telegramConfirmation, now)
 	})
 }
 func (s *Store) reject(ctx context.Context, a attemptRow, code string) error {
@@ -151,7 +150,7 @@ func (s *Store) release(ctx context.Context, a attemptRow, now time.Time) error 
 // acknowledge one another's expired leases.
 func (s *Store) claimRecovery(ctx context.Context, now time.Time, claim string) (attemptRow, error) {
 	var key string
-	err := s.db.GetContext(ctx, &key, `UPDATE hotel_booking_attempts SET claim=$2,lease_until=$3,updated_at=now() WHERE key=(SELECT key FROM hotel_booking_attempts WHERE state='pending' AND (channel='email' OR $4) AND next_attempt_at<=$1 AND (lease_until IS NULL OR lease_until<=$1) ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING key`, now, claim, now.Add(time.Minute))
+	err := s.db.GetContext(ctx, &key, `UPDATE hotel_booking_attempts SET claim=$2,lease_until=$3,updated_at=now() WHERE key=(SELECT key FROM hotel_booking_attempts WHERE state='pending' AND next_attempt_at<=$1 AND (lease_until IS NULL OR lease_until<=$1) ORDER BY next_attempt_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING key`, now, claim, now.Add(time.Minute))
 	if err != nil {
 		return attemptRow{}, err
 	}
