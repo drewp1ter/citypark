@@ -11,9 +11,9 @@ import { SiteHeader } from '@/widgets/site-header'
  */
 export async function MenuLayout({ children }: { children: ReactNode }) {
 	// A layout error would not reach the page's error.tsx, so the page throws into its own boundary instead.
-	const { dishes } = await getMenu().catch((error: unknown) => {
+	const menu = await getMenu().catch((error: unknown) => {
 		console.error(error)
-		return { dishes: [] }
+		return null
 	})
 
 	return (
@@ -21,12 +21,12 @@ export async function MenuLayout({ children }: { children: ReactNode }) {
 			<Suspense fallback={null}>
 				<AddressImportBridge surface='web' />
 			</Suspense>
-			<SiteHeader cartDishes={dishes} />
+			<SiteHeader menuPage />
 			<div id='content' tabIndex={-1} className='flex-1 outline-none'>
 				{children}
 			</div>
 			<SiteFooter wide />
-			<CartBar dishes={dishes} />
+			{menu && <CartBar dishes={menu.dishes} />}
 		</div>
 	)
 }

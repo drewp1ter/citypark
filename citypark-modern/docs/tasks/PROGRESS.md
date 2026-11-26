@@ -250,3 +250,8 @@ Remaining priorities and deployment acceptance: [Search discovery](../SEARCH_DIS
 
 - [ ] [75 Yandex ID sign-in](75-yandex-sign-in.md) [backend 110]
   - Checks and production build pass. Chromium verifies the enabled and disabled sign-in controls and invalid callback handling. Live Yandex login and linking need a registered staging application.
+
+## Cart recovery
+
+- [ ] [76 Make unavailable cart items removable](76-unavailable-cart-items.md) [74]
+  - Implemented. `npm run check`, production build, and both isolated regression harnesses pass. Live browser acceptance is blocked while the configured menu backend refuses connections.

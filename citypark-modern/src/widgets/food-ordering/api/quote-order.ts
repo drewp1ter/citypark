@@ -19,11 +19,12 @@ export async function quoteOrder(input: unknown) {
 	try {
 		const { lines, method, city, promoCode } = parsed.data
 		const menu = await getMenu()
-		if (lines.some((line) => menu.dishes.find((dish) => dish.id === line.dishId)?.orderBlocked))
-			return { ok: false as const, message: 'Удалите недоступные блюда из корзины, чтобы оформить заказ.' }
 		const priced = priceLines(lines, menu.dishes)
-		if (priced.items.length !== lines.length)
-			return { ok: false as const, message: 'Меню изменилось: некоторых блюд из корзины больше нет. Проверьте заказ.' }
+		if (priced.unavailable.length > 0)
+			return {
+				ok: false as const,
+				unavailableLines: priced.unavailable.map(({ dishId, variantId }) => ({ dishId, variantId })),
+			}
 		return await fetchOrderQuote({
 			items: priced.items.map((item) => ({ productId: Number(item.dish.externalId), amount: item.quantity })),
 			fulfillment: method,

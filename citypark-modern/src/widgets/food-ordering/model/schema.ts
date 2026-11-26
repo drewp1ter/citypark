@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { CartLineKey } from '@/entities/cart'
 import { hoursError, isValidRuPhone, type WorkingHours } from '@/shared/lib'
 
 export const methods = ['delivery', 'pickup'] as const
@@ -78,4 +79,8 @@ export type OrderState =
 			errors: Partial<Record<OrderErrorKey, string>>
 			values: Record<OrderField, string>
 			refreshQuote?: number
+			unavailableCart?: {
+				linesJson: string
+			keys: CartLineKey[]
+			}
 	  }

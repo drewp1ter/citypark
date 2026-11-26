@@ -2,9 +2,10 @@
 
 import { useMenuRefresh } from '@/shared/lib'
 
-import { useActionState, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { cartActions, useCartLines, useCartReady } from '@/entities/cart'
+import { useActionState, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, townDeliveryPrice, type DeliveryMethod, type DeliveryTown, type Dish } from '@/entities/dish'
+import { UnavailableItems } from '@/features/remove-unavailable-items'
 import { AddressField, type AddressBookLoad } from '@/entities/address'
 import { formatPrice, plural, type WorkingHours } from '@/shared/lib'
 import {
@@ -75,7 +76,8 @@ export function CheckoutForm({
 
 	const lines = useCartLines()
 	const cartReady = useCartReady()
-	const priced = useMemo(() => priceLines(lines, dishes), [lines, dishes])
+	const menuCart = useMemo(() => priceLines(lines, dishes), [lines, dishes])
+	const linesJson = JSON.stringify(lines)
 
 	const [method, setMethod] = useState<DeliveryMethod>(values?.method === 'pickup' ? 'pickup' : 'delivery')
 	const [when, setWhen] = useState(values?.when || 'asap')
@@ -87,7 +89,7 @@ export function CheckoutForm({
 	}, [locationEnabled, method, address.locationAllowed, address.fallback])
 	const location = useCheckoutLocation({
 		surface: mini ? 'mini' : 'web',
-		enabled: method === 'delivery' && cartReady && priced.items.length > 0 && address.locationAllowed,
+		enabled: method === 'delivery' && cartReady && menuCart.items.length > 0 && address.locationAllowed,
 		configured: locationEnabled,
 		initialTown: '',
 		initialStreet: '',
@@ -103,10 +105,30 @@ export function CheckoutForm({
 	const selectedTown = towns.find((town) => town.name === city)
 	const pricing = useCheckoutQuote(
 		{ lines, method, city, menu: dishes.map((dish) => [dish.id, dish.available, dish.orderBlocked, dish.variants]) },
-		cartReady && priced.items.length > 0 && !noDelivery && (method === 'pickup' || Boolean(selectedTown)),
+		cartReady &&
+			menuCart.items.length > 0 &&
+			menuCart.unavailable.length === 0 &&
+			!noDelivery &&
+			(method === 'pickup' || Boolean(selectedTown)),
 		state.status === 'error' ? (state.refreshQuote ?? JSON.stringify(state.values)) : undefined,
 		mini ? 'mini' : 'web',
 		promoCodesEnabled
+	)
+	const rejectedCart = state.status === 'error' ? state.unavailableCart : undefined
+	const rejectedLines =
+		pricing.unavailableLines ??
+		(!pricing.ready && rejectedCart?.linesJson === linesJson ? rejectedCart.keys : undefined)
+	const rejectionKey = rejectedLines && JSON.stringify([linesJson, rejectedLines])
+	const refreshedRejection = useRef<string>(undefined)
+	useEffect(() => {
+		if (rejectionKey && refreshedRejection.current !== rejectionKey) {
+			refreshedRejection.current = rejectionKey
+			router.refresh()
+		}
+	}, [rejectionKey, router])
+	const priced = useMemo(
+		() => (rejectedLines ? priceLines(lines, dishes, rejectedLines) : menuCart),
+		[lines, dishes, rejectedLines, menuCart]
 	)
 	const quote = pricing.quote
 	const deliveryPrice = quote?.deliveryPrice
@@ -117,13 +139,20 @@ export function CheckoutForm({
 		quote.deliveryPrice > 0 &&
 		!!selectedTown &&
 		townDeliveryPrice(selectedTown, quote.subtotal) === 0
-	const canSubmit = address.ready && cartReady && priced.items.length > 0 && !pending && !noDelivery && pricing.ready
+	const canSubmit =
+		address.ready &&
+		cartReady &&
+		priced.items.length > 0 &&
+		priced.unavailable.length === 0 &&
+		!pending &&
+		!noDelivery &&
+		pricing.ready
 
 	return (
 		<div className='max-w-narrow-page mx-auto w-full px-3 pt-2 pb-4 md:px-6 md:pt-10 md:pb-10'>
 			{intro}
 
-			{cartReady && priced.items.length === 0 ? (
+			{cartReady && lines.length === 0 ? (
 				<div className={cardClass('surface', 'items-start gap-3 rounded-lg p-6 md:rounded-xl md:p-10')}>
 					<h2 className='heading text-2xl md:text-[32px]'>В корзине пока пусто</h2>
 					<p className='text-text-muted'>Добавьте блюда из меню, чтобы оформить заказ.</p>
@@ -165,7 +194,7 @@ export function CheckoutForm({
 							name='expectedAccountId'
 							value={addressBook.context.kind === 'account' ? addressBook.context.accountId : ''}
 						/>
-						<input type='hidden' name='lines' value={JSON.stringify(lines)} />
+						<input type='hidden' name='lines' value={linesJson} />
 						<input type='hidden' name='promoCode' value={pricing.code} />
 						<input type='hidden' name='expectedPayableTotal' value={quote?.payableTotal ?? ''} />
 
@@ -384,38 +413,28 @@ export function CheckoutForm({
 							aria-label='Ваш заказ'
 							className='md:bg-inverse-bg md:text-inverse-text flex flex-col gap-2 md:sticky md:top-6 md:col-start-3 md:row-span-2 md:row-start-1 md:gap-3.5 md:rounded-xl md:p-7'
 						>
-							<details className='bg-inverse-bg text-inverse-text rounded-lg px-[18px] py-1 md:hidden'>
-								<summary className='flex min-h-[52px] cursor-pointer items-center justify-between gap-2 font-semibold'>
-									<span>
-										Заказ · {priced.count} {dishWord(priced.count)}
-									</span>
-									<span className='text-accent'>
-										{method === 'delivery' ? `доставка ${displayMoney(deliveryPrice)}` : 'самовывоз'}
-									</span>
-								</summary>
-								<ul className='mb-3 text-[15px]'>
-									{priced.items.map((item) => (
-										<li key={`${item.dish.id}:${item.variant.id}`} className='flex justify-between gap-3 py-1.5'>
-											<span>
-												{item.dish.name} × {item.quantity}
-											</span>
-											<span>{formatPrice(item.total)}</span>
-											{item.dish.orderBlocked && (
-												<button
-													type='button'
-													aria-label={`Удалить из корзины: ${item.dish.name}`}
-													className='min-h-11 min-w-11'
-													onClick={() =>
-														cartActions.setQuantity({ dishId: item.dish.id, variantId: item.variant.id }, 0)
-													}
-												>
-													×
-												</button>
-											)}
-										</li>
-									))}
-								</ul>
-							</details>
+							{priced.items.length > 0 && (
+								<details className='bg-inverse-bg text-inverse-text rounded-lg px-[18px] py-1 md:hidden'>
+									<summary className='flex min-h-[52px] cursor-pointer items-center justify-between gap-2 font-semibold'>
+										<span>
+											Заказ · {priced.count} {dishWord(priced.count)}
+										</span>
+										<span className='text-accent'>
+											{method === 'delivery' ? `доставка ${displayMoney(deliveryPrice)}` : 'самовывоз'}
+										</span>
+									</summary>
+									<ul className='mb-3 text-[15px]'>
+										{priced.items.map((item) => (
+											<li key={`${item.dish.id}:${item.variant.id}`} className='flex justify-between gap-3 py-1.5'>
+												<span>
+													{item.dish.name} × {item.quantity}
+												</span>
+												<span>{formatPrice(item.total)}</span>
+											</li>
+										))}
+									</ul>
+								</details>
+							)}
 
 							<h2 className='heading hidden text-2xl md:block'>Заказ</h2>
 							<ul className='hidden text-[15px] md:block'>
@@ -428,19 +447,10 @@ export function CheckoutForm({
 											{item.dish.name} × {item.quantity}
 										</span>
 										<span>{formatPrice(item.total)}</span>
-										{item.dish.orderBlocked && (
-											<button
-												type='button'
-												aria-label={`Удалить из корзины: ${item.dish.name}`}
-												className='min-h-11 min-w-11'
-												onClick={() => cartActions.setQuantity({ dishId: item.dish.id, variantId: item.variant.id }, 0)}
-											>
-												×
-											</button>
-										)}
 									</li>
 								))}
 							</ul>
+							<UnavailableItems lines={priced.unavailable} disabled={pending} />
 							{promoCodesEnabled && (
 								<PromoCodeField
 									text={pricing.text}

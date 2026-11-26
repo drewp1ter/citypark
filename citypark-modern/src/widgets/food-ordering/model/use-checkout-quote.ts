@@ -5,7 +5,7 @@ import { quoteOrder } from '../api/quote-order'
 import type { OrderQuote } from '../api/orders-api'
 
 type Request = { lines: unknown; method: string; city: string; menu: unknown }
-type QuoteState = { key: string; result: Awaited<ReturnType<typeof quoteOrder>> }
+type QuoteState = { key: string; cartKey: string; result: Awaited<ReturnType<typeof quoteOrder>> }
 
 /** Key checks invalidate pricing during render, before any effect or stale request can commit it. */
 export function useCheckoutQuote(
@@ -67,6 +67,7 @@ export function useCheckoutQuote(
 		promoCode: promoEnabled ? code : '',
 	})
 	const key = JSON.stringify([request, input.menu, revision, refresh])
+	const cartKey = JSON.stringify([input.lines, input.menu, refresh])
 	useEffect(() => {
 		if (!enabled || !restored || dirty) return
 		let current = true
@@ -75,15 +76,17 @@ export function useCheckoutQuote(
 				ok: false as const,
 				message: 'Не удалось рассчитать заказ. Попробуйте ещё раз.',
 			}))
-			if (current) setState({ key, result })
+			if (current) setState({ key, cartKey, result })
 		})
 		return () => {
 			current = false
 		}
-	}, [request, key, enabled, dirty, restored])
+	}, [request, key, cartKey, enabled, dirty, restored])
 
 	const result = enabled && restored && !dirty && state?.key === key ? state.result : undefined
 	const quote: OrderQuote | undefined = result?.ok ? result.quote : undefined
+	const unavailableLines =
+		state?.cartKey === cartKey && 'unavailableLines' in state.result ? state.result.unavailableLines : undefined
 	return {
 		text,
 		setText: (value: string) => {
@@ -99,8 +102,10 @@ export function useCheckoutQuote(
 		code: promoEnabled ? normalized : '',
 		pending: enabled && (!restored || dirty || !result),
 		ready: !!quote,
+		unavailableLines,
 		promoError: result && !result.ok && 'fields' in result ? result.fields?.promoCode : undefined,
-		error: result && !result.ok && !('fields' in result && result.fields?.promoCode) ? result.message : undefined,
+		error:
+			result && 'message' in result && !('fields' in result && result.fields?.promoCode) ? result.message : undefined,
 		remove: () => {
 			setText('')
 			setCode('')

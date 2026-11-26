@@ -1,6 +1,7 @@
 'use client'
 
 import { quoteDelivery, useDeliveryInfo, type Dish } from '@/entities/dish'
+import { UnavailableItems } from '@/features/remove-unavailable-items'
 import { useSiteSettings } from '@/shared/config'
 import { formatPrice, plural } from '@/shared/lib'
 import { AppLink, Button } from '@/shared/ui'
@@ -9,10 +10,10 @@ import { usePricedCart } from './use-priced-cart'
 
 /** Dark cart column next to the menu (from 1024 px). Below that the CartBar is used instead. */
 export function CartPanel({ dishes, checkoutHref = '/checkout' }: { dishes: readonly Dish[]; checkoutHref?: string }) {
-	const { items, count, subtotal, ready } = usePricedCart(dishes)
+	const { items, unavailable, cartCount, subtotal, ready } = usePricedCart(dishes)
 	const { restaurant } = useSiteSettings().phones
 	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal }, useDeliveryInfo())
-	const empty = ready && items.length === 0
+	const empty = ready && cartCount === 0
 
 	return (
 		<aside
@@ -22,9 +23,9 @@ export function CartPanel({ dishes, checkoutHref = '/checkout' }: { dishes: read
 		>
 			<div className='flex items-center justify-between'>
 				<h2 className='heading text-2xl'>Корзина</h2>
-				{count > 0 && (
+				{cartCount > 0 && (
 					<span className='text-inverse-muted text-sm'>
-						{count} {plural(count, ['блюдо', 'блюда', 'блюд'])}
+						{cartCount} {plural(cartCount, ['блюдо', 'блюда', 'блюд'])}
 					</span>
 				)}
 			</div>
@@ -38,6 +39,7 @@ export function CartPanel({ dishes, checkoutHref = '/checkout' }: { dishes: read
 							<CartLine key={`${item.dish.id}:${item.variant.id}`} item={item} />
 						))}
 					</ul>
+					<UnavailableItems lines={unavailable} />
 					<div className='flex justify-between text-[15px]'>
 						<span className='text-inverse-muted'>Доставка</span>
 						<span className='text-accent font-semibold'>{quote.label}</span>
@@ -46,9 +48,15 @@ export function CartPanel({ dishes, checkoutHref = '/checkout' }: { dishes: read
 						<span>Итого</span>
 						<span className='font-display text-[30px] font-medium'>{formatPrice(subtotal)}</span>
 					</div>
-					<Button href={checkoutHref} className='min-h-[54px]'>
-						Оформить заказ
-					</Button>
+					{unavailable.length > 0 ? (
+						<Button disabled className='min-h-[54px]'>
+							Оформить заказ
+						</Button>
+					) : (
+						<Button href={checkoutHref} className='min-h-[54px]'>
+							Оформить заказ
+						</Button>
+					)}
 				</>
 			)}
 

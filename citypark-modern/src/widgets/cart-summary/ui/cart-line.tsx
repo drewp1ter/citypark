@@ -1,6 +1,5 @@
 'use client'
 
-import { cartActions } from '@/entities/cart'
 import Image from 'next/image'
 import { AddToCartButton } from '@/features/add-to-cart'
 import type { PricedLine } from '@/entities/dish'
@@ -23,21 +22,7 @@ export function CartLine({ item }: { item: PricedLine }) {
 				<br />
 				<strong>{formatPrice(item.total)}</strong>
 			</span>
-			{item.dish.orderBlocked ? (
-				<>
-					<span>{item.quantity}</span>
-					<button
-						type='button'
-						aria-label={`Удалить из корзины: ${item.dish.name}`}
-						className='min-h-11 min-w-11'
-						onClick={() => cartActions.setQuantity({ dishId: item.dish.id, variantId: item.variant.id }, 0)}
-					>
-						×
-					</button>
-				</>
-			) : (
-				<AddToCartButton dish={item.dish} variantId={item.variant.id} />
-			)}
+			<AddToCartButton dish={item.dish} variantId={item.variant.id} />
 		</li>
 	)
 }

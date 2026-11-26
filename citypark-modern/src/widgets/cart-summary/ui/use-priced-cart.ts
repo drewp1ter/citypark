@@ -5,9 +5,9 @@ import { useCartLines, useCartReady } from '@/entities/cart'
 import { priceLines, type Dish, type PricedCart } from '@/entities/dish'
 
 /** The cart joined with the menu (names, photos, prices). `ready` is false until the browser has read the cart. */
-export function usePricedCart(dishes: readonly Dish[]): PricedCart & { ready: boolean } {
+export function usePricedCart(dishes: readonly Dish[]): PricedCart & { ready: boolean; cartCount: number } {
 	const lines = useCartLines()
 	const ready = useCartReady()
 	const priced = useMemo(() => priceLines(lines, dishes), [lines, dishes])
-	return { ...priced, ready }
+	return { ...priced, ready, cartCount: lines.reduce((sum, line) => sum + line.quantity, 0) }
 }

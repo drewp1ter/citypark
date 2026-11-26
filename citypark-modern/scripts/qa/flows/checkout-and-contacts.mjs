@@ -108,16 +108,15 @@ out(
 )
 out('pickup: delivery line', await txt(p.locator('dl[aria-label="Расчёт заказа"] > div', { hasText: 'Доставка' })))
 
-// tampered cart -> server refuses
+// Stale stored entries stay removable at checkout.
 const t = await pageWithCart([{ dishId: 'ghost-dish', variantId: 'x', quantity: 1 }])
 await t.goto(base + '/checkout')
-await t.waitForTimeout(500)
-out('unknown dish in cart -> priced out, empty state', await txt(t.getByText('В корзине пока пусто')))
-// a size the dish does not have: the client skips it, server too
+await expect(t.getByRole('button', { name: 'Удалить из корзины: Недоступное блюдо' })).toBeVisible()
+out('unknown dish in cart -> removable', await txt(t.getByText('Недоступное блюдо', { exact: false })))
 const t2 = await pageWithCart([{ dishId: CART[0].dishId, variantId: '1kg', quantity: 1 }])
 await t2.goto(base + '/checkout')
-await t2.waitForTimeout(500)
-out('unknown size of a real dish -> empty state', await txt(t2.getByText('В корзине пока пусто')))
+await expect(t2.getByRole('button', { name: /Удалить из корзины:/ })).toBeVisible()
+out('unknown size of a real dish -> removable', await txt(t2.getByRole('alert')))
 // server-side check without the browser's own filtering
 const res = await fetch(base + '/checkout', { method: 'GET' })
 out('GET /checkout', res.status)

@@ -206,6 +206,7 @@ class CustomerApiError extends Error {
 }
 const libs = { isValidRuPhone: () => true, hoursError: () => 'Hours', phoneDigits: (value) => value.replace(/\D/g, '') }
 const orderSchema = load('src/widgets/food-ordering/model/schema.ts', { '@/shared/lib': libs })
+const { priceLines } = load('src/entities/dish/lib/price-lines.ts', {})
 const transactionId = '12345678-abcd-abcd-abcd-123456789abc'
 let context, calls, saveFailure, orderFailure, missingTransactionId
 const action = load('src/widgets/food-ordering/api/place-order.ts', {
@@ -227,9 +228,11 @@ const action = load('src/widgets/food-ordering/api/place-order.ts', {
 		},
 	},
 	'@/entities/dish': {
-		getMenu: async () => ({ dishes: [{ id: '1', externalId: '1' }] }),
+		getMenu: async () => ({
+			dishes: [{ id: '1', externalId: '1', available: true, variants: [{ id: 'default', price: 100 }] }],
+		}),
 		getDeliveryTowns: async () => towns,
-		priceLines: () => ({ items: [{ dish: { externalId: '1' }, quantity: 1 }] }),
+		priceLines,
 	},
 	'@/shared/api': { getWorkingHours: async () => ({ start: '09:00', end: '22:00' }) },
 	'@/shared/lib': libs,
@@ -283,6 +286,14 @@ for (const surface of ['web', 'mini']) {
 		orderFailure = false
 		missingTransactionId = false
 	}
+	reset()
+	const staleLines = '[{"dishId":"2","variantId":"default","quantity":1}]'
+	const staleCart = await submit({}, form({ lines: staleLines }))
+	assert.equal(staleCart.status, 'error')
+	assert.equal(staleCart.unavailableCart.linesJson, staleLines)
+	assert.equal(JSON.stringify(staleCart.unavailableCart.keys), '[{"dishId":"2","variantId":"default"}]')
+	assert.equal(staleCart.values.street, first.street)
+	assert.deepEqual(calls, [], 'Stale items must stop address writes and order submission')
 	reset()
 	await assert.rejects(submit({}, form()), (e) => e.path?.startsWith('https://demo.moneta.ru'))
 	assert.equal(calls.map((c) => c[0]).join(','), 'context,save,order,payment')

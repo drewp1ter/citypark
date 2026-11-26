@@ -17,15 +17,15 @@ export function CartBar({
 	checkoutHref?: string
 	mini?: boolean
 }) {
-	const { count, subtotal } = usePricedCart(dishes)
+	const { cartCount, subtotal } = usePricedCart(dishes)
 	const [open, setOpen] = useState(false)
 	const dialog = useRef<HTMLDialogElement>(null)
-	// At 0 dishes the bar unmounts and takes the open sheet with it.
-	if (count === 0) return null
+	if (cartCount === 0 && !open) return null
 
 	return (
 		<>
 			<nav
+				hidden={cartCount === 0}
 				aria-label='Корзина'
 				className={`to-bg sticky z-10 bg-linear-to-b from-transparent to-35% px-3 pt-2.5 pb-3 lg:hidden ${mini ? 'bottom-[var(--mini-bottom)]' : 'bottom-0'}`}
 			>
@@ -40,7 +40,7 @@ export function CartBar({
 					className='rounded-pill bg-inverse-bg text-inverse-text flex min-h-[58px] w-full cursor-pointer items-center justify-between pr-2 pl-[22px] font-semibold'
 				>
 					<span>
-						Корзина · {count} {plural(count, ['блюдо', 'блюда', 'блюд'])}
+						Корзина · {cartCount} {plural(cartCount, ['блюдо', 'блюда', 'блюд'])}
 					</span>
 					<span className='rounded-pill bg-accent text-on-accent flex items-center gap-1.5 px-4 py-2.5'>
 						{formatPrice(subtotal)}

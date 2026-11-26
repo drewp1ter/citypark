@@ -1,14 +1,11 @@
 'use client'
 
-import { useMemo } from 'react'
-import { useCartLines } from '@/entities/cart'
-import { priceLines, type Dish } from '@/entities/dish'
+import { useCartCount } from '@/entities/cart'
 import { AppLink } from '@/shared/ui'
 
-/** Menu header cart link with the number of available portions. */
-export function CartPill({ dishes }: { dishes: readonly Dish[] }) {
-	const lines = useCartLines()
-	const { count } = useMemo(() => priceLines(lines, dishes), [lines, dishes])
+/** Menu header cart link with the number of saved portions. */
+export function CartPill() {
+	const count = useCartCount()
 
 	return (
 		<AppLink

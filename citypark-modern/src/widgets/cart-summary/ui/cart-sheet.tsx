@@ -2,6 +2,7 @@
 
 import type { MouseEvent, RefObject } from 'react'
 import { quoteDelivery, useDeliveryInfo, type Dish } from '@/entities/dish'
+import { UnavailableItems } from '@/features/remove-unavailable-items'
 import { useSiteSettings } from '@/shared/config'
 import { formatPrice, plural } from '@/shared/lib'
 import { AppLink, Button, CloseIcon, IconButton } from '@/shared/ui'
@@ -21,7 +22,7 @@ type CartSheetProps = {
  * It is a native modal <dialog>, like MobileMenu: Esc, focus trap and an inert page come from the browser.
  */
 export function CartSheet({ dishes, dialog, onClose, checkoutHref = '/checkout', mini = false }: CartSheetProps) {
-	const { items, count, subtotal } = usePricedCart(dishes)
+	const { items, unavailable, cartCount, subtotal } = usePricedCart(dishes)
 	const { restaurant } = useSiteSettings().phones
 	const quote = quoteDelivery({ method: 'delivery', zone: 'city', subtotal }, useDeliveryInfo())
 
@@ -43,30 +44,45 @@ export function CartSheet({ dishes, dialog, onClose, checkoutHref = '/checkout',
 					Корзина
 				</h2>
 				<span className='text-inverse-muted ml-auto text-sm'>
-					{count} {plural(count, ['блюдо', 'блюда', 'блюд'])}
+					{cartCount} {plural(cartCount, ['блюдо', 'блюда', 'блюд'])}
 				</span>
 				<IconButton variant='inverse' aria-label='Закрыть корзину' onClick={() => dialog.current?.close()}>
 					<CloseIcon />
 				</IconButton>
 			</div>
 
-			<ul className='mt-2'>
-				{items.map((item) => (
-					<CartLine key={`${item.dish.id}:${item.variant.id}`} item={item} />
-				))}
-			</ul>
+			{cartCount === 0 ? (
+				<p role='status' className='text-inverse-muted mt-2 text-[15px]'>
+					Пока пусто. Добавьте блюда кнопкой «+» на карточках.
+				</p>
+			) : (
+				<>
+					<ul className='mt-2'>
+						{items.map((item) => (
+							<CartLine key={`${item.dish.id}:${item.variant.id}`} item={item} />
+						))}
+					</ul>
+					<UnavailableItems lines={unavailable} />
 
-			<div className='mt-3.5 flex justify-between text-[15px]'>
-				<span className='text-inverse-muted'>Доставка</span>
-				<span className='text-accent font-semibold'>{quote.label}</span>
-			</div>
-			<div className='mt-3.5 flex items-baseline justify-between'>
-				<span>Итого</span>
-				<span className='font-display text-[30px] font-medium'>{formatPrice(subtotal)}</span>
-			</div>
-			<Button href={checkoutHref} className='mt-3.5 min-h-[54px] w-full'>
-				Оформить заказ
-			</Button>
+					<div className='mt-3.5 flex justify-between text-[15px]'>
+						<span className='text-inverse-muted'>Доставка</span>
+						<span className='text-accent font-semibold'>{quote.label}</span>
+					</div>
+					<div className='mt-3.5 flex items-baseline justify-between'>
+						<span>Итого</span>
+						<span className='font-display text-[30px] font-medium'>{formatPrice(subtotal)}</span>
+					</div>
+					{unavailable.length > 0 ? (
+						<Button disabled className='mt-3.5 min-h-[54px] w-full'>
+							Оформить заказ
+						</Button>
+					) : (
+						<Button href={checkoutHref} className='mt-3.5 min-h-[54px] w-full'>
+							Оформить заказ
+						</Button>
+					)}
+				</>
+			)}
 			<p className='text-inverse-muted mt-3.5 text-center text-[13px]'>
 				или{' '}
 				<AppLink href={restaurant.href} className='tap-area text-inverse-text'>

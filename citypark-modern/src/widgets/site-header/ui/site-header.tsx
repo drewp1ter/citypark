@@ -1,4 +1,3 @@
-import type { Dish } from '@/entities/dish'
 import { ThemeToggle } from './theme-toggle'
 import { AppLink, Button, IconButton, Logo, UserIcon } from '@/shared/ui'
 import { CartButton } from './cart-button'
@@ -13,17 +12,14 @@ const logo = 'inline-flex min-h-11 items-center'
 type SiteHeaderProps = {
 	/**
 	 * Menu page variant: wider, with a "Корзина [count]" pill instead of the phone, cart and book buttons.
-	 * Pass the menu's dishes so the pill counts available portions.
 	 */
-	cartDishes?: readonly Dish[]
+	menuPage?: boolean
 }
 
 /**
  * Sticky pill header. Compact (logo + buttons + menu sheet) below 1280 px, full navigation from 1280 px (the 6 links + 4 buttons need ~1090 px).
  */
-export function SiteHeader({ cartDishes }: SiteHeaderProps) {
-	const menuPage = cartDishes !== undefined
-
+export function SiteHeader({ menuPage }: SiteHeaderProps) {
 	return (
 		<header className={`sticky top-0 z-10 px-3 pt-2.5 xl:px-6 xl:pt-4 ${menuPage ? 'bg-bg pb-2 md:pb-4 xl:pb-2' : ''}`}>
 			{/* Mobile / tablet */}
@@ -54,7 +50,7 @@ export function SiteHeader({ cartDishes }: SiteHeaderProps) {
 					</IconButton>
 					<ThemeToggle />
 					{menuPage ? (
-						<CartPill dishes={cartDishes} />
+						<CartPill />
 					) : (
 						<>
 							<PhoneButton />
