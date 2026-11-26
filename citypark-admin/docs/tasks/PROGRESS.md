@@ -113,5 +113,5 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 - [x] [38 Mark dishes and categories on the iiko stop list](38-iiko-stop-list-markers.md) [backend 111]
   - API type generation, admin checks, build, and four isolated browser tests pass. The live menu loaded and searched all 259 dishes at 390 and 1440 px in both themes. The live catalog had no stop-listed dishes. Isolated tests verified dish markers, category counts, search, and sync refresh.
 
-- [ ] [39 Refresh stop-list markers while the menu is open](39-refresh-stop-list-markers.md) [backend 112]
-  - Admin checks, build, and four isolated browser tests pass. Real-backend acceptance is pending a running backend with task 112.
+- [x] [39 Refresh stop-list markers while the menu is open](39-refresh-stop-list-markers.md) [backend 112]
+  - Admin checks, build, and four isolated browser tests pass. Foreground polling fetched products again from the running backend at 390 and 1440 px in both themes. The isolated tests verified that updated markers appear without reloading the page.
