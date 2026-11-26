@@ -7,6 +7,7 @@ export type OrderSearch = {
 	from?: string
 	to?: string
 	status?: OrderStatus
+	iikoStatus?: 'awaiting_approval'
 	page?: number
 }
 
@@ -46,6 +47,7 @@ export function parseOrderSearch(raw: Record<string, unknown>): OrderSearch {
 	if (from !== undefined) search.from = from
 	if (to !== undefined) search.to = to
 	if (isOrderStatus(raw.status)) search.status = raw.status
+	if (raw.iikoStatus === 'awaiting_approval') search.iikoStatus = raw.iikoStatus
 	const page = parsePage(raw.page)
 	if (page !== undefined) search.page = page
 	return search
@@ -54,7 +56,7 @@ export function parseOrderSearch(raw: Record<string, unknown>): OrderSearch {
 /** Query string values for `GET /orders`; empty values are left out. */
 export function toApiQuery(s: OrderSearch, pageSize: number): Record<string, string | number> {
 	const query: Record<string, string | number> = { page: s.page ?? 1, pageSize }
-	for (const key of ['q', 'from', 'to', 'status'] as const) {
+	for (const key of ['q', 'from', 'to', 'status', 'iikoStatus'] as const) {
 		const value = s[key]
 		if (value !== undefined && value !== '') query[key] = value
 	}
@@ -62,5 +64,11 @@ export function toApiQuery(s: OrderSearch, pageSize: number): Record<string, str
 }
 
 export function hasFilters(s: OrderSearch): boolean {
-	return s.q !== undefined || s.from !== undefined || s.to !== undefined || s.status !== undefined
+	return (
+		s.q !== undefined ||
+		s.from !== undefined ||
+		s.to !== undefined ||
+		s.status !== undefined ||
+		s.iikoStatus !== undefined
+	)
 }

@@ -5,6 +5,8 @@ import { formatDateTime, formatRub } from '../../../shared/lib/format'
 import type { OrderSearch } from '../model/search'
 import { StatusChip } from '../../../shared/ui/order-chips'
 
+import { iikoStatusLabel } from '../model/iiko-status'
+
 type Order = components['schemas']['Order']
 
 const linkClass = 'font-medium text-accent hover:underline'
@@ -57,7 +59,12 @@ export function OrdersTable({ orders, search }: { orders: Order[]; search: Order
 									<Table.Cell>{addressText(order)}</Table.Cell>
 									<Table.Cell>{formatRub(order.total + order.deliveryPrice)}</Table.Cell>
 									<Table.Cell>
-										<StatusChip status={order.status} />
+										<div>
+											<StatusChip status={order.status} />
+											{order.iikoStatus && (
+												<div className='text-sm text-muted'>{iikoStatusLabel(order.iikoStatus)}</div>
+											)}
+										</div>
 									</Table.Cell>
 								</Table.Row>
 							))}
@@ -78,7 +85,10 @@ export function OrdersTable({ orders, search }: { orders: Order[]; search: Order
 							>
 								№ {order.id}
 							</Link>
-							<StatusChip status={order.status} />
+							<div>
+								<StatusChip status={order.status} />
+								{order.iikoStatus && <div className='text-sm text-muted'>{iikoStatusLabel(order.iikoStatus)}</div>}
+							</div>
 						</div>
 						<div className='mt-1 text-sm text-muted'>{formatDateTime(order.createdAt)}</div>
 						<div className='mt-2'>{order.customer.name}</div>

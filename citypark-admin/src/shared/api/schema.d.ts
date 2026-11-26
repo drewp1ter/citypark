@@ -3973,6 +3973,8 @@ export interface paths {
                     from?: string;
                     /** @description Last day, inclusive, in the restaurant's time zone. Not before `from`. */
                     to?: string;
+                    /** @description Filter to orders awaiting approval. */
+                    iikoStatus?: "awaiting_approval";
                     status?: "new" | "pending" | "paid" | "canceled" | "confirmed";
                 };
                 header?: never;
@@ -4257,8 +4259,112 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
+                /** @description Нельзя изменять оплаченный заказ для iiko. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve a paid order for iiko submission
+         * @description Admin only. The first approval saves the selection and queues the order. Subsequent approvals return the recorded order.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        excludedProductIds?: number[];
+                        itemComments?: {
+                            productId: number;
+                            comment: string;
+                        }[];
+                    };
+                };
+            };
+            responses: {
+                /** @description Current admin order including the recorded approval. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Order"];
+                    };
+                };
+                /** @description Invalid JSON, exclusion, or comment. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Authentication required. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Admin role required. */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Order not found. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Order is ineligible or cannot be prepared for iiko. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description iiko submission is unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -4388,7 +4494,7 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                /** @description Нельзя изменять состав заказа с промокодом. */
+                /** @description Нельзя изменять состав заказа с промокодом. / Нельзя изменять оплаченный заказ для iiko. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -4450,7 +4556,7 @@ export interface paths {
                 401: components["responses"]["Unauthorized"];
                 403: components["responses"]["Forbidden"];
                 404: components["responses"]["NotFound"];
-                /** @description Нельзя изменять состав заказа с промокодом. */
+                /** @description Нельзя изменять состав заказа с промокодом. / Нельзя изменять оплаченный заказ для iiko. */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -6035,6 +6141,11 @@ export interface components {
             order?: components["schemas"]["Order"];
         };
         Order: {
+            /**
+             * @description Admin submission state for orders first paid after approval rollout.
+             * @enum {string}
+             */
+            iikoStatus?: "awaiting_approval" | "queued" | "sending" | "created" | "failed" | "review";
             /** @description Original food subtotal, in rubles. */
             subtotal: number;
             /** @description Persisted food discount, zero for historical/no-code orders. */
@@ -6075,6 +6186,12 @@ export interface components {
                 address: string;
             } | null;
             items: {
+                /** @description Present when the product is on the latest synchronized stop list. */
+                isOnStopList?: boolean;
+                /** @description Approved kitchen comment in the admin response. */
+                iikoComment?: string;
+                /** @description Present when the admin excluded this line from the iiko submission. */
+                excludedFromIiko?: boolean;
                 productId: number;
                 name: string;
                 categoryName: string;

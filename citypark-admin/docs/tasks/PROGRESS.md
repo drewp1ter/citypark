@@ -115,3 +115,6 @@ Implementation plan: [Promo codes](../../../citypark-go/docs/tasks/PROMOCODES.md
 
 - [x] [39 Refresh stop-list markers while the menu is open](39-refresh-stop-list-markers.md) [backend 112]
   - Admin checks, build, and four isolated browser tests pass. Foreground polling fetched products again from the running backend at 390 and 1440 px in both themes. The isolated tests verified that updated markers appear without reloading the page.
+
+- [ ] [40 Review paid orders before sending to iiko](40-iiko-order-approval.md) [backend 113]
+  - Admin checks, build, and isolated browser checks at 390 and 1440 px pass. The live approval filter returned no orders awaiting approval at either width. Live drawer and submission acceptance remain pending an eligible test order.

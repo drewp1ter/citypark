@@ -155,6 +155,12 @@ export function OrderFilters({ search, onChange, onReset }: Props) {
 					options={ORDER_STATUSES.map((id) => ({ id, text: statusLabel(id) }))}
 					onChange={(id) => onChange({ status: isOrderStatus(id) ? id : undefined })}
 				/>
+				<FilterSelect
+					label='Отправка в iiko'
+					value={search.iikoStatus}
+					options={[{ id: 'awaiting_approval', text: 'Ожидает подтверждения' }]}
+					onChange={(id) => onChange({ iikoStatus: id === 'awaiting_approval' ? id : undefined })}
+				/>
 			</div>
 			<div className='flex flex-wrap items-center gap-2'>
 				{Object.values(quickRanges).map((r) => (
