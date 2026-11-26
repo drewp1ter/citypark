@@ -48,17 +48,20 @@ type RoomCardProps = {
 
 function RoomPhoto({
 	room,
+	href,
 	available,
 	eager,
 	className,
 }: {
 	room: Room
+	href: string
 	available: boolean
 	eager?: boolean
 	className: string
 }) {
 	return (
-		<div className={cn('relative overflow-hidden', className)}>
+		// The room name is the keyboard and screen reader link to the same page.
+		<AppLink href={href} tabIndex={-1} aria-hidden='true' className={cn('relative block overflow-hidden', className)}>
 			<Image
 				src={room.photo.src}
 				alt={room.photo.alt}
@@ -69,7 +72,7 @@ function RoomPhoto({
 				style={room.photo.position ? { objectPosition: room.photo.position } : undefined}
 				className={cn('object-cover', !available && 'grayscale-50')}
 			/>
-		</div>
+		</AppLink>
 	)
 }
 
@@ -88,17 +91,18 @@ function FeaturedRoomCard({ room, availability, first, stay }: RoomCardProps) {
 			className='rounded-lg p-2 md:col-span-2 md:flex-row md:flex-wrap md:gap-2.5 md:rounded-xl md:p-2.5'
 		>
 			<div className='relative md:min-w-0 md:flex-[1_1_380px]'>
-				{/* Same target as the name below, so keyboard and screen reader users get one link. */}
-				<AppLink href={detailHref} tabIndex={-1} aria-hidden='true' className='block'>
-					<RoomPhoto
-						room={room}
-						available={available}
-						eager={first}
-						className='h-[210px] rounded-sm md:h-[360px] md:rounded-md'
-					/>
-				</AppLink>
+				<RoomPhoto
+					room={room}
+					href={detailHref}
+					available={available}
+					eager={first}
+					className='h-[210px] rounded-sm md:h-[360px] md:rounded-md'
+				/>
 				{known && (
-					<StatusBadge available={availability?.state === 'available'} className='absolute top-2.5 left-2.5 md:hidden'>
+					<StatusBadge
+						available={availability?.state === 'available'}
+						className='pointer-events-none absolute top-2.5 left-2.5 md:hidden'
+					>
 						{status}
 					</StatusBadge>
 				)}
@@ -168,6 +172,7 @@ export function RoomCard(props: RoomCardProps) {
 			<div className='relative'>
 				<RoomPhoto
 					room={room}
+					href={detailHref}
 					available={available}
 					eager={first}
 					className='h-[190px] rounded-sm md:h-[220px] md:rounded-md'
@@ -175,7 +180,7 @@ export function RoomCard(props: RoomCardProps) {
 				{known && (
 					<StatusBadge
 						available={availability?.state === 'available'}
-						className='absolute top-2.5 left-2.5 md:top-3 md:left-3'
+						className='pointer-events-none absolute top-2.5 left-2.5 md:top-3 md:left-3'
 					>
 						{statusLabel(availability)}
 					</StatusBadge>
