@@ -1,4 +1,3 @@
-import { Chip } from '@heroui/react'
 import { HIDDEN_PARAM, type MenuGroup } from '../model/group'
 
 type Props = {
@@ -10,7 +9,7 @@ type Props = {
 }
 
 const base =
-	'rounded-lg px-3 py-2 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-focus'
+	'flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors focus-visible:outline-2 focus-visible:outline-focus'
 
 /** A sidebar on desktop and a row of scrolling chips on a phone. */
 export function CategoryList({ groups, total, selected, onSelect }: Props) {
@@ -32,18 +31,26 @@ export function CategoryList({ groups, total, selected, onSelect }: Props) {
 						<li key={item.param ?? 'all'} className='shrink-0'>
 							<button
 								type='button'
+								aria-label={
+									item.stoppedCount > 0 ? `${item.name} ${item.count}. В стоп-листе: ${item.stoppedCount}` : undefined
+								}
 								aria-pressed={active}
 								onClick={() => onSelect(item.param)}
 								className={`${base} w-full whitespace-nowrap lg:whitespace-normal ${
 									active ? 'bg-accent text-accent-foreground' : 'bg-default text-foreground hover:bg-default-hover'
 								}`}
 							>
-								{item.name} <span className={active ? '' : 'text-muted'}>{item.count}</span>
+								<span>
+									{item.name} <span className={active ? '' : 'text-muted'}>{item.count}</span>
+								</span>
 								{item.stoppedCount > 0 && (
-									<span className='mt-1 block'>
-										<Chip size='sm' color='warning' variant={active ? 'primary' : 'soft'}>
-											В стоп-листе: {item.stoppedCount}
-										</Chip>
+									<span
+										aria-hidden='true'
+										className={`grid aspect-square min-w-5 shrink-0 place-items-center rounded-full px-1 text-xs leading-none font-medium ${
+											active ? 'bg-warning text-warning-foreground' : 'bg-warning-soft text-warning-soft-foreground'
+										}`}
+									>
+										{item.stoppedCount}
 									</span>
 								)}
 							</button>
