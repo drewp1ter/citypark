@@ -52,6 +52,9 @@ func (n *TelegramNotifier) send(ctx context.Context, o order.Order, chatID strin
 		return
 	}
 	text := telegram.FormatOrder(orderMessage(o))
+	if o.IikoStatus == "awaiting_approval" {
+		text += "\nПроверьте заказ в панели администратора и отправьте его в iiko."
+	}
 	if o.PromoCode != nil {
 		text += fmt.Sprintf("\n```\nПромокод: %s\nСкидка по промокоду: %s ₽\nИтого к оплате: %s ₽\n```", *o.PromoCode, o.Discount.String(), (o.Total + o.DeliveryPrice).String())
 	}

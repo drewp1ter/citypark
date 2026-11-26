@@ -19,7 +19,7 @@ import (
 // Callers append a WHERE clause.
 const selectOrders = `
 SELECT o.id, o.created_at, o.updated_at, o.status, o.comment, o.delivery_time, o.items_hash, o.payment_id, o.payment_uuid::text AS payment_uuid,
-       o.delivery_price_kopecks, o.iiko_order_id, o.account_id, o.subtotal_kopecks, o.discount_kopecks, o.promo_code, o.promo_code_id, o.promo_percentage,
+       o.delivery_price_kopecks, o.iiko_order_id, o.iiko_status, o.account_id, o.subtotal_kopecks, o.discount_kopecks, o.promo_code, o.promo_code_id, o.promo_percentage,
        u.id AS customer_id, COALESCE(o.contact_name, u.name) AS customer_name,
        COALESCE(o.contact_phone, u.phone, '') AS customer_phone,
        o.address_id, COALESCE(o.delivery_city, a.city) AS address_city,
@@ -63,6 +63,7 @@ func NewStore(db store.DBTX) *Store {
 
 // orderRow is one flat row of selectOrders.
 type orderRow struct {
+	IikoStatus      string        `db:"iiko_status"`
 	Subtotal        money.Kopecks `db:"subtotal_kopecks"`
 	Discount        money.Kopecks `db:"discount_kopecks"`
 	PromoCode       *string       `db:"promo_code"`
@@ -92,6 +93,7 @@ func (r orderRow) toOrder() Order {
 	o := Order{
 		Subtotal: r.Subtotal, Discount: r.Discount, PromoCode: r.PromoCode, PromoCodeID: r.PromoCodeID, PromoPercentage: r.PromoPercentage, Total: r.Subtotal - r.Discount,
 		ID:            r.ID,
+		IikoStatus:    r.IikoStatus,
 		AccountID:     r.AccountID,
 		CreatedAt:     r.CreatedAt,
 		UpdatedAt:     r.UpdatedAt,
@@ -174,10 +176,11 @@ func (s *Store) ByPaymentUUID(ctx context.Context, id string) (Order, error) {
 
 // ListFilter narrows List. Zero values mean "no condition".
 type ListFilter struct {
-	Query  string     // trimmed; matched against id, customer phone and customer name
-	From   *time.Time // inclusive: o.created_at >= From
-	Before *time.Time // exclusive: o.created_at < Before
-	Status string     // one of the Status* constants
+	AwaitingApproval bool
+	Query            string     // trimmed; matched against id, customer phone and customer name
+	From             *time.Time // inclusive: o.created_at >= From
+	Before           *time.Time // exclusive: o.created_at < Before
+	Status           string     // one of the Status* constants
 }
 
 var digitsOnly = regexp.MustCompile(`^\d+$`)
@@ -208,6 +211,9 @@ func (f ListFilter) where() (string, []any) {
 	}
 	if f.Before != nil {
 		add("o.created_at < $%d", *f.Before)
+	}
+	if f.AwaitingApproval {
+		conds = append(conds, "o.iiko_status = 'awaiting_approval'")
 	}
 	if f.Status != "" {
 		add("o.status = $%d", f.Status)
@@ -353,7 +359,7 @@ func (s *Store) SetIikoOrderID(ctx context.Context, id int64, iikoID string) err
 func (s *Store) MarkPaid(ctx context.Context, id int64, paymentID string) (changed bool, err error) {
 	res, err := s.db.ExecContext(ctx,
 		`UPDATE orders
-		 SET status = 'paid', payment_id = $2, updated_at = now()
+		 SET status = 'paid', iiko_status = 'awaiting_approval', payment_id = $2, updated_at = now()
 		 WHERE id = $1 AND status IN ('new', 'pending')`,
 		id, paymentID)
 	if err != nil {
@@ -416,7 +422,7 @@ func (s *Store) loadItems(ctx context.Context, orders []Order) error {
 	var items []Item
 	err := s.db.SelectContext(ctx, &items,
 		`SELECT oi.order_id, oi.product_id, p.name, c.name AS category_name, oi.amount, oi.offered_price_kopecks, oi.discount_kopecks, oi.promo_eligible,
-		        COALESCE(p.iiko_id, '') AS iiko_id
+		        COALESCE(p.iiko_id, '') AS iiko_id, p.is_on_stop_list, oi.iiko_comment, oi.excluded_from_iiko
 		 FROM order_items oi
 		 JOIN products p ON p.id = oi.product_id
 		 JOIN categories c ON c.id = p.category_id

@@ -58,6 +58,13 @@ func (s *Service) customerOrders(ctx context.Context, orders []Order) ([]custome
 				eligibility = PaymentRetryEligibility{Reason: "closed"}
 			}
 		}
+		o.IikoStatus = ""
+		o.Items = append([]Item{}, o.Items...)
+		for j := range o.Items {
+			o.Items[j].IikoComment = ""
+			o.Items[j].IsOnStopList = false
+			o.Items[j].ExcludedFromIiko = false
+		}
 		result[i] = customerOrder{Order: o, PaymentRetry: eligibility}
 	}
 	return result, nil

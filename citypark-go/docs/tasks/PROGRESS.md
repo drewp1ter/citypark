@@ -274,12 +274,15 @@ Implementation plan: [My addresses](MY_ADDRESSES.md). Tasks 96–98 form one bac
 ## Yandex ID
 
 - [ ] [110 Yandex ID sign-in](110-yandex-sign-in.md)
-  - Yandex integration and migration tests pass. The full suite reports an existing failure in `TestBookingConfig`, reproduced with the pre-change configuration code.
+  - Yandex integration and migration tests pass. The serial suite against PostgreSQL still fails in `config` and `hotelbooking`. The `TestBookingConfig` failure also reproduces before the Yandex changes.
 
 ## iiko stop list
 
 - [ ] [111 Sync iiko dish stop-list status](111-iiko-stop-list.md)
-  - Implemented terminal-group stop-list sync and the product API flag. The iiko client tests, build, and vet pass. The PostgreSQL integration test is blocked because the configured test database refused the connection.
+  - The iiko client and PostgreSQL snapshot tests pass. Formatting, build, and vet pass. The full serial suite still fails in `config` and `hotelbooking`.
 
 - [ ] [112 Receive iiko stop-list updates](112-iiko-stop-list-webhook.md) [backend 111]
-  - Receiver and background refresh implemented. The configured PostgreSQL server refused the test connection. Live iiko delivery requires deployment and webhook registration.
+  - The webhook receiver, worker, and PostgreSQL tests pass, including setting and clearing the saved marker with a simulated stop list. The full serial suite still fails in `config` and `hotelbooking`. Live iiko delivery requires deployment and webhook registration.
+
+- [ ] [113 Approve paid orders before iiko submission](113-iiko-order-approval.md)
+  - Verified migration 45 and the approval workflow against PostgreSQL. The app, order, iiko, and apidocs packages all pass with over 90% statement coverage. The full backend suite still has failures in the unchanged config and hotelbooking packages.

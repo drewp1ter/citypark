@@ -62,6 +62,7 @@ type DeliveryRMSDiscount struct {
 }
 
 type DeliveryItem struct {
+	Comment    string  `json:"comment,omitempty"`
 	PositionID string  `json:"positionId,omitempty"`
 	Type       string  `json:"type"` // "Product"
 	ProductID  string  `json:"productId"`
@@ -134,6 +135,20 @@ func Permanent(err error) bool {
 	}
 	var se *StatusError
 	return errors.As(err, &se) && se.Status == http.StatusBadRequest
+}
+
+// DeliveryRateLimited identifies requests explicitly refused before creation.
+func DeliveryRateLimited(err error) bool {
+	var se *StatusError
+	return errors.As(err, &se) && se.Endpoint == "1/deliveries/create" && se.Status == http.StatusTooManyRequests
+}
+
+// DeliveryRejected identifies a definitive create or command failure.
+func DeliveryRejected(err error) bool {
+	var de *DeliveryError
+	var se *StatusError
+	return errors.As(err, &de) ||
+		(errors.As(err, &se) && se.Endpoint == "1/deliveries/create" && se.Status == http.StatusBadRequest)
 }
 
 // CreateDelivery sends the order to deliveries/create on the given terminal group and waits until it is created.

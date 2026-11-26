@@ -2974,6 +2974,8 @@ Lists orders, newest first. The filters are optional and combine with AND.
 | `to` | string | no | `YYYY-MM-DD`, the last day, inclusive, not before `from` |
 | `status` | string | no | `new`, `pending`, `paid`, `canceled` or `confirmed` |
 
+Use `iikoStatus=awaiting_approval` to filter the admin list to orders awaiting review.
+
 Example: `GET /orders?q=%D0%B8%D0%B2%D0%B0%D0%BD&from=2026-10-21&to=2026-10-21&status=paid`.
 
 **Response 200**
@@ -3058,6 +3060,33 @@ The `errors` object of a search 400 lists every invalid field:
 
 Search by name/phone uses checkout snapshots, so editing the contact profile does not change historical matches. Response fields retain their existing shape. Responses send `Cache-Control: private, no-store`.
 
+#### POST /orders/{id}/approve
+
+Role **admin**. Submit the reviewed selection for a paid order. Use `{}` to send all items without kitchen comments.
+
+```json
+{"excludedProductIds":[13],"itemComments":[{"productId":12,"comment":"Без лука"}]}
+```
+
+Each ID must identify a unique line in this order. At least one line must be included. Comments apply to included
+lines only and can contain up to 255 characters after trimming. An exclusion applies to all units of the line.
+The original payment and order totals are preserved. The iiko payment and promo discount reflect the included food.
+
+**200** returns the admin order. The first approval records `iikoStatus: "queued"`. Subsequent approvals return the
+recorded selection and current status. Poll `GET /orders/{id}` while the state is `queued` or `sending`.
+
+The admin order may include `iikoStatus` with one of `awaiting_approval`, `queued`, `sending`, `created`, `failed`,
+or `review`. Only orders first paid after rollout receive the approval state. The last synchronized stop list is
+reported through `items[].isOnStopList` when true. Approved lines can include `iikoComment` or `excludedFromIiko`.
+Staff should check iikoFront when the state is `review`.
+
+- **400** `Некорректный JSON`, `Некорректный список исключённых блюд.`, `Для отправки выберите хотя бы одно блюдо.`,
+  `Некорректный список комментариев к блюдам.`, or validation errors keyed by `itemComments.<productId>`.
+- **401/403** authentication or admin role required.
+- **404** order does not exist.
+- **409** `Заказ недоступен для отправки в iiko.` or `Не удалось подготовить заказ для iiko.`
+- **503** `Отправка в iiko недоступна.`
+
 #### POST /orders/{id}/items
 
 Adds a product to an order, or changes the amount of a product that is already in it.
@@ -3139,6 +3168,7 @@ The updated order, in the same format as the admin response of `GET /orders/{id}
 | 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
 | 404 | the order does not exist or `id` is not a valid id | `Не найдено` |
 | 503 | the product is hidden in iiko | `Заказ блюда «{name}» временно недоступен.` |
+| 409 | paid order managed by the approval workflow | `Нельзя изменять оплаченный заказ для iiko.` |
 
 **Notes**
 
@@ -3170,6 +3200,7 @@ No body.
 | 401 | no token or invalid token | `Требуется авторизация` |
 | 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
 | 404 | `id` or `productId` is not a valid id | `Не найдено` |
+| 409 | paid order managed by the approval workflow | `Нельзя изменять оплаченный заказ для iiko.` |
 
 **Notes**
 
@@ -3200,6 +3231,7 @@ No body.
 | 401 | no token or invalid token | `Требуется авторизация` |
 | 403 | the token belongs to a user who is not an admin | `Недостаточно прав` |
 | 404 | `id` is not a valid id | `Не найдено` |
+| 409 | paid order managed by the approval workflow | `Нельзя изменять оплаченный заказ для iiko.` |
 
 **Notes**
 
@@ -3437,7 +3469,7 @@ The body is always the plain text `FAIL`. Moneta repeats the call later after an
 
 **Notes**
 
-A valid callback sets the order to `paid`, submits it to iiko, and notifies the single staff chat once (order details followed by a separate phone message). The `confirmed` status remains readable for historical orders only. Repeated callbacks, and callbacks for an order that is already `paid`, `confirmed` or `canceled`, answer `SUCCESS` and change nothing. The signature is checked before the order is looked up, so an unsigned request gets 403 even for an unknown order. The route has no working-hours limit.
+A valid callback sets the order to `paid` and `awaiting_approval` for iiko, and notifies the single staff chat once (order details followed by a separate phone message). The `confirmed` status remains readable for historical orders only. Repeated callbacks, and callbacks for an order that is already `paid`, `confirmed` or `canceled`, answer `SUCCESS` and change nothing. The signature is checked before the order is looked up, so an unsigned request gets 403 even for an unknown order. The route has no working-hours limit.
 
 #### GET /webhooks/moneta
 
@@ -4010,6 +4042,10 @@ A 200 response contains `status` (`eligible`, `closed`, or `canceled`),
 `reservationNumber`, `checkIn`, and `checkOut`. A 202 response from POST
 contains `{"status":"pending"}`. Read the status again before showing success.
 Invalid links return 404. A status check during an outage returns 503.
+
+With `TELEGRAM_HOTEL_CHAT_ID` configured, a cancellation confirmed by
+1C through either endpoint queues a staff alert in the booking Telegram chat.
+Repeated status checks and cancellations reuse the same outbox entry.
 
 Enable links after deploying the 1C cancellation routes and verifying them with
 the restricted service role. Configure a stable, randomly generated

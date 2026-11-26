@@ -3,7 +3,6 @@ package app_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -113,7 +112,7 @@ func TestPromoIikoRetry(t *testing.T) {
 		payloads = append(payloads, body.Order)
 		if len(payloads) == 1 {
 			db.MustExec(`UPDATE products SET price_kopecks=1`)
-			w.WriteHeader(500)
+			w.WriteHeader(429)
 			return
 		}
 		io.WriteString(w, `{"orderInfo":{"id":"iiko-order-1","creationStatus":"Success"}}`)
@@ -123,8 +122,7 @@ func TestPromoIikoRetry(t *testing.T) {
 	s := iikoSettings()
 	s.PromoDiscountTypeID = promoRMS
 	n := app.NewIikoOrders(c, db, &fakeSender{}, alertChat, s, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	n.OrderPaid(context.Background(), o)
-	n.Wait()
+	processApprovedOrder(t, db, n, o)
 	if len(payloads) != 2 || !reflect.DeepEqual(payloads[0], payloads[1]) {
 		t.Fatal(payloads)
 	}
@@ -223,7 +221,6 @@ func TestPromoConfiguration(t *testing.T) {
 		t.Fatal(res)
 	}
 	a.Notifier.Wait()
-	a.IikoOrders.Wait()
 }
 func TestPromoIntegrationFailure(t *testing.T) {
 	db := testutil.NewDB(t)
@@ -231,14 +228,18 @@ func TestPromoIntegrationFailure(t *testing.T) {
 	o := promoOrder()
 	o.ID = saved.ID
 	s := iikoSettings()
-	creator, sender := runIikoOrders(t, db, s, o)
-	if len(creator.calls()) != 0 || len(sender.calls()) != 1 {
-		t.Fatal("missing RMS silently dispatched")
+	prepare := func(settings app.IikoOrderSettings) error {
+		n := app.NewIikoOrders(&fakeCreator{}, db, &fakeSender{}, alertChat, settings, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		_, err := n.Prepare(o)
+		return err
+	}
+	if err := prepare(s); err == nil {
+		t.Fatal("accepted missing RMS config")
 	}
 	s.PromoDiscountTypeID = promoRMS
-	creator, sender = runIikoOrders(t, db, s, o, errors.New("unavailable"))
-	if len(creator.calls()) != 3 || len(sender.calls()) != 1 {
-		t.Fatal("retry/alert behavior")
+	creator, sender := runIikoOrders(t, db, s, o, &iiko.StatusError{Endpoint: "1/deliveries/create", Status: 429}, nil)
+	if len(creator.calls()) != 2 || len(sender.calls()) != 0 {
+		t.Fatal("retry behavior")
 	}
 	for _, d := range creator.calls() {
 		if d.DiscountsInfo == nil || d.DiscountsInfo.Discounts[0].Sum != 1.01 || d.Payments[0].Sum != 549 {
@@ -248,13 +249,42 @@ func TestPromoIntegrationFailure(t *testing.T) {
 	for i := range o.Items {
 		o.Items[i].PromoEligible = false
 	}
-	creator, sender = runIikoOrders(t, db, s, o)
-	if len(creator.calls()) != 0 || len(sender.calls()) != 1 {
-		t.Fatal("missing eligibility accepted")
+	if err := prepare(s); err == nil {
+		t.Fatal("accepted missing promo eligibility")
 	}
 	s.TerminalGroupID = ""
-	creator, sender = runIikoOrders(t, db, s, o)
-	if len(creator.calls()) != 0 || len(sender.calls()) != 1 {
-		t.Fatal("missing transport config not alerted")
+	if err := prepare(s); err == nil {
+		t.Fatal("accepted missing transport config")
+	}
+}
+
+func TestApprovedIikoPayloadOmitsExcludedDish(t *testing.T) {
+	for _, addr := range []*order.Address{nil, {City: "Белореченск", Address: "Тест, 1"}} {
+		o := promoOrder()
+		o.Address = addr
+		o.Comment = "Позвоните"
+		o.Items[0].ExcludedFromIiko = true
+		o.Items[1].IikoComment = "Без лука"
+		o.Items[3].IikoComment = "Отдельно"
+		s := iikoSettings()
+		s.PromoDiscountTypeID = promoRMS
+		d, err := app.DeliveryOrderForTest(o, s, "guid")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(d.Items) != 3 || d.Items[0].ProductID != "p2" || d.Items[0].Comment != "Без лука" ||
+			d.Items[1].Comment != "" || d.Items[2].Comment != "Отдельно" {
+			t.Fatalf("items = %+v", d.Items)
+		}
+		discount := d.DiscountsInfo.Discounts[0]
+		if d.Payments[0].Sum != 249.61 || discount.Sum != 0.40 ||
+			!reflect.DeepEqual(discount.SelectivePositions, []string{d.Items[0].PositionID, d.Items[2].PositionID}) ||
+			!strings.Contains(d.Comment, o.Comment) {
+			t.Fatalf("delivery = %+v, discount = %+v", d, discount)
+		}
+		raw, err := json.Marshal(d.Items[1])
+		if err != nil || strings.Contains(string(raw), `"comment"`) {
+			t.Fatalf("blank comment serialized: %s, %v", raw, err)
+		}
 	}
 }

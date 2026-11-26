@@ -3,16 +3,18 @@ package app
 import (
 	"context"
 	"crypto/rand"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 
+	"github.com/drewp1ter/citypark-go/internal/httpx"
 	"github.com/drewp1ter/citypark-go/internal/iiko"
 	"github.com/drewp1ter/citypark-go/internal/order"
 )
@@ -32,7 +34,7 @@ type IikoOrderSettings struct {
 	Delays                                          []time.Duration // waits before each retry
 }
 
-// IikoOrders implements order.Notifier: a paid order is created in iiko in a goroutine.
+// IikoOrders creates deliveries from approved submissions.
 type IikoOrders struct {
 	creator   DeliveryCreator
 	db        *sqlx.DB
@@ -40,10 +42,7 @@ type IikoOrders struct {
 	alertChat string
 	settings  IikoOrderSettings
 	log       *slog.Logger
-	wg        sync.WaitGroup
 }
-
-var _ order.Notifier = (*IikoOrders)(nil)
 
 func NewIikoOrders(c DeliveryCreator, db *sqlx.DB, alerts MessageSender, alertChat string, s IikoOrderSettings, log *slog.Logger) *IikoOrders {
 	n := &IikoOrders{creator: c, db: db, alerts: alerts, alertChat: alertChat, settings: s, log: log}
@@ -57,61 +56,48 @@ func (n *IikoOrders) configured() bool {
 	return n.settings.TerminalGroupID != "" && n.settings.PaymentTypeID != ""
 }
 
-// Wait blocks until all started sends have finished. Used on shutdown and in tests.
-func (n *IikoOrders) Wait() { n.wg.Wait() }
-
-// OrderPending does nothing: an order is sent to iiko when it is paid.
-func (n *IikoOrders) OrderPending(ctx context.Context, o order.Order) {}
-
-func (n *IikoOrders) OrderPaid(ctx context.Context, o order.Order) {
-	if !n.configured() && o.PromoCode == nil {
-		return
+// Prepare snapshots the delivery and all generated identifiers before the job is committed.
+func (n *IikoOrders) Prepare(o order.Order) ([]byte, error) {
+	if !n.configured() {
+		return nil, httpx.NewError(http.StatusServiceUnavailable, "Отправка в iiko недоступна.")
 	}
-	n.wg.Add(1)
-	go func() {
-		defer n.wg.Done()
-		ctx = context.WithoutCancel(ctx)
-		if !n.configured() {
-			n.fail(ctx, o, fmt.Errorf("iiko orders are not configured"))
-			return
-		}
-		n.send(ctx, o)
-	}()
-}
-
-// send creates the order in iiko. The iiko order id is made once, so every retry sends the same
-// order and iiko cannot create a second one.
-func (n *IikoOrders) send(ctx context.Context, o order.Order) {
 	d, err := deliveryOrder(o, n.settings, newUUID())
 	if err != nil {
-		n.fail(ctx, o, err)
-		return
+		n.log.Error("prepare iiko delivery", "order_id", o.ID, "error", err)
+		return nil, httpx.NewError(http.StatusConflict, "Не удалось подготовить заказ для iiko.")
 	}
+	return json.Marshal(d)
+}
 
-	for i := 0; i <= len(n.settings.Delays); i++ {
+func (n *IikoOrders) submit(ctx context.Context, id int64, d iiko.DeliveryOrder) (string, string, error) {
+	for i := 0; ; i++ {
 		if i > 0 {
-			time.Sleep(n.settings.Delays[i-1])
+			timer := time.NewTimer(n.settings.Delays[i-1])
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return "review", "", ctx.Err()
+			case <-timer.C:
+			}
 		}
 		res, err := n.attempt(ctx, d)
-		if err != nil {
-			n.log.Error("iiko delivery attempt failed", "order_id", o.ID, "iiko_order_id", d.ID, "error", err)
+		if err == nil && res.ID != "" {
+			return "created", res.ID, nil
 		}
+		if err == nil {
+			err = errors.New("iiko returned no delivery ID")
+		}
+		n.log.Error("iiko delivery attempt failed", "order_id", id, "iiko_order_id", d.ID, "error", err)
 		switch {
-		case err == nil:
-			if err := order.NewStore(n.db).SetIikoOrderID(ctx, o.ID, res.ID); err != nil {
-				n.log.Error("save iiko order id failed", "order_id", o.ID, "iiko_id", res.ID, "error", err)
+		case iiko.DeliveryRateLimited(err):
+			if i == len(n.settings.Delays) {
+				return "failed", "", err
 			}
-			n.log.Info("order created in iiko", "order_id", o.ID, "iiko_id", res.ID)
-			return
-		case errors.Is(err, iiko.ErrDeliveryPending):
-			// iiko may still create it, so a retry could make a duplicate.
-			n.alert(ctx, o, fmt.Sprintf("Заказ №%d отправлен в iiko, но создание не подтверждено. Проверьте его в iikoFront.", o.ID))
-			return
-		case iiko.Permanent(err) || i == len(n.settings.Delays):
-			n.fail(ctx, o, err)
-			return
+		case iiko.DeliveryRejected(err):
+			return "failed", "", err
+		default:
+			return "review", "", err
 		}
-		n.log.Warn("iiko delivery failed, will retry", "order_id", o.ID, "attempt", i+1, "error", err)
 	}
 }
 
@@ -189,29 +175,39 @@ func deliveryOrder(o order.Order, s IikoOrderSettings, id string) (iiko.Delivery
 	d.Comment = strings.Join(lines, "\n")
 
 	positions := []string{}
+	total, discount := o.Total, o.Discount
 	for _, it := range o.Items {
+		if it.ExcludedFromIiko {
+			total -= it.OfferedPrice.Mul(it.Amount) - it.Discount
+			discount -= it.Discount
+		}
+	}
+	for _, it := range o.Items {
+		if it.ExcludedFromIiko {
+			continue
+		}
 		if it.IikoID == "" {
 			return iiko.DeliveryOrder{}, fmt.Errorf("product %d has no iiko id", it.ProductID)
 		}
 		d.Items = append(d.Items, iiko.DeliveryItem{
-			PositionID: newUUID(), Type: "Product", ProductID: it.IikoID, Amount: float64(it.Amount), Price: it.OfferedPrice.Rubles(),
+			Comment: it.IikoComment, PositionID: newUUID(), Type: "Product", ProductID: it.IikoID, Amount: float64(it.Amount), Price: it.OfferedPrice.Rubles(),
 		})
 		if it.PromoEligible {
 			positions = append(positions, d.Items[len(d.Items)-1].PositionID)
 		}
 	}
-	if o.Discount > 0 {
+	if discount > 0 {
 		if o.PromoCode == nil || s.PromoDiscountTypeID == "" {
 			return iiko.DeliveryOrder{}, fmt.Errorf("promo RMS discount is not configured")
 		}
 		if len(positions) == 0 {
 			return iiko.DeliveryOrder{}, fmt.Errorf("promo order has no saved eligible positions")
 		}
-		d.DiscountsInfo = &iiko.DeliveryDiscountsInfo{Discounts: []iiko.DeliveryRMSDiscount{{Type: "RMS", DiscountTypeID: s.PromoDiscountTypeID, Sum: o.Discount.Rubles(), SelectivePositions: positions}}}
+		d.DiscountsInfo = &iiko.DeliveryDiscountsInfo{Discounts: []iiko.DeliveryRMSDiscount{{Type: "RMS", DiscountTypeID: s.PromoDiscountTypeID, Sum: discount.Rubles(), SelectivePositions: positions}}}
 	}
 	d.Payments = []iiko.DeliveryPayment{{
 		PaymentTypeKind:       s.PaymentTypeKind,
-		Sum:                   o.Total.Rubles(),
+		Sum:                   total.Rubles(),
 		PaymentTypeID:         s.PaymentTypeID,
 		IsProcessedExternally: true,
 	}}

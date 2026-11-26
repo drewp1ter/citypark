@@ -29,6 +29,7 @@ import (
 const validationMessage = "Ошибка валидации, пожалуйста проверьте введенные вами данные"
 
 type HandlerOptions struct {
+	PrepareIiko     func(Order) ([]byte, error)
 	Hours           HoursSource
 	DefaultPageSize int
 	// OnCheckFailure is called once with a Check* reason for every failed MONETA CHECK. nil = no reporting.
@@ -81,6 +82,7 @@ func (h *Handler) routes(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(h.tokens.RequireRole(auth.RoleAdmin))
 		r.Get("/orders", httpx.Handle(h.list))
+		r.Post("/orders/{id}/approve", httpx.Handle(h.approve))
 		r.Post("/orders/{id}/items", httpx.Handle(h.addItem))
 		r.Delete("/orders/{id}/items/{productId}", httpx.Handle(h.removeItem))
 		r.Delete("/orders/{id}", httpx.Handle(h.delete))
@@ -194,6 +196,12 @@ func (h *Handler) parseFilter(r *http.Request) (ListFilter, error) {
 		}
 	}
 
+	if v := qs.Get("iikoStatus"); v != "" {
+		if v != "awaiting_approval" {
+			fields["iikoStatus"] = "недопустимое значение"
+		}
+		f.AwaitingApproval = v == "awaiting_approval"
+	}
 	if v := qs.Get("status"); v != "" {
 		if !slices.Contains([]string{StatusNew, StatusPending, StatusPaid, StatusCanceled, StatusConfirmed}, v) {
 			fields["status"] = "недопустимое значение"
@@ -327,7 +335,9 @@ func (h *Handler) addItem(w http.ResponseWriter, r *http.Request) error {
 	if products[0].IsHidden {
 		return checkProductBlock(products[0])
 	}
-	err = orders.UpsertItem(ctx, id, InsertItem{ProductID: in.ProductID, Amount: in.Amount, OfferedPrice: products[0].Price})
+	err = h.editLegacyOrder(ctx, id, func(orders *Store) error {
+		return orders.UpsertItem(ctx, id, InsertItem{ProductID: in.ProductID, Amount: in.Amount, OfferedPrice: products[0].Price})
+	})
 	if err != nil {
 		return err
 	}
@@ -348,7 +358,9 @@ func (h *Handler) removeItem(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if err := NewStore(h.svc.db).RemoveItem(r.Context(), id, productID); err != nil {
+	if err := h.editLegacyOrder(r.Context(), id, func(orders *Store) error {
+		return orders.RemoveItem(r.Context(), id, productID)
+	}); err != nil {
 		return err
 	}
 	httpx.NoContent(w)
@@ -360,7 +372,9 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	if err := NewStore(h.svc.db).Delete(r.Context(), id); err != nil {
+	if err := h.editLegacyOrder(r.Context(), id, func(orders *Store) error {
+		return orders.Delete(r.Context(), id)
+	}); err != nil {
 		return err
 	}
 	httpx.NoContent(w)

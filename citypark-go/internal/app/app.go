@@ -42,7 +42,7 @@ import (
 	"github.com/drewp1ter/citypark-go/internal/workinghours"
 )
 
-// App is the assembled application. Notifier and IikoOrders are exposed so the caller can wait for pending sends.
+// App is the assembled application, including its background workers.
 type App struct {
 	Handler       http.Handler
 	Notifier      *TelegramNotifier
@@ -99,7 +99,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 	}, log)
 
 	hub := live.NewHub(log)
-	orders := order.NewService(db, c, Notifiers{notifier, iikoOrders, hub}, payments)
+	orders := order.NewService(db, c, Notifiers{notifier, hub}, payments)
 	if cfg.Iiko.TerminalGroupID != "" && cfg.Iiko.PaymentTypeID != "" {
 		orders.ConfigurePromo(cfg.Iiko.PromoDiscountTypeID)
 	}
@@ -162,6 +162,7 @@ func New(cfg config.Config, db *sqlx.DB, log *slog.Logger, c clock.Clock, middle
 		live.NewHandler(hub, tokens, log).Routes(r)
 		order.NewHandler(orders, tokens, order.HandlerOptions{
 			Hours:           hours,
+			PrepareIiko:     iikoOrders.Prepare,
 			DefaultPageSize: cfg.DefaultPageSize,
 			OnCheckFailure:  monitoring.CaptureCheckFailure,
 		}, adapter.Required(true), adapter.Optional).Routes(r)

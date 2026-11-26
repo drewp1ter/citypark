@@ -66,6 +66,9 @@ func (e *svcEnv) wantPaidOnce(t *testing.T, id int64) {
 	if o.Status != StatusPaid || o.PaymentID != "555" {
 		t.Errorf("Status = %q, PaymentID = %q; want paid and 555", o.Status, o.PaymentID)
 	}
+	if o.IikoStatus != "awaiting_approval" {
+		t.Errorf("iiko status = %q, want awaiting_approval", o.IikoStatus)
+	}
 	if len(e.notifier.paid) != 1 {
 		t.Fatalf("OrderPaid calls = %d, want 1", len(e.notifier.paid))
 	}

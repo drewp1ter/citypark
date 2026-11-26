@@ -102,6 +102,10 @@ func run() error {
 		defer func() { stop(); <-webhookDone }()
 	}
 
+	iikoOrdersDone := make(chan struct{})
+	go func() { defer close(iikoOrdersDone); a.IikoOrders.Run(ctx) }()
+	defer func() { stop(); <-iikoOrdersDone }()
+
 	bookingDone := make(chan struct{})
 	if a.BookingWorker != nil {
 		go func() { defer close(bookingDone); a.BookingWorker.Run(ctx) }()
@@ -130,6 +134,5 @@ func run() error {
 		return fmt.Errorf("shutdown: %w", err)
 	}
 	a.Notifier.Wait()
-	a.IikoOrders.Wait()
 	return nil
 }

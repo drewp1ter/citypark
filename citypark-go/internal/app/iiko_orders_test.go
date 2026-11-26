@@ -196,8 +196,7 @@ func runIikoOrders(t *testing.T, db *sqlx.DB, s app.IikoOrderSettings, o order.O
 	creator := &fakeCreator{answers: answers}
 	sender := &fakeSender{}
 	n := app.NewIikoOrders(creator, db, sender, alertChat, s, slog.New(slog.NewTextHandler(io.Discard, nil)))
-	n.OrderPaid(context.Background(), o)
-	n.Wait()
+	processApprovedOrder(t, db, n, o)
 	return creator, sender
 }
 
@@ -236,7 +235,7 @@ func TestIikoOrdersSuccess(t *testing.T) {
 func TestIikoOrdersRetry(t *testing.T) {
 	db := testutil.NewDB(t)
 	o := iikoFixture(t, db, "iiko-a")
-	fail := &iiko.StatusError{Endpoint: "1/deliveries/create", Status: 500}
+	fail := &iiko.StatusError{Endpoint: "1/deliveries/create", Status: 429}
 	creator, sender := runIikoOrders(t, db, iikoSettings(), o, fail, fail, nil)
 
 	calls := creator.calls()
@@ -257,7 +256,7 @@ func TestIikoOrdersRetry(t *testing.T) {
 func TestIikoOrdersGivesUp(t *testing.T) {
 	db := testutil.NewDB(t)
 	o := iikoFixture(t, db, "iiko-a")
-	fail := &iiko.StatusError{Endpoint: "1/deliveries/create", Status: 500}
+	fail := &iiko.StatusError{Endpoint: "1/deliveries/create", Status: 429}
 	creator, sender := runIikoOrders(t, db, iikoSettings(), o, fail)
 
 	if n := len(creator.calls()); n != 3 {
@@ -285,9 +284,10 @@ func TestIikoOrdersPermanent(t *testing.T) {
 func TestIikoOrdersLogsFailedAttempt(t *testing.T) {
 	creator := &fakeCreator{answers: []error{&iiko.DeliveryError{Reason: "Rejected"}}}
 	var buf bytes.Buffer
-	n := app.NewIikoOrders(creator, nil, &fakeSender{}, "", iikoSettings(), slog.New(slog.NewJSONHandler(&buf, nil)))
-	n.OrderPaid(context.Background(), fullOrder())
-	n.Wait()
+	db := testutil.NewDB(t)
+	o := iikoFixture(t, db, "iiko-a")
+	n := app.NewIikoOrders(creator, db, &fakeSender{}, "", iikoSettings(), slog.New(slog.NewJSONHandler(&buf, nil)))
+	processApprovedOrder(t, db, n, o)
 	calls := creator.calls()
 	if len(calls) != 1 {
 		t.Fatalf("attempts = %d, want 1", len(calls))
@@ -301,7 +301,7 @@ func TestIikoOrdersLogsFailedAttempt(t *testing.T) {
 	if err := json.NewDecoder(&buf).Decode(&entry); err != nil {
 		t.Fatal(err)
 	}
-	if entry.Message != "iiko delivery attempt failed" || entry.OrderID != 7 || entry.IikoID != calls[0].ID || entry.Error != "iiko: delivery not created: Rejected" {
+	if entry.Message != "iiko delivery attempt failed" || entry.OrderID != o.ID || entry.IikoID != calls[0].ID || entry.Error != "iiko: delivery not created: Rejected" {
 		t.Fatalf("log = %+v", entry)
 	}
 }
@@ -321,14 +321,9 @@ func TestIikoOrdersPending(t *testing.T) {
 func TestIikoOrdersMissingIikoID(t *testing.T) {
 	db := testutil.NewDB(t)
 	o := iikoFixture(t, db, "iiko-a", "")
-	creator, sender := runIikoOrders(t, db, iikoSettings(), o)
-
-	if n := len(creator.calls()); n != 0 {
-		t.Errorf("calls = %d, want 0", n)
-	}
-	calls := sender.calls()
-	if len(calls) != 1 || calls[0].ChatID != alertChat || !regexp.MustCompile(`^Заказ №\d+ не создан в iiko: product \d+ has no iiko id\. `).MatchString(calls[0].Text) {
-		t.Errorf("alerts = %v", calls)
+	n := app.NewIikoOrders(&fakeCreator{}, db, &fakeSender{}, alertChat, iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if _, err := n.Prepare(o); err == nil {
+		t.Fatal("accepted an order with a missing iiko product ID")
 	}
 }
 
@@ -338,8 +333,7 @@ func TestIikoOrdersAlertSendError(t *testing.T) {
 	creator := &fakeCreator{answers: []error{&iiko.DeliveryError{Reason: "x"}}}
 	sender := &fakeSender{err: errors.New("telegram down")}
 	n := app.NewIikoOrders(creator, db, sender, alertChat, iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	n.OrderPaid(context.Background(), o)
-	n.Wait() // must not panic or hang
+	processApprovedOrder(t, db, n, o) // must not panic or hang
 	if len(sender.calls()) != 1 {
 		t.Errorf("send attempts = %d, want 1", len(sender.calls()))
 	}
@@ -351,37 +345,41 @@ func TestIikoOrdersEmptyAlertChat(t *testing.T) {
 	creator := &fakeCreator{answers: []error{&iiko.DeliveryError{Reason: "x"}}}
 	sender := &fakeSender{}
 	n := app.NewIikoOrders(creator, db, sender, "", iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	n.OrderPaid(context.Background(), o)
-	n.Wait()
+	processApprovedOrder(t, db, n, o)
 	if len(sender.calls()) != 0 {
 		t.Errorf("alerts = %v, want none", sender.calls())
 	}
 }
 
 func TestIikoOrdersNotConfigured(t *testing.T) {
-	db := testutil.NewDB(t)
-	o := iikoFixture(t, db, "iiko-a")
 	s := iikoSettings()
 	s.TerminalGroupID = ""
-	creator, sender := runIikoOrders(t, db, s, o)
-
-	if n := len(creator.calls()); n != 0 {
-		t.Errorf("calls = %d, want 0", n)
-	}
-	if len(sender.calls()) != 0 {
-		t.Errorf("alerts = %v, want none", sender.calls())
+	n := app.NewIikoOrders(&fakeCreator{}, nil, &fakeSender{}, alertChat, s, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if _, err := n.Prepare(fullOrder()); err == nil {
+		t.Fatal("accepted approval with missing iiko configuration")
 	}
 }
 
-func TestIikoOrdersIgnoresOtherEvents(t *testing.T) {
+func TestIikoOrdersIgnoresUnapprovedOrders(t *testing.T) {
 	db := testutil.NewDB(t)
 	o := iikoFixture(t, db, "iiko-a")
+	db.MustExec("UPDATE orders SET iiko_status = 'awaiting_approval' WHERE id = $1", o.ID)
 	creator := &fakeCreator{}
 	n := app.NewIikoOrders(creator, db, &fakeSender{}, alertChat, iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
-	n.OrderPending(context.Background(), o)
-	n.Wait()
-	if len(creator.calls()) != 0 {
-		t.Errorf("calls = %d, want 0", len(creator.calls()))
+	if worked, err := n.ProcessIikoOrderForTest(context.Background()); worked || err != nil || len(creator.calls()) != 0 {
+		t.Fatalf("unapproved order processed: worked=%v, err=%v, calls=%v", worked, err, creator.calls())
+	}
+}
+
+func processApprovedOrder(t *testing.T, db *sqlx.DB, n *app.IikoOrders, o order.Order) {
+	t.Helper()
+	payload, err := n.Prepare(o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db.MustExec("UPDATE orders SET iiko_status = 'queued', iiko_payload = $2 WHERE id = $1", o.ID, payload)
+	if worked, err := n.ProcessIikoOrderForTest(context.Background()); !worked || err != nil {
+		t.Fatalf("process approved order: worked=%v, err=%v", worked, err)
 	}
 }
 
@@ -412,5 +410,24 @@ func TestNotifiersFanOut(t *testing.T) {
 			t.Errorf("log = %v, want %v", log, want)
 			break
 		}
+	}
+}
+
+func TestIikoOrdersRecoversExpiredSendForReview(t *testing.T) {
+	db := testutil.NewDB(t)
+	o := iikoFixture(t, db, "iiko-a")
+	db.MustExec(`UPDATE orders SET iiko_status='sending', iiko_send_deadline=now()-interval '1 minute' WHERE id=$1`, o.ID)
+	creator := &fakeCreator{}
+	sender := &fakeSender{}
+	worker := app.NewIikoOrders(creator, db, sender, alertChat, iikoSettings(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	if worked, err := worker.ProcessIikoOrderForTest(context.Background()); !worked || err != nil {
+		t.Fatalf("recover send: worked=%v err=%v", worked, err)
+	}
+	var state string
+	if err := db.Get(&state, "SELECT iiko_status FROM orders WHERE id=$1", o.ID); err != nil {
+		t.Fatal(err)
+	}
+	if state != "review" || len(creator.calls()) != 0 || len(sender.calls()) != 1 {
+		t.Fatalf("recovered state=%s, creates=%d, alerts=%d", state, len(creator.calls()), len(sender.calls()))
 	}
 }

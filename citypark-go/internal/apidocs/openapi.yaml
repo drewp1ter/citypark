@@ -913,6 +913,10 @@ components:
       type: object
       required: [id, createdAt, updatedAt, status, comment, deliveryTime, subtotal, discount, promoCode, total, deliveryPrice, customer, address, items]
       properties:
+        iikoStatus:
+          type: string
+          enum: [awaiting_approval, queued, sending, created, failed, review]
+          description: Admin submission state for orders first paid after approval rollout.
         subtotal:
           type: number
           description: Original food subtotal, in rubles.
@@ -977,6 +981,15 @@ components:
             type: object
             required: [productId, name, categoryName, amount, offeredPrice, discount]
             properties:
+              isOnStopList:
+                type: boolean
+                description: Present when the product is on the latest synchronized stop list.
+              iikoComment:
+                type: string
+                description: Approved kitchen comment in the admin response.
+              excludedFromIiko:
+                type: boolean
+                description: Present when the admin excluded this line from the iiko submission.
               productId:
                 type: integer
               name:
@@ -3835,6 +3848,12 @@ paths:
           schema:
             type: string
             format: date
+        - name: iikoStatus
+          in: query
+          schema:
+            type: string
+            enum: [awaiting_approval]
+          description: Filter to orders awaiting approval.
         - name: status
           in: query
           required: false
@@ -3954,6 +3973,71 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: Нельзя изменять оплаченный заказ для iiko.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /orders/{id}/approve:
+    post:
+      summary: Approve a paid order for iiko submission
+      description: Admin only. The first approval saves the selection and queues the order. Subsequent approvals return the recorded order.
+      tags: [orders]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                excludedProductIds:
+                  type: array
+                  uniqueItems: true
+                  items:
+                    type: integer
+                itemComments:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, comment]
+                    properties:
+                      productId:
+                        type: integer
+                      comment:
+                        type: string
+                        maxLength: 255
+      responses:
+        '200':
+          description: Current admin order including the recorded approval.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Invalid JSON, exclusion, or comment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required.
+        '403':
+          description: Admin role required.
+        '404':
+          description: Order not found.
+        '409':
+          description: Order is ineligible or cannot be prepared for iiko.
+        '503':
+          description: iiko submission is unavailable.
   /orders/{id}/payment-retry:
     post:
       summary: Retry payment for an owned unpaid order
@@ -4046,7 +4130,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '409':
-          description: Нельзя изменять состав заказа с промокодом.
+          description: Нельзя изменять состав заказа с промокодом. / Нельзя изменять оплаченный заказ для iiko.
           content:
             application/json:
               schema:
@@ -4079,7 +4163,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '409':
-          description: Нельзя изменять состав заказа с промокодом.
+          description: Нельзя изменять состав заказа с промокодом. / Нельзя изменять оплаченный заказ для iiko.
           content:
             application/json:
               schema:

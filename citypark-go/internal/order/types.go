@@ -32,18 +32,22 @@ type Address struct {
 }
 
 type Item struct {
-	Discount      money.Kopecks `db:"discount_kopecks" json:"discount"`
-	PromoEligible bool          `db:"promo_eligible" json:"-"`
-	OrderID       int64         `db:"order_id" json:"-"`
-	ProductID     int64         `db:"product_id" json:"productId"`
-	Name          string        `db:"name" json:"name"`
-	CategoryName  string        `db:"category_name" json:"categoryName"`
-	Amount        int           `db:"amount" json:"amount"`
-	OfferedPrice  money.Kopecks `db:"offered_price_kopecks" json:"offeredPrice"`
-	IikoID        string        `db:"iiko_id" json:"-"`
+	IsOnStopList     bool          `db:"is_on_stop_list" json:"isOnStopList,omitempty"`
+	IikoComment      string        `db:"iiko_comment" json:"iikoComment,omitempty"`
+	ExcludedFromIiko bool          `db:"excluded_from_iiko" json:"excludedFromIiko,omitempty"`
+	Discount         money.Kopecks `db:"discount_kopecks" json:"discount"`
+	PromoEligible    bool          `db:"promo_eligible" json:"-"`
+	OrderID          int64         `db:"order_id" json:"-"`
+	ProductID        int64         `db:"product_id" json:"productId"`
+	Name             string        `db:"name" json:"name"`
+	CategoryName     string        `db:"category_name" json:"categoryName"`
+	Amount           int           `db:"amount" json:"amount"`
+	OfferedPrice     money.Kopecks `db:"offered_price_kopecks" json:"offeredPrice"`
+	IikoID           string        `db:"iiko_id" json:"-"`
 }
 
 type Order struct {
+	IikoStatus      string        `json:"iikoStatus,omitempty"`
 	Subtotal        money.Kopecks `json:"subtotal"`
 	Discount        money.Kopecks `json:"discount"`
 	PromoCode       *string       `json:"promoCode"`
